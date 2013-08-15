@@ -1,0 +1,8 @@
+#!/bin/bash
+
+JSHINT_OUTPUT=`jshint javascript/webrtc.js javascript/webrtc/*.js`
+if [ "$JSHINT_OUTPUT" != "" ]; then
+	echo JSHINT_OUTPUT is $JSHINT_OUTPUT
+	exit 1
+fi
+./node_modules/.bin/grunt unit
