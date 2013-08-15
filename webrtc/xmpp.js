@@ -116,7 +116,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 		var rosterStanza = $iq({
 			'from': myJID,
 			'type': 'get',
-			'id': 'roster_1',
+			'id': 'roster_1'
 		}).c('query', { 'xmlns' : Strophe.NS.ROSTER}).tree();
 		stropheConnection.send(rosterStanza);
 	});
@@ -163,7 +163,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 			'from': stropheConnection.jid,
 			'type' : 'signaling'
 		}).c('signaling', {
-			'xmlns': NS,
+			'xmlns': NS
 		}, escape(JSON.stringify(msgObj))).tree();
 		console.log(text);
 		stropheConnection.send(text);
@@ -188,7 +188,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 			'type' : 'signaling'
 		}).c('signaling', {
 			'xmlns': NS,
-			'type': 'candidate',
+			'type': 'candidate'
 		}, escape(JSON.stringify(candObj))).tree();
 		console.log(text);
 		stropheConnection.send(text);
@@ -213,7 +213,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 			'type' : 'signaling'
 		}).c('signaling', {
 			'xmlns': NS,
-			'type': sdpObj.type,
+			'type': sdpObj.type
 		}, escape(JSON.stringify(sdpObj))).tree();
 		console.log(text);
 		stropheConnection.send(text);
@@ -238,10 +238,10 @@ webrtc.XMPPSignalingChannel = function (params) {
 			'type' : 'signaling'
 		}).c('signaling', {
 			'xmlns': NS,
-			'type': 'bye',
+			'type': 'bye'
 		}, escape(JSON.stringify({
 			'type': 'bye',
-			'reason': reason,
+			'reason': reason
 		}))).tree();
 		console.log(text);
 		stropheConnection.send(text);
@@ -370,7 +370,7 @@ webrtc.XMPPIdentityProvider = function (params) {
 				console.log('Strophe is connected.');
 				user = webrtc.XMPPUser({
 					'jid': username,
-					'loggedIn': true,
+					'loggedIn': true
 				});
 				deferred.resolve(user);
 			} else if (statusCode === Strophe.Status.ERROR) {
@@ -612,7 +612,7 @@ webrtc.XMPPEndpoint = function (params) {
 		signalingChannel.sendMessage(webrtc.XMPPChatMessage({
 			'recipient': that,
 			'sender': mercury.user.getResourceFormat(),
-			'payload': message,
+			'payload': message
 		}));
 	});
 
@@ -651,7 +651,7 @@ webrtc.XMPPContact = function (params) {
 		if (!resources.hasOwnProperty(resourceID)) {
 			resources[resourceID] = {
 				'resourceID': resourceID,
-				'presence': presenceString,
+				'presence': presenceString
 			};
 		}
 		resources[resourceID].presence = presenceString;
@@ -729,7 +729,7 @@ webrtc.XMPPUser = function (params) {
 	var userSession = new webrtc.UserSession({
 		'token': params.token,
 		'timeLoggedIn': params.timeLoggedIn,
-		'loggedIn': params.loggedIn,
+		'loggedIn': params.loggedIn
 	});
 
 	// listen to webrtc.User#presence:update -- the logged-in user's presence
@@ -766,7 +766,7 @@ webrtc.XMPPUser = function (params) {
 				this.remoteUserSessions[resource] = {
 					'jid': that.jid,
 					'resource': resource,
-					'presence': presPayload.presence,
+					'presence': presPayload.presence
 				};
 				return;
 			} else if (!contact) {
@@ -820,7 +820,7 @@ webrtc.XMPPUser = function (params) {
 					contact = new webrtc.XMPPContact({
 						'jid': jid,
 						'name': name,
-						'subscription': sub,
+						'subscription': sub
 					});
 				} catch (e) {
 					console.log("Couldn't create contact: " + e.message);
@@ -881,7 +881,7 @@ webrtc.XMPPUser = function (params) {
 			'signalReport' : function (oReport) {
 				console.log("Not sending report");
 				console.log(oReport);
-			},
+			}
 		});
 		mediaSessions.push(mediaSession);
 		mediaSession.start();
@@ -971,7 +971,7 @@ webrtc.XMPPUser = function (params) {
 			var message = mercury.presenceMessage({
 				'rawMessage': stanza,
 				'sender': stanza.getAttribute('from'),
-				'recipient': that,
+				'recipient': that
 			});
 			if (contactList.length === 0) {
 				contactList.queuePresence(message);
@@ -1002,7 +1002,7 @@ webrtc.XMPPUser = function (params) {
 			var params = {
 				'rawMessage': stanza,
 				'recipient': that,
-				'sender': contact.getResourceFormat(),
+				'sender': contact.getResourceFormat()
 			};
 			if (type === 'signaling') {
 				contact.fire('signaling:received', mercury.signalingMessage(params));

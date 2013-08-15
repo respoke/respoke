@@ -220,7 +220,7 @@ webrtc.User = function (params) {
 	var userSession = webrtc.UserSession({
 		'token': params.token,
 		'timeLoggedIn': params.timeLoggedIn || new Date(),
-		'loggedIn': params.loggedIn,
+		'loggedIn': params.loggedIn
 	});
 	delete params.token;
 	delete params.timeLoggedIn;

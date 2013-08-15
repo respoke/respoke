@@ -27,7 +27,7 @@ Object.defineProperty(Object.prototype, 'forOwn', {
 		}
 	},
 	enumerable: false,
-	configurable: false,
+	configurable: false
 });
 
 /**
@@ -42,7 +42,7 @@ Object.defineProperty(Object.prototype, 'isNumber', {
 		return !isNaN(parseFloat(number)) && isFinite(number) && number.length === undefined;
 	},
 	enumerable: false,
-	configurable: false,
+	configurable: false
 });
 
 /**
@@ -61,7 +61,7 @@ Object.defineProperty(Object.prototype, 'publicize', {
 		return func;
 	},
 	enumerable: false,
-	configurable: false,
+	configurable: false
 });
 
 /**

@@ -48,7 +48,7 @@ webrtc.MediaSession = function (params) {
 		'iceServers' : [
 			/* Can only have one server listed here as of yet. */
 			//{ 'url': 'stun:stun.l.google.com:19302' },
-			{ 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'},
+			{ 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'}
 		]
 	};
 	var report = {
@@ -106,7 +106,7 @@ webrtc.MediaSession = function (params) {
 		pc.addStream(stream);
 		var mediaStream = webrtc.MediaStream({
 			'stream': stream,
-			'isLocal': true,
+			'isLocal': true
 		});
 		that.fire('stream:local:received', mediaStream.getURL());
 		mediaStreams.push(mediaStream);
@@ -223,7 +223,7 @@ webrtc.MediaSession = function (params) {
 		console.log('received remote media');
 		var mediaStream = webrtc.MediaStream({
 			'stream': evt.stream,
-			'isLocal': false,
+			'isLocal': false
 		});
 		that.fire('stream:remote:received', mediaStream.getURL());
 		mediaStreams.push(mediaStream);

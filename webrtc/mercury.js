@@ -42,9 +42,9 @@ webrtc.Mercury = function (params) {
 			iceServers: [
 				/* Can only have one server listed here as of yet. */
 				//{ 'url': 'stun:stun.l.google.com:19302' },
-				{ 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'},
-			],
-		},
+				{ 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'}
+			]
+		}
 	};
 	that.appSettings = {
 		/* These are the names of classes which can be configured by the developer.
@@ -55,7 +55,7 @@ webrtc.Mercury = function (params) {
 		identityProvider: 'XMPPIdentityProvider',
 		chatMessage: 'XMPPChatMessage',
 		signalingMessage: 'XMPPSignalingMessage',
-		presenceMessage: 'XMPPPresenceMessage',
+		presenceMessage: 'XMPPPresenceMessage'
 	};
 
 	/**
