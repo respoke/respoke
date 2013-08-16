@@ -449,6 +449,11 @@ webrtc.XMPPPresentable = function (params) {
 	var resources = [];
 	var presence = 'unavailable';
 
+	that.listen('signaling:received', function(message) {
+		console.log(message);
+		mercury.getSignalingChannel().routeSignal(message);
+	});
+
 	/**
 	 * Set identity information such as username, domain, email format from JID. This method exists
 	 * in this form so that we can create instances of this class without a JID for creating
@@ -476,6 +481,7 @@ webrtc.XMPPPresentable = function (params) {
 
 		jidPieces = resourcePieces[0].split('@');
 		that.emailFormat = resourcePieces[0];
+		that.id = resourcePieces[0];
 		that.username = jidPieces[0];
 		that.name = jidPieces[0];
 		that.domain = jidPieces[1];
