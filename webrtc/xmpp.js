@@ -800,8 +800,8 @@ webrtc.XMPPUser = function (params) {
 			return deferred.promise;
 		}
 		deferred.promise.then(function (contactList) {
-			contactList.processPresenceQueue();
-		});
+			setTimeout(function () { contactList.processPresenceQueue(); }, 1000);
+		}).done();
 
 		/* This seems like not a good place to define this handler, but it must have access
 		 * to the promise that requestContacts must return, so it is necessary.
