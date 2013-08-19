@@ -95,7 +95,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 		case "dnd":
 		case "away":
 		case "xa":
-			pres = $pres().c('show', {}, presenceString);
+			pres = $pres().c('show', {}).t(presenceString);
 			break;
 		default:
 			throw new Error("Can't send invalid presence " + presenceString + "!");
@@ -164,7 +164,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 			'type' : 'signaling'
 		}).c('signaling', {
 			'xmlns': NS
-		}, escape(JSON.stringify(msgObj))).tree();
+		}).t(escape(JSON.stringify(msgObj))).tree();
 		console.log(text);
 		stropheConnection.send(text);
 	});
@@ -189,7 +189,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 		}).c('signaling', {
 			'xmlns': NS,
 			'type': 'candidate'
-		}, escape(JSON.stringify(candObj))).tree();
+		}).t(escape(JSON.stringify(candObj))).tree();
 		console.log(text);
 		stropheConnection.send(text);
 	});
@@ -214,7 +214,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 		}).c('signaling', {
 			'xmlns': NS,
 			'type': sdpObj.type
-		}, escape(JSON.stringify(sdpObj))).tree();
+		}).t(escape(JSON.stringify(sdpObj))).tree();
 		console.log(text);
 		stropheConnection.send(text);
 	});
@@ -239,7 +239,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 		}).c('signaling', {
 			'xmlns': NS,
 			'type': 'bye'
-		}, escape(JSON.stringify({
+		}).t(escape(JSON.stringify({
 			'type': 'bye',
 			'reason': reason
 		}))).tree();
@@ -251,26 +251,28 @@ webrtc.XMPPSignalingChannel = function (params) {
 	 * Parse an XMPP message and find the JSON signaling blob in it.
 	 * @memberof! webrtc.XMPPSignalingChannel
 	 * @method webrtc.XMPPSignalingChannel.parseText
-	 * @param {object} msgObj An XMPP signaling stanza.
+	 * @param {object} msgXML An XMPP signaling stanza.
 	 * @return {object} signalingObj A JavaScript object containing the signaling information.
 	 */
-	var parseText = that.publicize('parseText', function (msgObj) {
+	var parseText = that.publicize('parseText', function (msgXML) {
 		var json = {};
 		var sig = null;
-		var signalingElements = msgObj.getElementsByTagName('signaling');
+		var signalingElements = msgXML.getElementsByTagName('signaling');
 		if (signalingElements.length === 0) {
 			return null;
 		}
 
 		sig = signalingElements[0];
 		json.value = unescape(Strophe.getText(sig));
-		json.from = msgObj.getAttribute('from');
-		json.to = msgObj.getAttribute('to');
+		json.from = msgXML.getAttribute('from');
+		json.to = msgXML.getAttribute('to');
 		json.type = sig.getAttribute('type');
 
 		try {
 			json.value = JSON.parse(json.value);
-		} catch (e) {}
+		} catch (e) {
+			console.log("Couldn't parse JSON from msg received: " + e.message);
+		}
 
 		return json;
 	});
