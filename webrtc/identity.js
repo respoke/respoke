@@ -126,29 +126,43 @@ webrtc.ContactList = function (params) {
 	/**
 	 * Get a list of contacts.
 	 * @memberof! webrtc.ContactList
-	 * @method webrtc.ContactList.getSortedList
+	 * @method webrtc.ContactList.getContacts
 	 * @param {string} sortField An optional contact attribute to sort on.
 	 */
-	var getSortedList = that.publicize('getSortedList', function (sortField) {
-		var ids = [];
-		contacts.forOwn(function (key) {
-			ids.push(key);
+	var getContacts = that.publicize('getContacts', function (sortField) {
+		var values = [];
+		sortField = sortField || 'id';
+		contacts.forOwn(function (value, key) {
+			values.push(value);
 		});
-		that.length = ids.length;
+		that.length = values.length;
 
-		ids.sort(function (a, b) {
-			var field = sortField || 'id';
-			if (webrtc.isNumber(a[field]) && webrtc.isNumber(b[field])) {
-				return a[field] - b[field];
+		values = values.sort(function (a, b) {
+			if (!(sortField in a) || !(sortField in b)) {
+				console.log("sortField doesn't exist in both objects.");
+				return 0;
+			} else if (webrtc.isNumber(a[sortField]) && webrtc.isNumber(b[sortField])) {
+				return a[sortField] - b[sortField];
+			} else if (a.toLowerCase && b.toLowerCase) {
+				if (a[sortField].toLowerCase() < b[sortField].toLowerCase()) {
+					return -1;
+				} else if (a[sortField].toLowerCase() > b[sortField].toLowerCase()) {
+					return 1;
+				} else {
+					return 0;
+				}
 			} else {
-				return a[field] < b[field] ? -1 : a[field] > b[field] ? 1 : 0;
+				if (a[sortField] < b[sortField]) {
+					return -1;
+				} else if (a[sortField] > b[sortField]) {
+					return 1;
+				} else {
+					return 0;
+				}
 			}
 		});
 
-		for (var i = 0; i <= ids.length; i += 1) {
-			ids[i] = contacts[ids[i]];
-		}
-		return ids;
+		return values;
 	});
 
 	/**

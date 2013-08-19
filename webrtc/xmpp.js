@@ -449,6 +449,11 @@ webrtc.XMPPPresentable = function (params) {
 	var resources = [];
 	var presence = 'unavailable';
 
+	that.listen('signaling:received', function(message) {
+		console.log(message);
+		mercury.getSignalingChannel().routeSignal(message);
+	});
+
 	/**
 	 * Set identity information such as username, domain, email format from JID. This method exists
 	 * in this form so that we can create instances of this class without a JID for creating
@@ -476,6 +481,7 @@ webrtc.XMPPPresentable = function (params) {
 
 		jidPieces = resourcePieces[0].split('@');
 		that.emailFormat = resourcePieces[0];
+		that.id = resourcePieces[0];
 		that.username = jidPieces[0];
 		that.name = jidPieces[0];
 		that.domain = jidPieces[1];
@@ -794,8 +800,8 @@ webrtc.XMPPUser = function (params) {
 			return deferred.promise;
 		}
 		deferred.promise.then(function (contactList) {
-			contactList.processPresenceQueue();
-		});
+			setTimeout(function () { contactList.processPresenceQueue(); }, 1000);
+		}).done();
 
 		/* This seems like not a good place to define this handler, but it must have access
 		 * to the promise that requestContacts must return, so it is necessary.
