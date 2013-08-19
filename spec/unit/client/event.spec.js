@@ -42,66 +42,69 @@ describe("A webrtc.EventThrower ", function () {
   /*
    * Function
    */
-  var results = {
-    1: 0,
-    2: 0,
-    3: 0,
-    4: 0,
-    5: 0,
-    6: 0
-  };
-  it("should handle multiple events, multiple listeners, and call each once.", function () {
-  	eventThrower.listen('event1', function () {
-  	  results[1] += 1;
-  	});
-  	eventThrower.listen('event2', function () {
-  	  results[2] += 1;
-  	});
-  	eventThrower.listen('event2', function () {
-  	  results[3] += 1;
-  	});
-  	eventThrower.listen('event3', function () {
-  	  results[4] += 1;
-  	});
-  	eventThrower.listen('event3', function () {
-  	  results[5] += 1;
-  	});
-  	eventThrower.listen('event3', function () {
-  	  results[6] += 1;
-  	});
+  describe("listen, fire, and ignore", function(){
+    var results;
+    beforeEach(function(){
+      results = {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0
+      };
+    });
 
-  	eventThrower.fire('event2');
-  	eventThrower.fire('event3');
-  	eventThrower.fire('event1');
+    it("should handle multiple events, multiple listeners, and call each once.", function () {
+      eventThrower.listen('event1', function () {
+        results[1] += 1;
+      });
+      eventThrower.listen('event2', function () {
+        results[2] += 1;
+      });
+      eventThrower.listen('event2', function () {
+        results[3] += 1;
+      });
+      eventThrower.listen('event3', function () {
+        results[4] += 1;
+      });
+      eventThrower.listen('event3', function () {
+        results[5] += 1;
+      });
+      eventThrower.listen('event3', function () {
+        results[6] += 1;
+      });
 
-  	expect(results[1]).toEqual(1);
-  	expect(results[2]).toEqual(1);
-  	expect(results[3]).toEqual(1);
-  	expect(results[4]).toEqual(1);
-  	expect(results[5]).toEqual(1);
-  	expect(results[6]).toEqual(1);
+      eventThrower.fire('event2');
+      eventThrower.fire('event3');
+      eventThrower.fire('event1');
+
+      expect(results[1]).toEqual(1);
+      expect(results[2]).toEqual(1);
+      expect(results[3]).toEqual(1);
+      expect(results[4]).toEqual(1);
+      expect(results[5]).toEqual(1);
+      expect(results[6]).toEqual(1);
+    });
+
+    it("should honor requests to ignore events", function () {
+      eventThrower.ignore('event1');
+      eventThrower.ignore('event2');
+      eventThrower.ignore('event3');
+
+      eventThrower.fire('event2');
+      eventThrower.fire('event3');
+      eventThrower.fire('event1');
+
+      expect(results[1]).toEqual(0);
+      expect(results[2]).toEqual(0);
+      expect(results[3]).toEqual(0);
+      expect(results[4]).toEqual(0);
+      expect(results[5]).toEqual(0);
+      expect(results[6]).toEqual(0);
+    });
   });
-
-  /*
-   * Can't test this because either ignore() doesn't work or there is some irregularity
-   * in the test environment. More testing in the browser is necessary.
-  eventThrower.ignore('event1');
-  eventThrower.ignore('event2');
-  eventThrower.ignore('event3');
-
-  it("should honor requests to ignore events", function () {
-  	eventThrower.fire('event2');
-  	eventThrower.fire('event3');
-  	eventThrower.fire('event1');
-
-  	expect(results[1]).toEqual(1);
-  	expect(results[2]).toEqual(1);
-  	expect(results[3]).toEqual(1);
-  	expect(results[4]).toEqual(1);
-  	expect(results[5]).toEqual(1);
-  	expect(results[6]).toEqual(1);
-  });
-  */
+  
 
   it("should accept and correctly pass all kinds of arguments.", function () {
 	  var args = [
