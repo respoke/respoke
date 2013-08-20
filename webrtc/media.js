@@ -364,6 +364,7 @@ webrtc.MediaSession = function (params) {
 	 * @method webrtc.MediaSession.doHangup
 	 * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
 	 * a hangup signal to the remote side.
+	 * @todo TODO: Make it so the dev doesn't have to know when to send a bye.
 	 */
 	var doHangup = that.publicize('doHangup', function (sendSignal) {
 		console.log('hanging up');
