@@ -896,10 +896,7 @@ webrtc.XMPPUser = function (params) {
 		that.fire('media:started', mediaSession, contactJID);
 		mediaSession.listen('hangup', function (locallySignaled) {
 			removeMediaSession(contactJID);
-			console.log("removed media session for " + contactJID);
-		console.log(mediaSessions);
 		});
-		console.log(mediaSessions);
 		return mediaSession;
 	});
 
