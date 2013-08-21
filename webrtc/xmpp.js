@@ -878,7 +878,7 @@ webrtc.XMPPUser = function (params) {
 				signalingChannel.sendSDP(contactJID, sdp);
 			},
 			'signalCandidate' : function (oCan) {
-				if (oCan) {
+				if (oCan !== null) {
 					signalingChannel.sendCandidate(contactJID, oCan);
 				}
 			},
@@ -894,9 +894,12 @@ webrtc.XMPPUser = function (params) {
 		mediaSessions.push(mediaSession);
 		mediaSession.start();
 		that.fire('media:started', mediaSession, contactJID);
-		that.listen('hangup', function (locallySignaled) {
-			stopMedia(contactJID);
+		mediaSession.listen('hangup', function (locallySignaled) {
+			removeMediaSession(contactJID);
+			console.log("removed media session for " + contactJID);
+		console.log(mediaSessions);
 		});
+		console.log(mediaSessions);
 		return mediaSession;
 	});
 
@@ -915,6 +918,7 @@ webrtc.XMPPUser = function (params) {
 				session = mediaSession;
 			}
 		});
+		console.log(mediaSessions);
 		return session;
 	});
 
@@ -925,7 +929,7 @@ webrtc.XMPPUser = function (params) {
 	 * @param {string} JID without resource of the contact to search for.
 	 * @returns {webrtc.MediaSession}
 	 */
-	var getMediaSessionByContact = that.publicize('getMediaSessionByContact', function (contactJID) {
+	var getMediaSessionByContact = that.publicize('getMediaSessionByContact', function (contactJID){
 		var session = null;
 		mediaSessions.forEach(function (mediaSession) {
 			if (mediaSession.remoteEndpoint === contactJID) {
@@ -941,13 +945,18 @@ webrtc.XMPPUser = function (params) {
 	});
 
 	/**
-	 * Hangup the media if it is not already hung up and remove the media session.
+	 * Remove the media session.
 	 * @memberof! webrtc.XMPPUser
-	 * @method webrtc.XMPPUser.stopMedia
-	 * @param {string} JID without resource of the contact to search for.
+	 * @method webrtc.XMPPUser.removeMediaSession
+	 * @param {string} Optional JID without resource of the contact to search for.
 	 */
-	var stopMedia = that.publicize('stopMedia', function (contactJID) {
+	var removeMediaSession = that.publicize('removeMediaSession', function (contactJID) {
 		var toDelete = null;
+
+		if (!contactJID) {
+			mediaSessions = [];
+		}
+
 		mediaSessions.forEach(function (mediaSession, index) {
 			if (mediaSession.remoteEndpoint === contactJID) {
 				toDelete = index;
@@ -955,11 +964,10 @@ webrtc.XMPPUser = function (params) {
 		});
 
 		if (toDelete === null) {
-			console.log("Couldn't find mediaSession in stopMedia");
+			console.log("Couldn't find mediaSession in removeMediaSession");
 			return;
 		}
 
-		mediaSessions[toDelete].doHangup();
 		mediaSessions.splice(toDelete);
 	});
 

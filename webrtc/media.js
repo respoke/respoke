@@ -33,6 +33,7 @@ webrtc.MediaSession = function (params) {
 	var candidateReceivingQueue = [];
 	var signalingChannel = mercury.getSignalingChannel();
 	var mediaStreams = [];
+	var remoteEndpoint = params.remoteEndpoint;
 	var signalInitiate = params.signalInitiate;
 	var signalAccept = params.signalAccept;
 	var signalTerminate = params.signalTerminate;
@@ -87,6 +88,7 @@ webrtc.MediaSession = function (params) {
 	 * @method webrtc.MediaSession.startCall
 	 */
 	var startCall = function () {
+		console.log('startCall');
 		report.startCallCount += 1;
 		console.log('creating offer');
 		pc.createOffer(saveOfferAndSend, function (p) {
@@ -103,6 +105,10 @@ webrtc.MediaSession = function (params) {
 	 */
 	var onReceiveUserMedia = function (stream) {
 		console.log('User gave permission to use media.');
+		if (!pc === null) {
+			console.log("Peer connection is null!");
+			return;
+		}
 		pc.addStream(stream);
 		var mediaStream = webrtc.MediaStream({
 			'stream': stream,
@@ -184,7 +190,7 @@ webrtc.MediaSession = function (params) {
 			console.log(p);
 			report.callStoppedReason = p.code;
 		}
-		doHangup(!that.initiator);
+		stopMedia(!that.initiator);
 	};
 
 	/**
@@ -199,7 +205,7 @@ webrtc.MediaSession = function (params) {
 			savedOffer = null;
 		} else {
 			console.log("Can't process offer--no SDP!");
-			doHangup(true);
+			stopMedia(true);
 		}
 	};
 
@@ -354,19 +360,22 @@ webrtc.MediaSession = function (params) {
 			report.callStoppedReason = 'Remote side hung up.';
 		}
 		console.log('Callee busy or or call rejected:' + report.callStoppedReason);
-		doHangup(false);
+		stopMedia(false);
 	};
 
 	/**
 	 * Tear down the call, release user media.  Send a bye signal to the remote party if
 	 * sendSignal is not false and we have not received a bye signal from the remote party.
 	 * @memberof! webrtc.MediaSession
-	 * @method webrtc.MediaSession.doHangup
+	 * @method webrtc.MediaSession.stopMedia
 	 * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
 	 * a hangup signal to the remote side.
 	 * @todo TODO: Make it so the dev doesn't have to know when to send a bye.
 	 */
-	var doHangup = that.publicize('doHangup', function (sendSignal) {
+	var stopMedia = that.publicize('stopMedia', function (sendSignal) {
+		if (pc === null) {
+			return;
+		}
 		console.log('hanging up');
 
 		sendSignal = (typeof sendSignal === 'boolean' ? sendSignal : true);
@@ -380,6 +389,10 @@ webrtc.MediaSession = function (params) {
 
 		that.fire('hangup', sendSignal);
 		that.ignore();
+		signalingChannel.ignore('received:offer', onOffer);
+		signalingChannel.ignore('received:answer', onAnswer);
+		signalingChannel.ignore('received:candidate', processCandidate);
+		signalingChannel.ignore('received:bye', onBye);
 
 		mediaStreams.forOwn(function (stream) {
 			stream.stop();
@@ -419,7 +432,7 @@ webrtc.MediaSession = function (params) {
 				report.callStoppedReason = 'setLocalDescr failed at offer.';
 				console.log(oSession);
 				console.log(p);
-				that.doHangup();
+				that.stopMedia();
 			});
 		} catch (e) { console.log("e: " + e.message); }
 	};
@@ -427,13 +440,13 @@ webrtc.MediaSession = function (params) {
 	/**
 	 * Indicate whether a call is being setup or is in progress.
 	 * @memberof! webrtc.MediaSession
-	 * @method webrtc.MediaSession.isCallInProgress
+	 * @method webrtc.MediaSession.isActive
 	 * @param {RTCSessionDescription} oSession The remote SDP.
 	 * @returns {boolean}
 	 */
-	var isCallInProgress = that.publicize('isCallInProgress', function () {
+	var isActive = that.publicize('isActive', function () {
 		var inProgress = false;
-		if (!pc) {
+		if (!pc || receivedBye === true) {
 			return false;
 		}
 		inProgress = pc.readyState in ['new', 'active'];
@@ -481,7 +494,7 @@ webrtc.MediaSession = function (params) {
 			console.log('set remote desc of answer failed');
 			report.callStoppedReason = 'setRemoteDescription failed at answer.';
 			console.log(oSession);
-			that.doHangup();
+			that.stopMedia();
 		});
 	};
 
@@ -516,29 +529,14 @@ webrtc.MediaSession = function (params) {
 	};
 
 	/**
-	 * Stop media.
-	 * @memberof! webrtc.MediaSession
-	 * @method webrtc.MediaSession.stopMedia
-	 */
-	that.stopMedia = that.doHangup;
-
-	/**
 	 * Get the state of the MediaSession
 	 * @memberof! webrtc.MediaSession
 	 * @method webrtc.MediaSession.getState
 	 * @returns {string}
 	 */
 	var getState = that.publicize('getState', function () {
-		return pc ? pc.readyState : "new";
+		return pc ? pc.readyState : "before";
 	});
-
-	/**
-	 * Indicate whether the MediaSession is in an active state
-	 * @memberof! webrtc.MediaSession
-	 * @method webrtc.MediaSession.isActive
-	 * @returns {boolean}
-	 */
-	var isActive = that.isCallInProgress;
 
 	/**
 	 * Indicate whether the logged-in User initated the MediaSession.
@@ -598,7 +596,7 @@ webrtc.MediaSession = function (params) {
 	 * @method webrtc.MediaSession.toggleVideo
 	 */
 	var toggleVideo = that.publicize('toggleVideo', function () {
-		if (that.isCallInProgress()) {
+		if (that.isActive()) {
 			if (pc.localStreams[0].videoTracks[0].enabled) {
 				that.muteVideo();
 			} else {
@@ -613,7 +611,7 @@ webrtc.MediaSession = function (params) {
 	 * @method webrtc.MediaSession.toggleAudio
 	 */
 	var toggleAudio = that.publicize('toggleAudio', function () {
-		if (that.isCallInProgress()) {
+		if (that.isActive()) {
 			if (pc.localStreams[0].audioTracks[0].enabled) {
 				that.muteAudio();
 			} else {
@@ -674,13 +672,20 @@ webrtc.MediaSession = function (params) {
 		that.fire('audio:unmuted');
 	});
 
+	/**
+	 * Set receivedBye to true and stop media.
+	 * @memberof! webrtc.MediaSession
+	 * @method webrtc.MediaSession.onBye
+	 * @private
+	 */
+	var onBye = function () {
+		receivedBye = true;
+		stopMedia();
+	}
 	signalingChannel.listen('received:offer', onOffer);
 	signalingChannel.listen('received:answer', onAnswer);
 	signalingChannel.listen('received:candidate', processCandidate);
-	signalingChannel.listen('received:bye', function () {
-		receivedBye = true;
-		doHangup();
-	});
+	signalingChannel.listen('received:bye', onBye);
 
 	return that;
 }; // End webrtc.MediaSession
