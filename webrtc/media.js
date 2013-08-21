@@ -40,11 +40,17 @@ webrtc.MediaSession = function (params) {
 	var signalReport = params.signalReport;
 	var signalCandidate = params.signalCandidate;
 	var constraints = {
-		'video' : true,
+		'video' : { mandatory: { minWidth: 640, minHeight: 480 } },
 		'audio' : true,
 		'optional': [],
 		'mandatory': {}
 	};
+	/*var constraints2 = {
+		'video' : { mandatory: { maxWidth: 320, maxHeight: 240 } },
+		'audio' : false,
+		'optional': [],
+		'mandatory': {}
+	};*/
 	var servers = {
 		'iceServers' : [
 			/* Can only have one server listed here as of yet. */
@@ -105,6 +111,7 @@ webrtc.MediaSession = function (params) {
 	 */
 	var onReceiveUserMedia = function (stream) {
 		console.log('User gave permission to use media.');
+		console.log(stream);
 		if (!pc === null) {
 			console.log("Peer connection is null!");
 			return;
@@ -116,11 +123,13 @@ webrtc.MediaSession = function (params) {
 		});
 		that.fire('stream:local:received', mediaStream.getURL());
 		mediaStreams.push(mediaStream);
-		if (that.initiator) {
-			that.fire('call:initiate');
-			startCall();
-		} else {
-			acceptCall();
+		if (mediaStreams.length === 1) {
+			if (that.initiator) {
+				that.fire('call:initiate');
+				startCall();
+			} else {
+				acceptCall();
+			}
 		}
 	};
 
@@ -169,6 +178,7 @@ webrtc.MediaSession = function (params) {
 		}
 		try {
 			navigator.webkitGetUserMedia(constraints, onReceiveUserMedia, onUserMediaError);
+			//navigator.webkitGetUserMedia(constraints2, onReceiveUserMedia, onUserMediaError);
 		} catch (e) {
 			console.log("Couldn't get user media.");
 			console.log(e);
