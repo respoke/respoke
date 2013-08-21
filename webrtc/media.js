@@ -507,7 +507,7 @@ webrtc.MediaSession = function (params) {
 	 * @private
 	 */
 	var processCandidate = function (oCan) {
-		if (!oCan) {
+		if (!oCan || oCan.candidate === null) {
 			return;
 		}
 		if (!oCan.hasOwnProperty('sdpMLineIndex') || !oCan.candidate) {

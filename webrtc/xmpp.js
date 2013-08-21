@@ -271,6 +271,7 @@ webrtc.XMPPSignalingChannel = function (params) {
 		try {
 			json.value = JSON.parse(json.value);
 		} catch (e) {
+			json.value = null;
 			console.log("Couldn't parse JSON from msg received: " + e.message);
 		}
 
