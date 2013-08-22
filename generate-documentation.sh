@@ -1,1 +1,1 @@
-jsdoc -p -d confluence -t /usr/local/bin/jsdocs/templates/confluence webrtc*
+jsdoc -p -d confluence -t /usr/local/bin/jsdoc/templates/confluence webrtc*
