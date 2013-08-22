@@ -39,19 +39,20 @@ webrtc.MediaSession = function (params) {
 	var signalTerminate = params.signalTerminate;
 	var signalReport = params.signalReport;
 	var signalCandidate = params.signalCandidate;
-	var constraints = {
+	var mediaSettings = mercury.getDefaultMediaSettings();
+	var constraints = mediaSettings.constraints || {
 		'video' : { mandatory: { minWidth: 640, minHeight: 480 } },
 		'audio' : true,
 		'optional': [],
 		'mandatory': {}
 	};
-	var servers = {
+	var servers = mediaSettings.servers || [{
 		'iceServers' : [
 			/* Can only have one server listed here as of yet. */
 			//{ 'url': 'stun:stun.l.google.com:19302' },
 			{ 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'}
 		]
-	};
+	}];
 	var report = {
 		'startCallCount' : 0,
 		'startCount' : 0,
@@ -171,12 +172,16 @@ webrtc.MediaSession = function (params) {
 			processOffer(savedOffer);
 			savedOffer = null;
 		}
-		try {
-			navigator.webkitGetUserMedia(constraints, onReceiveUserMedia, onUserMediaError);
-		} catch (e) {
-			console.log("Couldn't get user media.");
-			console.log(e);
-		}
+		constraints.forOwn(function (oneConstraints) {
+			try {
+				console.log("Running getUserMedia with constraints");
+				console.log(oneConstraints);
+				navigator.webkitGetUserMedia(oneConstraints, onReceiveUserMedia, onUserMediaError);
+			} catch (e) {
+				console.log("Couldn't get user media.");
+				console.log(e);
+			}
+		});
 	};
 
 	/**
@@ -269,7 +274,7 @@ webrtc.MediaSession = function (params) {
 	 * @private
 	 */
 	var onIceCandidate = function (oCan) {
-		if (oCan.candidate === null) {
+		if (!oCan.candidate) {
 			return;
 		}
 		//console.log("original browser-generated candidate object");
@@ -281,6 +286,15 @@ webrtc.MediaSession = function (params) {
 			signalCandidate(oCan.candidate);
 		}
 	};
+
+	/**
+	 * Handle renegotiation
+	 * @memberof! webrtc.MediaSession
+	 * @method webrtc.MediaSession.onNegotiationNeeded
+	 * @private
+	 */
+	var onNegotiationNeeded = function (oCan) {
+	}
 
 	/**
 	 * Process any ICE candidates that we received either from the browser or the other side while

@@ -32,13 +32,13 @@ webrtc.Mercury = function (params) {
 	var apiToken = null;
 	var userSessions = [];
 	var mediaSettings = {
-		constraints: {
+		constraints: params.constraints || [{
 			video : true,
 			audio : true,
 			optional: [],
 			mandatory: {}
-		},
-		servers: {
+		}],
+		servers: params.servers || {
 			iceServers: [
 				/* Can only have one server listed here as of yet. */
 				//{ 'url': 'stun:stun.l.google.com:19302' },
@@ -200,7 +200,7 @@ webrtc.Mercury = function (params) {
 	 * webrtc calls.
 	 */
 	var getDefaultMediaSettings = that.publicize('getDefaultMediaSettings', function () {
-		return that.mediaSettings;
+		return mediaSettings;
 	});
 
 	/**
@@ -212,10 +212,10 @@ webrtc.Mercury = function (params) {
 	var setDefaultMediaSettings = that.publicize('setDefaultMediaSettings', function (settings) {
 		settings = settings || {};
 		if (settings.constraints) {
-			that.mediaSettings.constraints = settings.constraints;
+			mediaSettings.constraints = settings.constraints;
 		}
 		if (settings.servers) {
-			that.mediaSettings.servers = settings.servers;
+			mediaSettings.servers = settings.servers;
 		}
 	});
 
