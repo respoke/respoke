@@ -45,12 +45,6 @@ webrtc.MediaSession = function (params) {
 		'optional': [],
 		'mandatory': {}
 	};
-	/*var constraints2 = {
-		'video' : { mandatory: { maxWidth: 320, maxHeight: 240 } },
-		'audio' : false,
-		'optional': [],
-		'mandatory': {}
-	};*/
 	var servers = {
 		'iceServers' : [
 			/* Can only have one server listed here as of yet. */
@@ -166,6 +160,7 @@ webrtc.MediaSession = function (params) {
 		pc.onaddstream = onRemoteStreamAdded;
 		pc.onremovestream = onRemoteStreamRemoved;
 		pc.onicecandidate = onIceCandidate;
+		pc.onnegotiationneeded = onNegotiationNeeded;
 		pc.oniceconnectionstatechange = function (p) {
 			console.log('oniceconnectionstatechange');
 			console.log(p);
@@ -178,7 +173,6 @@ webrtc.MediaSession = function (params) {
 		}
 		try {
 			navigator.webkitGetUserMedia(constraints, onReceiveUserMedia, onUserMediaError);
-			//navigator.webkitGetUserMedia(constraints2, onReceiveUserMedia, onUserMediaError);
 		} catch (e) {
 			console.log("Couldn't get user media.");
 			console.log(e);
@@ -243,6 +237,7 @@ webrtc.MediaSession = function (params) {
 		});
 		that.fire('stream:remote:received', mediaStream.getURL());
 		mediaStreams.push(mediaStream);
+		console.log(mediaStreams);
 	};
 
 	/**
@@ -461,7 +456,7 @@ webrtc.MediaSession = function (params) {
 		}
 		inProgress = pc.readyState in ['new', 'active'];
 		console.log('readyState is ' + pc.readyState + '. Call is ' +
-			(inProgress ? '' : 'not ') + ' in progress.');
+			(inProgress ? '' : 'not ') + 'in progress.');
 		return inProgress;
 	});
 
