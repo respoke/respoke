@@ -864,6 +864,9 @@ webrtc.XMPPUser = function (params) {
 	 * @param {boolean} initiator Whether the User is the initiator of the call.
 	 * @returns {webrtc.UserSession}
 	 * @fires webrtc.User#media:started
+	 * @todo TODO: Don't make developer pass in initiator boolean.
+	 * @todo TODO: Move this to Endpoint so we also don't have to pass the JID
+	 * @todo TODO: Make this take a constraints object.
 	 */
 	var startMedia = that.publicize('startMedia', function (contactJID, initiator) {
 		var mediaSession = webrtc.MediaSession({
