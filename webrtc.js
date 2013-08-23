@@ -18,16 +18,16 @@ var webrtc = {};
  * @params {func} A function to call on each element that is the object's own.
  */
 Object.defineProperty(Object.prototype, 'forOwn', {
-	value: function (func) {
-		"use strict";
-		for (var name in this) {
-			if (this.hasOwnProperty(name)) {
-				func(this[name], name);
-			}
-		}
-	},
-	enumerable: false,
-	configurable: false
+   value: function (func) {
+      "use strict";
+      for (var name in this) {
+         if (this.hasOwnProperty(name)) {
+            func(this[name], name);
+         }
+      }
+   },
+   enumerable: false,
+   configurable: false
 });
 
 /**
@@ -37,12 +37,12 @@ Object.defineProperty(Object.prototype, 'forOwn', {
  * @static
  */
 Object.defineProperty(Object.prototype, 'isNumber', {
-	value: function (number) {
-		"use strict";
-		return !isNaN(parseFloat(number)) && isFinite(number) && number.length === undefined;
-	},
-	enumerable: false,
-	configurable: false
+   value: function (number) {
+      "use strict";
+      return !isNaN(parseFloat(number)) && isFinite(number) && number.length === undefined;
+   },
+   enumerable: false,
+   configurable: false
 });
 
 /**
@@ -55,13 +55,13 @@ Object.defineProperty(Object.prototype, 'isNumber', {
  * @returns {function} The unmodified function.
  */
 Object.defineProperty(Object.prototype, 'publicize', {
-	value: function (name, func) {
-		"use strict";
-		this[name] = func;
-		return func;
-	},
-	enumerable: false,
-	configurable: false
+   value: function (name, func) {
+      "use strict";
+      this[name] = func;
+      return func;
+   },
+   enumerable: false,
+   configurable: false
 });
 
 /**
@@ -72,24 +72,24 @@ Object.defineProperty(Object.prototype, 'publicize', {
  * @author Erin Spiceland <espiceland@digium.com>
  */
 webrtc.Class = function (params) {
-	"use strict";
-	var that = { 'className': 'webrtc.Class' };
-	params = params || {};
-	params.forOwn(function (thing, name) {
-		that[name] = thing;
-	});
+   "use strict";
+   var that = { 'className': 'webrtc.Class' };
+   params = params || {};
+   params.forOwn(function (thing, name) {
+      that[name] = thing;
+   });
 
-	/**
-	 * Get the name of the class.
-	 * @memberof! webrtc.Class
-	 * @method webrtc.Class.getClass
-	 * @returns {string} Class name
-	 */
-	var getClass = that.publicize('getClass', function () {
-		return that.className;
-	});
+   /**
+    * Get the name of the class.
+    * @memberof! webrtc.Class
+    * @method webrtc.Class.getClass
+    * @returns {string} Class name
+    */
+   var getClass = that.publicize('getClass', function () {
+      return that.className;
+   });
 
-	return that;
+   return that;
 }; // End webrtc.Class
 
 
