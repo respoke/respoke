@@ -89,10 +89,5 @@ webrtc.EventThrower = function (params) {
       });
    });
 
-   // TODO: remove me after we can test ignore()
-   var getEvents = that.publicize('getEvents', function (eventType) {
-      return eventList;
-   });
-
    return that;
 }; // End webrtc.EventThrower
