@@ -642,10 +642,6 @@ webrtc.XMPPEndpoint = function (params) {
      * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.MediaSession}
-     * @fires webrtc.User#media:started
-     * @todo TODO: Don't make developer pass in initiator boolean.
-     * @todo TODO: Move this to Endpoint so we also don't have to pass the JID
-     * @todo TODO: Make this take a constraints object.
      */
     var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
         if (initiator === undefined) {
@@ -963,6 +959,8 @@ webrtc.XMPPUser = function (params) {
      * Associate the media session with this user.
      * @memberof! webrtc.XMPPUser
      * @method webrtc.XMPPUser.addMediaSession
+     * @param {webrtc.MediaSession} mediaSession
+     * @fires webrtc.User#media:started
      */
     var addMediaSession = that.publicize('addMediaSession', function (mediaSession) {
         mediaSessions.push(mediaSession);
