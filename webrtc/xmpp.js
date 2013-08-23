@@ -28,6 +28,12 @@ webrtc.XMPPSignalingChannel = function (params) {
      */
     var open = that.publicize('open', function () {
         stropheConnection = new Strophe.Connection(BOSH_SERVICE);
+        /*stropheConnection.rawInput = function (msg) {
+            console.log(msg);
+        };
+        stropheConnection.rawOutput = function (msg) {
+            console.log(msg);
+        };*/
         state = 'open';
     });
 
@@ -453,8 +459,11 @@ webrtc.XMPPPresentable = function (params) {
     var presence = 'unavailable';
 
     that.listen('signaling:received', function(message) {
-        console.log(message);
-        mercury.getSignalingChannel().routeSignal(message);
+        try {
+            mercury.getSignalingChannel().routeSignal(message);
+        } catch (e) {
+            console.log(e.message);
+        }
     });
 
     /**
@@ -623,6 +632,57 @@ webrtc.XMPPEndpoint = function (params) {
             'sender': mercury.user.getResourceFormat(),
             'payload': message
         }));
+    });
+
+    /**
+     * Create a new MediaSession for a voice and/or video call. If initiator is set to true,
+     * the MediaSession will start the call.
+     * @memberof! webrtc.XMPPEndpoint
+     * @method webrtc.XMPPEndpoint.startMedia
+     * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
+     * @param {boolean} Optional Whether the logged-in user initiated the call.
+     * @returns {webrtc.MediaSession}
+     * @fires webrtc.User#media:started
+     * @todo TODO: Don't make developer pass in initiator boolean.
+     * @todo TODO: Move this to Endpoint so we also don't have to pass the JID
+     * @todo TODO: Make this take a constraints object.
+     */
+    var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
+        if (initiator === undefined) {
+            initiator = true;
+        }
+        var id = that.getID();
+        var mediaSession = webrtc.MediaSession({
+            'username': mercury.user,
+            'remoteEndpoint': id,
+            'initiator': initiator,
+            'signalInitiate' : function (sdp) {
+                sdp.type = 'offer';
+                signalingChannel.sendSDP(id, sdp);
+            },
+            'signalAccept' : function (sdp) {
+                sdp.type = 'answer';
+                signalingChannel.sendSDP(id, sdp);
+            },
+            'signalCandidate' : function (oCan) {
+                if (oCan !== null) {
+                    signalingChannel.sendCandidate(id, oCan);
+                }
+            },
+            'signalTerminate' : function () {
+                signalingChannel.sendBye(id);
+            },
+            'signalReport' : function (oReport) {
+                console.log("Not sending report");
+                console.log(oReport);
+            }
+        });
+        mediaSession.start();
+        mercury.user.addMediaSession(mediaSession);
+        mediaSession.listen('hangup', function (locallySignaled) {
+            mercury.user.removeMediaSession(id);
+        });
+        return mediaSession;
     });
 
     return that;
@@ -856,55 +916,6 @@ webrtc.XMPPUser = function (params) {
     });
 
     /**
-     * Create a new MediaSession for a voice and/or video call. If initiator is set to true,
-     * the MediaSession will start the call.
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.getUserSession
-     * @param {string} contactJID The JID of the remote party.
-     * @param {boolean} initiator Whether the User is the initiator of the call.
-     * @returns {webrtc.UserSession}
-     * @fires webrtc.User#media:started
-     * @todo TODO: Don't make developer pass in initiator boolean.
-     * @todo TODO: Move this to Endpoint so we also don't have to pass the JID
-     * @todo TODO: Make this take a constraints object.
-     */
-    var startMedia = that.publicize('startMedia', function (contactJID, initiator) {
-        var mediaSession = webrtc.MediaSession({
-            'username': that.username,
-            'remoteEndpoint': contactJID,
-            'initiator': initiator,
-            'signalInitiate' : function (sdp) {
-                sdp.type = 'offer';
-                signalingChannel.sendSDP(contactJID, sdp);
-            },
-            'signalAccept' : function (sdp) {
-                sdp.type = 'answer';
-                signalingChannel.sendSDP(contactJID, sdp);
-            },
-            'signalCandidate' : function (oCan) {
-                if (oCan !== null) {
-                    signalingChannel.sendCandidate(contactJID, oCan);
-                }
-            },
-            'signalTerminate' : function () {
-                console.log('signalTerminate');
-                signalingChannel.sendBye(contactJID);
-            },
-            'signalReport' : function (oReport) {
-                console.log("Not sending report");
-                console.log(oReport);
-            }
-        });
-        mediaSessions.push(mediaSession);
-        mediaSession.start();
-        that.fire('media:started', mediaSession, contactJID);
-        mediaSession.listen('hangup', function (locallySignaled) {
-            removeMediaSession(contactJID);
-        });
-        return mediaSession;
-    });
-
-    /**
      * Get the active MediaSession.  Can there be multiple active MediaSessions? Should we timestamp
      * them and return the most recently used? Should we create a MediaSession if none exist?
      * @memberof! webrtc.XMPPUser
@@ -919,7 +930,6 @@ webrtc.XMPPUser = function (params) {
                 session = mediaSession;
             }
         });
-        console.log(mediaSessions);
         return session;
     });
 
@@ -939,10 +949,24 @@ webrtc.XMPPUser = function (params) {
         });
 
         if (session === null) {
-            session = startMedia(contactJID, false);
+            try {
+                session = contactList.get(contactJID).startMedia(mercury.getMediaSettings(), false);
+                addMediaSession(session);
+            } catch (e) {
+                console.log(e.message);
+            }
         }
-
         return session;
+    });
+
+    /**
+     * Associate the media session with this user.
+     * @memberof! webrtc.XMPPUser
+     * @method webrtc.XMPPUser.addMediaSession
+     */
+    var addMediaSession = that.publicize('addMediaSession', function (mediaSession) {
+        mediaSessions.push(mediaSession);
+        that.fire('media:started', mediaSession, mediaSession.getContactID());
     });
 
     /**

@@ -33,7 +33,7 @@ webrtc.Mercury = function (params) {
     var userSessions = [];
     var mediaSettings = {
         constraints: params.constraints || [{
-            video : true,
+            video : { mandatory: { minWidth: 640, minHeight: 480 } },
             audio : true,
             optional: [],
             mandatory: {}
@@ -195,11 +195,11 @@ webrtc.Mercury = function (params) {
     /**
      * Get an object containing the default media constraints and other media settings.
      * @memberof! webrtc.Mercury
-     * @method webrtc.Mercury.getDefaultMediaSettings
-     * @returns {object} An object containing the default media settings which will be used in
+     * @method webrtc.Mercury.getMediaSettings
+     * @returns {object} An object containing the media settings which will be used in
      * webrtc calls.
      */
-    var getDefaultMediaSettings = that.publicize('getDefaultMediaSettings', function () {
+    var getMediaSettings = that.publicize('getMediaSettings', function () {
         return mediaSettings;
     });
 

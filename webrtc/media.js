@@ -39,20 +39,13 @@ webrtc.MediaSession = function (params) {
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
-    var mediaSettings = mercury.getDefaultMediaSettings();
-    var constraints = mediaSettings.constraints || {
-        'video' : { mandatory: { minWidth: 640, minHeight: 480 } },
-        'audio' : true,
-        'optional': [],
-        'mandatory': {}
-    };
-    var servers = mediaSettings.servers || [{
-        'iceServers' : [
-            /* Can only have one server listed here as of yet. */
-            //{ 'url': 'stun:stun.l.google.com:19302' },
-            { 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'}
-        ]
-    }];
+    var mediaSettings = mercury.getMediaSettings();
+    if (params.mediaSettings && params.mediaSettings.constraints) {
+        mediaSettings.constraints = params.mediaSettings.constraints;
+    }
+    if (params.mediaSettings && params.mediaSettings.servers) {
+        mediaSettings.servers = params.mediaSettings.servers;
+    }
     var report = {
         'startCallCount' : 0,
         'startCount' : 0,
@@ -80,6 +73,7 @@ webrtc.MediaSession = function (params) {
         }
         report.startCount += 1;
         console.log("calling requestMedia from start.");
+        console.log("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
         requestMedia();
     });
 
@@ -140,39 +134,39 @@ webrtc.MediaSession = function (params) {
         var toDelete = [];
         report.callStarted = now.getTime();
         try {
-            pc = new webkitRTCPeerConnection(servers, null);
+            pc = new webkitRTCPeerConnection(mediaSettings.servers, null);
         } catch (e) {
             /* TURN is not supported, delete them from the array.
              * TODO: Find out when we can remove this workaround
              */
-            for (var i in servers.iceServers) {
-                if (servers.iceServers.hasOwnProperty(i)) {
-                    if (servers.iceServers[i].url.toLowerCase().indexOf('turn') > -1) {
+            for (var i in mediaSettings.servers.iceServers) {
+                if (mediaSettings.servers.iceServers.hasOwnProperty(i)) {
+                    if (mediaSettings.servers.iceServers[i].url.toLowerCase().indexOf('turn') > -1){
                         toDelete.push(i);
                     }
                 }
             }
             toDelete.sort(function (a, b) { return b - a; });
             toDelete.each(function (index) {
-                servers.iceServers.splice(index);
+                mediaSettings.servers.iceServers.splice(index);
             });
-            pc = new webkitRTCPeerConnection(servers, null);
+            pc = new webkitRTCPeerConnection(mediaSettings.servers, null);
         }
         pc.onaddstream = onRemoteStreamAdded;
         pc.onremovestream = onRemoteStreamRemoved;
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
-        pc.oniceconnectionstatechange = function (p) {
+        /*pc.oniceconnectionstatechange = function (p) {
             console.log('oniceconnectionstatechange');
             console.log(p);
-        };
+        };*/
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
         if (savedOffer) {
             processOffer(savedOffer);
             savedOffer = null;
         }
-        constraints.forOwn(function (oneConstraints) {
+        mediaSettings.constraints.forOwn(function (oneConstraints) {
             try {
                 console.log("Running getUserMedia with constraints");
                 console.log(oneConstraints);
@@ -242,7 +236,6 @@ webrtc.MediaSession = function (params) {
         });
         that.fire('stream:remote:received', mediaStream.getURL());
         mediaStreams.push(mediaStream);
-        console.log(mediaStreams);
     };
 
     /**
@@ -565,6 +558,16 @@ webrtc.MediaSession = function (params) {
      */
     var isInitiator = that.publicize('isInitiator', function () {
         return that.initiator;
+    });
+
+    /**
+     * Return the ID of the remote endpoint.
+     * @memberof! webrtc.MediaSession
+     * @method webrtc.MediaSession.getContactID
+     * @returns {string}
+     */
+    var getContactID = that.publicize('getContactID', function () {
+        return remoteEndpoint;
     });
 
     /**

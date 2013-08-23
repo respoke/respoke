@@ -168,11 +168,9 @@ webrtc.Endpoint = function (params) {
     * @method webrtc.Endpoint.startMedia
     * @param {object} mediaSettings Group of media settings from which WebRTC constraints
     * will be generated and with which the SDP will be modified.
-    * @param {successCallback} onSuccess
-    * @param {failureCallback} onFailure
     * @returns {webrtc.MediaSession}
     */
-   var startMedia = that.publicize('startMedia', function (mediaSettings, onSuccess, onFailure) {
+   var startMedia = that.publicize('startMedia', function (mediaSettings) {
    });
 
    /**
