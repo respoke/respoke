@@ -40,12 +40,15 @@ webrtc.MediaSession = function (params) {
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
     var mediaSettings = mercury.getMediaSettings();
+
     if (params.mediaSettings && params.mediaSettings.constraints) {
         mediaSettings.constraints = params.mediaSettings.constraints;
     }
+
     if (params.mediaSettings && params.mediaSettings.servers) {
         mediaSettings.servers = params.mediaSettings.servers;
     }
+
     var report = {
         'startCallCount' : 0,
         'startCount' : 0,
@@ -98,14 +101,18 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onReceiveUserMedia = function (stream) {
+        var mediaStream = null;
+
         log.debug('User gave permission to use media.');
+        log.trace(onReceiveUserMedia);
         log.trace(stream);
+
         if (!pc === null) {
             log.error("Peer connection is null!");
             return;
         }
         pc.addStream(stream);
-        var mediaStream = webrtc.MediaStream({
+        mediaStream = webrtc.MediaStream({
             'stream': stream,
             'isLocal': true
         });
@@ -131,13 +138,17 @@ webrtc.MediaSession = function (params) {
     var requestMedia = function () {
         var now = new Date();
         var toDelete = [];
+
         report.callStarted = now.getTime();
+        log.trace(requestMedia);
+
         try {
             pc = new webkitRTCPeerConnection(mediaSettings.servers, null);
         } catch (e) {
             /* TURN is not supported, delete them from the array.
              * TODO: Find out when we can remove this workaround
              */
+            log.debug("Removing TURN servers.");
             for (var i in mediaSettings.servers.iceServers) {
                 if (mediaSettings.servers.iceServers.hasOwnProperty(i)) {
                     if (mediaSettings.servers.iceServers[i].url.toLowerCase().indexOf('turn') > -1){
@@ -151,6 +162,7 @@ webrtc.MediaSession = function (params) {
             });
             pc = new webkitRTCPeerConnection(mediaSettings.servers, null);
         }
+
         pc.onaddstream = onRemoteStreamAdded;
         pc.onremovestream = onRemoteStreamRemoved;
         pc.onicecandidate = onIceCandidate;
@@ -161,10 +173,12 @@ webrtc.MediaSession = function (params) {
         };*/
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
+
         if (savedOffer) {
             processOffer(savedOffer);
             savedOffer = null;
         }
+
         mediaSettings.constraints.forOwn(function (oneConstraints) {
             try {
                 log.debug("Running getUserMedia with constraints");
@@ -201,6 +215,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var acceptCall = function () {
+        log.trace('acceptCall');
         if (savedOffer) {
             processOffer(savedOffer);
             savedOffer = null;
@@ -227,8 +242,11 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onRemoteStreamAdded = function (evt) {
+        var mediaStream = null;
+
         log.trace('received remote media');
-        var mediaStream = webrtc.MediaStream({
+
+        mediaStream = webrtc.MediaStream({
             'stream': evt.stream,
             'isLocal': false
         });
@@ -285,6 +303,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onNegotiationNeeded = function (oCan) {
+        log.warn("Negotiation needed.");
     }
 
     /**
@@ -300,6 +319,7 @@ webrtc.MediaSession = function (params) {
          * never has a valid PeerConnection at a time when we don't
          * have one. */
         var can = null;
+        log.trace('Processing candidate queues.');
         for (var i = 0; i <= candidateSendingQueue.length; i += 1) {
             can = candidateSendingQueue[i];
             signalCandidate(can);
@@ -458,12 +478,17 @@ webrtc.MediaSession = function (params) {
      */
     var isActive = that.publicize('isActive', function () {
         var inProgress = false;
+
+        log.trace('isActive');
+
         if (!pc || receivedBye === true) {
             return false;
         }
+
         inProgress = pc.readyState in ['new', 'active'];
         log.info('readyState is ' + pc.readyState + '. Call is ' +
             (inProgress ? '' : 'not ') + 'in progress.');
+
         return inProgress;
     });
 
@@ -477,6 +502,7 @@ webrtc.MediaSession = function (params) {
     var onOffer = function (oSession) {
         log.debug('got offer');
         log.debug(oSession);
+
         savedOffer = oSession;
         if (!that.initiator) {
             report.sdpsReceived.push(oSession);
@@ -497,10 +523,12 @@ webrtc.MediaSession = function (params) {
     var onAnswer = function (oSession) {
         log.debug('remote side sdp is');
         log.debug(oSession);
+
         savedOffer = oSession;
         receivedAnswer = true;
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
+
         pc.setRemoteDescription(new RTCSessionDescription(oSession), processQueues, function (p) {
             log.error('set remote desc of answer failed');
             report.callStoppedReason = 'setRemoteDescription failed at answer.';
@@ -519,6 +547,7 @@ webrtc.MediaSession = function (params) {
      */
     var processCandidate = function (oCan) {
         if (!oCan || oCan.candidate === null) {
+            log.info("End of candidates.");
             return;
         }
         if (!oCan.hasOwnProperty('sdpMLineIndex') || !oCan.candidate) {
@@ -527,7 +556,7 @@ webrtc.MediaSession = function (params) {
         }
         if (that.initiator && !receivedAnswer) {
             candidateReceivingQueue.push(oCan);
-            log.debug('adding to queue');
+            log.debug('Queueing a candidate.');
             return;
         }
         try {
@@ -587,11 +616,13 @@ webrtc.MediaSession = function (params) {
      */
     var getLocalStreams = that.publicize('getLocalStreams', function () {
         var streams = [];
+
         mediaStreams.forOwn(function (stream) {
             if (stream.isLocal()) {
                 streams.push(stream);
             }
         });
+
         return streams;
     });
 
@@ -603,11 +634,13 @@ webrtc.MediaSession = function (params) {
      */
     var getRemoteStreams = that.publicize('getRemoteStreams', function () {
         var streams = [];
+
         mediaStreams.forOwn(function (stream) {
             if (!stream.isLocal()) {
                 streams.push(stream);
             }
         });
+
         return streams;
     });
 
@@ -648,6 +681,8 @@ webrtc.MediaSession = function (params) {
      * @fires webrtc.MediaSession#video:muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
+        log.trace('muting video');
+
         mediaStreams.forOwn(function (stream) {
             stream.muteVideo();
         });
@@ -661,6 +696,8 @@ webrtc.MediaSession = function (params) {
      * @fires webrtc.MediaSession#video:unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
+        log.trace('unmuting video');
+
         mediaStreams.forOwn(function (stream) {
             stream.unmuteVideo();
         });
@@ -674,6 +711,8 @@ webrtc.MediaSession = function (params) {
      * @fires webrtc.MediaSession#audio:muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
+        log.trace('muting audio');
+
         mediaStreams.forOwn(function (stream) {
             stream.muteAudio();
         });
@@ -687,6 +726,8 @@ webrtc.MediaSession = function (params) {
      * @fires webrtc.MediaSession#audio:unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
+        log.trace('unmuting audio');
+
         mediaStreams.forOwn(function (stream) {
             stream.unmuteAudio();
         });
@@ -703,6 +744,7 @@ webrtc.MediaSession = function (params) {
         receivedBye = true;
         stopMedia();
     }
+
     signalingChannel.listen('received:offer', onOffer);
     signalingChannel.listen('received:answer', onAnswer);
     signalingChannel.listen('received:candidate', processCandidate);

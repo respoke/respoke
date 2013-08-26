@@ -28,6 +28,7 @@ webrtc.XMPPSignalingChannel = function (params) {
      */
     var open = that.publicize('open', function () {
         stropheConnection = new Strophe.Connection(BOSH_SERVICE);
+        log.trace("Signaling connection open.");
         /*stropheConnection.rawInput = function (msg) {
             log.trace(msg);
         };
@@ -44,6 +45,7 @@ webrtc.XMPPSignalingChannel = function (params) {
      */
     var close = that.publicize('close', function () {
         stropheConnection.disconnect();
+        log.trace("Signaling connection closed.");
         state = 'closed';
     });
 
@@ -87,6 +89,9 @@ webrtc.XMPPSignalingChannel = function (params) {
      */
     var sendPresence = that.publicize('sendPresence', function (presenceString) {
         var pres = null;
+
+        log.trace("Signaling sendPresence");
+
         switch (presenceString) {
         case "":
         case null:
@@ -116,10 +121,14 @@ webrtc.XMPPSignalingChannel = function (params) {
      * @param {string} myJID User's JID.
      */
     var requestRoster = that.publicize('requestRoster', function (myJID) {
+        var rosterStanza = null;
+
+        log.trace("requestRoster");
+
         if (!myJID) {
             throw new Error("Can't request roster without JID.");
         }
-        var rosterStanza = $iq({
+        rosterStanza = $iq({
             'from': myJID,
             'type': 'get',
             'id': 'roster_1'
@@ -264,6 +273,7 @@ webrtc.XMPPSignalingChannel = function (params) {
         var json = {};
         var sig = null;
         var signalingElements = msgXML.getElementsByTagName('signaling');
+
         if (signalingElements.length === 0) {
             return null;
         }
@@ -293,6 +303,7 @@ webrtc.XMPPSignalingChannel = function (params) {
     var routeSignal = that.publicize('routeSignal', function (message) {
         var mediaSession = mercury.user.getMediaSessionByContact(message.sender);
         var signal = message.getPayload();
+
         switch (signal.type) {
         case 'offer':
         case 'answer':
@@ -329,7 +340,7 @@ webrtc.XMPPSignalingChannel = function (params) {
      * @param {string} password The XMPP password.
      * @param {function} onStatusChange A function to which to call on every state change.
      */
-    var authenticate = that.publicize('authenticate', function (username, password, onStatusChange) {
+    var authenticate = that.publicize('authenticate', function (username, password, onStatusChange){
         stropheConnection.connect(username, password, onStatusChange);
     });
 
@@ -366,6 +377,9 @@ webrtc.XMPPIdentityProvider = function (params) {
      */
     var login = that.publicize('login', function (username, password) {
         var deferred = null;
+
+        log.trace("User login");
+
         if (signalingChannel === null) {
             signalingChannel = mercury.getSignalingChannel();
         }
@@ -375,6 +389,7 @@ webrtc.XMPPIdentityProvider = function (params) {
         deferred = Q.defer();
         signalingChannel.authenticate(username, password, function (statusCode) {
             var user = null;
+
             if (statusCode === Strophe.Status.CONNECTED) {
                 log.info('Strophe is connected.');
                 user = webrtc.XMPPUser({
@@ -407,6 +422,7 @@ webrtc.XMPPIdentityProvider = function (params) {
      * @method webrtc.XMPPIdentityProvider.logout
      */
     var logout = that.publicize('logout', function () {
+        log.trace("User logout");
         signalingChannel.listen('closed', function () {
             loggedIn = false;
         });
@@ -644,11 +660,15 @@ webrtc.XMPPEndpoint = function (params) {
      * @returns {webrtc.MediaSession}
      */
     var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
+        var id = that.getID();
+        var mediaSession = null;
+
+        log.trace('startMedia');
         if (initiator === undefined) {
             initiator = true;
         }
-        var id = that.getID();
-        var mediaSession = webrtc.MediaSession({
+
+        mediaSession = webrtc.MediaSession({
             'username': mercury.user,
             'remoteEndpoint': id,
             'initiator': initiator,
@@ -673,6 +693,7 @@ webrtc.XMPPEndpoint = function (params) {
                 log.debug(oReport);
             }
         });
+
         mediaSession.start();
         mercury.user.addMediaSession(mediaSession);
         mediaSession.listen('hangup', function (locallySignaled) {
@@ -731,7 +752,9 @@ webrtc.XMPPContact = function (params) {
      * @fires webrtc.XMPPPresentable#presence
      */
     var resolvePresence = function () {
+        var options = [];
         resources.forOwn(function (resource) {
+            options.push(resource.presence);
             switch (resource.presence) {
             case 'chat':
                 presence = resource.presence;
@@ -761,8 +784,10 @@ webrtc.XMPPContact = function (params) {
         if (!presence) {
             presence = 'unavailable';
         }
+        log.debug("presences " + options.join(', ') + " resolved to " + presence);
         that.fire('presence', presence);
     };
+
 
     return that;
 }; // End webrtc.XMPPContact
@@ -815,16 +840,22 @@ webrtc.XMPPUser = function (params) {
 
     // listen to webrtc.ContactList#presence -- the contacts's presences
     contactList.listen('presence', function (presenceMessage) {
+        var presPayload = null;
+        var from = null;
+        var jid = null;
+        var resource = null;
+        var contact = null;
+
         try {
-            var presPayload = presenceMessage.getPayload();
+            presPayload = presenceMessage.getPayload();
             if (presPayload.presence === 'error') {
                 return;
             }
 
-            var from = presenceMessage.sender.split('/');
-            var jid = from[0];
-            var resource = from[1];
-            var contact = this.get(jid);
+            from = presenceMessage.sender.split('/');
+            jid = from[0];
+            resource = from[1];
+            contact = this.get(jid);
 
             if (jid === that.jid && resource !== that.resource) {
                 // Found another of our own user's resources.
@@ -839,9 +870,9 @@ webrtc.XMPPUser = function (params) {
                 return;
             }
             contact.setPresence(presPayload.presence, resource);
-        } catch (f) {
-            log.error("Couldn't update presence for contact " + that.jid + ": " + f.message);
-            log.error(f.stack);
+        } catch (e) {
+            log.error("Couldn't update presence for contact " + that.jid + ": " + e.message);
+            log.error(e.stack);
             log.error(presenceMessage);
         }
     });
@@ -854,6 +885,7 @@ webrtc.XMPPUser = function (params) {
      */
     var requestContacts = that.publicize('requestContacts', function () {
         var deferred = Q.defer();
+        var itemElements = [];
         if (!userSession.isLoggedIn()) {
             deferred.reject(new Error("Can't request contacts unless logged in."));
             return deferred.promise;
@@ -867,7 +899,8 @@ webrtc.XMPPUser = function (params) {
          */
         signalingChannel.addHandler('iq', function (stanza) {
             log.debug(stanza);
-            var itemElements = $j(stanza).find("item");
+            itemElements = $j(stanza).find("item");
+
             if (itemElements.length === 0) {
                 deferred.reject(new Error("No items in the roster."));
                 return true;
@@ -878,9 +911,11 @@ webrtc.XMPPUser = function (params) {
                 var jid = $j(this).attr('jid');
                 var name = $j(this).attr('name');
                 var contact = null;
+
                 if (!(!sub || sub === 'to' || sub === 'both')) {
                     return;
                 }
+
                 try {
                     contact = new webrtc.XMPPContact({
                         'jid': jid,
@@ -1024,21 +1059,24 @@ webrtc.XMPPUser = function (params) {
          * messages. We'll just put it here since messages tend to go along with presence.
          */
         signalingChannel.addHandler('message', function (stanza) {
-            log.debug(stanza);
             var from = stanza.getAttribute('from');
             var type = stanza.getAttribute('type');
+            var fromPieces = [];
+            var contact = null;
+            var params = null;
+            log.debug(stanza);
             if (['chat', 'signaling', 'groupchat'].indexOf(type) === -1) {
                 log.warn('wrong type ' + type);
                 return true;
             }
 
-            var fromPieces = from.split('/');
-            var contact = contactList.get(fromPieces[0]);
+            fromPieces = from.split('/');
+            contact = contactList.get(fromPieces[0]);
             if (!contact) {
                 log.info("no contact");
                 return true;
             }
-            var params = {
+            params = {
                 'rawMessage': stanza,
                 'recipient': that,
                 'sender': contact.getResourceFormat()
