@@ -82,8 +82,8 @@ webrtc.EventThrower = function (params) {
             try {
                listener.apply(that, args);
             } catch (e) {
-               console.log('Error in ' + that.className + "#" + eventType + ": " + e.message);
-               console.log(e.stack);
+               log.error('Error in ' + that.className + "#" + eventType + ": " + e.message);
+               log.error(e.stack);
             }
          }
       });

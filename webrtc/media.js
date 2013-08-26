@@ -72,8 +72,8 @@ webrtc.MediaSession = function (params) {
             throw new Error("Can't use a MediaSession without username.");
         }
         report.startCount += 1;
-        console.log("calling requestMedia from start.");
-        console.log("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
+        log.trace("calling requestMedia from start.");
+        log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
         requestMedia();
     });
 
@@ -83,12 +83,11 @@ webrtc.MediaSession = function (params) {
      * @method webrtc.MediaSession.startCall
      */
     var startCall = function () {
-        console.log('startCall');
+        log.trace('startCall');
         report.startCallCount += 1;
-        console.log('creating offer');
+        log.info('creating offer');
         pc.createOffer(saveOfferAndSend, function (p) {
-            console.log('createOffer failed');
-            console.log(p);
+            log.error('createOffer failed');
         }, null);
     };
 
@@ -99,10 +98,10 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onReceiveUserMedia = function (stream) {
-        console.log('User gave permission to use media.');
-        console.log(stream);
+        log.debug('User gave permission to use media.');
+        log.trace(stream);
         if (!pc === null) {
-            console.log("Peer connection is null!");
+            log.error("Peer connection is null!");
             return;
         }
         pc.addStream(stream);
@@ -157,8 +156,8 @@ webrtc.MediaSession = function (params) {
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         /*pc.oniceconnectionstatechange = function (p) {
-            console.log('oniceconnectionstatechange');
-            console.log(p);
+            log.trace('oniceconnectionstatechange');
+            log.trace(p);
         };*/
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
@@ -168,12 +167,11 @@ webrtc.MediaSession = function (params) {
         }
         mediaSettings.constraints.forOwn(function (oneConstraints) {
             try {
-                console.log("Running getUserMedia with constraints");
-                console.log(oneConstraints);
+                log.debug("Running getUserMedia with constraints");
+                log.debug(oneConstraints);
                 navigator.webkitGetUserMedia(oneConstraints, onReceiveUserMedia, onUserMediaError);
             } catch (e) {
-                console.log("Couldn't get user media.");
-                console.log(e);
+                log.error("Couldn't get user media: " + e.message);
             }
         });
     };
@@ -185,12 +183,12 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onUserMediaError = function (p) {
-        console.log('onUserMediaError');
+        log.trace('onUserMediaError');
         if (p.code === 1) {
-            console.log("Permission denied.");
+            log.warn("Permission denied.");
             report.callStoppedReason = 'Permission denied.';
         } else {
-            console.log(p);
+            log.warn(p);
             report.callStoppedReason = p.code;
         }
         stopMedia(!that.initiator);
@@ -207,7 +205,7 @@ webrtc.MediaSession = function (params) {
             processOffer(savedOffer);
             savedOffer = null;
         } else {
-            console.log("Can't process offer--no SDP!");
+            log.error("Can't process offer--no SDP!");
             stopMedia(true);
         }
     };
@@ -219,7 +217,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onRemoteStreamRemoved = function (evt) {
-        console.log('pc event: remote stream removed');
+        log.trace('pc event: remote stream removed');
     };
 
     /**
@@ -229,7 +227,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onRemoteStreamAdded = function (evt) {
-        console.log('received remote media');
+        log.trace('received remote media');
         var mediaStream = webrtc.MediaStream({
             'stream': evt.stream,
             'isLocal': false
@@ -245,8 +243,8 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onStateChange = function (p, a) {
-        console.log('iceState is ' + p.currentTarget.iceState);
-        console.log('readyState is ' + p.currentTarget.readyState);
+        log.trace('iceState is ' + p.currentTarget.iceState);
+        log.trace('readyState is ' + p.currentTarget.readyState);
     };
 
     /**
@@ -256,8 +254,8 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onIceChange = function (p) {
-        console.log('pc event: ice changed');
-        console.log(p);
+        log.trace('pc event: ice changed');
+        log.trace(p);
     };
 
     /**
@@ -270,8 +268,8 @@ webrtc.MediaSession = function (params) {
         if (!oCan.candidate) {
             return;
         }
-        //console.log("original browser-generated candidate object");
-        //console.log(oCan.candidate);
+        log.trace("original browser-generated candidate object");
+        log.trace(oCan.candidate);
         if (that.initiator && !receivedAnswer) {
             candidateSendingQueue.push(oCan.candidate);
         } else if (!that.initiator) {
@@ -309,8 +307,8 @@ webrtc.MediaSession = function (params) {
         candidateSendingQueue = [];
         for (var i = 0; i <= candidateReceivingQueue.length; i += 1) {
             can = candidateReceivingQueue[i];
-            console.log("Calling processCandidate in processQueues");
-            console.log(can);
+            log.trace("Calling processCandidate in processQueues");
+            log.trace(can);
             processCandidate(can);
         }
         candidateReceivingQueue = [];
@@ -326,14 +324,14 @@ webrtc.MediaSession = function (params) {
      */
     var saveOfferAndSend = function (oSession) {
         oSession.type = 'offer';
-        console.log('setting and sending initiate');
-        console.log(oSession);
+        log.debug('setting and sending initiate');
+        log.debug(oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function (p) {
             signalInitiate(oSession);
         }, function (p) {
-            console.log('setLocalDescription failed');
-            console.log(p);
+            log.error('setLocalDescription failed');
+            log.error(p);
         });
     };
 
@@ -347,14 +345,14 @@ webrtc.MediaSession = function (params) {
      */
     var saveAnswerAndSend = function (oSession) {
         oSession.type = 'answer';
-        console.log('setting and sending accept');
-        console.log(oSession);
+        log.debug('setting and sending accept');
+        log.debug(oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function (p) {
             signalAccept(oSession);
         }, function (p) {
-            console.log('setLocalDescription failed');
-            console.log(p);
+            log.error('setLocalDescription failed');
+            log.error(p);
         });
     };
 
@@ -371,7 +369,7 @@ webrtc.MediaSession = function (params) {
         } else {
             report.callStoppedReason = 'Remote side hung up.';
         }
-        console.log('Callee busy or or call rejected:' + report.callStoppedReason);
+        log.info('Callee busy or or call rejected:' + report.callStoppedReason);
         stopMedia(false);
     };
 
@@ -388,11 +386,11 @@ webrtc.MediaSession = function (params) {
         if (pc === null) {
             return;
         }
-        console.log('hanging up');
+        log.debug('hanging up');
 
         sendSignal = (typeof sendSignal === 'boolean' ? sendSignal : true);
         if (!receivedBye && sendSignal) {
-            console.log('sending bye');
+            log.info('sending bye');
             signalTerminate();
         }
 
@@ -428,25 +426,27 @@ webrtc.MediaSession = function (params) {
      */
     var processOffer = function (oSession) {
         oSession.type = 'offer';
-        console.log('processOffer');
-        console.log(oSession);
+        log.trace('processOffer');
+        log.trace(oSession);
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oSession), function () {
-                console.log('set remote desc of offer succeeded');
+                log.debug('set remote desc of offer succeeded');
                 pc.createAnswer(saveAnswerAndSend, function (p) {
-                    console.log("Error creating SDP answer.");
+                    log.error("Error creating SDP answer.");
                     report.callStoppedReason = 'Error creating SDP answer.';
-                    console.log(p);
+                    log.error(p);
                 });
                 that.savedOffer = null;
             }, function (p) {
-                console.log('set remote desc of offer failed');
+                log.error('set remote desc of offer failed');
                 report.callStoppedReason = 'setLocalDescr failed at offer.';
-                console.log(oSession);
-                console.log(p);
+                log.error(oSession);
+                log.error(p);
                 that.stopMedia();
             });
-        } catch (e) { console.log("e: " + e.message); }
+        } catch (e) {
+            log.error("error processing offer: " + e.message);
+        }
     };
 
     /**
@@ -462,7 +462,7 @@ webrtc.MediaSession = function (params) {
             return false;
         }
         inProgress = pc.readyState in ['new', 'active'];
-        console.log('readyState is ' + pc.readyState + '. Call is ' +
+        log.info('readyState is ' + pc.readyState + '. Call is ' +
             (inProgress ? '' : 'not ') + 'in progress.');
         return inProgress;
     });
@@ -475,15 +475,14 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onOffer = function (oSession) {
-        console.log('got offer');
-        console.log(oSession);
+        log.debug('got offer');
+        log.debug(oSession);
         savedOffer = oSession;
         if (!that.initiator) {
             report.sdpsReceived.push(oSession);
             report.lastSDPString = oSession.sdp;
         } else {
-            console.log('Got initiate in precall state.');
-            console.log(pc);
+            log.warn('Got initiate in precall state.');
             signalTerminate();
         }
     };
@@ -496,16 +495,16 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onAnswer = function (oSession) {
-        console.log('remote side sdp is');
-        console.log(oSession);
+        log.debug('remote side sdp is');
+        log.debug(oSession);
         savedOffer = oSession;
         receivedAnswer = true;
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
         pc.setRemoteDescription(new RTCSessionDescription(oSession), processQueues, function (p) {
-            console.log('set remote desc of answer failed');
+            log.error('set remote desc of answer failed');
             report.callStoppedReason = 'setRemoteDescription failed at answer.';
-            console.log(oSession);
+            log.error(oSession);
             that.stopMedia();
         });
     };
@@ -523,19 +522,19 @@ webrtc.MediaSession = function (params) {
             return;
         }
         if (!oCan.hasOwnProperty('sdpMLineIndex') || !oCan.candidate) {
-            console.log("processCandidate got wrong format!");
-            console.log(oCan);
+            log.warn("processCandidate got wrong format!");
+            log.warn(oCan);
         }
         if (that.initiator && !receivedAnswer) {
             candidateReceivingQueue.push(oCan);
-            console.log('adding to queue');
+            log.debug('adding to queue');
             return;
         }
         try {
             pc.addIceCandidate(new RTCIceCandidate(oCan));
         } catch (e) {
-            console.log('err in processCandidate: ' + e.message);
-            console.log(oCan);
+            log.error("Couldn't add ICE candidate: " + e.message);
+            log.error(oCan);
         }
         report.candidatesReceived.push(oCan);
     };

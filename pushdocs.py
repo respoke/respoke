@@ -184,7 +184,8 @@ class PushDocs:
                     if self.args['v']:
                         print newpage['title'], " created"
                         self.processed['created'] += 1
-                except:
+                except Error as e:
+                    print "Couldn't store the page:", e.strerror
                     pass
 
 
@@ -199,8 +200,6 @@ def main(argv):
 
     a = PushDocs(argv)
     a.update()
-    if a.args['debug']:
-        return 0
     if a.args['v'] is True:
         for k in a.processed:
             print k, " ", a.processed[k]

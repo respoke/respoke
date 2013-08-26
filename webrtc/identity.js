@@ -139,7 +139,7 @@ webrtc.ContactList = function (params) {
 
         values = values.sort(function (a, b) {
             if (!(sortField in a) || !(sortField in b)) {
-                console.log("sortField doesn't exist in both objects.");
+                log.warn("sortField doesn't exist in both objects.");
                 return 0;
             } else if (webrtc.isNumber(a[sortField]) && webrtc.isNumber(b[sortField])) {
                 return a[sortField] - b[sortField];

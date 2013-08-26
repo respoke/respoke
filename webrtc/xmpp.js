@@ -29,10 +29,10 @@ webrtc.XMPPSignalingChannel = function (params) {
     var open = that.publicize('open', function () {
         stropheConnection = new Strophe.Connection(BOSH_SERVICE);
         /*stropheConnection.rawInput = function (msg) {
-            console.log(msg);
+            log.trace(msg);
         };
         stropheConnection.rawOutput = function (msg) {
-            console.log(msg);
+            log.trace(msg);
         };*/
         state = 'open';
     });
@@ -151,19 +151,19 @@ webrtc.XMPPSignalingChannel = function (params) {
     var send = that.publicize('send', function (recipient, msgObj) {
         var text = '';
         if (!msgObj) {
-            console.log("Can't send, no message.");
+            log.warn("Can't send, no message.");
             return;
         }
         if (!recipient) {
-            console.log("Can't send, recipient is " + recipient);
+            log.warn("Can't send, recipient is " + recipient);
             return;
         }
         if (recipient === stropheConnection.jid) {
-            console.log("Can't send, recipient is me!");
+            log.warn("Can't send, recipient is me!");
             return;
         }
 
-        console.log('sending a ' + msgObj.type);
+        log.debug('sending a ' + msgObj.type);
         text = $msg({
             'to': recipient,
             'from': stropheConnection.jid,
@@ -171,7 +171,7 @@ webrtc.XMPPSignalingChannel = function (params) {
         }).c('signaling', {
             'xmlns': NS
         }).t(escape(JSON.stringify(msgObj))).tree();
-        console.log(text);
+        log.debug(text);
         stropheConnection.send(text);
     });
 
@@ -196,7 +196,7 @@ webrtc.XMPPSignalingChannel = function (params) {
             'xmlns': NS,
             'type': 'candidate'
         }).t(escape(JSON.stringify(candObj))).tree();
-        console.log(text);
+        log.debug(text);
         stropheConnection.send(text);
     });
 
@@ -221,7 +221,7 @@ webrtc.XMPPSignalingChannel = function (params) {
             'xmlns': NS,
             'type': sdpObj.type
         }).t(escape(JSON.stringify(sdpObj))).tree();
-        console.log(text);
+        log.debug(text);
         stropheConnection.send(text);
     });
 
@@ -249,7 +249,7 @@ webrtc.XMPPSignalingChannel = function (params) {
             'type': 'bye',
             'reason': reason
         }))).tree();
-        console.log(text);
+        log.debug(text);
         stropheConnection.send(text);
     });
 
@@ -278,7 +278,7 @@ webrtc.XMPPSignalingChannel = function (params) {
             json.value = JSON.parse(json.value);
         } catch (e) {
             json.value = null;
-            console.log("Couldn't parse JSON from msg received: " + e.message);
+            log.warn("Couldn't parse JSON from msg received: " + e.message);
         }
 
         return json;
@@ -301,11 +301,11 @@ webrtc.XMPPSignalingChannel = function (params) {
             that.fire('received:' + signal.type, signal.value);
             break;
         case 'error':
-            console.log("Received an error");
-            console.log(signal);
+            log.warn("Received an error");
+            log.warn(signal);
             break;
         default:
-            console.log("Don't know what to do with msg of unknown type " + signal.type);
+            log.error("Don't know what to do with msg of unknown type " + signal.type);
             break;
         }
     });
@@ -376,7 +376,7 @@ webrtc.XMPPIdentityProvider = function (params) {
         signalingChannel.authenticate(username, password, function (statusCode) {
             var user = null;
             if (statusCode === Strophe.Status.CONNECTED) {
-                console.log('Strophe is connected.');
+                log.info('Strophe is connected.');
                 user = webrtc.XMPPUser({
                     'jid': username,
                     'loggedIn': true
@@ -395,7 +395,7 @@ webrtc.XMPPIdentityProvider = function (params) {
             } else if (statusCode === Strophe.Status.CONNECTING) {
             } else if (statusCode === Strophe.Status.DISCONNECTING) {
             } else {
-                console.log("unknown strophe connection status. " + statusCode);
+                log.warn("unknown strophe connection status. " + statusCode);
             }
         });
         return deferred.promise;
@@ -462,7 +462,7 @@ webrtc.XMPPPresentable = function (params) {
         try {
             mercury.getSignalingChannel().routeSignal(message);
         } catch (e) {
-            console.log(e.message);
+            log.error("Couldn't route message: " + e.message);
         }
     });
 
@@ -669,8 +669,8 @@ webrtc.XMPPEndpoint = function (params) {
                 signalingChannel.sendBye(id);
             },
             'signalReport' : function (oReport) {
-                console.log("Not sending report");
-                console.log(oReport);
+                log.debug("Not sending report");
+                log.debug(oReport);
             }
         });
         mediaSession.start();
@@ -801,10 +801,10 @@ webrtc.XMPPUser = function (params) {
     that.listen("presence", function (presenceString) {
         presence = presenceString;
         if (signalingChannel && signalingChannel.isOpen()) {
-            console.log('sending my presence update ' + presenceString);
+            log.info('sending my presence update ' + presenceString);
             signalingChannel.sendPresence(presenceString);
         } else {
-            console.log("Can't send my presence: no signaling channel.");
+            log.error("Can't send my presence: no signaling channel.");
         }
     });
 
@@ -840,9 +840,9 @@ webrtc.XMPPUser = function (params) {
             }
             contact.setPresence(presPayload.presence, resource);
         } catch (f) {
-            console.log(f.message);
-            console.log(f.stack);
-            console.log(presenceMessage);
+            log.error("Couldn't update presence for contact " + that.jid + ": " + f.message);
+            log.error(f.stack);
+            log.error(presenceMessage);
         }
     });
 
@@ -866,7 +866,7 @@ webrtc.XMPPUser = function (params) {
          * to the promise that requestContacts must return, so it is necessary.
          */
         signalingChannel.addHandler('iq', function (stanza) {
-            console.log(stanza);
+            log.debug(stanza);
             var itemElements = $j(stanza).find("item");
             if (itemElements.length === 0) {
                 deferred.reject(new Error("No items in the roster."));
@@ -888,7 +888,7 @@ webrtc.XMPPUser = function (params) {
                         'subscription': sub
                     });
                 } catch (e) {
-                    console.log("Couldn't create contact: " + e.message);
+                    log.error("Couldn't create contact: " + e.message);
                     return;
                 }
                 contactList.add(contact);
@@ -949,7 +949,7 @@ webrtc.XMPPUser = function (params) {
                 session = contactList.get(contactJID).startMedia(mercury.getMediaSettings(), false);
                 addMediaSession(session);
             } catch (e) {
-                console.log(e.message);
+                log.error("Couldn't create MediaSession: " + e.message);
             }
         }
         return session;
@@ -987,7 +987,7 @@ webrtc.XMPPUser = function (params) {
         });
 
         if (toDelete === null) {
-            console.log("Couldn't find mediaSession in removeMediaSession");
+            log.warn("Couldn't find mediaSession in removeMediaSession");
             return;
         }
 
@@ -1006,7 +1006,7 @@ webrtc.XMPPUser = function (params) {
          * will also care about his contacts' presences.
          */
         signalingChannel.addHandler('presence', function (stanza) {
-            console.log(stanza);
+            log.debug(stanza);
             var message = mercury.presenceMessage({
                 'rawMessage': stanza,
                 'sender': stanza.getAttribute('from'),
@@ -1024,18 +1024,18 @@ webrtc.XMPPUser = function (params) {
          * messages. We'll just put it here since messages tend to go along with presence.
          */
         signalingChannel.addHandler('message', function (stanza) {
-            console.log(stanza);
+            log.debug(stanza);
             var from = stanza.getAttribute('from');
             var type = stanza.getAttribute('type');
             if (['chat', 'signaling', 'groupchat'].indexOf(type) === -1) {
-                console.log('wrong type ' + type);
+                log.warn('wrong type ' + type);
                 return true;
             }
 
             var fromPieces = from.split('/');
             var contact = contactList.get(fromPieces[0]);
             if (!contact) {
-                console.log("no contact");
+                log.info("no contact");
                 return true;
             }
             var params = {
@@ -1092,7 +1092,7 @@ webrtc.XMPPChatMessage = function (params) {
         try {
             payload = Strophe.getText(rawMessage.getElementsByTagName('body')[0]);
         } catch (e) {
-            console.log("Not an XMPP text message!");
+            log.error("Not an XMPP text message!");
         }
     });
 

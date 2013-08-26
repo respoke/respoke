@@ -12,6 +12,7 @@
  * @global
  */
 var webrtc = {};
+log.setLevel('debug');
 
 /**
  * Loop, checking hasOwnProperty() before acting on elements.

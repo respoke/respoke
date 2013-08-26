@@ -122,10 +122,10 @@ webrtc.Mercury = function (params) {
         userPromise.then(function (user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
-            console.log('logged in as user');
-            console.log(user);
+            log.info('logged in as user ' + user.getID());
+            log.debug(user);
         }, function (error) {
-            console.log(error.message);
+            log.error(error.message);
         }).done();
         return userPromise;
     });
