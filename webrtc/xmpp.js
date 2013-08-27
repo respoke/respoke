@@ -340,9 +340,11 @@ webrtc.XMPPSignalingChannel = function (params) {
      * @param {string} password The XMPP password.
      * @param {function} onStatusChange A function to which to call on every state change.
      */
-    var authenticate = that.publicize('authenticate', function (username, password, onStatusChange){
-        stropheConnection.connect(username, password, onStatusChange);
-    });
+    var authenticate = that.publicize('authenticate',
+            function (username, password, onStatusChange) {
+                stropheConnection.connect(username, password, onStatusChange);
+            }
+    );
 
     return that;
 }; // End webrtc.XMPPSignalingChannel
@@ -474,7 +476,7 @@ webrtc.XMPPPresentable = function (params) {
     var resources = [];
     var presence = 'unavailable';
 
-    that.listen('signaling:received', function(message) {
+    that.listen('signaling:received', function (message) {
         try {
             mercury.getSignalingChannel().routeSignal(message);
         } catch (e) {
@@ -971,24 +973,28 @@ webrtc.XMPPUser = function (params) {
      * @param {string} JID without resource of the contact to search for.
      * @returns {webrtc.MediaSession}
      */
-    var getMediaSessionByContact = that.publicize('getMediaSessionByContact', function (contactJID){
-        var session = null;
-        mediaSessions.forEach(function (mediaSession) {
-            if (mediaSession.remoteEndpoint === contactJID) {
-                session = mediaSession;
-            }
-        });
+    var getMediaSessionByContact = that.publicize('getMediaSessionByContact',
+            function (contactJID) {
+                var session = null;
+                var contact = null;
+                mediaSessions.forEach(function (mediaSession) {
+                    if (mediaSession.remoteEndpoint === contactJID) {
+                        session = mediaSession;
+                    }
+                });
 
-        if (session === null) {
-            try {
-                session = contactList.get(contactJID).startMedia(mercury.getMediaSettings(), false);
-                addMediaSession(session);
-            } catch (e) {
-                log.error("Couldn't create MediaSession: " + e.message);
+                if (session === null) {
+                    try {
+                        contact = contactList.get(contactJID);
+                        session = contact.startMedia(mercury.getMediaSettings(), false);
+                        addMediaSession(session);
+                    } catch (e) {
+                        log.error("Couldn't create MediaSession: " + e.message);
+                    }
+                }
+                return session;
             }
-        }
-        return session;
-    });
+    );
 
     /**
      * Associate the media session with this user.

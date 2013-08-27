@@ -30,7 +30,6 @@ webrtc.Mercury = function (params) {
     var connected = false;
     var appKey = null;
     var apiToken = null;
-    var userSessions = [];
     var mediaSettings = {
         constraints: params.constraints || [{
             video : { mandatory: { minWidth: 640, minHeight: 480 } },
@@ -139,21 +138,10 @@ webrtc.Mercury = function (params) {
      * @param {string[]} username Optional array of usernames of UserSessions to log out.
      */
     var logout = that.publicize('logout', function (usernames) {
-        var removedIndexes = [];
-        userSessions.forEach(function (session, index) {
-            if (!usernames || session.userAccount in usernames) {
-                that.identityProvider.logout(session.userAccount, session.token);
-                session.loggedIn = false;
-                removedIndexes.push(index);
-            }
-        });
-
-        removedIndexes.reverse().forEach(function (index) {
-            userSessions.remove(index);
-        });
-
-        if (userSessions.length === 0) {
-            that.user = null;
+        var userSession = that.user.getUserSession();
+        if (!usernames || userSession.userAccount in usernames) {
+            that.identityProvider.logout(userSession.userAccount, userSession.token);
+            userSession.loggedIn = false;
         }
     });
 
@@ -175,21 +163,10 @@ webrtc.Mercury = function (params) {
      * @returns {boolean}
      */
     var isLoggedIn = that.publicize('isLoggedIn', function () {
-        var loggedIn = false;
-        userSessions.forEach(function (session) {
-            loggedIn = loggedIn || session.loggedIn;
-        });
-        return !!loggedIn;
-    });
-
-    /**
-     * Get a list of valid UserSessions.
-     * @memberof! webrtc.Mercury
-     * @method webrtc.Mercury.getUserSessions
-     * @returns {webrtc.UserSession[]}
-     */
-    var getUserSessions = that.publicize('getUserSessions', function () {
-        return userSessions;
+        if (that.user) {
+            return !!that.user.getUserSession().isLoggedIn();
+        }
+        return false;
     });
 
     /**

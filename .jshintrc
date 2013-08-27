@@ -110,6 +110,10 @@
     "maxerr"        : 100,      // Maximum errors before stopping.
     "predef"        : [         // Extra globals.
         "Q",
+        "log",
+        "attachMediaStream",
+        "RTCPeerConnection",
+        "getUserMedia",
 		"mercury",
 		"Strophe",
 		"escape",

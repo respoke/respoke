@@ -116,7 +116,7 @@ webrtc.MediaSession = function (params) {
         log.trace(onReceiveUserMedia);
         log.trace(stream);
 
-        if (!pc === null) {
+        if (pc === null) {
             log.error("Peer connection is null!");
             return;
         }
@@ -169,6 +169,7 @@ webrtc.MediaSession = function (params) {
     var requestMedia = function () {
         var now = new Date();
         var toDelete = [];
+        var url = '';
 
         report.callStarted = now.getTime();
         log.trace(requestMedia);
@@ -182,7 +183,8 @@ webrtc.MediaSession = function (params) {
             log.debug("Removing TURN servers.");
             for (var i in mediaSettings.servers.iceServers) {
                 if (mediaSettings.servers.iceServers.hasOwnProperty(i)) {
-                    if (mediaSettings.servers.iceServers[i].url.toLowerCase().indexOf('turn') > -1){
+                    url = mediaSettings.servers.iceServers[i].url;
+                    if (url.toLowerCase().indexOf('turn') > -1) {
                         toDelete.push(i);
                     }
                 }
@@ -356,7 +358,7 @@ webrtc.MediaSession = function (params) {
      */
     var onNegotiationNeeded = function (oCan) {
         log.warn("Negotiation needed.");
-    }
+    };
 
     /**
      * Process any ICE candidates that we received either from the browser or the other side while
@@ -795,7 +797,7 @@ webrtc.MediaSession = function (params) {
     var onBye = function () {
         receivedBye = true;
         stopMedia();
-    }
+    };
 
     signalingChannel.listen('received:offer', onOffer);
     signalingChannel.listen('received:answer', onAnswer);

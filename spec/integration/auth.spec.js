@@ -42,7 +42,7 @@ describe("Authentication", function() {
 
   //disabled until userSessions and isLoggedIn are refactored
   //isLoggedIn checks userSession, but login does not add a userSession
-  xit("authenticated", function(){
+  it("authenticated", function(){
     var flag, user;
     runs(function(){
       flag = false
