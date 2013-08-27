@@ -5,3 +5,5 @@ if [ "$JSHINT_OUTPUT" != "" ]; then
 	echo JSHINT_OUTPUT is $JSHINT_OUTPUT
 	exit 1
 fi
+./minimize.sh
+git add webrtc.min.js
