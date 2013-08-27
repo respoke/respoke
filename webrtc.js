@@ -146,8 +146,13 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.MediaSession#stream:remote:added
- * @type {object}
+ * @event webrtc.MediaSession#stream:local:received
+ * @type {DOMobject} Video element
+ */
+
+/**
+ * @event webrtc.MediaSession#stream:remote:received
+ * @type {DOMobject} Video element
  */
 
 /**

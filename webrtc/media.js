@@ -31,8 +31,10 @@ webrtc.MediaSession = function (params) {
     var receivedBye = false;
     var candidateSendingQueue = [];
     var candidateReceivingQueue = [];
-    var signalingChannel = mercury.getSignalingChannel();
     var mediaStreams = [];
+    var localVideoElements = params.localVideoElements || [];
+    var remoteVideoElements = params.remoteVideoElements || [];
+    var signalingChannel = mercury.getSignalingChannel();
     var remoteEndpoint = params.remoteEndpoint;
     var signalInitiate = params.signalInitiate;
     var signalAccept = params.signalAccept;
@@ -40,6 +42,12 @@ webrtc.MediaSession = function (params) {
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
     var mediaSettings = mercury.getMediaSettings();
+    var options = {
+        optional: [
+            { DtlsSrtpKeyAgreement: true },
+            { RtpDataChannels: false }
+        ]
+    };
 
     if (params.mediaSettings && params.mediaSettings.constraints) {
         mediaSettings.constraints = params.mediaSettings.constraints;
@@ -100,8 +108,9 @@ webrtc.MediaSession = function (params) {
      * @method webrtc.MediaSession.onReceiveUserMedia
      * @private
      */
-    var onReceiveUserMedia = function (stream) {
+    var onReceiveUserMedia = function (stream, oneConstraints, index) {
         var mediaStream = null;
+        var videoElement = null;
 
         log.debug('User gave permission to use media.');
         log.trace(onReceiveUserMedia);
@@ -111,13 +120,35 @@ webrtc.MediaSession = function (params) {
             log.error("Peer connection is null!");
             return;
         }
-        pc.addStream(stream);
-        mediaStream = webrtc.MediaStream({
+
+        mediaStreams.push(webrtc.MediaStream({
             'stream': stream,
             'isLocal': true
-        });
-        that.fire('stream:local:received', mediaStream.getURL());
-        mediaStreams.push(mediaStream);
+        }));
+
+        stream.id = mercury.user.getID() + index;
+        pc.addStream(stream);
+
+        for (var i = 0; (i < localVideoElements.length && videoElement === null); i += 1) {
+            if (localVideoElements[i].tagName === 'VIDEO' && !localVideoElements[i].used) {
+                videoElement = localVideoElements[i];
+            }
+        }
+
+        if (videoElement === null) {
+            videoElement = document.createElement('video');
+        }
+
+        // We won't want our local video outputting audio.
+        videoElement.muted = true;
+        videoElement.autoplay = true;
+        attachMediaStream(videoElement, stream);
+        setTimeout(function () {
+            videoElement.play();
+        }, 100);
+        that.fire('stream:local:received', videoElement);
+        videoElement.used = true;
+
         if (mediaStreams.length === 1) {
             if (that.initiator) {
                 that.fire('call:initiate');
@@ -143,7 +174,7 @@ webrtc.MediaSession = function (params) {
         log.trace(requestMedia);
 
         try {
-            pc = new webkitRTCPeerConnection(mediaSettings.servers, null);
+            pc = new RTCPeerConnection(mediaSettings.servers, options);
         } catch (e) {
             /* TURN is not supported, delete them from the array.
              * TODO: Find out when we can remove this workaround
@@ -157,10 +188,10 @@ webrtc.MediaSession = function (params) {
                 }
             }
             toDelete.sort(function (a, b) { return b - a; });
-            toDelete.each(function (index) {
+            toDelete.forEach(function (value, index) {
                 mediaSettings.servers.iceServers.splice(index);
             });
-            pc = new webkitRTCPeerConnection(mediaSettings.servers, null);
+            pc = new RTCPeerConnection(mediaSettings.servers, options);
         }
 
         pc.onaddstream = onRemoteStreamAdded;
@@ -179,11 +210,15 @@ webrtc.MediaSession = function (params) {
             savedOffer = null;
         }
 
-        mediaSettings.constraints.forOwn(function (oneConstraints) {
+        mediaSettings.constraints.forOwn(function (oneConstraints, index) {
             try {
                 log.debug("Running getUserMedia with constraints");
                 log.debug(oneConstraints);
-                navigator.webkitGetUserMedia(oneConstraints, onReceiveUserMedia, onUserMediaError);
+                getUserMedia(oneConstraints, function (p) {
+                    onReceiveUserMedia(p, oneConstraints, index);
+                }, function (p) {
+                    onUserMediaError(p, oneConstraints, index);
+                });
             } catch (e) {
                 log.error("Couldn't get user media: " + e.message);
             }
@@ -196,7 +231,7 @@ webrtc.MediaSession = function (params) {
      * @method webrtc.MediaSession.onUserMediaError
      * @private
      */
-    var onUserMediaError = function (p) {
+    var onUserMediaError = function (p, oneConstraints, index) {
         log.trace('onUserMediaError');
         if (p.code === 1) {
             log.warn("Permission denied.");
@@ -243,15 +278,32 @@ webrtc.MediaSession = function (params) {
      */
     var onRemoteStreamAdded = function (evt) {
         var mediaStream = null;
+        var videoElement = null;
 
         log.trace('received remote media');
 
-        mediaStream = webrtc.MediaStream({
+        for (var i = 0; (i < remoteVideoElements.length && videoElement === null); i += 1) {
+            if (remoteVideoElements[i].tagName === 'VIDEO' && !remoteVideoElements[i].used) {
+                videoElement = remoteVideoElements[i];
+            }
+        }
+
+        if (videoElement === null) {
+            videoElement = document.createElement('video');
+        }
+
+        videoElement.autoplay = true;
+        attachMediaStream(videoElement, evt.stream);
+        setTimeout(function () {
+            videoElement.play();
+        }, 100);
+        that.fire('stream:remote:received', videoElement);
+        videoElement.used = true;
+
+        mediaStreams.push(webrtc.MediaStream({
             'stream': evt.stream,
             'isLocal': false
-        });
-        that.fire('stream:remote:received', mediaStream.getURL());
-        mediaStreams.push(mediaStream);
+        }));
     };
 
     /**
@@ -866,7 +918,7 @@ webrtc.MediaStream = function (params) {
      * @return {string}
      */
     var getURL = that.publicize('getURL', function () {
-        return webkitURL.createObjectURL(stream);
+        //return webkitURL.createObjectURL(stream);
     });
 
     return that;
