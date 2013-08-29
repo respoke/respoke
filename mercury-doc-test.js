@@ -1,14 +1,14 @@
 /**
- * Create a new WebRTC Mercury object.
+ * Create a new WebRTC MercuryTest object.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.Mercury
+ * @class webrtc.MercuryTest
  * @constructor
  * @augments webrtc.EventThrower
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.Mercury}
+ * @returns {webrtc.MercuryTest}
  * @property {object} appSettings Application-wide settings.
  * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
  * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
@@ -27,14 +27,14 @@
  * {@link webrtc.XMPPChatMessage some caption}
  * @mixes webrtc.EventThrower
  * @requires jQuery.js
- * @see webrtc.Mercury
+ * @see webrtc.MercuryTest
  * @see http://google.com
  * @see jane run
  * @since June 1, 2013
  * @tutorial SomeWikiPage
  * @tutorial AnotherWikiPage
  */
-webrtc.Mercury = function(params) {
+webrtc.MercuryTest = function(params) {
 	params = params || {};
 	var that = webrtc.EventThrower(params);
 	/**
@@ -46,7 +46,7 @@ webrtc.Mercury = function(params) {
 	 * @static
 	 * @typedef string
 	 */
-	that.className = 'webrtc.Mercury';
+	that.className = 'webrtc.MercuryTest';
 
 	/** @access private */
 	var host = window.location.hostname;
@@ -94,8 +94,8 @@ webrtc.Mercury = function(params) {
 	/**
 	 * Find a configurable class in the webrtc or window scopes and instantiate with the
 	 * given params.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.findClass
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.findClass
 	 * @private
 	 * @params {string} className The name of the class for which to look.
 	 * @returns {function} The class.
@@ -135,8 +135,8 @@ webrtc.Mercury = function(params) {
 	/**
 	 * Connect to the Digium infrastructure and authenticate using the appkey.  Store
 	 * a token to be used in API requests.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.connect
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.connect
 	 */
 	var connect = that.publicize('connect', function() {
 		that.signalingChannel.open();
@@ -145,8 +145,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Disconnect from the Digium infrastructure. Invalidates the API token.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.disconnect
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.disconnect
 	 */
 	var disconnect = that.publicize('disconnect', function() {
 		that.signalingChannel.close();
@@ -155,10 +155,10 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Log in a User using the identity provider specified in the application settings. Adds
-	 * the UserSession to Mercury.userSessions.
+	 * the UserSession to MercuryTest.userSessions.
 	 * Sends presence "available."
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.login
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.login
 	 * @param {object} userAccount Optional user account to log in with.
 	 * @param {string} token Optional OAuth token to use, if the user has logged in before,
 	 * or password if not using oAuth or OpenSocial.
@@ -182,9 +182,9 @@ webrtc.Mercury = function(params) {
 	/**
 	 * Log out specified UserSession or all UserSessions if no usernames are passed. Removes
 	 * UserSession.
-	 * from Mercury.userSessions and Mercury.user
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.logout
+	 * from MercuryTest.userSessions and MercuryTest.user
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.logout
 	 * @param {string[]} username Optional array of usernames of UserSessions to log out.
 	 * @listens webrtc.UserSession#disconnected
 	 * @listens webrtc.UserSession#disconnected2
@@ -215,10 +215,10 @@ webrtc.Mercury = function(params) {
 	});
 
 	/**
-	 * Determine whether the Mercury has authenticated with its appKey against Digium services
+	 * Determine whether the MercuryTest has authenticated with its appKey against Digium services
 	 * by checking the validity of the apiToken.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.isConnected
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.isConnected
 	 * @returns {boolean}
 	 * @ignore
 	 */
@@ -228,8 +228,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Determine whether any Users have logged in by checking the existence of logged-in Endpoints.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.isLoggedIn
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.isLoggedIn
 	 * @returns {boolean}
 	 */
 	var isLoggedIn = that.publicize('isLoggedIn', function() {
@@ -242,8 +242,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Get a list of valid UserSessions.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.getUserSessions
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.getUserSessions
 	 * @returns {webrtc.UserSession[]}
 	 */
 	var getUserSessions = that.publicize('getUserSessions', function() {
@@ -252,8 +252,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Get an object containing the default media constraints and other media settings.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.getDefaultMediaSettings
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.getDefaultMediaSettings
 	 * @returns {object} An object containing the default media settings which will be used in
 	 * webrtc calls.
 	 */
@@ -263,8 +263,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Set the default media constraints and other media settings.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.setDefaultMediaSettings
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.setDefaultMediaSettings
 	 * @param {object} Object containing settings to modify.
 	 */
 	var setDefaultMediaSettings = that.publicize('setDefaultMediaSettings', function(settings) {
@@ -279,8 +279,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * Get the SignalingChannel.
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.getSignalingChannel
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.getSignalingChannel
 	 * @returns {webrtc.SignalingChannel} The instance of the webrtc.SignalingChannel.
 	 */
 	var getSignalingChannel = that.publicize('getSignalingChannel', function() {
@@ -289,8 +289,8 @@ webrtc.Mercury = function(params) {
 
 	/**
 	 * A test for some tags that we don't use normally
-	 * @memberof! webrtc.Mercury
-	 * @method webrtc.Mercury.test
+	 * @memberof! webrtc.MercuryTest
+	 * @method webrtc.MercuryTest.test
 	 * @returns {webrtc.SignalingChannel} The instance of the webrtc.SignalingChannel.
 	 * @returns {object} A second return value
 	 * @returns {string} A third return value
@@ -301,4 +301,4 @@ webrtc.Mercury = function(params) {
 	});
 
 	return that;
-}; // End webrtc.Mercury
+}; // End webrtc.MercuryTest
