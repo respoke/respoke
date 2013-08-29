@@ -13,7 +13,9 @@
 webrtc.IdentityProvider = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.EventThrower(params);
+    delete that.client;
     that.className = 'webrtc.IdentityProvider';
 
     var loggedIn = false;
@@ -72,7 +74,9 @@ webrtc.IdentityProvider = function (params) {
 webrtc.ContactList = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.EventThrower(params);
+    delete that.client;
     that.className = 'webrtc.ContactList';
 
     that.length = 0;

@@ -1,6 +1,9 @@
-var mercury = webrtc.Mercury();
+var client = webrtc.Client();
 describe("A webrtc.UserSession ", function () {
   var token = "0IJASDF09ASDF98SA9D8FHSF";
+  /*
+   * UserSession doesn't use the client id, but this is not true of most classes!
+   */
   var userSession = webrtc.UserSession({
     "timeLoggedIn": new Date(),
     "loggedIn": true,

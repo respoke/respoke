@@ -13,7 +13,9 @@
 webrtc.XMPPSignalingChannel = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.SignalingChannel(params);
+    delete that.client;
     that.className = 'webrtc.XMPPSignalingChannel';
 
     var state = 'new';
@@ -56,9 +58,7 @@ webrtc.XMPPSignalingChannel = function (params) {
      * @private
      * @returns {string}
      */
-    var generateCallID = function () {
-        return Math.floor(Math.random() * 100000000);
-    };
+    var generateCallID = webrtc.makeUniqueID;
 
     /**
      * In XMPP, there is no state to a messaging session, so this method always returns "open."
@@ -301,7 +301,7 @@ webrtc.XMPPSignalingChannel = function (params) {
      * @param {webrtc.XMPPSignalingMessage} message A message to route
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
-        var mediaSession = mercury.user.getMediaSessionByContact(message.sender);
+        var mediaSession = webrtc.getClient(client).user.getMediaSessionByContact(message.sender);
         var signal = message.getPayload();
 
         switch (signal.type) {
@@ -363,7 +363,9 @@ webrtc.XMPPSignalingChannel = function (params) {
 webrtc.XMPPIdentityProvider = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.IdentityProvider(params);
+    delete that.client;
     that.className = 'webrtc.XMPPIdentityProvider';
 
     var signalingChannel = null;
@@ -381,9 +383,10 @@ webrtc.XMPPIdentityProvider = function (params) {
         var deferred = null;
 
         log.trace("User login");
+        log.debug('client is ' + client);
 
         if (signalingChannel === null) {
-            signalingChannel = mercury.getSignalingChannel();
+            signalingChannel = webrtc.getClient(client).getSignalingChannel();
         }
         if (!signalingChannel.isOpen()) {
             signalingChannel.open();
@@ -395,6 +398,7 @@ webrtc.XMPPIdentityProvider = function (params) {
             if (statusCode === Strophe.Status.CONNECTED) {
                 log.info('Strophe is connected.');
                 user = webrtc.XMPPUser({
+                    'client': client,
                     'jid': username,
                     'loggedIn': true
                 });
@@ -465,7 +469,9 @@ webrtc.XMPPIdentityProvider = function (params) {
 webrtc.XMPPPresentable = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Presentable(params);
+    delete that.client;
 
     that.className = 'webrtc.XMPPPresentable';
     that.domain = null;
@@ -478,7 +484,7 @@ webrtc.XMPPPresentable = function (params) {
 
     that.listen('signaling:received', function (message) {
         try {
-            mercury.getSignalingChannel().routeSignal(message);
+            webrtc.getClient(client).getSignalingChannel().routeSignal(message);
         } catch (e) {
             log.error("Couldn't route message: " + e.message);
         }
@@ -633,10 +639,12 @@ webrtc.XMPPPresentable = function (params) {
 webrtc.XMPPEndpoint = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.XMPPPresentable(params);
+    delete that.client;
     that.className = 'webrtc.XMPPEndpoint';
 
-    var signalingChannel = mercury.getSignalingChannel();
+    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to the endpoint.
@@ -647,7 +655,7 @@ webrtc.XMPPEndpoint = function (params) {
     var sendMessage = that.publicize('sendMessage', function (message) {
         signalingChannel.sendMessage(webrtc.XMPPChatMessage({
             'recipient': that,
-            'sender': mercury.user.getResourceFormat(),
+            'sender': webrtc.getClient(client).user.getResourceFormat(),
             'payload': message
         }));
     });
@@ -671,7 +679,8 @@ webrtc.XMPPEndpoint = function (params) {
         }
 
         mediaSession = webrtc.MediaSession({
-            'username': mercury.user,
+            'client': client,
+            'username': webrtc.getClient(client).user,
             'remoteEndpoint': id,
             'initiator': initiator,
             'signalInitiate' : function (sdp) {
@@ -697,9 +706,9 @@ webrtc.XMPPEndpoint = function (params) {
         });
 
         mediaSession.start();
-        mercury.user.addMediaSession(mediaSession);
+        webrtc.getClient(client).user.addMediaSession(mediaSession);
         mediaSession.listen('hangup', function (locallySignaled) {
-            mercury.user.removeMediaSession(id);
+            webrtc.getClient(client).user.removeMediaSession(id);
         });
         return mediaSession;
     });
@@ -720,7 +729,9 @@ webrtc.XMPPEndpoint = function (params) {
 webrtc.XMPPContact = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.XMPPEndpoint(params);
+    delete that.client;
     that.className = 'webrtc.XMPPContact';
 
     var presence = 'unavailable';
@@ -808,17 +819,20 @@ webrtc.XMPPContact = function (params) {
 webrtc.XMPPUser = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.XMPPPresentable(params);
+    delete that.client;
     that.className = 'webrtc.XMPPUser';
 
     var subscription = 'both';
     var remoteUserSessions = {};
     var mediaSessions = [];
-    var contactList = new webrtc.ContactList();
+    var contactList = webrtc.ContactList({'client': client});
     var presenceQueue = [];
     var presence = 'unavailable';
-    var signalingChannel = mercury.getSignalingChannel();
-    var userSession = new webrtc.UserSession({
+    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+    var userSession = webrtc.UserSession({
+        'client': client,
         'token': params.token,
         'timeLoggedIn': params.timeLoggedIn,
         'loggedIn': params.loggedIn
@@ -919,7 +933,8 @@ webrtc.XMPPUser = function (params) {
                 }
 
                 try {
-                    contact = new webrtc.XMPPContact({
+                    contact = webrtc.XMPPContact({
+                        'client': client,
                         'jid': jid,
                         'name': name,
                         'subscription': sub
@@ -986,7 +1001,8 @@ webrtc.XMPPUser = function (params) {
                 if (session === null) {
                     try {
                         contact = contactList.get(contactJID);
-                        session = contact.startMedia(mercury.getMediaSettings(), false);
+                        session = contact.startMedia(webrtc.getClient(client).getMediaSettings(),
+                            false);
                         addMediaSession(session);
                     } catch (e) {
                         log.error("Couldn't create MediaSession: " + e.message);
@@ -1048,7 +1064,7 @@ webrtc.XMPPUser = function (params) {
          */
         signalingChannel.addHandler('presence', function (stanza) {
             log.debug(stanza);
-            var message = mercury.presenceMessage({
+            var message = webrtc.getClient(client).presenceMessage({
                 'rawMessage': stanza,
                 'sender': stanza.getAttribute('from'),
                 'recipient': that
@@ -1083,14 +1099,16 @@ webrtc.XMPPUser = function (params) {
                 return true;
             }
             params = {
+                'client': client,
                 'rawMessage': stanza,
                 'recipient': that,
                 'sender': contact.getResourceFormat()
             };
             if (type === 'signaling') {
-                contact.fire('signaling:received', mercury.signalingMessage(params));
+                contact.fire('signaling:received',
+                        webrtc.getClient(client).signalingMessage(params));
             } else {
-                contact.fire('message:received', mercury.chatMessage(params));
+                contact.fire('message:received', webrtc.getClient(client).chatMessage(params));
             }
             return true;
         });
@@ -1115,7 +1133,9 @@ webrtc.XMPPUser = function (params) {
 webrtc.XMPPChatMessage = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Message(params);
+    delete that.client;
 
     that.className = 'webrtc.XMPPChatMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
@@ -1203,7 +1223,9 @@ webrtc.XMPPChatMessage = function (params) {
 webrtc.XMPPSignalingMessage = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Message(params);
+    delete that.client;
     that.className = 'webrtc.XMPPSignalingMessage';
 
     var rawMessage = params.rawMessage;
@@ -1217,7 +1239,7 @@ webrtc.XMPPSignalingMessage = function (params) {
      * @method webrtc.XMPPSignalingMessage.parse
      */
     var parse = that.publicize('parse', function () {
-        payload = mercury.getSignalingChannel().parseText(rawMessage);
+        payload = webrtc.getClient(client).getSignalingChannel().parseText(rawMessage);
     });
 
     /**
@@ -1272,7 +1294,9 @@ webrtc.XMPPSignalingMessage = function (params) {
 webrtc.XMPPPresenceMessage = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Message(params);
+    delete that.client;
     that.className = 'webrtc.XMPPPresenceMessage';
 
     var rawMessage = params.rawMessage;

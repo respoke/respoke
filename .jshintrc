@@ -114,7 +114,6 @@
         "attachMediaStream",
         "RTCPeerConnection",
         "getUserMedia",
-		"mercury",
 		"Strophe",
 		"escape",
 		"unescape",

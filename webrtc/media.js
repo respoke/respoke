@@ -18,7 +18,9 @@
 webrtc.MediaSession = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.EventThrower(params);
+    delete that.client;
     that.className = 'webrtc.MediaSession';
 
     if (!that.initiator) {
@@ -32,16 +34,17 @@ webrtc.MediaSession = function (params) {
     var candidateSendingQueue = [];
     var candidateReceivingQueue = [];
     var mediaStreams = [];
+    var clientObj = webrtc.getClient(client);
     var localVideoElements = params.localVideoElements || [];
     var remoteVideoElements = params.remoteVideoElements || [];
-    var signalingChannel = mercury.getSignalingChannel();
+    var signalingChannel = clientObj.getSignalingChannel();
     var remoteEndpoint = params.remoteEndpoint;
     var signalInitiate = params.signalInitiate;
     var signalAccept = params.signalAccept;
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
-    var mediaSettings = mercury.getMediaSettings();
+    var mediaSettings = clientObj.getMediaSettings();
     var options = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
@@ -126,7 +129,7 @@ webrtc.MediaSession = function (params) {
             'isLocal': true
         }));
 
-        stream.id = mercury.user.getID() + index;
+        stream.id = clientObj.user.getID() + index;
         pc.addStream(stream);
 
         for (var i = 0; (i < localVideoElements.length && videoElement === null); i += 1) {

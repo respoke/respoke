@@ -1,5 +1,5 @@
 var DOMAIN = 'mercury.digiumlabs.com';
-var mercury;
+var client;
 var username = 'test4';
 var resource;
 var jabberid;
@@ -8,36 +8,36 @@ var password = 'password';
 describe("Connection", function(){
 
   beforeEach(function(){
-    mercury = webrtc.Mercury();
+    client = webrtc.Client();
   });
 
   it("not connected", function(){
-    expect(mercury.isConnected()).toBe(false);
+    expect(client.isConnected()).toBe(false);
   });
 
   it("connected", function(){
-    mercury.connect();
-    expect(mercury.isConnected()).toBe(true);
+    client.connect();
+    expect(client.isConnected()).toBe(true);
   });
 
   it("disconnected", function(){
-    mercury.connect();
-    mercury.disconnect();
-    expect(mercury.isConnected()).toBe(false);
+    client.connect();
+    client.disconnect();
+    expect(client.isConnected()).toBe(false);
   });
 });
 
 describe("Authentication", function() {
 
   beforeEach(function(){
-    mercury = webrtc.Mercury();
-    mercury.connect();
+    client = webrtc.Client();
+    client.connect();
     resource = 'mercury_' +  Math.random().toString(36).substring(2, 16);
     jabberid = username + '@' + DOMAIN + '/' + resource;
   });
 
   it("not authenticated", function(){
-    expect(mercury.isLoggedIn()).toBe(false);
+    expect(client.isLoggedIn()).toBe(false);
   });
 
   //disabled until userSessions and isLoggedIn are refactored
@@ -46,7 +46,7 @@ describe("Authentication", function() {
     var flag, user;
     runs(function(){
       flag = false
-      var userPromise = mercury.login(jabberid, password);
+      var userPromise = client.login(jabberid, password);
       userPromise.then(function(u){
         user = u;
         flag = true;
@@ -58,7 +58,7 @@ describe("Authentication", function() {
     }, "user login to complete")
 
     runs(function(){
-      expect(mercury.isLoggedIn()).toBe(true);
+      expect(client.isLoggedIn()).toBe(true);
     });
       
   });
@@ -67,7 +67,7 @@ describe("Authentication", function() {
     var flag, error;
     runs(function(){
       flag = false;
-      var userPromise = mercury.login(jabberid, 'badpassword');
+      var userPromise = client.login(jabberid, 'badpassword');
       userPromise.then(function(user){
         console.log("u2ser:  " + user);
         }, function(e){

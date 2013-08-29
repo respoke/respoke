@@ -19,7 +19,9 @@
 webrtc.Presentable = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.EventThrower(params);
+    delete that.client;
     that.className = 'webrtc.Presentable';
 
     that.name = 'Unknown';
@@ -142,11 +144,13 @@ webrtc.Presentable = function (params) {
 webrtc.Endpoint = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Presentable(params);
+    delete that.client;
     that.className = 'webrtc.Endpoint';
 
     that.mediaSessions = [];
-    var signalingChannel = mercury.getSignalingChannel();
+    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to an Endpoint
@@ -208,7 +212,9 @@ webrtc.Endpoint = function (params) {
 webrtc.User = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Presentable(params);
+    delete that.client;
     that.className = 'webrtc.User';
 
     var remoteUserSessions = [];
@@ -275,7 +281,9 @@ webrtc.User = function (params) {
 webrtc.UserSession = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.EventThrower(params);
+    delete that.client;
     that.className = 'webrtc.UserSession';
 
     var token = params.token || '';
@@ -321,7 +329,9 @@ webrtc.UserSession = function (params) {
 webrtc.Contact = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Endpoint(params);
+    delete that.client;
     that.className = 'webrtc.Contact';
 
     /**

@@ -9,7 +9,7 @@ describe("The JavaScript execution environment", function() {
     expect(typeof webrtc.IdentityProvider).toBe('function');
     expect(typeof webrtc.MediaSession).toBe('function');
     expect(typeof webrtc.MediaStream).toBe('function');
-    expect(typeof webrtc.Mercury).toBe('function');
+    expect(typeof webrtc.Client).toBe('function');
     expect(typeof webrtc.Message).toBe('function');
     expect(typeof webrtc.Presentable).toBe('function');
     expect(typeof webrtc.SignalingChannel).toBe('function');

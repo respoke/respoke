@@ -12,8 +12,33 @@
  * @namespace
  * @global
  */
-var webrtc = {};
+var webrtc = {
+    'instances': {}
+};
 log.setLevel('debug');
+
+/**
+ * @static
+ * @member webrtc
+ * @returns {webrtc.Client}
+ */
+webrtc.getClient = function (id) {
+    "use strict";
+    if (id === undefined) {
+        log.debug(new Error().stack);
+    }
+    return webrtc.instances[id];
+};
+
+/**
+ * @static
+ * @member webrtc
+ * @returns {number}
+ */
+webrtc.makeUniqueID = function () {
+    "use strict";
+    return Math.floor(Math.random() * 100000000);
+};
 
 /**
  * Loop, checking hasOwnProperty() before acting on elements.
@@ -77,6 +102,8 @@ webrtc.Class = function (params) {
     "use strict";
     var that = { 'className': 'webrtc.Class' };
     params = params || {};
+    var client = params.client;
+    delete that.client;
     params.forOwn(function (thing, name) {
         that[name] = thing;
     });

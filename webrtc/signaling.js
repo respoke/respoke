@@ -15,7 +15,9 @@
 webrtc.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.EventThrower(params);
+    delete that.client;
     that.className = 'webrtc.SignalingChannel';
 
     var state = 'new';
@@ -87,7 +89,9 @@ webrtc.SignalingChannel = function (params) {
 webrtc.Message = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Class(params);
+    delete that.client;
     that.className = 'webrtc.Message';
 
     var rawMessage = null;

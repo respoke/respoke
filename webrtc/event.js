@@ -13,7 +13,9 @@
 webrtc.EventThrower = function (params) {
     "use strict";
     params = params || {};
+    var client = params.client;
     var that = webrtc.Class(params);
+    delete that.client;
     that.className = 'webrtc.EventThrower';
 
     var eventList = {};
