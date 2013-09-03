@@ -12,9 +12,10 @@
  * @property {object} appSettings Application-wide settings.
  * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
  * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
- * @property {function} chatMessage Class extending webrtc.Message to use for chat messages.
- * @property {function} signalingMessage Class extending webrtc.Message to use for signaling.
- * @property {function} presenceMessage Class extending webrtc.Message to use for presence
+ * @property {function} chatMessage Class extending webrtc.AbstractMessage to use for chat messages.
+ * @property {function} signalingMessage Class extending webrtc.AbstractMessage to use for
+ * signaling.
+ * @property {function} presenceMessage Class extending webrtc.AbstractMessage to use for presence
  * messages.
  * @property {webrtc.User} user Logged-in user's User object.
  */
@@ -32,6 +33,7 @@ webrtc.Client = function (params) {
     var connected = false;
     var appKey = null;
     var apiToken = null;
+    var appSettings = params.appSettings || {};
     log.debug("Client ID is " + client);
 
     var mediaSettings = {
@@ -50,42 +52,8 @@ webrtc.Client = function (params) {
         }
     };
 
-    that.appSettings = {
-        /* These are the names of classes which can be configured by the developer.
-         * The constructor will search for them in the 'webrtc' and 'window' namespaces
-         * and use them to do the job of some of the default classes.
-         */
-        signalingChannel: 'XMPPSignalingChannel',
-        identityProvider: 'XMPPIdentityProvider',
-        chatMessage: 'XMPPChatMessage',
-        signalingMessage: 'XMPPSignalingMessage',
-        presenceMessage: 'XMPPPresenceMessage'
-    };
-
-    /**
-     * Find a configurable class in the webrtc or window scopes and instantiate with the
-     * given params.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.findClass
-     * @private
-     * @params {string} className The name of the class for which to look.
-     * @returns {function} The class.
-     */
-    var findClass = function (className) {
-        if (webrtc[className]) {
-            return webrtc[className];
-        }
-        if (window[className]) {
-            return window[className];
-        }
-    };
-
-    that.signalingChannel = findClass(that.appSettings.signalingChannel)({'client': client});
-    that.identityProvider = findClass(that.appSettings.identityProvider)({'client': client});
-    that.chatMessage = findClass(that.appSettings.chatMessage);
-    that.signalingMessage = findClass(that.appSettings.signalingMessage);
-    that.presenceMessage = findClass(that.appSettings.presenceMessage);
-    that.mediaSession = findClass(that.appSettings.mediaSession);
+    that.signalingChannel = webrtc.SignalingChannel({'client': client});
+    that.identityProvider = webrtc.IdentityProvider({'client': client});
     that.user = null;
     log.debug(that.signalingChannel);
 

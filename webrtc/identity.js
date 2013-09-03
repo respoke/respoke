@@ -1,7 +1,7 @@
 /**
  * Create a new IdentityProvider.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.IdentityProvider
+ * @class webrtc.AbstractIdentityProvider
  * @constructor
  * @augments webrtc.EventThrower
  * @classdesc Generic Identity provider class.
@@ -10,20 +10,20 @@
  * @returns {webrtc.IdentityProvider}
  */
 /*global webrtc: false */
-webrtc.IdentityProvider = function (params) {
+webrtc.AbstractIdentityProvider = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
     var that = webrtc.EventThrower(params);
     delete that.client;
-    that.className = 'webrtc.IdentityProvider';
+    that.className = 'webrtc.AbstractIdentityProvider';
 
     var loggedIn = false;
 
     /**
      * Log a user in.
-     * @memberof! webrtc.IdentityProvider
-     * @method webrtc.IdentityProvider.login
+     * @memberof! webrtc.AbstractIdentityProvider
+     * @method webrtc.AbstractIdentityProvider.login
      * @abstract
      * @param {string} username The  user's username + resource.
      * @param {string} password The  user's password.
@@ -34,8 +34,8 @@ webrtc.IdentityProvider = function (params) {
 
     /**
      * Log a user out.
-     * @memberof! webrtc.IdentityProvider
-     * @method webrtc.IdentityProvider.logout
+     * @memberof! webrtc.AbstractIdentityProvider
+     * @method webrtc.AbstractIdentityProvider.logout
      * @abstract
      */
     var logout = that.publicize('logout', function () {
@@ -46,8 +46,8 @@ webrtc.IdentityProvider = function (params) {
 
     /**
      * Whether logged in
-     * @memberof! webrtc.IdentityProvider
-     * @method webrtc.IdentityProvider.isLoggedIn
+     * @memberof! webrtc.AbstractIdentityProvider
+     * @method webrtc.AbstractIdentityProvider.isLoggedIn
      * @abstract
      * @return {boolean}
      */
@@ -58,7 +58,7 @@ webrtc.IdentityProvider = function (params) {
     });
 
     return that;
-}; // End webrtc.IdentityProvider
+}; // End webrtc.AbstractIdentityProvider
 
 /**
  * Create a new ContactList.
@@ -87,11 +87,11 @@ webrtc.ContactList = function (params) {
      * Add a contact to the list.
      * @memberof! webrtc.ContactList
      * @method webrtc.ContactList.add
-     * @param {webrtc.Endpoint} contact A contact to add to the list.
+     * @param {webrtc.AbstractEndpoint} contact A contact to add to the list.
      * @fires webrtc.ContactList#new If the contact doesn't already exist.
      */
     var add = that.publicize('add', function (contact) {
-        if (contact instanceof webrtc.Endpoint || !contact.getID) {
+        if (contact instanceof webrtc.AbstractPresentable || !contact.getID) {
             throw new Error("Can't add endpoint to list. Wrong type!");
         }
         if (!(contact.getID() in contacts)) {

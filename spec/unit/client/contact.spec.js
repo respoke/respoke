@@ -1,6 +1,6 @@
 var client = webrtc.Client();
-describe("A webrtc.Contact ", function () {
-  var contact = webrtc.Contact({
+describe("A webrtc.AbstractContact ", function () {
+  var contact = webrtc.AbstractContact({
     "client": client.getID(),
     "name": "Mickey Mouse",
     "id": "JH5K34J5K34J3453K4J53K45",
@@ -21,7 +21,7 @@ describe("A webrtc.Contact ", function () {
     expect(typeof contact.fire).toBe('function');
   });
 
-  it("extends webrtc.Presentable.", function () {
+  it("extends webrtc.AbstractPresentable.", function () {
     expect(typeof contact.getID).toBe('function');
     expect(typeof contact.getName).toBe('function');
     expect(typeof contact.getPresence).toBe('function');
@@ -31,7 +31,7 @@ describe("A webrtc.Contact ", function () {
     expect(typeof contact.hasMedia).toBe('function');
   });
 
-  it("extends webrtc.Presentable.", function () {
+  it("extends webrtc.AbstractEndpoint.", function () {
     expect(typeof contact.startMedia).toBe('function');
     expect(typeof contact.stopMedia).toBe('function');
     expect(typeof contact.sendMessage).toBe('function');
@@ -41,7 +41,7 @@ describe("A webrtc.Contact ", function () {
    */
   it("has the correct class name.", function () {
     expect(contact.className).not.toBeFalsy();
-    expect(contact.getClass()).toBe('webrtc.Contact');
+    expect(contact.getClass()).toBe('webrtc.AbstractContact');
   });
 
   /*

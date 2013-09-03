@@ -1,5 +1,5 @@
-describe("A webrtc.Presentable ", function () {
-  var presentable = webrtc.Presentable({
+describe("A webrtc.AbstractPresentable ", function () {
+  var presentable = webrtc.AbstractPresentable({
     "name": "Mickey Mouse",
     "id": "JH5K34J5K34J3453K4J53K45",
     "gloveColor": "white"
@@ -24,7 +24,7 @@ describe("A webrtc.Presentable ", function () {
    */
   it("has the correct class name.", function () {
     expect(presentable.className).not.toBeFalsy();
-    expect(presentable.getClass()).toBe('webrtc.Presentable');
+    expect(presentable.getClass()).toBe('webrtc.AbstractPresentable');
   });
 
   /*

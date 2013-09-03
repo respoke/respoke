@@ -1,6 +1,6 @@
 var client = webrtc.Client();
-describe("A webrtc.Endpoint ", function () {
-  var endpoint = webrtc.Endpoint({
+describe("A webrtc.AbstractEndpoint ", function () {
+  var endpoint = webrtc.AbstractEndpoint({
     "client": client.getID(),
     "name": "Mickey Mouse",
     "id": "JH5K34J5K34J3453K4J53K45",
@@ -21,7 +21,7 @@ describe("A webrtc.Endpoint ", function () {
     expect(typeof endpoint.fire).toBe('function');
   });
 
-  it("extends webrtc.Presentable.", function () {
+  it("extends webrtc.AbstractPresentable.", function () {
     expect(typeof endpoint.getID).toBe('function');
     expect(typeof endpoint.getName).toBe('function');
     expect(typeof endpoint.getPresence).toBe('function');
@@ -36,7 +36,7 @@ describe("A webrtc.Endpoint ", function () {
    */
   it("has the correct class name.", function () {
     expect(endpoint.className).not.toBeFalsy();
-    expect(endpoint.getClass()).toBe('webrtc.Endpoint');
+    expect(endpoint.getClass()).toBe('webrtc.AbstractEndpoint');
   });
 
   /*

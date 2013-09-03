@@ -1,22 +1,22 @@
 /**
  * Create a new XMPPSignalingChannel.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.XMPPSignalingChannel
- * @augments webrtc.SignalingChannel
+ * @class webrtc.SignalingChannel
+ * @augments webrtc.AbstractSignalingChannel
  * @constructor
  * @classdesc XMPP Signaling class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPSignalingChannel}
+ * @returns {webrtc.SignalingChannel}
  */
 /*global webrtc: false */
-webrtc.XMPPSignalingChannel = function (params) {
+webrtc.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.SignalingChannel(params);
+    var that = webrtc.AbstractSignalingChannel(params);
     delete that.client;
-    that.className = 'webrtc.XMPPSignalingChannel';
+    that.className = 'webrtc.SignalingChannel';
 
     var state = 'new';
     var BOSH_SERVICE = 'http://mercury.digiumlabs.com:5280/http-bind/';
@@ -25,8 +25,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Open a BOSH connection to ejabberd.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.open
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.open
      */
     var open = that.publicize('open', function () {
         stropheConnection = new Strophe.Connection(BOSH_SERVICE);
@@ -42,8 +42,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Close BOSH connection to ejabberd.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.close
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.close
      */
     var close = that.publicize('close', function () {
         stropheConnection.disconnect();
@@ -53,8 +53,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Generate a unique ID to identify the call.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.generateCallID
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.generateCallID
      * @private
      * @returns {string}
      */
@@ -62,8 +62,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * In XMPP, there is no state to a messaging session, so this method always returns "open."
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.getState
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.getState
      * @return {string} The state of the signaling channel.
     */
     var getState = that.publicize('getState', function () {
@@ -72,8 +72,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Whether signaling channel is open.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.isOpen
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.isOpen
      * @return {boolean}
      */
     var isOpen = that.publicize('isOpen', function () {
@@ -83,8 +83,8 @@ webrtc.XMPPSignalingChannel = function (params) {
     /**
      * Generate and send a presence stanza representing the user's current status. This triggers the
      * server to send the user's contact's presence.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.sendPresence
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.sendPresence
      * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
      */
     var sendPresence = that.publicize('sendPresence', function (presenceString) {
@@ -116,8 +116,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Generate an iq stanza requesting the server send the user's roster.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.requestRoster
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.requestRoster
      * @param {string} myJID User's JID.
      */
     var requestRoster = that.publicize('requestRoster', function (myJID) {
@@ -138,8 +138,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Send a chat message.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.sendMessage
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
      * @fires webrtc.Endpoint#message:sent
      */
@@ -151,8 +151,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Stringify object message. Build an XMPP stanza with Strophe. Send it to the XMPP server.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.send
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.send
      * @param {string} recipient The recipient of the message.
      * @param {object} msgObj A JavaScript object to JSONify before sending as an XMPP message.
      * @deprecated
@@ -186,8 +186,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Send an ICE candidate to the XMPP server.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.sendCandidate
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.sendCandidate
      * @param {string} recipient The JID of the recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send as an XMPP message.
      */
@@ -211,8 +211,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Send an SDP to the XMPP server.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.sendSDP
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.sendSDP
      * @param {string} recipient The JID of the recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send as an XMPP message.
      */
@@ -236,8 +236,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Send an message terminating the WebRTC session to the XMPP server.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.sendBye
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.sendBye
      * @param {string} recipient The JID of the recipient.
      * @param {string} reason The reason the session is being terminated.
      */
@@ -264,8 +264,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Parse an XMPP message and find the JSON signaling blob in it.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.parseText
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.parseText
      * @param {object} msgXML An XMPP signaling stanza.
      * @return {object} signalingObj A JavaScript object containing the signaling information.
      */
@@ -296,9 +296,9 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Route different types of signaling messages via events.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.routeSignal
-     * @param {webrtc.XMPPSignalingMessage} message A message to route
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.routeSignal
+     * @param {webrtc.SignalingMessage} message A message to route
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var mediaSession = webrtc.getClient(client).user.getMediaSessionByContact(message.sender);
@@ -323,8 +323,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Add a handler to the Strophe connection for XMPP messages of different types.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.addHandler
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.addHandler
      * @param {string} type The type of stanza, e. g., 'iq', 'pres'
      * @param {function} handler A function to which to pass the message
      */
@@ -334,8 +334,8 @@ webrtc.XMPPSignalingChannel = function (params) {
 
     /**
      * Authenticate to via Strophe and call the handler on state change.
-     * @memberof! webrtc.XMPPSignalingChannel
-     * @method webrtc.XMPPSignalingChannel.authenticate
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.authenticate
      * @param {string} username The XMPP JID and resource
      * @param {string} password The XMPP password.
      * @param {function} onStatusChange A function to which to call on every state change.
@@ -347,34 +347,34 @@ webrtc.XMPPSignalingChannel = function (params) {
     );
 
     return that;
-}; // End webrtc.XMPPSignalingChannel
+}; // End webrtc.SignalingChannel
 
 /**
  * Create a new XMPPIdentityProvider.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments webrtc.IdentityProvider
+ * @augments webrtc.AbstractIdentityProvider
  * @classdesc XMPP Identity provider class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPIdentityProvider}
+ * @returns {webrtc.IdentityProvider}
  */
-webrtc.XMPPIdentityProvider = function (params) {
+webrtc.IdentityProvider = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.IdentityProvider(params);
+    var that = webrtc.AbstractIdentityProvider(params);
     delete that.client;
-    that.className = 'webrtc.XMPPIdentityProvider';
+    that.className = 'webrtc.IdentityProvider';
 
     var signalingChannel = null;
     var loggedIn = false;
 
     /**
      * Log an XMPP user in.
-     * @memberof! webrtc.XMPPIdentityProvider
-     * @method webrtc.XMPPIdentityProvider.login
+     * @memberof! webrtc.IdentityProvider
+     * @method webrtc.IdentityProvider.login
      * @param {string} username The XMPP user's Jabber ID (jid).
      * @param {string} password The XMPP user's password.
      * @returns {Promise<webrtc.User>}
@@ -397,7 +397,7 @@ webrtc.XMPPIdentityProvider = function (params) {
 
             if (statusCode === Strophe.Status.CONNECTED) {
                 log.info('Strophe is connected.');
-                user = webrtc.XMPPUser({
+                user = webrtc.User({
                     'client': client,
                     'jid': username,
                     'loggedIn': true
@@ -424,8 +424,8 @@ webrtc.XMPPIdentityProvider = function (params) {
 
     /**
      * Log an XMPP user out.
-     * @memberof! webrtc.XMPPIdentityProvider
-     * @method webrtc.XMPPIdentityProvider.logout
+     * @memberof! webrtc.IdentityProvider
+     * @method webrtc.IdentityProvider.logout
      */
     var logout = that.publicize('logout', function () {
         log.trace("User logout");
@@ -437,8 +437,8 @@ webrtc.XMPPIdentityProvider = function (params) {
 
     /**
      * Whether logged in
-     * @memberof! webrtc.XMPPIdentityProvider
-     * @method webrtc.XMPPIdentityProvider.isLoggedIn
+     * @memberof! webrtc.IdentityProvider
+     * @method webrtc.IdentityProvider.isLoggedIn
      * @return {boolean}
      */
     var isLoggedIn = that.publicize('isLoggedIn', function () {
@@ -446,14 +446,14 @@ webrtc.XMPPIdentityProvider = function (params) {
     });
 
     return that;
-}; // End webrtc.XMPPIdentityProvider
+}; // End webrtc.IdentityProvider
 
 /**
  * Create a new XMPPPresentable.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments webrtc.Presentable
+ * @augments webrtc.AbstractPresentable
  * @classdesc XMPP Presentable class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -464,16 +464,16 @@ webrtc.XMPPIdentityProvider = function (params) {
  * @property {string} resourceFormat JID with resource, e. g., espiceland@digium.com/fjkahsfhadf
  * @property {string} idstring JID without resource with @ replaced by . for use in DOM, e. g.,
  * espiceland.digium.com.
- * @returns {webrtc.XMPPPresentable}
+ * @returns {webrtc.Presentable}
  */
-webrtc.XMPPPresentable = function (params) {
+webrtc.Presentable = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Presentable(params);
+    var that = webrtc.AbstractPresentable(params);
     delete that.client;
 
-    that.className = 'webrtc.XMPPPresentable';
+    that.className = 'webrtc.Presentable';
     that.domain = null;
     that.username = null;
     that.emailFormat = null;
@@ -494,8 +494,8 @@ webrtc.XMPPPresentable = function (params) {
      * Set identity information such as username, domain, email format from JID. This method exists
      * in this form so that we can create instances of this class without a JID for creating
      * subclasses. Called from the constructor or from setJID().
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.init
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.init
      * @private
      */
     var init = function () {
@@ -531,8 +531,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Use getEmailFormat as getID.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getEmailFormat
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getEmailFormat
      * @return {string} email
      */
     var getID = that.publicize('getID', function () {
@@ -541,8 +541,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Get the JID without the resource.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getEmailFormat
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getEmailFormat
      * @return {string} email
      */
     var getEmailFormat = that.publicize('getEmailFormat', function () {
@@ -551,8 +551,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Get the JID with the resource.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getResourceFormat
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getResourceFormat
      * @return {string} resourcejid
      */
     var getResourceFormat = that.publicize('getResourceFormat', function () {
@@ -562,8 +562,8 @@ webrtc.XMPPPresentable = function (params) {
     /**
      * Get the a unique id formatted from the JID with resource that has the @ and / replaced with
      * periods to serve as a dom ID.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getIDString
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getIDString
      * @return {string} idstring
      */
     var getIDString = that.publicize('getIDString', function () {
@@ -572,8 +572,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Get the display name of the endpoint.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getDisplayName
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getDisplayName
      * @return {string} displayName
      */
     var getDisplayName = that.publicize('getDisplayName', function () {
@@ -582,8 +582,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Get the username.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getUsername
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getUsername
      * @return {string} displayName
      */
     var getUsername = that.publicize('getUsername', function () {
@@ -592,8 +592,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Determine whether a JID matches the JID of this endpoint.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.matchesJID
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.matchesJID
      * @param {string} jid A JID with or without resource to compare this user's JID to for
      * equality.
      * @return {boolean}
@@ -611,8 +611,8 @@ webrtc.XMPPPresentable = function (params) {
 
     /**
      * Get the presence of the endpoint.
-     * @memberof! webrtc.XMPPPresentable
-     * @method webrtc.XMPPPresentable.getStatus
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getStatus
      * @deprecated Use or override getPresence instead.
      */
     var getStatus = that.publicize('getStatus', function () {
@@ -624,36 +624,36 @@ webrtc.XMPPPresentable = function (params) {
     }
 
     return that;
-}; // End webrtc.XMPPPresentable
+}; // End webrtc.Presentable
 
 /**
  * Create a new XMPPEndpoint.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments webrtc.XMPPPresentable
+ * @augments webrtc.Presentable
  * @classdesc XMPP Endpoint class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPEndpoint}
+ * @returns {webrtc.Endpoint}
  */
-webrtc.XMPPEndpoint = function (params) {
+webrtc.Endpoint = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.XMPPPresentable(params);
+    var that = webrtc.Presentable(params);
     delete that.client;
-    that.className = 'webrtc.XMPPEndpoint';
+    that.className = 'webrtc.Endpoint';
 
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to the endpoint.
-     * @memberof! webrtc.XMPPEndpoint
-     * @method webrtc.XMPPEndpoint.sendMessage
+     * @memberof! webrtc.Endpoint
+     * @method webrtc.Endpoint.sendMessage
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
-        signalingChannel.sendMessage(webrtc.XMPPChatMessage({
+        signalingChannel.sendMessage(webrtc.ChatMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getResourceFormat(),
             'payload': message
@@ -663,8 +663,8 @@ webrtc.XMPPEndpoint = function (params) {
     /**
      * Create a new MediaSession for a voice and/or video call. If initiator is set to true,
      * the MediaSession will start the call.
-     * @memberof! webrtc.XMPPEndpoint
-     * @method webrtc.XMPPEndpoint.startMedia
+     * @memberof! webrtc.Endpoint
+     * @method webrtc.Endpoint.startMedia
      * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.MediaSession}
@@ -672,6 +672,7 @@ webrtc.XMPPEndpoint = function (params) {
     var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
         var id = that.getID();
         var mediaSession = null;
+        var user = webrtc.getClient(client).user;
 
         log.trace('startMedia');
         if (initiator === undefined) {
@@ -680,7 +681,7 @@ webrtc.XMPPEndpoint = function (params) {
 
         mediaSession = webrtc.MediaSession({
             'client': client,
-            'username': webrtc.getClient(client).user,
+            'username': user.getUsername(),
             'remoteEndpoint': id,
             'initiator': initiator,
             'signalInitiate' : function (sdp) {
@@ -706,33 +707,33 @@ webrtc.XMPPEndpoint = function (params) {
         });
 
         mediaSession.start();
-        webrtc.getClient(client).user.addMediaSession(mediaSession);
+        user.addMediaSession(mediaSession);
         mediaSession.listen('hangup', function (locallySignaled) {
-            webrtc.getClient(client).user.removeMediaSession(id);
+            user.removeMediaSession(id);
         });
         return mediaSession;
     });
 
     return that;
-}; // End webrtc.XMPPEndpoint
+}; // End webrtc.Endpoint
 
 /**
  * Create a new XMPPContact.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments webrtc.XMPPEndpoint
+ * @augments webrtc.Endpoint
  * @classdesc XMPP Contact class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPContact}
+ * @returns {webrtc.Contact}
  */
-webrtc.XMPPContact = function (params) {
+webrtc.Contact = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.XMPPEndpoint(params);
+    var that = webrtc.Endpoint(params);
     delete that.client;
-    that.className = 'webrtc.XMPPContact';
+    that.className = 'webrtc.Contact';
 
     var presence = 'unavailable';
     var subscription = 'both';
@@ -740,8 +741,8 @@ webrtc.XMPPContact = function (params) {
 
     /**
      * Set the presence on the Contact and the resource
-     * @memberof! webrtc.XMPPContact
-     * @method webrtc.XMPPContact.setPresence
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.setPresence
      */
     var setPresence = that.publicize('setPresence', function (presenceString, resourceID) {
         // undefined is a valid presenceString equivalent to available.
@@ -759,10 +760,10 @@ webrtc.XMPPContact = function (params) {
 
     /**
      * Loop through resources; resolve presence into identity-wide presence. Set presence attribute.
-     * @memberof! webrtc.XMPPContact
-     * @method webrtc.XMPPContact.setPresence
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.setPresence
      * @private
-     * @fires webrtc.XMPPPresentable#presence
+     * @fires webrtc.Presentable#presence
      */
     var resolvePresence = function () {
         var options = [];
@@ -803,26 +804,26 @@ webrtc.XMPPContact = function (params) {
 
 
     return that;
-}; // End webrtc.XMPPContact
+}; // End webrtc.Contact
 
 /**
- * Create a new XMPPUser. This class does NOT extend {webrtc.User} but should! Make
- * {webrtc.Class.extend} support multiple inheritance?
+ * Create a new XMPPUser. This class does NOT extend {webrtc.AbstractUser} but it really should!
+ * Should we attempt to support multiple inheritance?
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments webrtc.XMPPPresentable
+ * @augments webrtc.Presentable
  * @classdesc XMPP User class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPUser}
+ * @returns {webrtc.User}
  */
-webrtc.XMPPUser = function (params) {
+webrtc.User = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.XMPPPresentable(params);
+    var that = webrtc.Presentable(params);
     delete that.client;
-    that.className = 'webrtc.XMPPUser';
+    that.className = 'webrtc.User';
 
     var subscription = 'both';
     var remoteUserSessions = {};
@@ -895,8 +896,8 @@ webrtc.XMPPUser = function (params) {
 
     /**
      * Send iq stanza requesting roster.
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.requestContacts
+     * @memberof! webrtc.User
+     * @method webrtc.User.requestContacts
      * @returns {Promise<webrtc.ContactList>}
      */
     var requestContacts = that.publicize('requestContacts', function () {
@@ -933,7 +934,7 @@ webrtc.XMPPUser = function (params) {
                 }
 
                 try {
-                    contact = webrtc.XMPPContact({
+                    contact = webrtc.Contact({
                         'client': client,
                         'jid': jid,
                         'name': name,
@@ -955,8 +956,8 @@ webrtc.XMPPUser = function (params) {
 
     /**
      * Get the User's locally logged-in UserSession
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.getUserSession
+     * @memberof! webrtc.User
+     * @method webrtc.User.getUserSession
      * @returns {webrtc.UserSession}
      */
     var getUserSession = that.publicize('getUserSession', function () {
@@ -966,8 +967,8 @@ webrtc.XMPPUser = function (params) {
     /**
      * Get the active MediaSession.  Can there be multiple active MediaSessions? Should we timestamp
      * them and return the most recently used? Should we create a MediaSession if none exist?
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.getActiveMediaSession
+     * @memberof! webrtc.User
+     * @method webrtc.User.getActiveMediaSession
      * @returns {webrtc.MediaSession}
      */
     var getActiveMediaSession = that.publicize('getActiveMediaSession', function () {
@@ -983,8 +984,8 @@ webrtc.XMPPUser = function (params) {
 
     /**
      * Get the MediaSession with the contact specified.
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.getMediaSessionByContact
+     * @memberof! webrtc.User
+     * @method webrtc.User.getMediaSessionByContact
      * @param {string} JID without resource of the contact to search for.
      * @returns {webrtc.MediaSession}
      */
@@ -1014,8 +1015,8 @@ webrtc.XMPPUser = function (params) {
 
     /**
      * Associate the media session with this user.
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.addMediaSession
+     * @memberof! webrtc.User
+     * @method webrtc.User.addMediaSession
      * @param {webrtc.MediaSession} mediaSession
      * @fires webrtc.User#media:started
      */
@@ -1026,8 +1027,8 @@ webrtc.XMPPUser = function (params) {
 
     /**
      * Remove the media session.
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.removeMediaSession
+     * @memberof! webrtc.User
+     * @method webrtc.User.removeMediaSession
      * @param {string} Optional JID without resource of the contact to search for.
      */
     var removeMediaSession = that.publicize('removeMediaSession', function (contactJID) {
@@ -1055,8 +1056,8 @@ webrtc.XMPPUser = function (params) {
     /**
      * Set presence to available. First use of this function triggers reception of presence per XMPP
      * spec, so we will add a handler to listen for it before sending our presence.
-     * @memberof! webrtc.XMPPUser
-     * @method webrtc.XMPPUser.setOnline
+     * @memberof! webrtc.User
+     * @method webrtc.User.setOnline
      */
     var setOnline = that.publicize('setOnline', function () {
         /* Now we know this user cares about their own presence, we can assume he
@@ -1064,7 +1065,7 @@ webrtc.XMPPUser = function (params) {
          */
         signalingChannel.addHandler('presence', function (stanza) {
             log.debug(stanza);
-            var message = webrtc.getClient(client).presenceMessage({
+            var message = webrtc.PresenceMessage({
                 'rawMessage': stanza,
                 'sender': stanza.getAttribute('from'),
                 'recipient': that
@@ -1086,7 +1087,9 @@ webrtc.XMPPUser = function (params) {
             var fromPieces = [];
             var contact = null;
             var params = null;
+
             log.debug(stanza);
+
             if (['chat', 'signaling', 'groupchat'].indexOf(type) === -1) {
                 log.warn('wrong type ' + type);
                 return true;
@@ -1094,21 +1097,23 @@ webrtc.XMPPUser = function (params) {
 
             fromPieces = from.split('/');
             contact = contactList.get(fromPieces[0]);
+
             if (!contact) {
                 log.info("no contact");
                 return true;
             }
+
             params = {
                 'client': client,
                 'rawMessage': stanza,
                 'recipient': that,
                 'sender': contact.getResourceFormat()
             };
+
             if (type === 'signaling') {
-                contact.fire('signaling:received',
-                        webrtc.getClient(client).signalingMessage(params));
+                contact.fire('signaling:received', webrtc.SignalingMessage(params));
             } else {
-                contact.fire('message:received', webrtc.getClient(client).chatMessage(params));
+                contact.fire('message:received', webrtc.ChatMessage(params));
             }
             return true;
         });
@@ -1117,27 +1122,27 @@ webrtc.XMPPUser = function (params) {
     });
 
     return that;
-}; // End webrtc.XMPPUser
+}; // End webrtc.User
 
 /**
  * Create a new XMPPChatMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.XMPPChatMessage
+ * @class webrtc.ChatMessage
  * @constructor
- * @augments webrtc.Message
+ * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPChatMessage}
+ * @returns {webrtc.ChatMessage}
  */
-webrtc.XMPPChatMessage = function (params) {
+webrtc.ChatMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Message(params);
+    var that = webrtc.AbstractMessage(params);
     delete that.client;
 
-    that.className = 'webrtc.XMPPChatMessage';
+    that.className = 'webrtc.ChatMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
     var payload = params.payload; // Only set on outgoing message.
     var sender = params.sender;
@@ -1145,8 +1150,8 @@ webrtc.XMPPChatMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.XMPPChatMessage
-     * @method webrtc.XMPPChatMessage.parse
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
@@ -1162,8 +1167,8 @@ webrtc.XMPPChatMessage = function (params) {
 
     /**
      * Construct an XMPP Stanza
-     * @memberof! webrtc.XMPPChatMessage
-     * @method webrtc.XMPPChatMessage.getXMPP
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getXMPP
      * @returns {object} Strophe XMPP stanza.
      */
     var getXMPP = that.publicize('getXMPP', function () {
@@ -1176,8 +1181,8 @@ webrtc.XMPPChatMessage = function (params) {
 
     /**
      * Get the whole payload.
-     * @memberof! webrtc.XMPPChatMessage
-     * @method webrtc.XMPPChatMessage.getPayload
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getPayload
      * @returns {string}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1186,16 +1191,16 @@ webrtc.XMPPChatMessage = function (params) {
 
     /**
      * Get the whole chat message.
-     * @memberof! webrtc.XMPPChatMessage
-     * @method webrtc.XMPPChatMessage.getText
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', getPayload);
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.XMPPChatMessage
-     * @method webrtc.XMPPChatMessage.getRecipient
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -1207,26 +1212,26 @@ webrtc.XMPPChatMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.XMPPChatMessage
+}; // End webrtc.ChatMessage
 
 /**
  * Create a new XMPPSignalingMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.XMPPSignalingMessage
+ * @class webrtc.SignalingMessage
  * @constructor
- * @augments webrtc.Message
+ * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPSignalingMessage}
+ * @returns {webrtc.SignalingMessage}
  */
-webrtc.XMPPSignalingMessage = function (params) {
+webrtc.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Message(params);
+    var that = webrtc.AbstractMessage(params);
     delete that.client;
-    that.className = 'webrtc.XMPPSignalingMessage';
+    that.className = 'webrtc.SignalingMessage';
 
     var rawMessage = params.rawMessage;
     var payload = null;
@@ -1235,8 +1240,8 @@ webrtc.XMPPSignalingMessage = function (params) {
 
     /**
      * Parse and format messages for consumption by the router
-     * @memberof! webrtc.XMPPSignalingMessage
-     * @method webrtc.XMPPSignalingMessage.parse
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.parse
      */
     var parse = that.publicize('parse', function () {
         payload = webrtc.getClient(client).getSignalingChannel().parseText(rawMessage);
@@ -1244,8 +1249,8 @@ webrtc.XMPPSignalingMessage = function (params) {
 
     /**
      * Attempt to construct a string from the payload.
-     * @memberof! webrtc.XMPPSignalingMessage
-     * @method webrtc.XMPPSignalingMessage.getText
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getText
      * @returns {string} A string that may represent the value of the payload.
      * @abstract
      */
@@ -1255,8 +1260,8 @@ webrtc.XMPPSignalingMessage = function (params) {
 
     /**
      * Get the whole payload
-     * @memberof! webrtc.XMPPSignalingMessage
-     * @method webrtc.XMPPSignalingMessage.getPayload
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getPayload
      * @returns {object}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1265,8 +1270,8 @@ webrtc.XMPPSignalingMessage = function (params) {
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.XMPPSignalingMessage
-     * @method webrtc.XMPPSignalingMessage.getRecipient
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -1278,26 +1283,26 @@ webrtc.XMPPSignalingMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.XMPPSignalingMessage
+}; // End webrtc.SignalingMessage
 
 /**
  * Create a new XMPPPresenceMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.XMPPPresenceMessage
+ * @class webrtc.PresenceMessage
  * @constructor
- * @augments webrtc.Message
+ * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.XMPPPresenceMessage}
+ * @returns {webrtc.PresenceMessage}
  */
-webrtc.XMPPPresenceMessage = function (params) {
+webrtc.PresenceMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Message(params);
+    var that = webrtc.AbstractMessage(params);
     delete that.client;
-    that.className = 'webrtc.XMPPPresenceMessage';
+    that.className = 'webrtc.PresenceMessage';
 
     var rawMessage = params.rawMessage;
     var payload = {};
@@ -1306,8 +1311,8 @@ webrtc.XMPPPresenceMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.XMPPPresenceMessage
-     * @method webrtc.XMPPPresenceMessage.parse
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.parse
      * @param {object|string} rawMessage Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
@@ -1333,8 +1338,8 @@ webrtc.XMPPPresenceMessage = function (params) {
 
     /**
      * Construct an XMPP Presence Stanza
-     * @memberof! webrtc.XMPPPresenceMessage
-     * @method webrtc.XMPPPresenceMessage.getXMPP
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getXMPP
      */
     var getXMPP = that.publicize('getXMPP', function () {
         if (!payload) {
@@ -1349,8 +1354,8 @@ webrtc.XMPPPresenceMessage = function (params) {
 
     /**
      * Get the presence string.
-     * @memberof! webrtc.XMPPPresenceMessage
-     * @method webrtc.XMPPPresenceMessage.getText
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', function () {
@@ -1362,8 +1367,8 @@ webrtc.XMPPPresenceMessage = function (params) {
 
     /**
      * Get the whole payload
-     * @memberof! webrtc.XMPPPreseceMessage
-     * @method webrtc.XMPPPresenceMessage.getPayload
+     * @memberof! webrtc.PreseceMessage
+     * @method webrtc.PresenceMessage.getPayload
      * @returns {object}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1372,8 +1377,8 @@ webrtc.XMPPPresenceMessage = function (params) {
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.XMPPPresenceMessage
-     * @method webrtc.XMPPPresenceMessage.getRecipient
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -1385,4 +1390,4 @@ webrtc.XMPPPresenceMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.XMPPPresenceMessage
+}; // End webrtc.PresenceMessage

@@ -1,7 +1,7 @@
 /**
  * Create a new Presentable, the base class for User, Endpoint, and Contact.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.Presentable
+ * @class webrtc.AbstractPresentable
  * @constructor
  * @augments webrtc.EventThrower
  * @classdesc Information describing a nameable entity which has presence and skills.
@@ -16,13 +16,13 @@
  */
 
 /*global webrtc: false */
-webrtc.Presentable = function (params) {
+webrtc.AbstractPresentable = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
     var that = webrtc.EventThrower(params);
     delete that.client;
-    that.className = 'webrtc.Presentable';
+    that.className = 'webrtc.AbstractPresentable';
 
     that.name = 'Unknown';
     that.id = '';
@@ -42,8 +42,8 @@ webrtc.Presentable = function (params) {
      * Indicate whether the entity has an active MediaSession. Should we only return true if
      * media is flowing, or anytime a WebRTC session is active? Should it return true if the
      * engaged in a media session on another device?
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.hasMedia
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.hasMedia
      * @returns {boolean}
      */
     var hasMedia = that.publicize('hasMedia', function () {
@@ -52,8 +52,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Indicate whether the entity is capable of sending audio.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.canSendAudio
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.canSendAudio
      * @returns {boolean}
      */
     var canSendAudio = that.publicize('canSendAudio', function () {
@@ -62,8 +62,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Indicate whether the entity is capable of sending video.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.canSendVideo
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.canSendVideo
      * @returns {boolean}
      */
     var canSendVideo = that.publicize('canSendVideo', function () {
@@ -72,8 +72,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Get the unique id.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getID
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.getID
      * @returns {string} A unique ID for the object.
      */
     var getID = that.publicize('getID', function () {
@@ -82,8 +82,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Get the name.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getName
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.getName
      * @returns {string} The name of the object.
      */
     var getName = that.publicize('getName', function () {
@@ -92,8 +92,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Get the display name.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getDisplayName
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.getDisplayName
      * @returns {string} The display name of the object.
      */
     var getDisplayName = that.publicize('getDisplayName', function () {
@@ -102,8 +102,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Get the presence.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getPresence
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.getPresence
      * @returns {string}
      */
     var getPresence = that.publicize('getPresence', function () {
@@ -112,11 +112,11 @@ webrtc.Presentable = function (params) {
 
     /**
      * Set the presence.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.setPresence
+     * @memberof! webrtc.AbstractPresentable
+     * @method webrtc.AbstractPresentable.setPresence
      * @param {string} presence
      * @returns {string}
-     * @fires webrtc.Presentable#presence
+     * @fires webrtc.AbstractPresentable#presence
      */
     var setPresence = that.publicize('setPresence', function (newPresence) {
         presence = newPresence;
@@ -124,13 +124,13 @@ webrtc.Presentable = function (params) {
     });
 
     return that;
-}; // End webrtc.Presentable
+}; // End webrtc.AbstractPresentable
 
 /**
  * Create a new Endpoint.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.Endpoint
- * @augments webrtc.Presentable
+ * @class webrtc.AbstractEndpoint
+ * @augments webrtc.AbstractPresentable
  * @constructor
  * @classdesc Information which represents an entity which can send and receive messages and media
  * to and from the logged-in User. As proper Endpoints are anonymous (no identity provider) there
@@ -141,21 +141,21 @@ webrtc.Presentable = function (params) {
  * @property {webrtc.MediaSession[]} mediaSessions Array of MediaSessions in progress.
  * this?
  */
-webrtc.Endpoint = function (params) {
+webrtc.AbstractEndpoint = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Presentable(params);
+    var that = webrtc.AbstractPresentable(params);
     delete that.client;
-    that.className = 'webrtc.Endpoint';
+    that.className = 'webrtc.AbstractEndpoint';
 
     that.mediaSessions = [];
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to an Endpoint
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.sendMessage
+     * @memberof! webrtc.AbstractEndpoint
+     * @method webrtc.AbstractEndpoint.sendMessage
      * @param {string} message A message to be sent.
      * @param {successCallback} onSuccess
      * @param {failureCallback} onFailure
@@ -168,8 +168,8 @@ webrtc.Endpoint = function (params) {
 
     /**
      * Start the process of obtaining media
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.startMedia
+     * @memberof! webrtc.AbstractEndpoint
+     * @method webrtc.AbstractEndpoint.startMedia
      * @param {object} mediaSettings Group of media settings from which WebRTC constraints
      * will be generated and with which the SDP will be modified.
      * @returns {webrtc.MediaSession}
@@ -179,18 +179,18 @@ webrtc.Endpoint = function (params) {
 
     /**
      * Stop media.
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.stopMedia
+     * @memberof! webrtc.AbstractEndpoint
+     * @method webrtc.AbstractEndpoint.stopMedia
      */
     var stopMedia = that.publicize('stopMedia', function () {
     });
 
     return that;
-}; // End webrtc.Endpoint
+}; // End webrtc.AbstractEndpoint
 
 /**
  * Create a new User, which represents the currently logged-in User.
- * @class webrtc.User
+ * @class webrtc.AbstractUser
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @classdesc Information describing a User this client app cannot send messages to or initate
@@ -199,23 +199,23 @@ webrtc.Endpoint = function (params) {
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.User}
- * @augments webrtc.Presentable
+ * @augments webrtc.AbstractPresentable
  * @property {string} name Display name for this group of user accounts.
  * @property {string} id Unique ID for this group of user accounts. This could be some
  * combination of the identity provider and the identity provider's unique ID.
  * @property {enum} presence Resolved presence information across one or more sessions.
  * @property {object} skills Information describing skills and features this Endpoint supports
- * @property {webrtc.Contact[]} contactList Array of Contacts representing the User's contact list.
+ * @property {webrtc.AbstractContact[]} contactList Array of Contacts representing the User's contact list.
  * across all devices.
  */
 
-webrtc.User = function (params) {
+webrtc.AbstractUser = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Presentable(params);
+    var that = webrtc.AbstractPresentable(params);
     delete that.client;
-    that.className = 'webrtc.User';
+    that.className = 'webrtc.AbstractUser';
 
     var remoteUserSessions = [];
     var contactList = [];
@@ -232,8 +232,8 @@ webrtc.User = function (params) {
 
     /**
      * Get the User's locally logged-in UserSession
-     * @memberof! webrtc.User
-     * @method webrtc.User.getUserSession
+     * @memberof! webrtc.AbstractUser
+     * @method webrtc.AbstractUser.getUserSession
      * @returns {webrtc.UserSession}
      */
     var getUserSession = that.publicize('getUserSession', function () {
@@ -242,8 +242,8 @@ webrtc.User = function (params) {
 
     /**
      * Get the User's contact list.
-     * @memberof! webrtc.User
-     * @method webrtc.User.getContactList
+     * @memberof! webrtc.AbstractUser
+     * @method webrtc.AbstractUser.getContactList
      * @returns {webrtc.ContactList}
      */
     var getContactList = that.publicize('getContactList', function () {
@@ -252,8 +252,8 @@ webrtc.User = function (params) {
 
     /**
      * Mark the User as online or available.
-     * @memberof! webrtc.User
-     * @method webrtc.User.setOnline
+     * @memberof! webrtc.AbstractUser
+     * @method webrtc.AbstractUser.setOnline
      * @abstract
      */
     var setOnline = that.publicize('setOnline', function () {
@@ -261,7 +261,7 @@ webrtc.User = function (params) {
     });
 
     return that;
-}; // End webrtc.User
+}; // End webrtc.AbstractUser
 
 /**
  * Create a new UserSession.
@@ -321,27 +321,27 @@ webrtc.UserSession = function (params) {
  * @constructor
  * @classdesc Information describing an identity. Should this be UserSessions? Should it be only
  * sessions logged in with this appKey?
- * @augments webrtc.Endpoint
+ * @augments webrtc.AbstractEndpoint
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.Contact}
  */
-webrtc.Contact = function (params) {
+webrtc.AbstractContact = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Endpoint(params);
+    var that = webrtc.AbstractEndpoint(params);
     delete that.client;
-    that.className = 'webrtc.Contact';
+    that.className = 'webrtc.AbstractContact';
 
     /**
      * Get the history of messages between this Contact and the logged-in User.
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.getMessages
+     * @memberof! webrtc.AbstractContact
+     * @method webrtc.AbstractContact.getMessages
      * @returns {object[]} An array of message objects.
      */
     var getMessages = that.publicize('getMessages', function () {
     });
 
     return that;
-}; // End webrtc.Contact
+}; // End webrtc.AbstractContact
