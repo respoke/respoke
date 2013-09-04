@@ -1,5 +1,5 @@
 /**
- * Create a new XMPPSignalingChannel.
+ * Create a new SignalingChannel.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingChannel
  * @augments webrtc.AbstractSignalingChannel
@@ -449,7 +449,7 @@ webrtc.IdentityProvider = function (params) {
 }; // End webrtc.IdentityProvider
 
 /**
- * Create a new XMPPPresentable.
+ * Create a new Presentable.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
@@ -502,7 +502,7 @@ webrtc.Presentable = function (params) {
         var resourcePieces = [];
         var jidPieces = [];
         if (!that.jid) {
-            throw new Error("Can't use an XMPPPresentable without a JID.");
+            throw new Error("Can't use an Presentable without a JID.");
         }
 
         resourcePieces = that.jid.split('/');
@@ -523,7 +523,7 @@ webrtc.Presentable = function (params) {
         that.domain = jidPieces[1];
 
         if (!that.username || !that.domain || !that.emailFormat) {
-            throw new Error("Can't create an XMPPPresentable. " + that.jid + " is wrong format!");
+            throw new Error("Can't create an Presentable. " + that.jid + " is wrong format!");
         }
 
         that.idstring = that.emailFormat.replace('@', '.');
@@ -627,7 +627,7 @@ webrtc.Presentable = function (params) {
 }; // End webrtc.Presentable
 
 /**
- * Create a new XMPPEndpoint.
+ * Create a new Endpoint.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments webrtc.Presentable
@@ -718,7 +718,7 @@ webrtc.Endpoint = function (params) {
 }; // End webrtc.Endpoint
 
 /**
- * Create a new XMPPContact.
+ * Create a new Contact.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments webrtc.Endpoint
@@ -807,7 +807,7 @@ webrtc.Contact = function (params) {
 }; // End webrtc.Contact
 
 /**
- * Create a new XMPPUser. This class does NOT extend {webrtc.AbstractUser} but it really should!
+ * Create a new User. This class does NOT extend {webrtc.AbstractUser} but it really should!
  * Should we attempt to support multiple inheritance?
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
@@ -1125,7 +1125,7 @@ webrtc.User = function (params) {
 }; // End webrtc.User
 
 /**
- * Create a new XMPPChatMessage.
+ * Create a new ChatMessage.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.ChatMessage
  * @constructor
@@ -1215,7 +1215,7 @@ webrtc.ChatMessage = function (params) {
 }; // End webrtc.ChatMessage
 
 /**
- * Create a new XMPPSignalingMessage.
+ * Create a new SignalingMessage.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingMessage
  * @constructor
@@ -1286,7 +1286,7 @@ webrtc.SignalingMessage = function (params) {
 }; // End webrtc.SignalingMessage
 
 /**
- * Create a new XMPPPresenceMessage.
+ * Create a new PresenceMessage.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.PresenceMessage
  * @constructor

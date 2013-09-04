@@ -61,6 +61,93 @@ webrtc.AbstractIdentityProvider = function (params) {
 }; // End webrtc.AbstractIdentityProvider
 
 /**
+ * Create a new XMPPIdentityProvider.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class
+ * @constructor
+ * @augments webrtc.AbstractIdentityProvider
+ * @classdesc XMPP Identity provider class.
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.IdentityProvider}
+ */
+webrtc.IdentityProvider = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.AbstractIdentityProvider(params);
+    delete that.client;
+    that.className = 'webrtc.IdentityProvider';
+
+    var signalingChannel = null;
+    var loggedIn = false;
+
+    /**
+     * Log a user in.
+     * @memberof! webrtc.IdentityProvider
+     * @method webrtc.IdentityProvider.login
+     * @param {string} username The user's username.
+     * @param {string} password The user's password.
+     * @returns {Promise<webrtc.User>}
+     */
+    var login = that.publicize('login', function (username, password) {
+        var deferred = null;
+        var user = null;
+
+        log.trace("User login");
+        log.debug('client is ' + client);
+
+        if (signalingChannel === null) {
+            signalingChannel = webrtc.getClient(client).getSignalingChannel();
+        }
+        if (!signalingChannel.isOpen()) {
+            signalingChannel.open();
+        }
+        deferred = Q.defer();
+        signalingChannel.authenticate(username, password, function (response, request) {
+            if (response.code === 200) {
+                user = webrtc.User({
+                    'client': client,
+                    'jid': username,
+                    'loggedIn': true
+                });
+                deferred.resolve(user);
+            } else if (response.code === 403) {
+                deferred.reject(new Error("Authentication failed."));
+            } else {
+                deferred.reject(new Error("Unknown error in authentication attempt."));
+            }
+        });
+        return deferred.promise;
+    });
+
+    /**
+     * Log an XMPP user out.
+     * @memberof! webrtc.IdentityProvider
+     * @method webrtc.IdentityProvider.logout
+     */
+    var logout = that.publicize('logout', function () {
+        log.trace("User logout");
+        signalingChannel.listen('closed', function () {
+            loggedIn = false;
+        });
+        signalingChannel.close();
+    });
+
+    /**
+     * Whether logged in
+     * @memberof! webrtc.IdentityProvider
+     * @method webrtc.IdentityProvider.isLoggedIn
+     * @return {boolean}
+     */
+    var isLoggedIn = that.publicize('isLoggedIn', function () {
+        return !!loggedIn;
+    });
+
+    return that;
+}; // End webrtc.IdentityProvider
+
+/**
  * Create a new ContactList.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.ContactList

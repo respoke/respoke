@@ -345,3 +345,475 @@ webrtc.AbstractContact = function (params) {
 
     return that;
 }; // End webrtc.AbstractContact
+
+/**
+ * Create a new Presentable.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class
+ * @constructor
+ * @augments webrtc.AbstractPresentable
+ * @classdesc Presentable class
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @property {string} username
+ * @returns {webrtc.Presentable}
+ */
+webrtc.Presentable = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.AbstractPresentable(params);
+    delete that.client;
+
+    that.className = 'webrtc.Presentable';
+    that.username = null;
+    that.idstring = null;
+    var resources = [];
+    var presence = 'unavailable';
+
+    that.listen('signaling:received', function (message) {
+        try {
+            webrtc.getClient(client).getSignalingChannel().routeSignal(message);
+        } catch (e) {
+            log.error("Couldn't route message: " + e.message);
+        }
+    });
+
+    /**
+     * Return the user ID
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getID
+     * @return {string} id
+     */
+    var getID = that.publicize('getID', function () {
+        return that.id;
+    });
+
+    /**
+     * Get the display name of the endpoint.
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getDisplayName
+     * @return {string} displayName
+     */
+    var getDisplayName = that.publicize('getDisplayName', function () {
+        return that.name || that.username || that.id;
+    });
+
+    /**
+     * Get the username.
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getUsername
+     * @return {string} displayName
+     */
+    var getUsername = that.publicize('getUsername', function () {
+        return that.username;
+    });
+
+    /**
+     * Get the presence of the endpoint.
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getStatus
+     * @deprecated Use or override getPresence instead.
+     */
+    var getStatus = that.publicize('getStatus', function () {
+        return presence;
+    });
+
+    return that;
+}; // End webrtc.Presentable
+
+/**
+ * Create a new Endpoint.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @constructor
+ * @augments webrtc.Presentable
+ * @classdesc Endpoint class
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.Endpoint}
+ */
+webrtc.Endpoint = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.Presentable(params);
+    delete that.client;
+    that.className = 'webrtc.Endpoint';
+
+    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+
+    /**
+     * Send a message to the endpoint.
+     * @memberof! webrtc.Endpoint
+     * @method webrtc.Endpoint.sendMessage
+     * @params {object} message The message to send
+     */
+    var sendMessage = that.publicize('sendMessage', function (message) {
+        signalingChannel.sendMessage(webrtc.ChatMessage({
+            'recipient': that,
+            'sender': webrtc.getClient(client).user.getResourceFormat(),
+            'payload': message
+        }));
+    });
+
+    /**
+     * Create a new MediaSession for a voice and/or video call. If initiator is set to true,
+     * the MediaSession will start the call.
+     * @memberof! webrtc.Endpoint
+     * @method webrtc.Endpoint.startMedia
+     * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
+     * @param {boolean} Optional Whether the logged-in user initiated the call.
+     * @returns {webrtc.MediaSession}
+     */
+    var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
+        var id = that.getID();
+        var mediaSession = null;
+        var user = webrtc.getClient(client).user;
+
+        log.trace('startMedia');
+        if (initiator === undefined) {
+            initiator = true;
+        }
+
+        mediaSession = webrtc.MediaSession({
+            'client': client,
+            'username': user.getUsername(),
+            'remoteEndpoint': id,
+            'initiator': initiator,
+            'signalInitiate' : function (sdp) {
+                sdp.type = 'offer';
+                signalingChannel.sendSDP(id, sdp);
+            },
+            'signalAccept' : function (sdp) {
+                sdp.type = 'answer';
+                signalingChannel.sendSDP(id, sdp);
+            },
+            'signalCandidate' : function (oCan) {
+                if (oCan !== null) {
+                    signalingChannel.sendCandidate(id, oCan);
+                }
+            },
+            'signalTerminate' : function () {
+                signalingChannel.sendBye(id);
+            },
+            'signalReport' : function (oReport) {
+                log.debug("Not sending report");
+                log.debug(oReport);
+            }
+        });
+
+        mediaSession.start();
+        user.addMediaSession(mediaSession);
+        mediaSession.listen('hangup', function (locallySignaled) {
+            user.removeMediaSession(id);
+        });
+        return mediaSession;
+    });
+
+    return that;
+}; // End webrtc.Endpoint
+
+/**
+ * Create a new Contact.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @constructor
+ * @augments webrtc.Endpoint
+ * @classdesc Contact class
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.Contact}
+ */
+webrtc.Contact = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.Endpoint(params);
+    delete that.client;
+    that.className = 'webrtc.Contact';
+
+    var presence = 'unavailable';
+    var subscription = 'both';
+    var resources = {};
+
+    /**
+     * Set the presence on the Contact and the resource
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.setPresence
+     */
+    var setPresence = that.publicize('setPresence', function (presenceString, resourceID) {
+        // undefined is a valid presenceString equivalent to available.
+        presenceString = presenceString || 'available';
+
+        if (!resources.hasOwnProperty(resourceID)) {
+            resources[resourceID] = {
+                'resourceID': resourceID,
+                'presence': presenceString
+            };
+        }
+        resources[resourceID].presence = presenceString;
+        resolvePresence();
+    });
+
+    /**
+     * Loop through resources; resolve presence into identity-wide presence. Set presence attribute.
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.setPresence
+     * @private
+     * @fires webrtc.Presentable#presence
+     */
+    var resolvePresence = function () {
+        var options = [];
+        resources.forOwn(function (resource) {
+            options.push(resource.presence);
+            switch (resource.presence) {
+            case 'chat':
+                presence = resource.presence;
+                break;
+            case 'available':
+                if (!(presence in ['chat'])) {
+                    presence = resource.presence;
+                }
+                break;
+            case 'away':
+                if (!(presence in ['chat', 'available'])) {
+                    presence = resource.presence;
+                }
+                break;
+            case 'dnd':
+                if (!(presence in ['chat', 'available', 'away'])) {
+                    presence = resource.presence;
+                }
+                break;
+            case 'xa':
+                if (!(presence in ['chat', 'available', 'away', 'dnd'])) {
+                    presence = resource.presence;
+                }
+                break;
+            }
+        });
+        if (!presence) {
+            presence = 'unavailable';
+        }
+        log.debug("presences " + options.join(', ') + " resolved to " + presence);
+        that.fire('presence', presence);
+    };
+
+
+    return that;
+}; // End webrtc.Contact
+
+/**
+ * Create a new User. This class does NOT extend {webrtc.AbstractUser} but it really should!
+ * Should we attempt to support multiple inheritance?
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @constructor
+ * @augments webrtc.Presentable
+ * @classdesc User class
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.User}
+ */
+webrtc.User = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.Presentable(params);
+    delete that.client;
+    that.className = 'webrtc.User';
+
+    var remoteUserSessions = {};
+    var mediaSessions = [];
+    var contactList = webrtc.ContactList({'client': client});
+    var presenceQueue = [];
+    var presence = 'unavailable';
+    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+    var userSession = webrtc.UserSession({
+        'client': client,
+        'token': params.token,
+        'timeLoggedIn': params.timeLoggedIn,
+        'loggedIn': params.loggedIn
+    });
+
+    // listen to webrtc.User#presence:update -- the logged-in user's presence
+    that.listen("presence", function (presenceString) {
+        presence = presenceString;
+        if (signalingChannel && signalingChannel.isOpen()) {
+            log.info('sending my presence update ' + presenceString);
+            signalingChannel.sendPresence(presenceString);
+        } else {
+            log.error("Can't send my presence: no signaling channel.");
+        }
+    });
+
+    // listen to webrtc.ContactList#presence -- the contacts's presences
+    contactList.listen('new', function (contact) {
+        that.fire('contact:new', contact);
+    });
+
+    // listen to webrtc.ContactList#presence -- the contacts's presences
+    contactList.listen('presence', function (presenceMessage) {
+        var presPayload = null;
+        var from = null;
+        var contact = null;
+        /*
+         * Parse the message, add the session to contact sessions or usersessions if it's us,
+         * modify the contact's presence using contact.setPresence, which will fire the event
+         */
+    });
+
+    /**
+     * Send iq stanza requesting roster.
+     * @memberof! webrtc.User
+     * @method webrtc.User.requestContacts
+     * @returns {Promise<webrtc.ContactList>}
+     */
+    var requestContacts = that.publicize('requestContacts', function () {
+        var deferred = Q.defer();
+        var itemElements = [];
+        if (!userSession.isLoggedIn()) {
+            deferred.reject(new Error("Can't request contacts unless logged in."));
+            return deferred.promise;
+        }
+        deferred.promise.then(function (contactList) {
+            setTimeout(function () {
+                contactList.processPresenceQueue();
+            }, 1000);
+        }, function (err) {
+            throw err;
+        }).done();
+
+        signalingChannel.getContactList(function (response, request) {
+            if (response.code === 200) {
+                response.result.forEach(function (contactInfo) {
+                    var contact = webrtc.Contact({
+                        'client': client,
+                        'id': contactInfo.contactId,
+                        'username': contactInfo.username,
+                        'name': contactInfo.name
+                    });
+                    contactList.add(contact);
+                });
+                deferred.resolve(contactList);
+            } else if (response.code === 404) {
+                deferred.resolve(contactList);
+            } else {
+                deferred.reject(new Error("Can't get contact list: " + response.error));
+            }
+        });
+        return deferred.promise;
+    });
+
+    /**
+     * Get the User's locally logged-in UserSession
+     * @memberof! webrtc.User
+     * @method webrtc.User.getUserSession
+     * @returns {webrtc.UserSession}
+     */
+    var getUserSession = that.publicize('getUserSession', function () {
+        return userSession;
+    });
+
+    /**
+     * Get the active MediaSession.  Can there be multiple active MediaSessions? Should we timestamp
+     * them and return the most recently used? Should we create a MediaSession if none exist?
+     * @memberof! webrtc.User
+     * @method webrtc.User.getActiveMediaSession
+     * @returns {webrtc.MediaSession}
+     */
+    var getActiveMediaSession = that.publicize('getActiveMediaSession', function () {
+        // TODO search by user, create if doesn't exist?
+        var session = null;
+        mediaSessions.forEach(function (mediaSession) {
+            if (mediaSession.isActive()) {
+                session = mediaSession;
+            }
+        });
+        return session;
+    });
+
+    /**
+     * Get the MediaSession with the contact specified.
+     * @memberof! webrtc.User
+     * @method webrtc.User.getMediaSessionByContact
+     * @param {string} Contact ID
+     * @returns {webrtc.MediaSession}
+     */
+    var getMediaSessionByContact = that.publicize('getMediaSessionByContact',
+        function (contactId) {
+            var session = null;
+            var contact = null;
+            var mediaSettings = null;
+
+            mediaSessions.forEach(function (mediaSession) {
+                if (mediaSession.remoteEndpoint === contactId) {
+                    session = mediaSession;
+                }
+            });
+
+            if (session === null) {
+                try {
+                    contact = contactList.get(contactId);
+                    mediaSettings = webrtc.getClient(client).getMediaSettings();
+                    session = contact.startMedia(mediaSettings, false);
+                    addMediaSession(session);
+                } catch (e) {
+                    log.error("Couldn't create MediaSession: " + e.message);
+                }
+            }
+
+            return session;
+        }
+    );
+
+    /**
+     * Associate the media session with this user.
+     * @memberof! webrtc.User
+     * @method webrtc.User.addMediaSession
+     * @param {webrtc.MediaSession} mediaSession
+     * @fires webrtc.User#media:started
+     */
+    var addMediaSession = that.publicize('addMediaSession', function (mediaSession) {
+        mediaSessions.push(mediaSession);
+        that.fire('media:started', mediaSession, mediaSession.getContactID());
+    });
+
+    /**
+     * Remove the media session.
+     * @memberof! webrtc.User
+     * @method webrtc.User.removeMediaSession
+     * @param {string} Optional Contact ID
+     */
+    var removeMediaSession = that.publicize('removeMediaSession', function (contactId) {
+        var toDelete = null;
+
+        if (!contactId) {
+            mediaSessions = [];
+        }
+
+        mediaSessions.forEach(function (mediaSession, index) {
+            if (mediaSession.remoteEndpoint === contactId) {
+                toDelete = index;
+            }
+        });
+
+        if (toDelete === null) {
+            log.warn("Couldn't find mediaSession in removeMediaSession");
+            return;
+        }
+
+        mediaSessions.splice(toDelete);
+    });
+
+
+    /**
+     * Set presence to available.
+     * @memberof! webrtc.User
+     * @method webrtc.User.setOnline
+     */
+    var setOnline = that.publicize('setOnline', function () {
+        that.setPresence('available');
+    });
+
+    return that;
+}; // End webrtc.User
+

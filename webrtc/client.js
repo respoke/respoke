@@ -9,7 +9,7 @@
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.Client}
- * @property {object} appSettings Application-wide settings.
+ * @property {object} clientSettings Client settings.
  * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
  * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
  * @property {function} chatMessage Class extending webrtc.AbstractMessage to use for chat messages.
@@ -33,7 +33,7 @@ webrtc.Client = function (params) {
     var connected = false;
     var appKey = null;
     var apiToken = null;
-    var appSettings = params.appSettings || {};
+    var clientSettings = params.clientSettings || {};
     log.debug("Client ID is " + client);
 
     var mediaSettings = {
@@ -153,6 +153,16 @@ webrtc.Client = function (params) {
             return !!that.user.getUserSession().isLoggedIn();
         }
         return false;
+    });
+
+    /**
+     * Get an object containing the client settings.
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.getClientSettings
+     * @returns {object} An object containing the client settings.
+     */
+    var getClientSettings = that.publicize('getClientSettings', function () {
+        return clientSettings;
     });
 
     /**
