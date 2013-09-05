@@ -189,7 +189,7 @@ webrtc.SignalingChannel = function (params) {
     var generateCallID = webrtc.makeUniqueID;
 
     /**
-     * In XMPP, there is no state to a messaging session, so this method always returns "open."
+     * Return the state of the signaling channel
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getState
      * @return {string} The state of the signaling channel.
@@ -265,38 +265,38 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
-     * Stringify object message. Build an XMPP stanza with Strophe. Send it to the XMPP server.
+     * Send message to server.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.send
      * @param {string} recipient The recipient of the message.
-     * @param {object} msgObj A JavaScript object to JSONify before sending as an XMPP message.
+     * @param {object} msgObj A JavaScript object to JSONify before sending.
      * @deprecated
      */
     var send = that.publicize('send', function (recipient, msgObj) {
     });
 
     /**
-     * Send an ICE candidate to the XMPP server.
+     * Send an ICE candidate.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendCandidate
      * @param {string} recipient The JID of the recipient.
-     * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send as an XMPP message.
+     * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
     var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
     });
 
     /**
-     * Send an SDP to the XMPP server.
+     * Send an SDP.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendSDP
      * @param {string} recipient The JID of the recipient.
-     * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send as an XMPP message.
+     * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
     var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
     });
 
     /**
-     * Send an message terminating the WebRTC session to the XMPP server.
+     * Send a message terminating the WebRTC session.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendBye
      * @param {string} recipient The JID of the recipient.
@@ -306,14 +306,14 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
-     * Parse an XMPP message and find the JSON signaling blob in it.
+     * Parse a message and find the JSON signaling blob in it.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.parseText
-     * @param {object} msgXML An XMPP signaling stanza.
+     * @param {object} msgString A signaling message.
      * @return {object} signalingObj A JavaScript object containing the signaling information.
      */
-    var parseText = that.publicize('parseText', function (msgXML) {
-        return msgXML;
+    var parseText = that.publicize('parseText', function (msgString) {
+        return msgString;
     });
 
     /**
@@ -344,11 +344,12 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
-     * Add a handler to the Strophe connection for XMPP messages of different types.
+     * Add a handler to the connection for messages of different types.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.addHandler
-     * @param {string} type The type of stanza, e. g., 'iq', 'pres'
+     * @param {string} type The type of message, e. g., 'iq', 'pres'
      * @param {function} handler A function to which to pass the message
+     * @deprecated Not sure how we will route messages yet.
      */
     var addHandler = that.publicize('addHandler', function (type, handler) {
     });
@@ -510,3 +511,253 @@ webrtc.SignalingChannel = function (params) {
 
     return that;
 }; // End webrtc.SignalingChannel
+
+/**
+ * Create a new ChatMessage.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class webrtc.ChatMessage
+ * @constructor
+ * @augments webrtc.AbstractMessage
+ * @classdesc A message.
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.ChatMessage}
+ */
+webrtc.ChatMessage = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.AbstractMessage(params);
+    delete that.client;
+
+    that.className = 'webrtc.ChatMessage';
+    var rawMessage = params.rawMessage; // Only set on incoming message.
+    var payload = params.payload; // Only set on outgoing message.
+    var sender = params.sender;
+    var recipient = params.recipient;
+
+    /**
+     * Parse rawMessage and save information in payload.
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.parse
+     * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
+     */
+    var parse = that.publicize('parse', function (thisMsg) {
+        if (thisMsg) {
+            rawMessage = thisMsg;
+        }
+        try {
+            payload = JSON.parse(rawMessage);
+        } catch (e) {
+            log.error("Not a JSON message!");
+        }
+    });
+
+    /**
+     * Get the whole payload.
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getPayload
+     * @returns {string}
+     */
+    var getPayload = that.publicize('getPayload', function () {
+        return payload;
+    });
+
+    /**
+     * Get the whole chat message.
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getText
+     * @returns {string}
+     */
+    var getText = that.publicize('getText', function () {
+        return payload.message;
+    });
+
+    /**
+     * Get the recipient.
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.getRecipient
+     * @returns {string}
+     */
+    var getRecipient = that.publicize('getRecipient', function () {
+        return recipient;
+    });
+
+    if (rawMessage) {
+        parse();
+    }
+
+    return that;
+}; // End webrtc.ChatMessage
+
+/**
+ * Create a new SignalingMessage.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class webrtc.SignalingMessage
+ * @constructor
+ * @augments webrtc.AbstractMessage
+ * @classdesc A message.
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.SignalingMessage}
+ */
+webrtc.SignalingMessage = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.AbstractMessage(params);
+    delete that.client;
+    that.className = 'webrtc.SignalingMessage';
+
+    var rawMessage = params.rawMessage;
+    var payload = null;
+    var sender = params.sender;
+    var recipient = params.recipient;
+
+    /**
+     * Parse rawMessage and save information in payload.
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.parse
+     * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
+     */
+    var parse = that.publicize('parse', function (thisMsg) {
+        if (thisMsg) {
+            rawMessage = thisMsg;
+        }
+        try {
+            payload = JSON.parse(rawMessage);
+        } catch (e) {
+            log.error("Not a JSON message!");
+        }
+    });
+
+    /**
+     * Attempt to construct a string from the payload.
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getText
+     * @returns {string} A string that may represent the value of the payload.
+     * @abstract
+     */
+    var getText = that.publicize('getText', function () {
+        return payload.type;
+    });
+
+    /**
+     * Get the whole payload
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getPayload
+     * @returns {object}
+     */
+    var getPayload = that.publicize('getPayload', function () {
+        return payload;
+    });
+
+    /**
+     * Get the recipient.
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getRecipient
+     * @returns {string}
+     */
+    var getRecipient = that.publicize('getRecipient', function () {
+        return recipient;
+    });
+
+    if (rawMessage) {
+        parse();
+    }
+
+    return that;
+}; // End webrtc.SignalingMessage
+
+/**
+ * Create a new PresenceMessage.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class webrtc.PresenceMessage
+ * @constructor
+ * @augments webrtc.AbstractMessage
+ * @classdesc A message.
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.PresenceMessage}
+ */
+webrtc.PresenceMessage = function (params) {
+    "use strict";
+    params = params || {};
+    var client = params.client;
+    var that = webrtc.AbstractMessage(params);
+    delete that.client;
+    that.className = 'webrtc.PresenceMessage';
+
+    var rawMessage = params.rawMessage;
+    var payload = {};
+    var sender = params.sender;
+    var recipient = params.recipient;
+
+    /**
+     * Parse rawMessage and save information in payload.
+     * @memberof! webrtc.ChatMessage
+     * @method webrtc.ChatMessage.parse
+     * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
+     */
+    var parse = that.publicize('parse', function (thisMsg) {
+        if (thisMsg) {
+            rawMessage = thisMsg;
+        }
+        try {
+            payload = JSON.parse(rawMessage);
+        } catch (e) {
+            log.error("Not a JSON message!");
+        }
+    });
+
+    /**
+     * Construct an JSON Presence message
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getJSON */
+
+    var getJSON = that.publicize('getJSON', function () {
+        if (!payload) {
+            throw new Error("No message payload.");
+        }
+        return JSON.stringify(payload);
+    });
+
+    /**
+     * Get the presence string.
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getText
+     * @returns {string}
+     */
+    var getText = that.publicize('getText', function () {
+        if (!payload) {
+            throw new Error("No message payload.");
+        }
+        return payload.presence;
+    });
+
+    /**
+     * Get the whole payload
+     * @memberof! webrtc.PreseceMessage
+     * @method webrtc.PresenceMessage.getPayload
+     * @returns {object}
+     */
+    var getPayload = that.publicize('getPayload', function () {
+        return payload;
+    });
+
+    /**
+     * Get the recipient.
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getRecipient
+     * @returns {string}
+     */
+    var getRecipient = that.publicize('getRecipient', function () {
+        return recipient;
+    });
+
+    if (rawMessage) {
+        parse();
+    }
+
+    return that;
+}; // End webrtc.PresenceMessage
