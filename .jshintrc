@@ -114,17 +114,13 @@
         "attachMediaStream",
         "RTCPeerConnection",
         "getUserMedia",
-		"Strophe",
 		"escape",
 		"unescape",
 		"webkitURL",
 		"RTCSessionDescription",
 		"RTCIceCandidate",
 		"webkitRTCPeerConnection",
-		"$j",
-		"$iq",
-		"$pres",
-		"$msg"
+		"$j"
     ],
     "indent"        : 4         // Specify indentation spacing
 }

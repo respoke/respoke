@@ -226,15 +226,15 @@ webrtc.SignalingChannel = function (params) {
         case undefined:
         case false:
         case "available":
-            pres = $pres();
+            pres = webrtc.PresenceMessage(presenceString);
             break;
         case "unavailable":
-            pres = $pres({'type' : 'unavailable'});
+            pres = webrtc.PresenceMessage(presenceString);
             break;
         case "dnd":
         case "away":
         case "xa":
-            pres = $pres().c('show', {}).t(presenceString);
+            pres = webrtc.PresenceMessage(presenceString);
             break;
         default:
             throw new Error("Can't send invalid presence " + presenceString + "!");
@@ -636,7 +636,6 @@ webrtc.SignalingMessage = function (params) {
      * @memberof! webrtc.SignalingMessage
      * @method webrtc.SignalingMessage.getText
      * @returns {string} A string that may represent the value of the payload.
-     * @abstract
      */
     var getText = that.publicize('getText', function () {
         return payload.type;

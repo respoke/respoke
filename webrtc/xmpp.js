@@ -9,7 +9,7 @@
  * properties on the class.
  * @returns {webrtc.SignalingChannel}
  */
-/*global webrtc: false */
+/*global webrtc: false, Strophe: false, $pres: false, $iq: false, $msg: false */
 webrtc.SignalingChannel = function (params) {
     "use strict";
     params = params || {};

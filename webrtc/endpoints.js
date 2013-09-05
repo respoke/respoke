@@ -14,7 +14,6 @@
  * @property {object} skills Information describing skills and features this entity supports
  * across all devices.
  */
-
 /*global webrtc: false */
 webrtc.AbstractPresentable = function (params) {
     "use strict";

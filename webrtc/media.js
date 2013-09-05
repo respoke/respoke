@@ -11,8 +11,6 @@
  * @returns {webrtc.MediaSession}
  * @property {boolean} initiator Indicate whether this MediaSession belongs to the Endpoint
  * that initiated the WebRTC session.
- * @property {webrtc.MediaStream[]} mediaStreams List of streams currently accessible by the
- * MediaSession. TODO implement
  */
 /*global webrtc: false */
 webrtc.MediaSession = function (params) {
@@ -530,7 +528,6 @@ webrtc.MediaSession = function (params) {
      * Indicate whether a call is being setup or is in progress.
      * @memberof! webrtc.MediaSession
      * @method webrtc.MediaSession.isActive
-     * @param {RTCSessionDescription} oSession The remote SDP.
      * @returns {boolean}
      */
     var isActive = that.publicize('isActive', function () {
@@ -599,7 +596,7 @@ webrtc.MediaSession = function (params) {
      * we can process them after we receive the answer.
      * @memberof! webrtc.MediaSession
      * @method webrtc.MediaSession.processCandidate
-     * @param {RTCIceCandidate} oSession The remote SDP.
+     * @param {RTCIceCandidate} oCan The ICE candidate.
      * @private
      */
     var processCandidate = function (oCan) {
