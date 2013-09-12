@@ -23,8 +23,8 @@ webrtc.AbstractPresentable = function (params) {
     delete that.client;
     that.className = 'webrtc.AbstractPresentable';
 
-    that.name = 'Unknown';
-    that.id = '';
+    that.name = that.name || 'Unknown';
+    that.id = that.id || '';
     var presence = 'unavailable';
     var skills = {
         'video': {
@@ -363,10 +363,9 @@ webrtc.Presentable = function (params) {
     var client = params.client;
     var that = webrtc.AbstractPresentable(params);
     delete that.client;
-
     that.className = 'webrtc.Presentable';
-    that.username = null;
-    that.idstring = null;
+    that.username = that.username || "Unknown";
+
     var resources = [];
     var presence = 'unavailable';
 
@@ -686,8 +685,9 @@ webrtc.User = function (params) {
                 response.result.forEach(function (contactInfo) {
                     var contact = webrtc.Contact({
                         'client': client,
-                        'id': contactInfo.contactId,
+                        'id': contactInfo.id,
                         'username': contactInfo.username,
+                        'email': contactInfo.email,
                         'name': contactInfo.name
                     });
                     contactList.add(contact);

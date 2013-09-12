@@ -51,6 +51,7 @@ class PushDocs:
                 "confluence/identity.js",
                 "confluence/media.js",
                 "confluence/signaling.js",
+                "confluence/webrtc",
                 "confluence/webrtc.AbstractContact",
                 "confluence/webrtc.AbstractEndpoint",
                 "confluence/webrtc.AbstractIdentityProvider",

@@ -424,8 +424,8 @@ webrtc.SignalingChannel = function (params) {
 
         if (!responseHandler) {
             responseHandler = function (response, data) {
-                console.log('default responseHandler');
-                console.log(response);
+                log.debug('default responseHandler');
+                log.debug(response);
             };
         }
 
@@ -433,25 +433,24 @@ webrtc.SignalingChannel = function (params) {
             uri += makeParamString(params.parameters);
         }
 
-        log.debug('calling ' + params.httpMethod + " " + uri);
         xhr.open(params.httpMethod, uri);
         if (['POST', 'PUT'].indexOf(params.httpMethod) > -1) {
             paramString = JSON.stringify(params.parameters);
             try {
                 xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             } catch (e) {
-                console.log("Can't set content-type header in readyState " +
+                log.debug("Can't set content-type header in readyState " +
                     xhr.readyState + ". " + e.message);
             }
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
             throw new Error('Illegal HTTP request method ' + params.httpMethod);
         }
+        log.debug('calling ' + params.httpMethod + " " + uri + " with params " + paramString);
 
         try {
-            log.debug(paramString);
             xhr.send(paramString);
         } catch (e) {
-            console.log("Can't call xhr.send. " + e.message);
+            log.warn("Can't call xhr.send. " + e.message);
         }
         xhr.onreadystatechange = function () {
             if (this.readyState !== 4) {
@@ -468,12 +467,13 @@ webrtc.SignalingChannel = function (params) {
                     response.result = this.response;
                     response.error = "Invalid JSON.";
                 }
+                log.debug(response);
                 responseHandler(response, {
                     'uri' : uri,
                     'params' : params.parameters
                 });
             } else {
-                console.log('unexpected response ' + this.status);
+                log.warn('unexpected response ' + this.status);
             }
         };
     };
