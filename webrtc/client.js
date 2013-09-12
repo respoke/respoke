@@ -82,6 +82,7 @@ webrtc.Client = function (params) {
      * Get the client ID
      * @memberof! webrtc.Client
      * @method webrtc.Client.getID
+     * @return {string}
      */
     var getID = that.publicize('getID', function () {
         return client;

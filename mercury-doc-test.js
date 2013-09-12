@@ -188,8 +188,8 @@ DocumentationTest = function(params) {
 	 * @param {string[]} username Optional array of usernames of UserSessions to log out.
 	 * @listens webrtc.UserSession#disconnected
 	 * @listens webrtc.UserSession#disconnected2
-	 * @throws webrtc.User#logout
-	 * @throws webrtc.User#logout2
+	 * @throws no such attribute
+	 * @throws divide by zero
 	 * @fires webrtc.User#logout
 	 * @fires webrtc.User#logout2
 	 */

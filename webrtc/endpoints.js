@@ -412,6 +412,7 @@ webrtc.Presentable = function (params) {
      * @memberof! webrtc.Presentable
      * @method webrtc.Presentable.getStatus
      * @deprecated Use or override getPresence instead.
+     * @return {string}
      */
     var getStatus = that.publicize('getStatus', function () {
         return presence;

@@ -9,7 +9,7 @@
 
 /**
  * @author Erin Spiceland <espiceland@digium.com>
- * @namespace
+ * @namespace webrtc
  * @global
  */
 var webrtc = {

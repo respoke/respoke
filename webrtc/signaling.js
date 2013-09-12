@@ -47,6 +47,7 @@ webrtc.AbstractSignalingChannel = function (params) {
      * @memberof! webrtc.AbstractSignalingChannel
      * @method webrtc.AbstractSignalingChannel.getState
      * @abstract
+     * @returns {string}
      */
     var getState = that.publicize('getState', function () {
         return state;
@@ -242,7 +243,7 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
-     * Get a list of the user's contacts
+     * Call the API to get a list of the user's contacts
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getContactList
      */
@@ -712,7 +713,9 @@ webrtc.PresenceMessage = function (params) {
     /**
      * Construct an JSON Presence message
      * @memberof! webrtc.PresenceMessage
-     * @method webrtc.PresenceMessage.getJSON */
+     * @method webrtc.PresenceMessage.getJSON
+     * @return {string}
+     */
 
     var getJSON = that.publicize('getJSON', function () {
         if (!payload) {

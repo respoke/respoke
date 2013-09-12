@@ -614,6 +614,7 @@ webrtc.Presentable = function (params) {
      * @memberof! webrtc.Presentable
      * @method webrtc.Presentable.getStatus
      * @deprecated Use or override getPresence instead.
+     * @return {string}
      */
     var getStatus = that.publicize('getStatus', function () {
         return presence;
@@ -1340,6 +1341,7 @@ webrtc.PresenceMessage = function (params) {
      * Construct an XMPP Presence Stanza
      * @memberof! webrtc.PresenceMessage
      * @method webrtc.PresenceMessage.getXMPP
+     * @return {DOM}
      */
     var getXMPP = that.publicize('getXMPP', function () {
         if (!payload) {

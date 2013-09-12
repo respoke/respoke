@@ -219,6 +219,7 @@ webrtc.ContactList = function (params) {
      * @memberof! webrtc.ContactList
      * @method webrtc.ContactList.getContacts
      * @param {string} sortField An optional contact attribute to sort on.
+     * @return {webrtc.Contact[]}
      */
     var getContacts = that.publicize('getContacts', function (sortField) {
         var values = [];
@@ -271,7 +272,7 @@ webrtc.ContactList = function (params) {
      * Process the presence queue.
      * @memberof! webrtc.ContactList
      * @method webrtc.ContactList.processPresenceQueue
-     * @throws webrtc.ContactList#presence:update
+     * @fires webrtc.ContactList#presence:update
      */
     var processPresenceQueue = that.publicize('processPresenceQueue', function () {
         for (var i = 0; i <= presenceQueue.length; i += 1) {
