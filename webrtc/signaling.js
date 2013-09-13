@@ -155,6 +155,7 @@ webrtc.SignalingChannel = function (params) {
     var state = 'new';
     var baseURL = null;
     var appId = null;
+    var socket = null;
     var xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
 
@@ -165,6 +166,12 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.open
      */
     var open = that.publicize('open', function () {
+        // TODO: Disable this being able to change the base URL
+        if (baseURL === null || appId === null) {
+            var clientSettings = webrtc.getClient(client).getClientSettings();
+            baseURL = clientSettings.baseUrl || 'http://localhost:1337';
+            appId = clientSettings.appId || '1';
+        }
         log.trace("Signaling connection open.");
         state = 'open';
     });
@@ -248,10 +255,13 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.getContactList
      */
     var getContactList = that.publicize('getContactList', function (callback) {
-        call({
-            'httpMethod': "GET",
+        wsCall({
             'path': '/v1/contacts/'
-        }, callback);
+        }, function (response) {
+            if (callback) {
+                callback(response);
+            }
+        });
     });
 
     /**
@@ -370,11 +380,67 @@ webrtc.SignalingChannel = function (params) {
                 'path': '/v1/authsession',
                 'parameters': {
                     'username': username,
-                    'password': password
+                    'password': password,
+                    'appId': appId
                 }
-            }, callback);
+            }, function (response) {
+                socket = io.connect('http://localhost:1337', {
+                    'host': 'localhost',
+                    'port': 1337,
+                    'protocol': 'http',
+                    'secure': false
+                });
+                callback(response);
+            });
         }
     );
+
+    /**
+     * Construct a websocket API call and return the formatted response and errors. The 'success'
+     * attribute indicates the success or failure of the API call. The 'response' attribute
+     * is an associative array constructed by json.decode. The 'error' attriute is a message.
+     * If the API call is successful but the server returns invalid JSON, error will be
+     * "Invalid JSON." and response will be the unchanged content of the response body.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.wsCall
+     * @private
+     * @param {object} params Object containing httpMethod, objectId, path, and parameters.
+     */
+    var wsCall = function (params, responseHandler) {
+        var responseCodes = [200, 400, 401, 403, 404, 409];
+        var response = {
+            'result': null,
+            'code': null
+        };
+
+        if (!params) {
+            throw new Error('No params.');
+        }
+
+        if (!params.path) {
+            throw new Error('No request path.');
+        }
+
+        if (params.objectId) {
+            params.path = params.path.replace(/\%s/ig, params.objectId);
+        }
+
+        if (!responseHandler) {
+            responseHandler = function (response, data) {
+                log.debug('default responseHandler');
+                log.debug(response);
+            };
+        }
+
+        socket.get(params.path, params.parameters, function (response) {
+            console.log("wsCall response");
+            console.log(response);
+            responseHandler(response, {
+                'uri' : params.path,
+                'params' : params.parameters
+            });
+        });
+    };
 
     /**
      * Construct an API call and return the formatted response and errors. The 'success'
@@ -394,29 +460,24 @@ webrtc.SignalingChannel = function (params) {
         var paramString = null;
         var uri = null;
         var response = null;
-        var clientSettings =  null;
         var responseCodes = [200, 400, 401, 403, 404, 409];
         var response = {
             'result': null,
             'code': null
         };
 
-        // TODO: Disable this being able to change the base URL
-        if (baseURL === null || appId === null) {
-            clientSettings = webrtc.getClient(client).getClientSettings();
-            baseURL = clientSettings.baseUrl || 'http://localhost:1337';
-            appId = clientSettings.appId || '1';
-        }
         uri = baseURL + params.path;
 
         if (!params) {
             throw new Error('No params.');
-        } else if (params.parameters) {
-            params.parameters.appId = appId;
         }
 
         if (!params.httpMethod) {
             throw new Error('No HTTP method.');
+        }
+
+        if (!params.path) {
+            throw new Error('No request path.');
         }
 
         if (params.objectId) {

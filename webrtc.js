@@ -15,7 +15,7 @@
 var webrtc = {
     'instances': {}
 };
-log.setLevel('trace');
+log.setLevel('debug');
 
 /**
  * @static

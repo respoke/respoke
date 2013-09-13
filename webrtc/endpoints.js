@@ -682,8 +682,8 @@ webrtc.User = function (params) {
         }).done();
 
         signalingChannel.getContactList(function (response, request) {
-            if (response.code === 200) {
-                response.result.forEach(function (contactInfo) {
+            if (response && response.hasOwnProperty('length')) {
+                response.forEach(function (contactInfo) {
                     var contact = webrtc.Contact({
                         'client': client,
                         'id': contactInfo.id,
@@ -693,8 +693,6 @@ webrtc.User = function (params) {
                     });
                     contactList.add(contact);
                 });
-                deferred.resolve(contactList);
-            } else if (response.code === 404) {
                 deferred.resolve(contactList);
             } else {
                 deferred.reject(new Error("Can't get contact list: " + response.error));

@@ -111,6 +111,7 @@
     "predef"        : [         // Extra globals.
         "Q",
         "log",
+        "io",
         "attachMediaStream",
         "RTCPeerConnection",
         "getUserMedia",
