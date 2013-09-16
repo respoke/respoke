@@ -224,43 +224,47 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
      */
     var sendPresence = that.publicize('sendPresence', function (presenceString) {
-        var pres = null;
-
         log.trace("Signaling sendPresence");
-
-        switch (presenceString) {
-        case "":
-        case null:
-        case undefined:
-        case false:
-        case "available":
-            pres = webrtc.PresenceMessage(presenceString);
-            break;
-        case "unavailable":
-            pres = webrtc.PresenceMessage(presenceString);
-            break;
-        case "dnd":
-        case "away":
-        case "xa":
-            pres = webrtc.PresenceMessage(presenceString);
-            break;
-        default:
-            throw new Error("Can't send invalid presence " + presenceString + "!");
-        }
+        wsCall({
+            'path': '/v1/presence',
+            'httpMethod': 'POST',
+            'parameters': {
+                'presence': presenceString || "available"
+            }
+        });
     });
 
     /**
-     * Call the API to get a list of the user's contacts
+     * Call the API to get a list of the user's contacts. Call the API to register interest
+     * in presence notifications for all users on the contact list.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getContactList
      */
     var getContactList = that.publicize('getContactList', function (callback) {
         wsCall({
             'path': '/v1/contacts/'
-        }, function (response) {
+        }, function (contactList) {
+            var userIdList = [];
             if (callback) {
-                callback(response);
+                callback(contactList);
             }
+            contactList.forEach(function (contact) {
+                userIdList.push({'userId': contact.id});
+            });
+            console.log('userIdList');
+            console.log(userIdList);
+            wsCall({
+                'path': '/v1/presence/observer',
+                'httpMethod' : 'POST',
+                'parameters': {
+                    'users': userIdList
+                }
+            }, function (presenceList) {
+                console.log('got presence');
+                presenceList.forOwn(function (presence) {
+                    console.log(presence);
+                });
+            });
         });
     });
 
@@ -390,6 +394,27 @@ webrtc.SignalingChannel = function (params) {
                     'protocol': 'http',
                     'secure': false
                 });
+                socket.on('presence', function (msg) {
+                    log.debug('presence');
+                    log.debug(msg);
+                });
+                socket.on('signaling', function (msg) {
+                    log.debug('signaling');
+                    log.debug(msg);
+                });
+                socket.on('message', function (msg) {
+                    log.debug('message');
+                    log.debug(msg);
+                });
+                if (response.code === 200) {
+                    wsCall({
+                        'path': '/v1/usersessions',
+                        'httpMethod': 'POST',
+                        'parameters': {
+                            'presence': 'online'
+                        }
+                    });
+                }
                 callback(response);
             });
         }
@@ -407,12 +432,6 @@ webrtc.SignalingChannel = function (params) {
      * @param {object} params Object containing httpMethod, objectId, path, and parameters.
      */
     var wsCall = function (params, responseHandler) {
-        var responseCodes = [200, 400, 401, 403, 404, 409];
-        var response = {
-            'result': null,
-            'code': null
-        };
-
         if (!params) {
             throw new Error('No params.');
         }
@@ -420,6 +439,8 @@ webrtc.SignalingChannel = function (params) {
         if (!params.path) {
             throw new Error('No request path.');
         }
+
+        params.httpMethod = (params.httpMethod || 'get').toLowerCase();
 
         if (params.objectId) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
@@ -432,9 +453,9 @@ webrtc.SignalingChannel = function (params) {
             };
         }
 
-        socket.get(params.path, params.parameters, function (response) {
-            console.log("wsCall response");
-            console.log(response);
+        socket[params.httpMethod](params.path, params.parameters, function (response) {
+            log.debug("wsCall response to " + params.httpMethod + " " + params.path);
+            log.debug(response);
             responseHandler(response, {
                 'uri' : params.path,
                 'params' : params.parameters
