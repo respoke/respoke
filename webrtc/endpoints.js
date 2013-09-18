@@ -711,9 +711,9 @@ webrtc.User = function (params) {
             }
         };
 
-        signalingChannel.getContactList(function (tmpContactList) {
-            if (tmpContactList && tmpContactList.length > 0) {
-                tmpContactList.forEach(function (contactInfo) {
+        signalingChannel.getContactList(function (list) {
+            if (!(list in [null, undefined]) && list.length >= 0) {
+                list.forEach(function (contactInfo) {
                     var contact = webrtc.Contact({
                         'client': client,
                         'id': contactInfo.id,
@@ -725,7 +725,7 @@ webrtc.User = function (params) {
                 });
                 deferred.resolve(contactList);
             } else {
-                deferred.reject(new Error("Can't get contact list: " + tmpContactList.error));
+                deferred.reject(new Error("Can't get contact list: " + list.error));
             }
         }, function (presenceList) {
             if (presenceList && presenceList.length > 0) {
@@ -766,6 +766,8 @@ webrtc.User = function (params) {
                 }
             } catch (e) {
                 // not JSON, assume chat message
+                log.debug('message error');
+                log.debug(message);
             }
             contact.fire('message:received', webrtc.ChatMessage({
                 'client': client,
@@ -821,6 +823,9 @@ webrtc.User = function (params) {
 
             mediaSessions.forEach(function (mediaSession) {
                 if (mediaSession.remoteEndpoint === contactId) {
+                    if (mediaSession.getState() === 'ended') {
+                        return;
+                    }
                     session = mediaSession;
                 }
             });
@@ -830,7 +835,6 @@ webrtc.User = function (params) {
                     contact = contactList.get(contactId);
                     mediaSettings = webrtc.getClient(client).getMediaSettings();
                     session = contact.startMedia(mediaSettings, false);
-                    addMediaSession(session);
                 } catch (e) {
                     log.error("Couldn't create MediaSession: " + e.message);
                 }
@@ -862,21 +866,16 @@ webrtc.User = function (params) {
         var toDelete = null;
 
         if (!contactId) {
-            mediaSessions = [];
+            throw new Error("Must specify contactId of MediaSession to remove.");
         }
 
-        mediaSessions.forEach(function (mediaSession, index) {
+        // Loop backward since we're modifying the array in place.
+        for (var i = mediaSessions.length - 1; i >= 0; i -= 1) {
+            var mediaSession = mediaSessions[i];
             if (mediaSession.remoteEndpoint === contactId) {
-                toDelete = index;
+                mediaSessions.splice(i);
             }
-        });
-
-        if (toDelete === null) {
-            log.warn("Couldn't find mediaSession in removeMediaSession");
-            return;
         }
-
-        mediaSessions.splice(toDelete);
     });
 
 

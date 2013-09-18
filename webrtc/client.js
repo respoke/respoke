@@ -33,6 +33,7 @@ webrtc.Client = function (params) {
     var connected = false;
     var appKey = null;
     var apiToken = null;
+    var signalingChannel = null;
     var clientSettings = params.clientSettings || {};
     log.debug("Client ID is " + client);
 
@@ -52,10 +53,10 @@ webrtc.Client = function (params) {
         }
     };
 
-    that.signalingChannel = webrtc.SignalingChannel({'client': client});
+    signalingChannel = webrtc.SignalingChannel({'client': client});
     that.identityProvider = webrtc.IdentityProvider({'client': client});
     that.user = null;
-    log.debug(that.signalingChannel);
+    log.debug(signalingChannel);
 
     /**
      * Connect to the Digium infrastructure and authenticate using the appkey.  Store
@@ -64,7 +65,7 @@ webrtc.Client = function (params) {
      * @method webrtc.Client.connect
      */
     var connect = that.publicize('connect', function () {
-        that.signalingChannel.open();
+        signalingChannel.open();
         connected = true;
     });
 
@@ -74,7 +75,8 @@ webrtc.Client = function (params) {
      * @method webrtc.Client.disconnect
      */
     var disconnect = that.publicize('disconnect', function () {
-        that.signalingChannel.close();
+        // TODO: also call this on socket disconnect
+        signalingChannel.close();
         connected = false;
     });
 
@@ -200,7 +202,7 @@ webrtc.Client = function (params) {
      * @returns {webrtc.SignalingChannel} The instance of the webrtc.SignalingChannel.
      */
     var getSignalingChannel = that.publicize('getSignalingChannel', function () {
-        return that.signalingChannel;
+        return signalingChannel;
     });
 
     return that;

@@ -175,8 +175,11 @@ webrtc.SignalingChannel = function (params) {
         // TODO: Disable this being able to change the base URL
         if (baseURL === null || appId === null) {
             var clientSettings = webrtc.getClient(client).getClientSettings();
-            baseURL = clientSettings.baseUrl || 'http://localhost:1337';
-            appId = clientSettings.appId || '1';
+            baseURL = clientSettings.baseURL || 'http://localhost:1337';
+            appId = clientSettings.appId;
+        }
+        if (!appId) {
+            throw new Error("No appId specified.");
         }
         log.trace("Signaling connection open.");
         state = 'open';
@@ -411,11 +414,16 @@ webrtc.SignalingChannel = function (params) {
                     'appId': appId
                 }
             }, function (response) {
-                socket = io.connect('http://localhost:1337', {
-                    'host': 'localhost',
-                    'port': 1337,
-                    'protocol': 'http',
-                    'secure': false
+                var pieces = baseURL.split(/:\/\//);
+                var protocol = pieces[0];
+                var pieces = pieces[1].split(/:/);
+                var host = pieces[0];
+                var port = pieces[1];
+                socket = io.connect(baseURL, {
+                    'host': host,
+                    'port': port,
+                    'protocol': protocol,
+                    'secure': (protocol === 'https')
                 });
                 socket.on('connect', function () {
                     handlerQueue.forOwn(function (array, category) {

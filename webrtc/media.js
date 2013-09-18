@@ -113,6 +113,7 @@ webrtc.MediaSession = function (params) {
         var mediaStream = null;
         var videoElement = null;
 
+        that.state = 'media flowing';
         log.debug('User gave permission to use media.');
         log.trace(onReceiveUserMedia);
         log.trace(stream);
@@ -280,6 +281,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onRemoteStreamAdded = function (evt) {
+        that.state = 'media flowing';
         var mediaStream = null;
         var videoElement = null;
 
@@ -458,6 +460,7 @@ webrtc.MediaSession = function (params) {
      * @todo TODO: Make it so the dev doesn't have to know when to send a bye.
      */
     var stopMedia = that.publicize('stopMedia', function (sendSignal) {
+        that.state = 'ended';
         if (pc === null) {
             return;
         }
@@ -554,6 +557,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onOffer = function (oSession) {
+        that.state = 'setup';
         log.debug('got offer');
         log.debug(oSession);
 
@@ -563,6 +567,7 @@ webrtc.MediaSession = function (params) {
             report.lastSDPString = oSession.sdp;
         } else {
             log.warn('Got initiate in precall state.');
+            log.trace("rejecting call.");
             signalTerminate();
         }
     };
@@ -575,6 +580,7 @@ webrtc.MediaSession = function (params) {
      * @private
      */
     var onAnswer = function (oSession) {
+        that.state = 'setup';
         log.debug('remote side sdp is');
         log.debug(oSession);
 
