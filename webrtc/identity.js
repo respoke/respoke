@@ -108,7 +108,7 @@ webrtc.IdentityProvider = function (params) {
             if (response.code === 200) {
                 user = webrtc.User({
                     'client': client,
-                    'jid': username,
+                    'username': username,
                     'loggedIn': true
                 });
                 deferred.resolve(user);

@@ -81,7 +81,7 @@ webrtc.MediaSession = function (params) {
      */
     var start = that.publicize('start', function () {
         if (!that.username) {
-            throw new Error("Can't use a MediaSession without username.");
+            throw new Error("Can't use a MediaSession without username. got " + that.username);
         }
         report.startCount += 1;
         log.trace("calling requestMedia from start.");

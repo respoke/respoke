@@ -23,8 +23,6 @@ webrtc.AbstractPresentable = function (params) {
     delete that.client;
     that.className = 'webrtc.AbstractPresentable';
 
-    that.name = that.name || 'Unknown';
-    that.id = that.id || '';
     var presence = 'unavailable';
     var skills = {
         'video': {
@@ -364,7 +362,6 @@ webrtc.Presentable = function (params) {
     var that = webrtc.AbstractPresentable(params);
     delete that.client;
     that.className = 'webrtc.Presentable';
-    that.username = that.username || "Unknown";
 
     var resources = [];
     var presence = 'unavailable';
@@ -564,6 +561,7 @@ webrtc.Contact = function (params) {
         var options = [];
         resources.forOwn(function (resource) {
             options.push(resource.presence);
+            // TODO convert this into a loop
             switch (resource.presence) {
             case 'chat':
                 presence = resource.presence;
@@ -593,7 +591,7 @@ webrtc.Contact = function (params) {
         if (!presence) {
             presence = 'unavailable';
         }
-        log.debug("presences " + options.join(', ') + " resolved to " + presence);
+        log.debug("presences resolved to " + presence);
         that.fire('presence', presence);
     };
 
@@ -651,13 +649,22 @@ webrtc.User = function (params) {
 
     // listen to webrtc.ContactList#presence -- the contacts's presences
     contactList.listen('presence', function (presenceMessage) {
-        var presPayload = null;
-        var from = null;
-        var contact = null;
+        var presPayload = presenceMessage.getPayload();
+        var from = presenceMessage.getSender();
+        var contact = contactList.get(from);
         /*
          * Parse the message, add the session to contact sessions or usersessions if it's us,
          * modify the contact's presence using contact.setPresence, which will fire the event
          */
+        if (contact) {
+            contact.setPresence(presPayload.type);
+        } else if (from === webrtc.getClient(client).user.getID()) {
+            // logged in user TODO: save userSession
+            log.debug("got own presence");
+        } else {
+            log.debug("Got unrecognized presence");
+            log.debug(presPayload);
+        }
     });
 
     /**
@@ -681,9 +688,32 @@ webrtc.User = function (params) {
             throw err;
         }).done();
 
-        signalingChannel.getContactList(function (response, request) {
-            if (response && response.hasOwnProperty('length')) {
-                response.forEach(function (contactInfo) {
+        var presenceHandler = function (message) {
+            var contact;
+            var message = webrtc.PresenceMessage({'rawMessage': message});
+            if (contactList.length === 0) {
+                contactList.queuePresence(message);
+                return;
+            }
+
+            try {
+                contact = contactList.get(message.getSender());
+            } catch (e) {
+                throw new Error("Couldn't get presence sender.");
+            }
+
+            if (!contact) {
+                log.warn("Can't set presence");
+                log.debug(contact);
+                log.debug(message);
+            } else {
+                contact.setPresence(message.getText());
+            }
+        };
+
+        signalingChannel.getContactList(function (tmpContactList) {
+            if (tmpContactList && tmpContactList.length > 0) {
+                tmpContactList.forEach(function (contactInfo) {
                     var contact = webrtc.Contact({
                         'client': client,
                         'id': contactInfo.id,
@@ -695,23 +725,27 @@ webrtc.User = function (params) {
                 });
                 deferred.resolve(contactList);
             } else {
-                deferred.reject(new Error("Can't get contact list: " + response.error));
+                deferred.reject(new Error("Can't get contact list: " + tmpContactList.error));
+            }
+        }, function (presenceList) {
+            if (presenceList && presenceList.length > 0) {
+                presenceList.forEach(function (presence) {
+                    contactList.fire('presence', webrtc.PresenceMessage({'rawMessage': presence}));
+                });
             }
         });
 
+        signalingChannel.addHandler('presence', presenceHandler);
+
         signalingChannel.addHandler('chat', function (message) {
             var contact;
-            var contactId;
-            console.log(message);
             try {
-                contactId = message.header.from.split(':')[1];
-                console.log("contactId is " + contactId);
-                contact = contactList.get(contactId);
+                contact = contactList.get(message.header.from.split(':')[1]);
             } catch (e) {
                 throw new Error("Couldn't parse chat message.");
             }
             if (!contact) {
-                console.log("no such contact " + contactId);
+                log.warn("No such contact " + message.header.from);
                 return;
             }
             // TODO remove all this when we have a real signaling API
@@ -723,15 +757,15 @@ webrtc.User = function (params) {
                     }
                     contact.fire('signaling:received', webrtc.SignalingMessage({
                         'client': client,
-                        'rawMessage': JSON.stringify(parsed), // yes, the unparsed version TODO reevaluate?
+                        // yes, the unparsed version. TODO reevaluate?
+                        'rawMessage': JSON.stringify(parsed),
                         'recipient': that,
                         'sender': contact.getID()
                     }));
-                    console.log('detected hacked signaling message');
-                    console.log(parsed);
                     return;
                 }
             } catch (e) {
+                // not JSON, assume chat message
             }
             contact.fire('message:received', webrtc.ChatMessage({
                 'client': client,

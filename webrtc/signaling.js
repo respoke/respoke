@@ -235,7 +235,11 @@ webrtc.SignalingChannel = function (params) {
             'path': '/v1/presence',
             'httpMethod': 'POST',
             'parameters': {
-                'presence': presenceString || "available"
+                'presence': {
+                    'show': "no show",
+                    'status': "Hey, I'm having fun!",
+                    'type': presenceString || "available"
+                }
             }
         });
     });
@@ -246,19 +250,17 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getContactList
      */
-    var getContactList = that.publicize('getContactList', function (callback) {
+    var getContactList = that.publicize('getContactList', function (onContacts, onPresence) {
         wsCall({
             'path': '/v1/contacts/'
         }, function (contactList) {
             var userIdList = [];
-            if (callback) {
-                callback(contactList);
-            }
             contactList.forEach(function (contact) {
                 userIdList.push({'userId': contact.id});
             });
-            console.log('userIdList');
-            console.log(userIdList);
+            if (onContacts) {
+                onContacts(contactList);
+            }
             wsCall({
                 'path': '/v1/presence/observer',
                 'httpMethod' : 'POST',
@@ -266,10 +268,9 @@ webrtc.SignalingChannel = function (params) {
                     'users': userIdList
                 }
             }, function (presenceList) {
-                console.log('got presence');
-                presenceList.forOwn(function (presence) {
-                    console.log(presence);
-                });
+                if (onPresence) {
+                    onPresence(presenceList);
+                }
             });
         });
     });
@@ -289,17 +290,7 @@ webrtc.SignalingChannel = function (params) {
                 'destUserId': message.getRecipient().getID(),
                 'text': message.getPayload()
             }
-        }, function (response) {
-            console.log('sendMessage response ' + message.getRecipient().getID());
-            console.log({
-                'path': '/v1/chat',
-                'httpMethod': 'POST',
-                'parameters': {
-                    'destUserId': message.getRecipient().getID(),
-                    'text': message.getPayload()
-                }
-            });
-        });
+        }, null);
         message.getRecipient().fire('message:sent', message);
     });
 
@@ -367,8 +358,6 @@ webrtc.SignalingChannel = function (params) {
     var routeSignal = that.publicize('routeSignal', function (message) {
         var mediaSession = webrtc.getClient(client).user.getMediaSessionByContact(message.sender);
         var signal = message.getPayload();
-        console.log('routeSignal');
-        console.log(signal);
 
         switch (signal.type) {
         case 'offer':
@@ -396,13 +385,9 @@ webrtc.SignalingChannel = function (params) {
      * @deprecated Not sure how we will route messages yet.
      */
     var addHandler = that.publicize('addHandler', function (type, handler) {
-        console.log('addHandler ' + type);
-        console.log(socket.socket.open);
         if (socket.socket && socket.socket.open) {
-            console.log('adding handler for ' + type + ' out of queue');
             socket.on(type, handler);
         } else {
-            console.log('queued');
             handlerQueue[type].push(handler);
         }
     });
@@ -435,16 +420,10 @@ webrtc.SignalingChannel = function (params) {
                 socket.on('connect', function () {
                     handlerQueue.forOwn(function (array, category) {
                         array.forEach(function (handler) {
-                            console.log('adding handler for ' + category + ' out of queue');
                             socket.on(category, handler);
                         });
                         array = [];
                     });
-                    console.log('done with handlerQueue');
-                });
-                socket.on('presence', function (message) {
-                    console.log('presence');
-                    console.log(message);
                 });
                 socket.on('signaling', that.routeSignal);
                 if (response.code === 200) {
@@ -452,7 +431,11 @@ webrtc.SignalingChannel = function (params) {
                         'path': '/v1/usersessions',
                         'httpMethod': 'POST',
                         'parameters': {
-                            'presence': 'online'
+                            'presence': {
+                                'show': "no show",
+                                'status': "Hey, I'm having fun!",
+                                'type': "available"
+                            }
                         }
                     });
                 }
@@ -487,7 +470,7 @@ webrtc.SignalingChannel = function (params) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
         }
 
-        if (!responseHandler) {
+        if (responseHandler === undefined) { // allow null to indicate no handler
             responseHandler = function (response, data) {
                 log.debug('default responseHandler');
                 log.debug(response);
@@ -497,10 +480,12 @@ webrtc.SignalingChannel = function (params) {
         socket[params.httpMethod](params.path, params.parameters, function (response) {
             log.debug("wsCall response to " + params.httpMethod + " " + params.path);
             log.debug(response);
-            responseHandler(response, {
-                'uri' : params.path,
-                'params' : params.parameters
-            });
+            if (responseHandler) {
+                responseHandler(response, {
+                    'uri' : params.path,
+                    'params' : params.parameters
+                });
+            }
         });
     };
 
@@ -802,9 +787,9 @@ webrtc.PresenceMessage = function (params) {
     that.className = 'webrtc.PresenceMessage';
 
     var rawMessage = params.rawMessage;
+    delete params.rawMessage;
     var payload = {};
     var sender = params.sender;
-    var recipient = params.recipient;
 
     /**
      * Parse rawMessage and save information in payload.
@@ -816,25 +801,10 @@ webrtc.PresenceMessage = function (params) {
         if (thisMsg) {
             rawMessage = thisMsg;
         }
-        try {
-            payload = JSON.parse(rawMessage);
-        } catch (e) {
-            log.error("Not a JSON message!");
-        }
-    });
 
-    /**
-     * Construct an JSON Presence message
-     * @memberof! webrtc.PresenceMessage
-     * @method webrtc.PresenceMessage.getJSON
-     * @return {string}
-     */
-
-    var getJSON = that.publicize('getJSON', function () {
-        if (!payload) {
-            throw new Error("No message payload.");
-        }
-        return JSON.stringify(payload);
+        sender = rawMessage.userId;
+        delete rawMessage.header;
+        payload = rawMessage;
     });
 
     /**
@@ -847,7 +817,7 @@ webrtc.PresenceMessage = function (params) {
         if (!payload) {
             throw new Error("No message payload.");
         }
-        return payload.presence;
+        return payload.type;
     });
 
     /**
@@ -861,13 +831,13 @@ webrtc.PresenceMessage = function (params) {
     });
 
     /**
-     * Get the recipient.
+     * Get the sender.
      * @memberof! webrtc.PresenceMessage
-     * @method webrtc.PresenceMessage.getRecipient
+     * @method webrtc.PresenceMessage.getSender
      * @returns {string}
      */
-    var getRecipient = that.publicize('getRecipient', function () {
-        return recipient;
+    var getSender = that.publicize('getSender', function () {
+        return sender;
     });
 
     if (rawMessage) {
