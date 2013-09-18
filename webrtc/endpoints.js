@@ -450,7 +450,7 @@ webrtc.Endpoint = function (params) {
     var sendMessage = that.publicize('sendMessage', function (message) {
         signalingChannel.sendMessage(webrtc.ChatMessage({
             'recipient': that,
-            'sender': webrtc.getClient(client).user.getResourceFormat(),
+            'sender': webrtc.getClient(client).user.getID(),
             'payload': message
         }));
     });
@@ -481,19 +481,19 @@ webrtc.Endpoint = function (params) {
             'initiator': initiator,
             'signalInitiate' : function (sdp) {
                 sdp.type = 'offer';
-                signalingChannel.sendSDP(id, sdp);
+                signalingChannel.sendSDP(that, sdp);
             },
             'signalAccept' : function (sdp) {
                 sdp.type = 'answer';
-                signalingChannel.sendSDP(id, sdp);
+                signalingChannel.sendSDP(that, sdp);
             },
             'signalCandidate' : function (oCan) {
                 if (oCan !== null) {
-                    signalingChannel.sendCandidate(id, oCan);
+                    signalingChannel.sendCandidate(that, oCan);
                 }
             },
             'signalTerminate' : function () {
-                signalingChannel.sendBye(id);
+                signalingChannel.sendBye(that);
             },
             'signalReport' : function (oReport) {
                 log.debug("Not sending report");
@@ -698,6 +698,49 @@ webrtc.User = function (params) {
                 deferred.reject(new Error("Can't get contact list: " + response.error));
             }
         });
+
+        signalingChannel.addHandler('chat', function (message) {
+            var contact;
+            var contactId;
+            console.log(message);
+            try {
+                contactId = message.header.from.split(':')[1];
+                console.log("contactId is " + contactId);
+                contact = contactList.get(contactId);
+            } catch (e) {
+                throw new Error("Couldn't parse chat message.");
+            }
+            if (!contact) {
+                console.log("no such contact " + contactId);
+                return;
+            }
+            // TODO remove all this when we have a real signaling API
+            try {
+                var parsed = JSON.parse(message.text);
+                if (parsed && typeof parsed === 'object') {
+                    if (parsed.candidate) {
+                        parsed.type = 'candidate';
+                    }
+                    contact.fire('signaling:received', webrtc.SignalingMessage({
+                        'client': client,
+                        'rawMessage': JSON.stringify(parsed), // yes, the unparsed version TODO reevaluate?
+                        'recipient': that,
+                        'sender': contact.getID()
+                    }));
+                    console.log('detected hacked signaling message');
+                    console.log(parsed);
+                    return;
+                }
+            } catch (e) {
+            }
+            contact.fire('message:received', webrtc.ChatMessage({
+                'client': client,
+                'rawMessage': message.text,
+                'recipient': that,
+                'sender': contact.getID()
+            }));
+        });
+
         return deferred.promise;
     });
 

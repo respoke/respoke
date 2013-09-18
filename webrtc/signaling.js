@@ -159,6 +159,12 @@ webrtc.SignalingChannel = function (params) {
     var xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
 
+    var handlerQueue = {
+        'chat': [],
+        'signaling': [],
+        'presence': []
+    };
+
     /**
      * Open a connection to the REST API. This is where we would do apikey validation/app
      * authentication if we want to do that.
@@ -276,6 +282,24 @@ webrtc.SignalingChannel = function (params) {
      * @fires webrtc.Endpoint#message:sent
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
+        wsCall({
+            'path': '/v1/chat',
+            'httpMethod': 'POST',
+            'parameters': {
+                'destUserId': message.getRecipient().getID(),
+                'text': message.getPayload()
+            }
+        }, function (response) {
+            console.log('sendMessage response ' + message.getRecipient().getID());
+            console.log({
+                'path': '/v1/chat',
+                'httpMethod': 'POST',
+                'parameters': {
+                    'destUserId': message.getRecipient().getID(),
+                    'text': message.getPayload()
+                }
+            });
+        });
         message.getRecipient().fire('message:sent', message);
     });
 
@@ -298,6 +322,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
     var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
+        recipient.sendMessage(JSON.stringify(candObj));
     });
 
     /**
@@ -308,6 +333,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
     var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
+        recipient.sendMessage(JSON.stringify(sdpObj));
     });
 
     /**
@@ -318,6 +344,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} reason The reason the session is being terminated.
      */
     var sendBye = that.publicize('sendBye', function (recipient, reason) {
+        recipient.sendMessage(JSON.stringify({'type': 'bye', 'reason': reason}));
     });
 
     /**
@@ -340,13 +367,15 @@ webrtc.SignalingChannel = function (params) {
     var routeSignal = that.publicize('routeSignal', function (message) {
         var mediaSession = webrtc.getClient(client).user.getMediaSessionByContact(message.sender);
         var signal = message.getPayload();
+        console.log('routeSignal');
+        console.log(signal);
 
         switch (signal.type) {
         case 'offer':
         case 'answer':
         case 'candidate':
         case 'bye':
-            that.fire('received:' + signal.type, signal.value);
+            that.fire('received:' + signal.type, signal);
             break;
         case 'error':
             log.warn("Received an error");
@@ -367,6 +396,15 @@ webrtc.SignalingChannel = function (params) {
      * @deprecated Not sure how we will route messages yet.
      */
     var addHandler = that.publicize('addHandler', function (type, handler) {
+        console.log('addHandler ' + type);
+        console.log(socket.socket.open);
+        if (socket.socket && socket.socket.open) {
+            console.log('adding handler for ' + type + ' out of queue');
+            socket.on(type, handler);
+        } else {
+            console.log('queued');
+            handlerQueue[type].push(handler);
+        }
     });
 
     /**
@@ -394,18 +432,21 @@ webrtc.SignalingChannel = function (params) {
                     'protocol': 'http',
                     'secure': false
                 });
-                socket.on('presence', function (msg) {
-                    log.debug('presence');
-                    log.debug(msg);
+                socket.on('connect', function () {
+                    handlerQueue.forOwn(function (array, category) {
+                        array.forEach(function (handler) {
+                            console.log('adding handler for ' + category + ' out of queue');
+                            socket.on(category, handler);
+                        });
+                        array = [];
+                    });
+                    console.log('done with handlerQueue');
                 });
-                socket.on('signaling', function (msg) {
-                    log.debug('signaling');
-                    log.debug(msg);
+                socket.on('presence', function (message) {
+                    console.log('presence');
+                    console.log(message);
                 });
-                socket.on('message', function (msg) {
-                    log.debug('message');
-                    log.debug(msg);
-                });
+                socket.on('signaling', that.routeSignal);
                 if (response.code === 200) {
                     wsCall({
                         'path': '/v1/usersessions',
@@ -620,20 +661,13 @@ webrtc.ChatMessage = function (params) {
     var recipient = params.recipient;
 
     /**
-     * Parse rawMessage and save information in payload.
+     * Parse rawMessage and save information in payload. In this base class, assume text.
      * @memberof! webrtc.ChatMessage
      * @method webrtc.ChatMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
-        if (thisMsg) {
-            rawMessage = thisMsg;
-        }
-        try {
-            payload = JSON.parse(rawMessage);
-        } catch (e) {
-            log.error("Not a JSON message!");
-        }
+        payload = thisMsg || rawMessage;
     });
 
     /**
@@ -653,7 +687,7 @@ webrtc.ChatMessage = function (params) {
      * @returns {string}
      */
     var getText = that.publicize('getText', function () {
-        return payload.message;
+        return payload;
     });
 
     /**
@@ -704,11 +738,8 @@ webrtc.SignalingMessage = function (params) {
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
-        if (thisMsg) {
-            rawMessage = thisMsg;
-        }
         try {
-            payload = JSON.parse(rawMessage);
+            payload = JSON.parse(rawMessage || thisMsg);
         } catch (e) {
             log.error("Not a JSON message!");
         }
