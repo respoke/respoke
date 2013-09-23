@@ -116,22 +116,24 @@ webrtc.Client = function (params) {
     });
 
     /**
-     * Log out specified UserSession or all UserSessions if no usernames are passed. Removes
-     * UserSession.
-     * from Client.userSessions and Client.user
+     * Log out specified UserSession or all UserSessions if no usernames are passed. Sets
+     * Client.user to null.
      * @memberof! webrtc.Client
      * @method webrtc.Client.logout
-     * @param {string[]} username Optional array of usernames of UserSessions to log out.
+     * @fires webrtc.User#loggedout
+     * @fires webrtc.Client#loggedout
      */
-    var logout = that.publicize('logout', function (usernames) {
+    var logout = that.publicize('logout', function () {
         if (that.user === null) {
             return;
         }
-        var userSession = that.user.getUserSession();
-        if (!usernames || userSession.userAccount in usernames) {
-            that.identityProvider.logout(userSession.userAccount, userSession.token);
-            userSession.loggedIn = false;
-        }
+        that.identityProvider.logout().done(function () {
+            that.user.fire('loggedout');
+            that.user = null;
+            that.fire('loggedout');
+        }, function (err) {
+            throw err;
+        });
     });
 
     /**
