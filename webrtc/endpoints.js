@@ -704,8 +704,8 @@ webrtc.User = function (params) {
 
             if (!contact) {
                 log.warn("Can't set presence");
-                log.debug(contact);
-                log.debug(message);
+                log.debug(message.getSender());
+                log.debug(message.getText());
             } else {
                 contact.setPresence(message.getText());
             }

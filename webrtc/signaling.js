@@ -175,7 +175,7 @@ webrtc.SignalingChannel = function (params) {
         // TODO: Disable this being able to change the base URL
         if (baseURL === null || appId === null) {
             var clientSettings = webrtc.getClient(client).getClientSettings();
-            baseURL = clientSettings.baseURL || 'http://localhost:1337';
+            baseURL = clientSettings.baseURL || 'http://54.200.29.88:1337';
             appId = clientSettings.appId;
         }
         if (!appId) {
@@ -798,6 +798,7 @@ webrtc.PresenceMessage = function (params) {
     delete params.rawMessage;
     var payload = {};
     var sender = params.sender;
+    var sessionId = null;
 
     /**
      * Parse rawMessage and save information in payload.
@@ -806,11 +807,21 @@ webrtc.PresenceMessage = function (params) {
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
+        var pieces;
         if (thisMsg) {
             rawMessage = thisMsg;
         }
 
-        sender = rawMessage.userId;
+        try {
+            pieces = rawMessage.header.from.split(':')[1].split('@');
+            sender = pieces[0];
+            sessionId = pieces[1];
+        } catch (e) {
+            // Wasn't a socket message.
+            sender = rawMessage.userId;
+            sessionId = rawMessage.sessionId;
+        }
+
         delete rawMessage.header;
         payload = rawMessage;
     });
