@@ -131,7 +131,7 @@ webrtc.AbstractPresentable = function (params) {
  * @constructor
  * @classdesc Information which represents an entity which can send and receive messages and media
  * to and from the logged-in User. As proper Endpoints are anonymous (no identity provider) there
- * can be no multiple resources per Endpoint.
+ * can be no multiple sessions per Endpoint.
  * properties on the class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * @returns {webrtc.Endpoint}
@@ -363,7 +363,7 @@ webrtc.Presentable = function (params) {
     delete that.client;
     that.className = 'webrtc.Presentable';
 
-    var resources = [];
+    var sessions = [];
     var presence = 'unavailable';
 
     that.listen('signaling:received', function (message) {
@@ -529,68 +529,59 @@ webrtc.Contact = function (params) {
 
     var presence = 'unavailable';
     var subscription = 'both';
-    var resources = {};
+    var sessions = {};
 
     /**
-     * Set the presence on the Contact and the resource
+     * Set the presence on the Contact and the session
      * @memberof! webrtc.Contact
      * @method webrtc.Contact.setPresence
      */
-    var setPresence = that.publicize('setPresence', function (presenceString, resourceID) {
+    var setPresence = that.publicize('setPresence', function (presenceString, sessionId) {
         // undefined is a valid presenceString equivalent to available.
         presenceString = presenceString || 'available';
+        console.log('presenceString');
+        console.log(presenceString);
 
-        if (!resources.hasOwnProperty(resourceID)) {
-            resources[resourceID] = {
-                'resourceID': resourceID,
+        if (!sessions.hasOwnProperty(sessionId)) {
+            sessions[sessionId] = {
+                'sessionId': sessionId,
                 'presence': presenceString
             };
         }
-        resources[resourceID].presence = presenceString;
+        sessions[sessionId].presence = presenceString;
+        log.debug('after setPresence');
+        log.debug(sessions);
         resolvePresence();
     });
 
     /**
-     * Loop through resources; resolve presence into identity-wide presence. Set presence attribute.
+     * Find the presence out of all known sessions with the highest priority (most availability)
+     * and set it as the contact's resolved presence.
      * @memberof! webrtc.Contact
      * @method webrtc.Contact.setPresence
      * @private
      * @fires webrtc.Presentable#presence
      */
     var resolvePresence = function () {
-        var options = [];
-        resources.forOwn(function (resource) {
-            options.push(resource.presence);
-            // TODO convert this into a loop
-            switch (resource.presence) {
-            case 'chat':
-                presence = resource.presence;
-                break;
-            case 'available':
-                if (!(presence in ['chat'])) {
-                    presence = resource.presence;
-                }
-                break;
-            case 'away':
-                if (!(presence in ['chat', 'available'])) {
-                    presence = resource.presence;
-                }
-                break;
-            case 'dnd':
-                if (!(presence in ['chat', 'available', 'away'])) {
-                    presence = resource.presence;
-                }
-                break;
-            case 'xa':
-                if (!(presence in ['chat', 'available', 'away', 'dnd'])) {
-                    presence = resource.presence;
-                }
-                break;
-            }
+        var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
+        var sessionIds = Object.keys(sessions);
+
+        /**
+         * Sort the sessionIds array by the priority of the value of the presence of that
+         * sessionId. This will cause the first element in the sessionsId to be the id of the
+         * session with the highest priority presence. Then we can access it by the 0 index.
+         */
+        sessionIds = sessionIds.sort(function (a, b) {
+            var indexA = options.indexOf(sessions[a].presence);
+            var indexB = options.indexOf(sessions[b].presence);
+            // Move it to the end of the list if it isn't one of our accepted presence values
+            indexA = indexA === -1 ? 1000 : indexA;
+            indexB = indexB === -1 ? 1000 : indexB;
+            return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
         });
-        if (!presence) {
-            presence = 'unavailable';
-        }
+
+        presence = sessionIds[0] ? sessions[sessionIds[0]].presence : 'unavailable';
+
         log.debug("presences resolved to " + presence);
         that.fire('presence', presence);
     };
@@ -651,13 +642,14 @@ webrtc.User = function (params) {
     contactList.listen('presence', function (presenceMessage) {
         var presPayload = presenceMessage.getPayload();
         var from = presenceMessage.getSender();
+        var sessionId = presenceMessage.getSessionID();
         var contact = contactList.get(from);
         /*
          * Parse the message, add the session to contact sessions or usersessions if it's us,
          * modify the contact's presence using contact.setPresence, which will fire the event
          */
         if (contact) {
-            contact.setPresence(presPayload.type);
+            contact.setPresence(presPayload.type, sessionId);
         } else if (from === webrtc.getClient(client).user.getID()) {
             // logged in user TODO: save userSession
             log.debug("got own presence");
@@ -707,7 +699,9 @@ webrtc.User = function (params) {
                 log.debug(message.getSender());
                 log.debug(message.getText());
             } else {
-                contact.setPresence(message.getText());
+                log.debug('presence ' + message.getText() + " set on contact " +
+                    contact.getDisplayName());
+                contact.setPresence(message.getText(), message.getSessionID());
             }
         };
 

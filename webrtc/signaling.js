@@ -859,6 +859,16 @@ webrtc.PresenceMessage = function (params) {
         return sender;
     });
 
+    /**
+     * Get the session ID of the sender.
+     * @memberof! webrtc.PresenceMessage
+     * @method webrtc.PresenceMessage.getSessionID
+     * @returns {string}
+     */
+    var getSessionID = that.publicize('getSessionID', function () {
+        return sessionId;
+    });
+
     if (rawMessage) {
         parse();
     }

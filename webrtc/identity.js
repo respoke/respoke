@@ -25,7 +25,7 @@ webrtc.AbstractIdentityProvider = function (params) {
      * @memberof! webrtc.AbstractIdentityProvider
      * @method webrtc.AbstractIdentityProvider.login
      * @abstract
-     * @param {string} username The  user's username + resource.
+     * @param {string} username The  user's username.
      * @param {string} password The  user's password.
      * @param {successCallback} onSuccess
      */
