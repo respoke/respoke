@@ -231,17 +231,17 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.logout
      * @returns Promise<String>
      */
-    var logout = that.publicize('sendPresence', function () {
+    var logout = that.publicize('logout', function () {
         var deferred = Q.defer();
-        wsCall({
+        call({
             'path': '/v1/authsession',
             'httpMethod': 'DELETE'
         }, function (response) {
             if (!response.error) {
                 socket.disconnect();
-                deferred.promise.resolve("Logged out.");
+                deferred.resolve("Logged out.");
             } else {
-                deferred.promise.reject(new Error("Couldn't log out."));
+                deferred.reject(new Error("Couldn't log out."));
             }
         });
         return deferred.promise;

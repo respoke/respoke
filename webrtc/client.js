@@ -127,13 +127,18 @@ webrtc.Client = function (params) {
         if (that.user === null) {
             return;
         }
-        that.identityProvider.logout().done(function () {
+
+        var logoutPromise = that.identityProvider.logout();
+
+        logoutPromise.done(function () {
             that.user.fire('loggedout');
             that.user = null;
             that.fire('loggedout');
         }, function (err) {
             throw err;
         });
+
+        return logoutPromise;
     });
 
     /**
