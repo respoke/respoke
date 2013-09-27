@@ -238,6 +238,7 @@ webrtc.SignalingChannel = function (params) {
             'httpMethod': 'DELETE'
         }, function (response) {
             if (!response.error) {
+                socket.disconnect();
                 deferred.promise.resolve("Logged out.");
             } else {
                 deferred.promise.reject(new Error("Couldn't log out."));
