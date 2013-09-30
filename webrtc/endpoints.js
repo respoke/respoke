@@ -668,10 +668,17 @@ webrtc.User = function (params) {
     var getContacts = that.publicize('getContacts', function () {
         var deferred = Q.defer();
         var itemElements = [];
+
         if (!userSession.isLoggedIn()) {
             deferred.reject(new Error("Can't request contacts unless logged in."));
             return deferred.promise;
         }
+
+        if (contactList.length > 0) {
+            deferred.resolve(contactList);
+            return deferred.promise;
+        }
+
         deferred.promise.then(function (contactList) {
             setTimeout(function () {
                 contactList.processPresenceQueue();
