@@ -898,10 +898,10 @@ webrtc.User = function (params) {
     /**
      * Send iq stanza requesting roster.
      * @memberof! webrtc.User
-     * @method webrtc.User.requestContacts
+     * @method webrtc.User.getContacts
      * @returns {Promise<webrtc.ContactList>}
      */
-    var requestContacts = that.publicize('requestContacts', function () {
+    var getContacts = that.publicize('getContacts', function () {
         var deferred = Q.defer();
         var itemElements = [];
         if (!userSession.isLoggedIn()) {
@@ -913,7 +913,7 @@ webrtc.User = function (params) {
         }).done();
 
         /* This seems like not a good place to define this handler, but it must have access
-         * to the promise that requestContacts must return, so it is necessary.
+         * to the promise that getContacts must return, so it is necessary.
          */
         signalingChannel.addHandler('iq', function (stanza) {
             log.debug(stanza);

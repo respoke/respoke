@@ -662,10 +662,10 @@ webrtc.User = function (params) {
     /**
      * Send iq stanza requesting roster.
      * @memberof! webrtc.User
-     * @method webrtc.User.requestContacts
+     * @method webrtc.User.getContacts
      * @returns {Promise<webrtc.ContactList>}
      */
-    var requestContacts = that.publicize('requestContacts', function () {
+    var getContacts = that.publicize('getContacts', function () {
         var deferred = Q.defer();
         var itemElements = [];
         if (!userSession.isLoggedIn()) {
