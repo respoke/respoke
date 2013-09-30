@@ -6,4 +6,3 @@ if [ "$JSHINT_OUTPUT" != "" ]; then
 	exit 1
 fi
 ./minimize.sh
-git add webrtc.min.js
