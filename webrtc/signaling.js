@@ -226,6 +226,28 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
+     * Signal to log the user out.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.logout
+     * @returns Promise<String>
+     */
+    var logout = that.publicize('logout', function () {
+        var deferred = Q.defer();
+        call({
+            'path': '/v1/authsession',
+            'httpMethod': 'DELETE'
+        }, function (response) {
+            if (!response.error) {
+                socket.disconnect();
+                deferred.resolve("Logged out.");
+            } else {
+                deferred.reject(new Error("Couldn't log out."));
+            }
+        });
+        return deferred.promise;
+    });
+
+    /**
      * Generate and send a presence message representing the user's current status. This triggers
      * the server to send the user's contact's presence.
      * @memberof! webrtc.SignalingChannel
