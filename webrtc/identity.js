@@ -125,13 +125,23 @@ webrtc.IdentityProvider = function (params) {
      * Log an XMPP user out.
      * @memberof! webrtc.IdentityProvider
      * @method webrtc.IdentityProvider.logout
+     * @fires webrtc.IdentityProvider#loggedout
+     * @returns Promise<String>
      */
     var logout = that.publicize('logout', function () {
         log.trace("User logout");
-        signalingChannel.listen('closed', function () {
+
+        var logoutPromise = signalingChannel.logout();
+
+        logoutPromise.done(function () {
+            that.fire("loggedout");
+            signalingChannel.close();
             loggedIn = false;
+        }, function (e) {
+            throw new Error("Couldn't log out:", e.message);
         });
-        signalingChannel.close();
+
+        return logoutPromise;
     });
 
     /**
