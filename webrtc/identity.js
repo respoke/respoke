@@ -200,6 +200,33 @@ webrtc.ContactList = function (params) {
     });
 
     /**
+     * Filter the contact list on any params, return list of matching contacts.
+     * @memberof! webrtc.ContactList
+     * @method webrtc.ContactList.filter
+     * @param {object} params An object literal with attributes and values to match.
+     * @returns {webrtc.Endpoint[]} The endpoints whose attributes match the filter.
+     */
+    var filter = that.publicize('filter', function (params) {
+        var results = [];
+
+        if ('string' === typeof params) {
+            params = {'id': params};
+        }
+
+        contacts.forEach(function (contact, index) {
+            var paramNames = Object.keys(params);
+            for (var i = 0; i < paramNames.length; i += 1) {
+                if (contact[paramNames[i]] !== params[paramNames[i]]) {
+                    return;
+                }
+            }
+            results.push(contact);
+        });
+
+        return results;
+    });
+
+    /**
      * Remove a contact from the list.
      * @memberof! webrtc.ContactList
      * @method webrtc.ContactList.remove
