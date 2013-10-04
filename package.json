@@ -14,5 +14,8 @@
   "license": "Proprietary",
   "dependencies": {
     "uglify-js": "~2.4.0"
+  },
+  "devDependencies": {
+    "async": "latest"
   }
 }
