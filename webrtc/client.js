@@ -34,6 +34,7 @@ webrtc.Client = function (params) {
     var appKey = null;
     var apiToken = null;
     var signalingChannel = null;
+    var turnRefresher = null;
     var clientSettings = params.clientSettings || {};
     log.debug("Client ID is " + client);
 
@@ -45,11 +46,7 @@ webrtc.Client = function (params) {
             mandatory: {}
         }],
         servers: params.servers || {
-            iceServers: [
-                /* Can only have one server listed here as of yet. */
-                { 'url': 'stun:stun.l.google.com:19302' }
-                //{ 'url': 'turn:toto@174.129.201.5:3478', 'credential': 'password'}
-            ]
+            iceServers: []
         }
     };
 
@@ -104,16 +101,37 @@ webrtc.Client = function (params) {
      */
     var login = that.publicize('login', function (userAccount, token) {
         var userPromise = that.identityProvider.login(userAccount, token);
-        userPromise.then(function (user) {
+        userPromise.done(function (user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
             log.info('logged in as user ' + user.getDisplayName());
             log.debug(user);
+
+            updateTurnCredentials();
         }, function (error) {
             log.error(error.message);
-        }).done();
+        });
         return userPromise;
     });
+
+    /**
+     * Update TURN credentials and set a timeout to do it again in 20 hours.
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.updateTurnCredentials
+     */
+      var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
+          if (mediaSettings.disableTurn === true) {
+              return;
+          }
+
+          clearInterval(turnRefresher);
+          signalingChannel.getTurnCredentials().done(function (creds) {
+              mediaSettings.servers.iceServers = creds;
+          }, function (error){
+              throw error;
+          });
+          turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
+      });
 
     /**
      * Log out specified UserSession or all UserSessions if no usernames are passed. Sets
@@ -134,6 +152,7 @@ webrtc.Client = function (params) {
             that.user.fire('loggedout');
             that.user = null;
             that.fire('loggedout');
+            clearInterval(turnRefresher);
         }, function (err) {
             throw err;
         });

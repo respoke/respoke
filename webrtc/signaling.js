@@ -474,6 +474,56 @@ webrtc.SignalingChannel = function (params) {
     );
 
     /**
+     * Get ephemeral TURN credentials.  This method is called every 20 hours in setInterval
+     * in the Client so that credentials are ready to use quickly when a call begins. We
+     * don't want to have to wait on a REST request to finish between the user clicking the
+     * call button and the call beginning.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.getTurnCredentials
+     */
+    var getTurnCredentials = that.publicize('getTurnCredentials', function (onCredentials) {
+        var deferred = Q.defer();
+        wsCall({
+            'httpMethod': 'GET',
+            'path': '/v1/turncredentials'
+        }, function (creds) {
+            var result = [];
+
+            if (!creds || !creds.uris) {
+                deferred.reject(new Error(credentials.message || "Can't get TURN credentials."));
+            }
+
+            creds.uris.forEach(function(uri) {
+                var cred = null;
+
+                if (!uri) {
+                    return;
+                }
+
+                cred = createIceServer(uri, creds.username, creds.password);
+                result.push(cred);
+                /*
+                 * I'm not entirely sure that we can trust createIceServer. This is the code
+                 * to convert back to the old method of TURN format, with no 'username' attribute.
+                 * Someday we will be able to delete this.
+                uri = uri.replace('turn:', 'turn:' + creds.username + '@');
+                uri = uri.replace('?transport=udp', '');
+                result.push({
+                    'url': uri,
+                    'credential': cred.credential
+                });*/
+            });
+
+            if (result.length === 0) {
+                deferred.reject(new Error("Got no TURN credentials."));
+            }
+
+            deferred.resolve(result);
+        });
+        return deferred.promise;
+    });
+
+    /**
      * Construct a websocket API call and return the formatted response and errors. The 'success'
      * attribute indicates the success or failure of the API call. The 'response' attribute
      * is an associative array constructed by json.decode. The 'error' attriute is a message.

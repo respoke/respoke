@@ -58,6 +58,10 @@ webrtc.MediaSession = function (params) {
         mediaSettings.servers = params.mediaSettings.servers;
     }
 
+    /*if (mediaSettings.servers.iceServers.length === 0) {
+        mediaSettings.servers.iceServers.push(createIceServer('stun:stun.l.google.com:19302'));
+    }*/
+
     var report = {
         'startCallCount' : 0,
         'startCount' : 0,
@@ -81,10 +85,9 @@ webrtc.MediaSession = function (params) {
      */
     var start = that.publicize('start', function () {
         if (!that.username) {
-            throw new Error("Can't use a MediaSession without username. got " + that.username);
+            throw new Error("Can't use a MediaSession without username.");
         }
         report.startCount += 1;
-        log.trace("calling requestMedia from start.");
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
         requestMedia();
     });
@@ -343,8 +346,8 @@ webrtc.MediaSession = function (params) {
         if (!oCan.candidate) {
             return;
         }
-        log.trace("original browser-generated candidate object");
-        log.trace(oCan.candidate);
+        log.debug("original browser-generated candidate object");
+        log.debug(oCan.candidate);
         if (that.initiator && !receivedAnswer) {
             candidateSendingQueue.push(oCan.candidate);
         } else if (!that.initiator) {
@@ -376,7 +379,6 @@ webrtc.MediaSession = function (params) {
          * never has a valid PeerConnection at a time when we don't
          * have one. */
         var can = null;
-        log.trace('Processing candidate queues.');
         for (var i = 0; i <= candidateSendingQueue.length; i += 1) {
             can = candidateSendingQueue[i];
             signalCandidate(can);
@@ -384,8 +386,6 @@ webrtc.MediaSession = function (params) {
         candidateSendingQueue = [];
         for (var i = 0; i <= candidateReceivingQueue.length; i += 1) {
             can = candidateReceivingQueue[i];
-            log.trace("Calling processCandidate in processQueues");
-            log.trace(can);
             processCandidate(can);
         }
         candidateReceivingQueue = [];
@@ -461,6 +461,7 @@ webrtc.MediaSession = function (params) {
      */
     var stopMedia = that.publicize('stopMedia', function (sendSignal) {
         that.state = 'ended';
+        clientObj.updateTurnCredentials();
         if (pc === null) {
             return;
         }
@@ -625,6 +626,8 @@ webrtc.MediaSession = function (params) {
             log.error("Couldn't add ICE candidate: " + e.message);
             log.error(oCan);
         }
+        log.debug('Got a remote candidate.');
+        log.debug(oCan);
         report.candidatesReceived.push(oCan);
     };
 
