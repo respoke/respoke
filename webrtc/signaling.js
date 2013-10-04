@@ -172,10 +172,9 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.open
      */
     var open = that.publicize('open', function () {
-        // TODO: Disable this being able to change the base URL
-        if (baseURL === null || appId === null) {
+        if (appId === null) {
             var clientSettings = webrtc.getClient(client).getClientSettings();
-            baseURL = clientSettings.baseURL || 'http://54.200.29.88:1337';
+            baseURL = 'https://demo.digiumlabs.com:1337';
             appId = clientSettings.appId;
         }
         if (!appId) {
