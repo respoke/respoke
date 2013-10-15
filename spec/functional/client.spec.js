@@ -156,7 +156,7 @@ describe("Authentication", function () {
                         expect(result).toBe(false);
                         client.login(username, password).then(function () {
                             client.isLoggedIn().then(function (result) {
-                                expect(result).toBe(true));
+                                expect(result).toBe(true);
                                 done();
                             });
                         });
