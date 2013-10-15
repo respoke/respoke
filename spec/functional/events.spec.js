@@ -69,7 +69,6 @@ describe('System Events', function () {
                     client2.login(username2, password2).then(function (user) {
                         setTimeout(function () {
                             client1.getValue('contactsPresence').then(function (value) {
-                                console.log(value);
                                 expect(value).toBe('available');
                                 done();
                             });
@@ -83,7 +82,6 @@ describe('System Events', function () {
             client2.setPresence('unavailable').then(function () {
                 setTimeout(function () {
                     client1.getValue('contactsPresence').then(function (value) {
-                        console.log(value);
                         expect(value).toBe('unavailable');
                         done();
                     });

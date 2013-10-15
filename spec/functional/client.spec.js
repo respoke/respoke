@@ -4,21 +4,22 @@ var fixtureDriver;
 
 var clientName = 'client1';
 var username;
+var username2;
 var password = 'password';
 var env;
 
-var Client = require('../util/helpers.js').Client;
 
 describe("fixture setup", function () {
     it("fixture setup", function (done) {
-        helpers.testFixtureBeforeTest({randomUserNames: 1}, function (d, environment) {
+        helpers.testFixtureBeforeTest({randomUserNames: 2}, function (d, environment) {
             fixtureDriver = d;
             env = environment;
             username = env.users[0].username;
+            username2 = env.users[1].username;
             done();
         });
-    })
-})
+    });
+});
 describe("Connection", function () {
     var driver;
     var client;
@@ -145,6 +146,62 @@ describe("Authentication", function () {
             });
         });
     });
+
+    it("should login / logout / login", function (done) {
+        client.login(username, password).then(function () {
+            client.isLoggedIn().then(function (result) {
+                expect(result).toBe(true);
+                client.logout().then(function () {
+                    client.isLoggedIn().then(function (result) {
+                        expect(result).toBe(false);
+                        client.login(username, password).then(function () {
+                            client.isLoggedIn().then(function (result) {
+                                expect(result).toBe(true));
+                                done();
+                            });
+                        });
+                    })
+                });
+            });
+        });
+    });
+
+    it("should logout twice after login with no side effects", function (done) {
+        client.login(username, password).then(function () {
+            client.isLoggedIn().then(function (result) {
+                expect(result).toBe(true);
+                client.logout().then(function () {
+                    client.isLoggedIn().then(function (result) {
+                        expect(result).toBe(false);
+                        client.logout().then(function () {
+                            client.isLoggedIn().then(function (result) {
+                                expect(result).toBe(false);
+                                done();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+    it("should login user 1, logout user1, and login user2", function (done) {
+        client.login(username, password).then(function () {
+            client.isLoggedIn().then(function (result) {
+                expect(result).toBe(true);
+                client.logout().then(function () {
+                    client.isLoggedIn().then(function (result) {
+                        expect(result).toBe(false);
+                        client.login(username2, password).then(function () {
+                            client.isLoggedIn().then(function (result) {
+                                expect(result).toBe(false);
+                                done();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 });
 
 
@@ -205,4 +262,4 @@ describe("fixture teardown", function () {
     it("fixture teardown", function (done) {
         helpers.testFixtureAfterTest(fixtureDriver, done);
     });
-})
+});

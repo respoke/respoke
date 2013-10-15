@@ -56,7 +56,7 @@ describe('Presence setup', function () {
     });
 
     describe("Presence", function () {
-        //setting presence and getting presence events is tested as part of the
+        //setting presence and getting presence events are tested as part of the
         // events.spec.js
 
         it("#getPresence", function (done) {
