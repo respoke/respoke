@@ -532,6 +532,15 @@ webrtc.Contact = function (params) {
     var sessions = {};
 
     /**
+     * Get the Contact's presence.
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.getPresence
+     */
+    var getPresence = that.publicize('getPresence', function () {
+        return presence;
+    });
+
+    /**
      * Set the presence on the Contact and the session
      * @memberof! webrtc.Contact
      * @method webrtc.Contact.setPresence
