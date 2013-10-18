@@ -1,5 +1,8 @@
 var fs = require('fs');
 var webdriver = require('selenium-webdriver');
+webdriver.promise.controlFlow().on('uncaughtException', function(e) {
+    console.error('Unhandled error: ' + e);
+});
 
 function getWebDriver(options) {
     if (!options) {
@@ -11,6 +14,7 @@ function getWebDriver(options) {
                 withCapabilities(options.capabilities).
                 build();
     driver.manage().timeouts().setScriptTimeout(options.timeout);
+
     return driver;
 }
 

@@ -202,6 +202,20 @@ describe("Authentication", function () {
             });
         });
     });
+
+    it("should login user twice", function (done) {
+        client.login(username, password).then(function () {
+            client.isLoggedIn().then(function (result) {
+                expect(result).toBe(true);
+                client.login(username, password).then(function () {
+                    client.isLoggedIn().then(function (result) {
+                        expect(result).toBe(true);
+                        done();
+                    });
+                });
+            });
+        });
+    });
 });
 
 
