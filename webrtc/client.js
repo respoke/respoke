@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.Client
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
@@ -22,7 +22,7 @@ webrtc.Client = function (params) {
     "use strict";
     params = params || {};
     var client = webrtc.makeUniqueID().toString();
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     webrtc.instances[client] = that;
     that.className = 'webrtc.Client';
 

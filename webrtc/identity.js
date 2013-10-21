@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.AbstractIdentityProvider
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Generic Identity provider class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -14,7 +14,7 @@ webrtc.AbstractIdentityProvider = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.AbstractIdentityProvider';
 
@@ -162,7 +162,7 @@ webrtc.IdentityProvider = function (params) {
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.ContactList
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Container for User contacts.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -172,7 +172,7 @@ webrtc.ContactList = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.ContactList';
 

@@ -65,7 +65,7 @@ class PushDocs:
                 "confluence/webrtc.Contact",
                 "confluence/webrtc.ContactList",
                 "confluence/webrtc.Endpoint",
-                "confluence/webrtc.EventThrower",
+                "confluence/webrtc.EventEmitter",
                 "confluence/webrtc.IdentityProvider",
                 "confluence/webrtc.js",
                 "confluence/webrtc.MediaSession",

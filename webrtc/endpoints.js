@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.AbstractPresentable
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Information describing a nameable entity which has presence and skills.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -19,7 +19,7 @@ webrtc.AbstractPresentable = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.AbstractPresentable';
 
@@ -279,7 +279,7 @@ webrtc.UserSession = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.UserSession';
 

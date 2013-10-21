@@ -19,7 +19,7 @@ describe("A webrtc.UserSession ", function () {
     expect(typeof userSession.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof userSession.listen).toBe('function');
     expect(typeof userSession.ignore).toBe('function');
     expect(typeof userSession.fire).toBe('function');

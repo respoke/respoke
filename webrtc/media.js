@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.MediaSession
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc WebRTC MediaSession including getContactMedia, path and codec negotation, and
  * call state.
  * @param {object} params Object whose properties will be used to initialize this object and set
@@ -17,7 +17,7 @@ webrtc.MediaSession = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.MediaSession';
 
@@ -821,7 +821,7 @@ webrtc.MediaSession = function (params) {
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.MediaStream
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Manage native MediaStreams.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -832,7 +832,7 @@ webrtc.MediaSession = function (params) {
 webrtc.MediaStream = function (params) {
     "use strict";
     params = params || {};
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     that.className = 'webrtc.MediaStream';
 
     var stream = params.stream;

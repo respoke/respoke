@@ -17,7 +17,7 @@ describe("A webrtc.AbstractUser ", function () {
     expect(typeof user.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof user.listen).toBe('function');
     expect(typeof user.ignore).toBe('function');
     expect(typeof user.fire).toBe('function');

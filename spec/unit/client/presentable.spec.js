@@ -13,7 +13,7 @@ describe("A webrtc.AbstractPresentable ", function () {
     expect(typeof presentable.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof presentable.listen).toBe('function');
     expect(typeof presentable.ignore).toBe('function');
     expect(typeof presentable.fire).toBe('function');

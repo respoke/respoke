@@ -13,7 +13,7 @@ webrtc.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.SignalingChannel';
 

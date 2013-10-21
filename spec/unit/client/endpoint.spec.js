@@ -15,7 +15,7 @@ describe("A webrtc.AbstractEndpoint ", function () {
     expect(typeof endpoint.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof endpoint.listen).toBe('function');
     expect(typeof endpoint.ignore).toBe('function');
     expect(typeof endpoint.fire).toBe('function');

@@ -15,7 +15,7 @@ describe("A webrtc.AbstractContact ", function () {
     expect(typeof contact.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof contact.listen).toBe('function');
     expect(typeof contact.ignore).toBe('function');
     expect(typeof contact.fire).toBe('function');

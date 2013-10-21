@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class DocumentationTest
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
@@ -25,7 +25,7 @@
  * {@link http://digium.com}
  * [Some caption]{@link http://digium.com}
  * {@link webrtc.XMPPTextMessage some caption}
- * @mixes webrtc.EventThrower
+ * @mixes webrtc.EventEmitter
  * @requires jQuery.js
  * @see DocumentationTest
  * @see http://google.com
@@ -36,7 +36,7 @@
  */
 DocumentationTest = function(params) {
 	params = params || {};
-	var that = webrtc.EventThrower(params);
+	var that = webrtc.EventEmitter(params);
 	/**
 	 * @public
 	 * @constant

@@ -1,5 +1,5 @@
-describe("A webrtc.EventThrower ", function () {
-  var eventThrower = webrtc.EventThrower({
+describe("A webrtc.EventEmitter ", function () {
+  var eventThrower = webrtc.EventEmitter({
   	"gloveColor": "white"
   });
 
@@ -15,7 +15,7 @@ describe("A webrtc.EventThrower ", function () {
    */
   it("has the correct class name.", function () {
     expect(eventThrower.className).not.toBeFalsy();
-    expect(eventThrower.getClass()).toBe('webrtc.EventThrower');
+    expect(eventThrower.getClass()).toBe('webrtc.EventEmitter');
   });
 
   /*
