@@ -59,7 +59,7 @@ class PushDocs:
                 "confluence/webrtc.AbstractPresentable",
                 "confluence/webrtc.AbstractSignalingChannel",
                 "confluence/webrtc.AbstractUser",
-                "confluence/webrtc.ChatMessage",
+                "confluence/webrtc.TextMessage",
                 "confluence/webrtc.Class",
                 "confluence/webrtc.Client",
                 "confluence/webrtc.Contact",

@@ -13,7 +13,7 @@ describe("The webrtc namespace", function() {
     expect(typeof webrtc.AbstractPresentable).toBe('function');
     expect(typeof webrtc.AbstractUser).toBe('function');
     expect(typeof webrtc.UserSession).toBe('function');
-    expect(typeof webrtc.ChatMessage).toBe('function');
+    expect(typeof webrtc.TextMessage).toBe('function');
     expect(typeof webrtc.Contact).toBe('function');
     expect(typeof webrtc.Endpoint).toBe('function');
     expect(typeof webrtc.IdentityProvider).toBe('function');

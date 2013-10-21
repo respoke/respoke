@@ -653,7 +653,7 @@ webrtc.Endpoint = function (params) {
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
-        signalingChannel.sendMessage(webrtc.ChatMessage({
+        signalingChannel.sendMessage(webrtc.TextMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getResourceFormat(),
             'payload': message
@@ -1113,7 +1113,7 @@ webrtc.User = function (params) {
             if (type === 'signaling') {
                 contact.fire('signaling:received', webrtc.SignalingMessage(params));
             } else {
-                contact.fire('message:received', webrtc.ChatMessage(params));
+                contact.fire('message:received', webrtc.TextMessage(params));
             }
             return true;
         });
@@ -1125,23 +1125,23 @@ webrtc.User = function (params) {
 }; // End webrtc.User
 
 /**
- * Create a new ChatMessage.
+ * Create a new TextMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.ChatMessage
+ * @class webrtc.TextMessage
  * @constructor
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.ChatMessage}
+ * @returns {webrtc.TextMessage}
  */
-webrtc.ChatMessage = function (params) {
+webrtc.TextMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
     var that = params;
     delete that.client;
 
-    that.className = 'webrtc.ChatMessage';
+    that.className = 'webrtc.TextMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
     var payload = params.payload; // Only set on outgoing message.
     var sender = params.sender;
@@ -1149,8 +1149,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.parse
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
@@ -1166,8 +1166,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Construct an XMPP Stanza
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getXMPP
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getXMPP
      * @returns {object} Strophe XMPP stanza.
      */
     var getXMPP = that.publicize('getXMPP', function () {
@@ -1180,8 +1180,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Get the whole payload.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getPayload
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getPayload
      * @returns {string}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1190,16 +1190,16 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Get the whole chat message.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getText
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', getPayload);
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getRecipient
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -1211,7 +1211,7 @@ webrtc.ChatMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.ChatMessage
+}; // End webrtc.TextMessage
 
 /**
  * Create a new SignalingMessage.

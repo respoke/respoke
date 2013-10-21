@@ -445,7 +445,7 @@ webrtc.Endpoint = function (params) {
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
-        signalingChannel.sendMessage(webrtc.ChatMessage({
+        signalingChannel.sendMessage(webrtc.TextMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getID(),
             'payload': message
@@ -770,7 +770,7 @@ webrtc.User = function (params) {
                 log.debug('message error');
                 log.debug(message);
             }
-            contact.fire('message:received', webrtc.ChatMessage({
+            contact.fire('message:received', webrtc.TextMessage({
                 'client': client,
                 'rawMessage': message.text,
                 'recipient': that,

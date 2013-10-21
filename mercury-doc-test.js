@@ -19,12 +19,12 @@
  * @property {webrtc.User} user Logged-in user's User object.
  * @copyright Digium 2013
  * @license Proprietary
- * {@link webrtc.XMPPChatMessage}
- * {@linkcode webrtc.XMPPChatMessage}
- * {@linkplain webrtc.XMPPChatMessage}
+ * {@link webrtc.XMPPTextMessage}
+ * {@linkcode webrtc.XMPPTextMessage}
+ * {@linkplain webrtc.XMPPTextMessage}
  * {@link http://digium.com}
  * [Some caption]{@link http://digium.com}
- * {@link webrtc.XMPPChatMessage some caption}
+ * {@link webrtc.XMPPTextMessage some caption}
  * @mixes webrtc.EventThrower
  * @requires jQuery.js
  * @see DocumentationTest
@@ -86,7 +86,7 @@ DocumentationTest = function(params) {
 		 */
 		signalingChannel: 'XMPPSignalingChannel',
 		identityProvider: 'XMPPIdentityProvider',
-		chatMessage: 'XMPPChatMessage',
+		chatMessage: 'XMPPTextMessage',
 		signalingMessage: 'XMPPSignalingMessage',
 		presenceMessage: 'XMPPPresenceMessage',
 	};
