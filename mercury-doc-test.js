@@ -121,10 +121,10 @@ DocumentationTest = function(params) {
 	that.presenceMessage = findClass(that.appSettings.presenceMessage);
 	/**
 	 * @access public
-	 * @desc The mediaSession in progress
-	 * @typedef webrtc.MediaSession
+	 * @desc The call in progress
+	 * @typedef webrtc.Call
 	 */
-	that.mediaSession = findClass(that.appSettings.mediaSession);
+	that.call = findClass(that.appSettings.call);
 	/**
 	 * @access public
 	 * @default null

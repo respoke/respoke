@@ -7,7 +7,7 @@ describe("The webrtc namespace", function() {
     expect(typeof webrtc.AbstractEndpoint).toBe('function');
     expect(typeof webrtc.EventEmitter).toBe('function');
     expect(typeof webrtc.AbstractIdentityProvider).toBe('function');
-    expect(typeof webrtc.MediaSession).toBe('function');
+    expect(typeof webrtc.Call).toBe('function');
     expect(typeof webrtc.MediaStream).toBe('function');
     expect(typeof webrtc.Client).toBe('function');
     expect(typeof webrtc.AbstractPresentable).toBe('function');

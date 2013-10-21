@@ -68,7 +68,7 @@ class PushDocs:
                 "confluence/webrtc.EventEmitter",
                 "confluence/webrtc.IdentityProvider",
                 "confluence/webrtc.js",
-                "confluence/webrtc.MediaSession",
+                "confluence/webrtc.Call",
                 "confluence/webrtc.MediaStream",
                 "confluence/webrtc.PresenceMessage",
                 "confluence/webrtc.Presentable",

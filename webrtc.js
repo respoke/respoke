@@ -174,79 +174,79 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.MediaSession#stream:local:received
+ * @event webrtc.Call#stream:local:received
  * @type {DOM}
  */
 
 /**
- * @event webrtc.MediaSession#stream:remote:received
+ * @event webrtc.Call#stream:remote:received
  * @type {DOM}
  */
 
 /**
- * @event webrtc.MediaSession#stream:remote:removed
+ * @event webrtc.Call#stream:remote:removed
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#candidate:local
+ * @event webrtc.Call#candidate:local
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#candidate:remote
+ * @event webrtc.Call#candidate:remote
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#sdp:remote:received
+ * @event webrtc.Call#sdp:remote:received
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#sdp:remote:saved
+ * @event webrtc.Call#sdp:remote:saved
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#sdp:remote:error
+ * @event webrtc.Call#sdp:remote:error
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#sdp:local:created
+ * @event webrtc.Call#sdp:local:created
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#sdp:local:saved
+ * @event webrtc.Call#sdp:local:saved
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#sdp:local:error
+ * @event webrtc.Call#sdp:local:error
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#hangup
+ * @event webrtc.Call#hangup
  * @type {boolean}
  */
 
 /**
- * @event webrtc.MediaSession#video:muted
+ * @event webrtc.Call#video:muted
  */
 
 /**
- * @event webrtc.MediaSession#video:unmuted
+ * @event webrtc.Call#video:unmuted
  */
 
 /**
- * @event webrtc.MediaSession#audio:muted
+ * @event webrtc.Call#audio:muted
  */
 
 /**
- * @event webrtc.MediaSession#audio:unmuted
+ * @event webrtc.Call#audio:unmuted
  */
 
 /**
