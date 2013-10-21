@@ -150,6 +150,15 @@ module.exports = {
                     "    callback(messages); " +
                     " }); ");
         };
+        this.createEndpoint = function (varName, id) {
+            return this.driver.executeScript("window['" + this.clientName + "']." + varName +" = webrtc.Endpoint({id: " + id + ", client: window['" + this.clientName + "'].getID()});");
+        };
+        this.sendEndpointMessage = function (varName, message) {
+            return this.driver.executeScript("window['" + this.clientName + "']." + varName + ".sendMessage('" + message + "');");
+        };
+        this.getID = function () {
+            return this.driver.executeScript("return webrtc.getClient(window['" + this.clientName + "'].getID()).user.getID();")
+        };
 
     },
 
