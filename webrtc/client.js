@@ -12,11 +12,9 @@
  * @property {object} clientSettings Client settings.
  * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
  * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
- * @property {function} chatMessage Class extending webrtc.AbstractMessage to use for chat messages.
- * @property {function} signalingMessage Class extending webrtc.AbstractMessage to use for
- * signaling.
- * @property {function} presenceMessage Class extending webrtc.AbstractMessage to use for presence
- * messages.
+ * @property {function} chatMessage Class to use for chat messages.
+ * @property {function} signalingMessage Class to use for signaling.
+ * @property {function} presenceMessage Class to use for presence messages.
  * @property {webrtc.User} user Logged-in user's User object.
  */
 /*global webrtc: false */
@@ -119,19 +117,19 @@ webrtc.Client = function (params) {
      * @memberof! webrtc.Client
      * @method webrtc.Client.updateTurnCredentials
      */
-      var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
-          if (mediaSettings.disableTurn === true) {
-              return;
-          }
+    var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
+        if (mediaSettings.disableTurn === true) {
+            return;
+        }
 
-          clearInterval(turnRefresher);
-          signalingChannel.getTurnCredentials().done(function (creds) {
-              mediaSettings.servers.iceServers = creds;
-          }, function (error){
-              throw error;
-          });
-          turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
-      });
+        clearInterval(turnRefresher);
+        signalingChannel.getTurnCredentials().done(function (creds) {
+            mediaSettings.servers.iceServers = creds;
+        }, function (error) {
+            throw error;
+        });
+        turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
+    });
 
     /**
      * Log out specified UserSession or all UserSessions if no usernames are passed. Sets

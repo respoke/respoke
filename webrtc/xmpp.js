@@ -2,7 +2,6 @@
  * Create a new SignalingChannel.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingChannel
- * @augments webrtc.AbstractSignalingChannel
  * @constructor
  * @classdesc XMPP Signaling class.
  * @param {object} params Object whose properties will be used to initialize this object and set
@@ -14,7 +13,7 @@ webrtc.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractSignalingChannel(params);
+    var that = params;
     delete that.client;
     that.className = 'webrtc.SignalingChannel';
 
@@ -1130,7 +1129,6 @@ webrtc.User = function (params) {
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.ChatMessage
  * @constructor
- * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -1140,7 +1138,7 @@ webrtc.ChatMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractMessage(params);
+    var that = params;
     delete that.client;
 
     that.className = 'webrtc.ChatMessage';
@@ -1220,7 +1218,6 @@ webrtc.ChatMessage = function (params) {
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingMessage
  * @constructor
- * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -1230,7 +1227,7 @@ webrtc.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractMessage(params);
+    var that = params;
     delete that.client;
     that.className = 'webrtc.SignalingMessage';
 
@@ -1291,7 +1288,6 @@ webrtc.SignalingMessage = function (params) {
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.PresenceMessage
  * @constructor
- * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -1301,7 +1297,7 @@ webrtc.PresenceMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractMessage(params);
+    var that = params;
     delete that.client;
     that.className = 'webrtc.PresenceMessage';
 

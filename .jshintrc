@@ -113,6 +113,7 @@
         "log",
         "io",
         "attachMediaStream",
+        "createIceServer",
         "RTCPeerConnection",
         "getUserMedia",
 		"escape",
