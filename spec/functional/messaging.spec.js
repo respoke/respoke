@@ -109,6 +109,37 @@ describe('Messaging', function () {
         });
     });
 
+    describe("Endpoints", function () {
+
+        it("create endpoints and send messages", function (done) {
+            client1.getID().then(function (id1) {
+                client2.getID().then(function (id2) {
+                    client1.createEndpoint('endpoint2', id2).then(function () {
+                        client2.createEndpoint('endpoint1', id1).then(function () {
+                            client1.listen('endpoint2', 'message:sent', 'endpoint2Message').then(function () {
+                                client2.listen('endpoint1', 'message:sent', 'endpoint1Message').then(function (){
+                                    client1.sendEndpointMessage('endpoint2', 'testMessage-endpoint1').then(function () {
+                                        client2.sendEndpointMessage('endpoint1', 'testMessage-endpoint2').then(function () {
+                                            setTimeout(function () {
+                                                client1.getValue('endpoint2Message.getText()').then(function (result) {
+                                                    expect(result).toBe('testMessage-endpoint1')
+                                                    client2.getValue('endpoint1Message.getText()').then(function (result) {
+                                                        expect(result).toBe('testMessage-endpoint2');
+                                                        done();
+                                                    });
+                                                });
+                                            }, 1000);
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+
     it("test teardown", function (done) {
         driver1.quit();
         driver2.quit();
