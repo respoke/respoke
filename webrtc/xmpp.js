@@ -828,7 +828,7 @@ webrtc.User = function (params) {
     var subscription = 'both';
     var remoteUserSessions = {};
     var calls = [];
-    var contactList = webrtc.ContactList({'client': client});
+    var contactList = webrtc.Contacts({'client': client});
     var presenceQueue = [];
     var presence = 'unavailable';
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
@@ -850,12 +850,12 @@ webrtc.User = function (params) {
         }
     });
 
-    // listen to webrtc.ContactList#presence -- the contacts's presences
+    // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('new', function (contact) {
         that.fire('contact:new', contact);
     });
 
-    // listen to webrtc.ContactList#presence -- the contacts's presences
+    // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('presence', function (presenceMessage) {
         var presPayload = null;
         var from = null;
@@ -898,7 +898,7 @@ webrtc.User = function (params) {
      * Send iq stanza requesting roster.
      * @memberof! webrtc.User
      * @method webrtc.User.getContacts
-     * @returns {Promise<webrtc.ContactList>}
+     * @returns {Promise<webrtc.Contacts>}
      */
     var getContacts = that.publicize('getContacts', function () {
         var deferred = Q.defer();

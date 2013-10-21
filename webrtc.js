@@ -134,17 +134,17 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.ContactList#new
+ * @event webrtc.Contacts#new
  * @type {webrtc.Contact}
  */
 
 /**
- * @event webrtc.ContactList#remove
+ * @event webrtc.Contacts#remove
  * @type {webrtc.Contact}
  */
 
 /**
- * @event webrtc.ContactList#presence
+ * @event webrtc.Contacts#presence
  * @type {object}
  */
 

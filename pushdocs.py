@@ -63,7 +63,7 @@ class PushDocs:
                 "confluence/webrtc.Class",
                 "confluence/webrtc.Client",
                 "confluence/webrtc.Contact",
-                "confluence/webrtc.ContactList",
+                "confluence/webrtc.Contacts",
                 "confluence/webrtc.Endpoint",
                 "confluence/webrtc.EventEmitter",
                 "confluence/webrtc.IdentityProvider",

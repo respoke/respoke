@@ -46,7 +46,7 @@ describe("A webrtc.AbstractUser ", function () {
    */
   it("contains some important methods.", function () {
     expect(typeof user.getUserSession).toBe('function');
-    expect(typeof user.getContactList).toBe('function');
+    expect(typeof user.getContacts).toBe('function');
     expect(typeof user.setOnline).toBe('function');
   });
 

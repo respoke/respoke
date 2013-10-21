@@ -240,10 +240,10 @@ webrtc.AbstractUser = function (params) {
     /**
      * Get the User's contact list.
      * @memberof! webrtc.AbstractUser
-     * @method webrtc.AbstractUser.getContactList
-     * @returns {webrtc.ContactList}
+     * @method webrtc.AbstractUser.getContacts
+     * @returns {webrtc.Contacts}
      */
-    var getContactList = that.publicize('getContactList', function () {
+    var getContacts = that.publicize('getContacts', function () {
         return contactList;
     });
 
@@ -611,7 +611,7 @@ webrtc.User = function (params) {
 
     var remoteUserSessions = {};
     var calls = [];
-    var contactList = webrtc.ContactList({'client': client});
+    var contactList = webrtc.Contacts({'client': client});
     var presenceQueue = [];
     var presence = 'unavailable';
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
@@ -633,12 +633,12 @@ webrtc.User = function (params) {
         }
     });
 
-    // listen to webrtc.ContactList#presence -- the contacts's presences
+    // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('new', function (contact) {
         that.fire('contact:new', contact);
     });
 
-    // listen to webrtc.ContactList#presence -- the contacts's presences
+    // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('presence', function (presenceMessage) {
         var presPayload = presenceMessage.getPayload();
         var from = presenceMessage.getSender();
@@ -663,7 +663,7 @@ webrtc.User = function (params) {
      * Send iq stanza requesting roster.
      * @memberof! webrtc.User
      * @method webrtc.User.getContacts
-     * @returns {Promise<webrtc.ContactList>}
+     * @returns {Promise<webrtc.Contacts>}
      */
     var getContacts = that.publicize('getContacts', function () {
         var deferred = Q.defer();
@@ -712,7 +712,7 @@ webrtc.User = function (params) {
             }
         };
 
-        signalingChannel.getContactList(function (list) {
+        signalingChannel.getContacts(function (list) {
             if (!(list in [null, undefined]) && list.length >= 0) {
                 list.forEach(function (contactInfo) {
                     var contact = webrtc.Contact({

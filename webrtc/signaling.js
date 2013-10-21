@@ -137,9 +137,9 @@ webrtc.SignalingChannel = function (params) {
      * Call the API to get a list of the user's contacts. Call the API to register interest
      * in presence notifications for all users on the contact list.
      * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getContactList
+     * @method webrtc.SignalingChannel.getContacts
      */
-    var getContactList = that.publicize('getContactList', function (onContacts, onPresence) {
+    var getContacts = that.publicize('getContacts', function (onContacts, onPresence) {
         wsCall({
             'path': '/v1/contacts/'
         }, function (contactList) {

@@ -3,7 +3,7 @@ describe("The webrtc namespace", function() {
     expect(typeof webrtc).toBe('object');
     expect(typeof webrtc.Class).toBe('function');
     expect(typeof webrtc.AbstractContact).toBe('function');
-    expect(typeof webrtc.ContactList).toBe('function');
+    expect(typeof webrtc.Contacts).toBe('function');
     expect(typeof webrtc.AbstractEndpoint).toBe('function');
     expect(typeof webrtc.EventEmitter).toBe('function');
     expect(typeof webrtc.AbstractIdentityProvider).toBe('function');
