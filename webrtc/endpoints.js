@@ -167,11 +167,11 @@ webrtc.AbstractEndpoint = function (params) {
      * Start the process of obtaining media
      * @memberof! webrtc.AbstractEndpoint
      * @method webrtc.AbstractEndpoint.startMedia
-     * @param {object} mediaSettings Group of media settings from which WebRTC constraints
+     * @param {object} callSettings Group of media settings from which WebRTC constraints
      * will be generated and with which the SDP will be modified.
      * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (mediaSettings) {
+    var startMedia = that.publicize('startMedia', function (callSettings) {
     });
 
     /**
@@ -457,11 +457,11 @@ webrtc.Endpoint = function (params) {
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
      * @method webrtc.Endpoint.startMedia
-     * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
+     * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
+    var startMedia = that.publicize('startMedia', function (callSettings, initiator) {
         var id = that.getID();
         var call = null;
         var user = webrtc.getClient(client).user;
@@ -820,7 +820,7 @@ webrtc.User = function (params) {
         function (contactId) {
             var session = null;
             var contact = null;
-            var mediaSettings = null;
+            var callSettings = null;
 
             calls.forEach(function (call) {
                 if (call.remoteEndpoint === contactId) {
@@ -834,8 +834,8 @@ webrtc.User = function (params) {
             if (session === null) {
                 try {
                     contact = contactList.get(contactId);
-                    mediaSettings = webrtc.getClient(client).getMediaSettings();
-                    session = contact.startMedia(mediaSettings, false);
+                    callSettings = webrtc.getClient(client).getCallSettings();
+                    session = contact.startMedia(callSettings, false);
                 } catch (e) {
                     log.error("Couldn't create Call: " + e.message);
                 }

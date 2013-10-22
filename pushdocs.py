@@ -46,7 +46,7 @@ class PushDocs:
             'files': [
                 "confluence/client.js",
                 "confluence/endpoints.js",
-                "confluence/DocumentationTest",
+                #"confluence/DocumentationTest",
                 "confluence/event.js",
                 "confluence/identity.js",
                 "confluence/media.js",
@@ -55,9 +55,7 @@ class PushDocs:
                 "confluence/webrtc.AbstractContact",
                 "confluence/webrtc.AbstractEndpoint",
                 "confluence/webrtc.AbstractIdentityProvider",
-                "confluence/webrtc.AbstractMessage",
                 "confluence/webrtc.AbstractPresentable",
-                "confluence/webrtc.AbstractSignalingChannel",
                 "confluence/webrtc.AbstractUser",
                 "confluence/webrtc.TextMessage",
                 "confluence/webrtc.Class",

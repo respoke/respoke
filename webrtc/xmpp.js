@@ -665,11 +665,11 @@ webrtc.Endpoint = function (params) {
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
      * @method webrtc.Endpoint.startMedia
-     * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
+     * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
+    var startMedia = that.publicize('startMedia', function (callSettings, initiator) {
         var id = that.getID();
         var call = null;
         var user = webrtc.getClient(client).user;
@@ -1002,7 +1002,7 @@ webrtc.User = function (params) {
                 if (session === null) {
                     try {
                         contact = contactList.get(contactJID);
-                        session = contact.startMedia(webrtc.getClient(client).getMediaSettings(),
+                        session = contact.startMedia(webrtc.getClient(client).getCallSettings(),
                             false);
                         addCall(session);
                     } catch (e) {

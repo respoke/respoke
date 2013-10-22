@@ -42,7 +42,7 @@ webrtc.Call = function (params) {
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
-    var mediaSettings = clientObj.getMediaSettings();
+    var callSettings = clientObj.getCallSettings();
     var options = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
@@ -50,16 +50,16 @@ webrtc.Call = function (params) {
         ]
     };
 
-    if (params.mediaSettings && params.mediaSettings.constraints) {
-        mediaSettings.constraints = params.mediaSettings.constraints;
+    if (params.callSettings && params.callSettings.constraints) {
+        callSettings.constraints = params.callSettings.constraints;
     }
 
-    if (params.mediaSettings && params.mediaSettings.servers) {
-        mediaSettings.servers = params.mediaSettings.servers;
+    if (params.callSettings && params.callSettings.servers) {
+        callSettings.servers = params.callSettings.servers;
     }
 
-    /*if (mediaSettings.servers.iceServers.length === 0) {
-        mediaSettings.servers.iceServers.push(createIceServer('stun:stun.l.google.com:19302'));
+    /*if (callSettings.servers.iceServers.length === 0) {
+        callSettings.servers.iceServers.push(createIceServer('stun:stun.l.google.com:19302'));
     }*/
 
     var report = {
@@ -180,15 +180,15 @@ webrtc.Call = function (params) {
         log.trace(requestMedia);
 
         try {
-            pc = new RTCPeerConnection(mediaSettings.servers, options);
+            pc = new RTCPeerConnection(callSettings.servers, options);
         } catch (e) {
             /* TURN is not supported, delete them from the array.
              * TODO: Find out when we can remove this workaround
              */
             log.debug("Removing TURN servers.");
-            for (var i in mediaSettings.servers.iceServers) {
-                if (mediaSettings.servers.iceServers.hasOwnProperty(i)) {
-                    url = mediaSettings.servers.iceServers[i].url;
+            for (var i in callSettings.servers.iceServers) {
+                if (callSettings.servers.iceServers.hasOwnProperty(i)) {
+                    url = callSettings.servers.iceServers[i].url;
                     if (url.toLowerCase().indexOf('turn') > -1) {
                         toDelete.push(i);
                     }
@@ -196,9 +196,9 @@ webrtc.Call = function (params) {
             }
             toDelete.sort(function (a, b) { return b - a; });
             toDelete.forEach(function (value, index) {
-                mediaSettings.servers.iceServers.splice(index);
+                callSettings.servers.iceServers.splice(index);
             });
-            pc = new RTCPeerConnection(mediaSettings.servers, options);
+            pc = new RTCPeerConnection(callSettings.servers, options);
         }
 
         pc.onaddstream = onRemoteStreamAdded;
@@ -217,7 +217,7 @@ webrtc.Call = function (params) {
             savedOffer = null;
         }
 
-        mediaSettings.constraints.forOwn(function (oneConstraints, index) {
+        callSettings.constraints.forOwn(function (oneConstraints, index) {
             try {
                 log.debug("Running getUserMedia with constraints");
                 log.debug(oneConstraints);
