@@ -172,12 +172,32 @@ webrtc.SignalingChannel = function (params) {
      * @fires webrtc.Endpoint#message:sent
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
+        var msgText = message.getPayload();
+        var recipient = null;
+
+        try {
+            recipient = message.getRecipient().getID();
+        } catch (e) {
+            log.debug("Can't get message recipient.");
+            return;
+        }
+
+        if ([null, undefined, ""].indexOf(recipient) > -1) {
+            log.debug("Can't send message without recipient.");
+            return;
+        }
+
+        if ([null, undefined, ""].indexOf(msgText) > -1) {
+            log.debug("Can't send message without message text.");
+            return;
+        }
+
         wsCall({
             'path': '/v1/chat',
             'httpMethod': 'POST',
             'parameters': {
-                'destUserId': message.getRecipient().getID(),
-                'text': message.getPayload()
+                'destUserId': recipient,
+                'text': msgText
             }
         }, null);
         message.getRecipient().fire('message:sent', message);
