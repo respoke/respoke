@@ -37,7 +37,7 @@ describe("A webrtc.AbstractPresentable ", function () {
     expect(typeof presentable.setPresence).toBe('function');
     expect(typeof presentable.canSendAudio).toBe('function');
     expect(typeof presentable.canSendVideo).toBe('function');
-    expect(typeof presentable.hasMedia).toBe('function');
+    expect(typeof presentable.callInProgress).toBe('function');
   });
 
   /*

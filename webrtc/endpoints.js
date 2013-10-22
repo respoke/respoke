@@ -40,10 +40,10 @@ webrtc.AbstractPresentable = function (params) {
      * media is flowing, or anytime a WebRTC session is active? Should it return true if the
      * engaged in a media session on another device?
      * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.hasMedia
+     * @method webrtc.AbstractPresentable.callInProgress
      * @returns {boolean}
      */
-    var hasMedia = that.publicize('hasMedia', function () {
+    var callInProgress = that.publicize('callInProgress', function () {
         return false;
     });
 
@@ -164,22 +164,22 @@ webrtc.AbstractEndpoint = function (params) {
     });
 
     /**
-     * Start the process of obtaining media
+     * Start a call.
      * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.startMedia
+     * @method webrtc.AbstractEndpoint.startCall
      * @param {object} callSettings Group of media settings from which WebRTC constraints
      * will be generated and with which the SDP will be modified.
      * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (callSettings) {
+    var startCall = that.publicize('startCall', function (callSettings) {
     });
 
     /**
-     * Stop media.
+     * Stop a call.
      * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.stopMedia
+     * @method webrtc.AbstractEndpoint.stopCall
      */
-    var stopMedia = that.publicize('stopMedia', function () {
+    var stopCall = that.publicize('stopCall', function () {
     });
 
     return that;
@@ -456,17 +456,17 @@ webrtc.Endpoint = function (params) {
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.startMedia
+     * @method webrtc.Endpoint.startCall
      * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (callSettings, initiator) {
+    var startCall = that.publicize('startCall', function (callSettings, initiator) {
         var id = that.getID();
         var call = null;
         var user = webrtc.getClient(client).user;
 
-        log.trace('startMedia');
+        log.trace('startCall');
         if (initiator === undefined) {
             initiator = true;
         }
@@ -835,7 +835,7 @@ webrtc.User = function (params) {
                 try {
                     contact = contactList.get(contactId);
                     callSettings = webrtc.getClient(client).getCallSettings();
-                    session = contact.startMedia(callSettings, false);
+                    session = contact.startCall(callSettings, false);
                 } catch (e) {
                     log.error("Couldn't create Call: " + e.message);
                 }

@@ -247,7 +247,7 @@ webrtc.Call = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        stopMedia(!that.initiator);
+        stopCall(!that.initiator);
     };
 
     /**
@@ -263,7 +263,7 @@ webrtc.Call = function (params) {
             savedOffer = null;
         } else {
             log.error("Can't process offer--no SDP!");
-            stopMedia(true);
+            stopCall(true);
         }
     };
 
@@ -447,19 +447,19 @@ webrtc.Call = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        stopMedia(false);
+        stopCall(false);
     };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
      * sendSignal is not false and we have not received a bye signal from the remote party.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.stopMedia
+     * @method webrtc.Call.stopCall
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      * @todo TODO: Make it so the dev doesn't have to know when to send a bye.
      */
-    var stopMedia = that.publicize('stopMedia', function (sendSignal) {
+    var stopCall = that.publicize('stopCall', function (sendSignal) {
         that.state = 'ended';
         clientObj.updateTurnCredentials();
         if (pc === null) {
@@ -521,7 +521,7 @@ webrtc.Call = function (params) {
                 report.callStoppedReason = 'setLocalDescr failed at offer.';
                 log.error(oSession);
                 log.error(p);
-                that.stopMedia();
+                that.stopCall();
             });
         } catch (e) {
             log.error("error processing offer: " + e.message);
@@ -594,7 +594,7 @@ webrtc.Call = function (params) {
             log.error('set remote desc of answer failed');
             report.callStoppedReason = 'setRemoteDescription failed at answer.';
             log.error(oSession);
-            that.stopMedia();
+            that.stopCall();
         });
     };
 
@@ -805,7 +805,7 @@ webrtc.Call = function (params) {
      */
     var onBye = function () {
         receivedBye = true;
-        stopMedia();
+        stopCall();
     };
 
     signalingChannel.listen('received:offer', onOffer);

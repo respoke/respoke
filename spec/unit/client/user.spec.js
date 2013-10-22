@@ -30,7 +30,7 @@ describe("A webrtc.AbstractUser ", function () {
     expect(typeof user.setPresence).toBe('function');
     expect(typeof user.canSendAudio).toBe('function');
     expect(typeof user.canSendVideo).toBe('function');
-    expect(typeof user.hasMedia).toBe('function');
+    expect(typeof user.callInProgress).toBe('function');
   });
 
   /*

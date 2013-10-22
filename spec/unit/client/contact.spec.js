@@ -28,12 +28,12 @@ describe("A webrtc.AbstractContact ", function () {
     expect(typeof contact.setPresence).toBe('function');
     expect(typeof contact.canSendAudio).toBe('function');
     expect(typeof contact.canSendVideo).toBe('function');
-    expect(typeof contact.hasMedia).toBe('function');
+    expect(typeof contact.callInProgress).toBe('function');
   });
 
   it("extends webrtc.AbstractEndpoint.", function () {
-    expect(typeof contact.startMedia).toBe('function');
-    expect(typeof contact.stopMedia).toBe('function');
+    expect(typeof contact.startCall).toBe('function');
+    expect(typeof contact.stopCall).toBe('function');
     expect(typeof contact.sendMessage).toBe('function');
   });
   /*

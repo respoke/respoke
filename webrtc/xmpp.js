@@ -664,17 +664,17 @@ webrtc.Endpoint = function (params) {
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.startMedia
+     * @method webrtc.Endpoint.startCall
      * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (callSettings, initiator) {
+    var startCall = that.publicize('startCall', function (callSettings, initiator) {
         var id = that.getID();
         var call = null;
         var user = webrtc.getClient(client).user;
 
-        log.trace('startMedia');
+        log.trace('startCall');
         if (initiator === undefined) {
             initiator = true;
         }
@@ -1002,7 +1002,7 @@ webrtc.User = function (params) {
                 if (session === null) {
                     try {
                         contact = contactList.get(contactJID);
-                        session = contact.startMedia(webrtc.getClient(client).getCallSettings(),
+                        session = contact.startCall(webrtc.getClient(client).getCallSettings(),
                             false);
                         addCall(session);
                     } catch (e) {
