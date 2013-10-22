@@ -140,12 +140,10 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
-     * @fires webrtc.Endpoint#message:sent
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
         var stanza = message.getXMPP();
         stropheConnection.send(stanza.tree());
-        message.getRecipient().fire('message:sent', message);
     });
 
     /**
@@ -481,7 +479,7 @@ webrtc.Presentable = function (params) {
     var resources = [];
     var presence = 'unavailable';
 
-    that.listen('signaling:received', function (message) {
+    that.listen('signal', function (message) {
         try {
             webrtc.getClient(client).getSignalingChannel().routeSignal(message);
         } catch (e) {
@@ -1018,11 +1016,11 @@ webrtc.User = function (params) {
      * @memberof! webrtc.User
      * @method webrtc.User.addCall
      * @param {webrtc.Call} call
-     * @fires webrtc.User#media:started
+     * @fires webrtc.User#call-started
      */
     var addCall = that.publicize('addCall', function (call) {
         calls.push(call);
-        that.fire('media:started', call, call.getContactID());
+        that.fire('call-started', call, call.getContactID());
     });
 
     /**
@@ -1111,9 +1109,9 @@ webrtc.User = function (params) {
             };
 
             if (type === 'signaling') {
-                contact.fire('signaling:received', webrtc.SignalingMessage(params));
+                contact.fire('signal', webrtc.SignalingMessage(params));
             } else {
-                contact.fire('message:received', webrtc.TextMessage(params));
+                contact.fire('message', webrtc.TextMessage(params));
             }
             return true;
         });

@@ -169,7 +169,6 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
-     * @fires webrtc.Endpoint#message:sent
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
         var msgText = message.getPayload();
@@ -200,7 +199,6 @@ webrtc.SignalingChannel = function (params) {
                 'text': msgText
             }
         }, null);
-        message.getRecipient().fire('message:sent', message);
     });
 
     /**
@@ -273,7 +271,7 @@ webrtc.SignalingChannel = function (params) {
         case 'answer':
         case 'candidate':
         case 'bye':
-            that.fire('received:' + signal.type, signal);
+            that.fire(signal.type, signal);
             break;
         case 'error':
             log.warn("Received an error");
@@ -443,7 +441,6 @@ webrtc.SignalingChannel = function (params) {
 
         socket[params.httpMethod](params.path, params.parameters, function (response) {
             log.debug("wsCall response to " + params.httpMethod + " " + params.path);
-            log.debug(response);
             if (responseHandler) {
                 responseHandler(response, {
                     'uri' : params.path,

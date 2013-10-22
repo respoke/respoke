@@ -154,77 +154,27 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.Endpoint#message:sent
+ * @event webrtc.Endpoint#message
  * @type {object}
  */
 
 /**
- * @event webrtc.Endpoint#message:received
+ * @event webrtc.Endpoint#signaling
  * @type {object}
  */
 
 /**
- * @event webrtc.Endpoint#signaling:sent
- * @type {object}
- */
-
-/**
- * @event webrtc.Endpoint#signaling:received
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#stream:local:received
+ * @event webrtc.Call#local-stream-received
  * @type {DOM}
  */
 
 /**
- * @event webrtc.Call#stream:remote:received
+ * @event webrtc.Call#remote-stream-received
  * @type {DOM}
  */
 
 /**
- * @event webrtc.Call#stream:remote:removed
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#candidate:local
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#candidate:remote
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#sdp:remote:received
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#sdp:remote:saved
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#sdp:remote:error
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#sdp:local:created
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#sdp:local:saved
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#sdp:local:error
+ * @event webrtc.Call#remote-stream-removed
  * @type {object}
  */
 
@@ -234,54 +184,54 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.Call#video:muted
+ * @event webrtc.Call#video-muted
  */
 
 /**
- * @event webrtc.Call#video:unmuted
+ * @event webrtc.Call#video-unmuted
  */
 
 /**
- * @event webrtc.Call#audio:muted
+ * @event webrtc.Call#audio-muted
  */
 
 /**
- * @event webrtc.Call#audio:unmuted
+ * @event webrtc.Call#audio-unmuted
  */
 
 /**
- * @event webrtc.MediaStream#video:muted
+ * @event webrtc.MediaStream#video-muted
  */
 
 /**
- * @event webrtc.MediaStream#video:unmuted
+ * @event webrtc.MediaStream#video-unmuted
  */
 
 /**
- * @event webrtc.MediaStream#audio:muted
+ * @event webrtc.MediaStream#audio-muted
  */
 
 /**
- * @event webrtc.MediaStream#audio:unmuted
+ * @event webrtc.MediaStream#audio-unmuted
  */
 
 /**
- * @event webrtc.SignalingChannel#received:offer
+ * @event webrtc.SignalingChannel#offer
  * @type {RTCSessionDescription}
  */
 
 /**
- * @event webrtc.SignalingChannel#received:answer
+ * @event webrtc.SignalingChannel#answer
  * @type {RTCSessionDescription}
  */
 
 /**
- * @event webrtc.SignalingChannel#received:candidate
+ * @event webrtc.SignalingChannel#candidate
  * @type {RTCIceCandidate}
  */
 
 /**
- * @event webrtc.SignalingChannel#received:bye
+ * @event webrtc.SignalingChannel#bye
  */
 
 Q.longStackSupport = true;

@@ -366,7 +366,7 @@ webrtc.Presentable = function (params) {
     var sessions = [];
     var presence = 'unavailable';
 
-    that.listen('signaling:received', function (message) {
+    that.listen('signal', function (message) {
         try {
             webrtc.getClient(client).getSignalingChannel().routeSignal(message);
         } catch (e) {
@@ -756,7 +756,7 @@ webrtc.User = function (params) {
                     if (parsed.candidate) {
                         parsed.type = 'candidate';
                     }
-                    contact.fire('signaling:received', webrtc.SignalingMessage({
+                    contact.fire('signal', webrtc.SignalingMessage({
                         'client': client,
                         // yes, the unparsed version. TODO reevaluate?
                         'rawMessage': JSON.stringify(parsed),
@@ -770,7 +770,7 @@ webrtc.User = function (params) {
                 log.debug('message error');
                 log.debug(message);
             }
-            contact.fire('message:received', webrtc.TextMessage({
+            contact.fire('message', webrtc.TextMessage({
                 'client': client,
                 'rawMessage': message.text,
                 'recipient': that,
@@ -850,11 +850,11 @@ webrtc.User = function (params) {
      * @memberof! webrtc.User
      * @method webrtc.User.addCall
      * @param {webrtc.Call} call
-     * @fires webrtc.User#media:started
+     * @fires webrtc.User#call-started
      */
     var addCall = that.publicize('addCall', function (call) {
         calls.push(call);
-        that.fire('media:started', call, call.getContactID());
+        that.fire('call-started', call, call.getContactID());
     });
 
     /**

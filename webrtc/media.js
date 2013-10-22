@@ -151,12 +151,11 @@ webrtc.Call = function (params) {
         setTimeout(function () {
             videoElement.play();
         }, 100);
-        that.fire('stream:local:received', videoElement);
+        that.fire('local-stream-received', videoElement);
         videoElement.used = true;
 
         if (mediaStreams.length === 1) {
             if (that.initiator) {
-                that.fire('call:initiate');
                 startCall();
             } else {
                 acceptCall();
@@ -305,7 +304,7 @@ webrtc.Call = function (params) {
         setTimeout(function () {
             videoElement.play();
         }, 100);
-        that.fire('stream:remote:received', videoElement);
+        that.fire('remote-stream-received', videoElement);
         videoElement.used = true;
 
         mediaStreams.push(webrtc.MediaStream({
@@ -478,10 +477,10 @@ webrtc.Call = function (params) {
 
         that.fire('hangup', sendSignal);
         that.ignore();
-        signalingChannel.ignore('received:offer', onOffer);
-        signalingChannel.ignore('received:answer', onAnswer);
-        signalingChannel.ignore('received:candidate', processCandidate);
-        signalingChannel.ignore('received:bye', onBye);
+        signalingChannel.ignore('offer', onOffer);
+        signalingChannel.ignore('answer', onAnswer);
+        signalingChannel.ignore('candidate', processCandidate);
+        signalingChannel.ignore('bye', onBye);
 
         mediaStreams.forOwn(function (stream) {
             stream.stop();
@@ -506,7 +505,7 @@ webrtc.Call = function (params) {
     var processOffer = function (oSession) {
         oSession.type = 'offer';
         log.trace('processOffer');
-        log.trace(oSession);
+        log.debug(oSession);
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oSession), function () {
                 log.debug('set remote desc of offer succeeded');
@@ -741,7 +740,7 @@ webrtc.Call = function (params) {
      * Mute video. TODO: How should this behave?
      * @memberof! webrtc.Call
      * @method webrtc.Call.muteVideo
-     * @fires webrtc.Call#video:muted
+     * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
         log.trace('muting video');
@@ -749,14 +748,14 @@ webrtc.Call = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.muteVideo();
         });
-        that.fire('video:muted');
+        that.fire('video-muted');
     });
 
     /**
      * Unmute video. TODO: How should this behave?
      * @memberof! webrtc.Call
      * @method webrtc.Call.unmuteVideo
-     * @fires webrtc.Call#video:unmuted
+     * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
         log.trace('unmuting video');
@@ -764,14 +763,14 @@ webrtc.Call = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.unmuteVideo();
         });
-        that.fire('video:unmuted');
+        that.fire('video-unmuted');
     });
 
     /**
      * Mute audio. TODO: How should this behave?
      * @memberof! webrtc.Call
      * @method webrtc.Call.muteAudio
-     * @fires webrtc.Call#audio:muted
+     * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
         log.trace('muting audio');
@@ -779,14 +778,14 @@ webrtc.Call = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.muteAudio();
         });
-        that.fire('audio:muted');
+        that.fire('audio-muted');
     });
 
     /**
      * Unmute audio. TODO: How should this behave?
      * @memberof! webrtc.Call
      * @method webrtc.Call.unmuteAudio
-     * @fires webrtc.Call#audio:unmuted
+     * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
         log.trace('unmuting audio');
@@ -794,7 +793,7 @@ webrtc.Call = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.unmuteAudio();
         });
-        that.fire('audio:unmuted');
+        that.fire('audio-unmuted');
     });
 
     /**
@@ -808,10 +807,10 @@ webrtc.Call = function (params) {
         stopCall();
     };
 
-    signalingChannel.listen('received:offer', onOffer);
-    signalingChannel.listen('received:answer', onAnswer);
-    signalingChannel.listen('received:candidate', processCandidate);
-    signalingChannel.listen('received:bye', onBye);
+    signalingChannel.listen('offer', onOffer);
+    signalingChannel.listen('answer', onAnswer);
+    signalingChannel.listen('candidate', processCandidate);
+    signalingChannel.listen('bye', onBye);
 
     return that;
 }; // End webrtc.Call
@@ -851,44 +850,44 @@ webrtc.MediaStream = function (params) {
      * Mute the audio on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.muteAudio
-     * @fires webrtc.MediaStream#audio:muted
+     * @fires webrtc.MediaStream#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
         stream.audioTracks[0].enabled = false;
-        that.fire('audio:muted');
+        that.fire('audio-muted');
     });
 
     /**
      * Mute the video on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.muteVideo
-     * @fires webrtc.MediaStream#video:muted
+     * @fires webrtc.MediaStream#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
         stream.videoTracks[0].enabled = false;
-        that.fire('video:muted');
+        that.fire('video-muted');
     });
 
     /**
      * Unmute the audio on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.unmuteAudio
-     * @fires webrtc.MediaStream#audio:unmuted
+     * @fires webrtc.MediaStream#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
         stream.audioTracks[0].enabled = true;
-        that.fire('audio:unmuted');
+        that.fire('audio-unmuted');
     });
 
     /**
      * Unmute the video on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.unmuteVideo
-     * @fires webrtc.MediaStream#video:unmuted
+     * @fires webrtc.MediaStream#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
         stream.videoTracks[0].enabled = true;
-        that.fire('video:unmuted');
+        that.fire('video-unmuted');
     });
 
     /**
