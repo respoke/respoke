@@ -669,7 +669,7 @@ webrtc.User = function (params) {
     });
 
     /**
-     * Send iq stanza requesting roster.
+     * Get user's Contacts from server.
      * @memberof! webrtc.User
      * @method webrtc.User.getContacts
      * @returns {Promise<webrtc.Contacts>}
@@ -689,6 +689,7 @@ webrtc.User = function (params) {
         }
 
         deferred.promise.then(function (contactList) {
+            log.debug("got contact list", contactList);
             setTimeout(function () {
                 contactList.processPresenceQueue();
             }, 1000);

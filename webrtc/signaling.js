@@ -331,6 +331,10 @@ webrtc.SignalingChannel = function (params) {
                 });
                 socket.on('connect', function () {
                     handlerQueue.forOwn(function (array, category) {
+                        if (!array) {
+                            return;
+                        }
+
                         array.forEach(function (handler) {
                             socket.on(category, handler);
                         });
@@ -439,6 +443,8 @@ webrtc.SignalingChannel = function (params) {
             };
         }
 
+        log.debug('kicking off socket[' + params.httpMethod + "]()",
+            params.path, params.parameters);
         socket[params.httpMethod](params.path, params.parameters, function (response) {
             log.debug("wsCall response to " + params.httpMethod + " " + params.path);
             if (responseHandler) {
