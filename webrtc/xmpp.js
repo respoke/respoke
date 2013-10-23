@@ -306,7 +306,7 @@ webrtc.SignalingChannel = function (params) {
         case 'answer':
         case 'candidate':
         case 'bye':
-            that.fire('received:' + signal.type, signal.value);
+            that.fire(signal.type, signal.value);
             break;
         case 'error':
             log.warn("Received an error");
@@ -850,7 +850,7 @@ webrtc.User = function (params) {
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('new', function (contact) {
-        that.fire('contact:new', contact);
+        that.fire('contact', contact);
     });
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
