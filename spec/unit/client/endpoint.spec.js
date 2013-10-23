@@ -15,7 +15,7 @@ describe("A webrtc.AbstractEndpoint ", function () {
     expect(typeof endpoint.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof endpoint.listen).toBe('function');
     expect(typeof endpoint.ignore).toBe('function');
     expect(typeof endpoint.fire).toBe('function');
@@ -28,7 +28,7 @@ describe("A webrtc.AbstractEndpoint ", function () {
     expect(typeof endpoint.setPresence).toBe('function');
     expect(typeof endpoint.canSendAudio).toBe('function');
     expect(typeof endpoint.canSendVideo).toBe('function');
-    expect(typeof endpoint.hasMedia).toBe('function');
+    expect(typeof endpoint.callInProgress).toBe('function');
   });
 
   /*
@@ -43,8 +43,8 @@ describe("A webrtc.AbstractEndpoint ", function () {
    * Native methods
    */
   it("contains some important methods.", function () {
-    expect(typeof endpoint.startMedia).toBe('function');
-    expect(typeof endpoint.stopMedia).toBe('function');
+    expect(typeof endpoint.startCall).toBe('function');
+    expect(typeof endpoint.stopCall).toBe('function');
     expect(typeof endpoint.sendMessage).toBe('function');
   });
 

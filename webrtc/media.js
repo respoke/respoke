@@ -1,25 +1,25 @@
 /**
- * Create a new MediaSession.
+ * Create a new Call.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.MediaSession
+ * @class webrtc.Call
  * @constructor
- * @augments webrtc.EventThrower
- * @classdesc WebRTC MediaSession including getContactMedia, path and codec negotation, and
+ * @augments webrtc.EventEmitter
+ * @classdesc WebRTC Call including getContactMedia, path and codec negotation, and
  * call state.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.MediaSession}
- * @property {boolean} initiator Indicate whether this MediaSession belongs to the Endpoint
+ * @returns {webrtc.Call}
+ * @property {boolean} initiator Indicate whether this Call belongs to the Endpoint
  * that initiated the WebRTC session.
  */
 /*global webrtc: false */
-webrtc.MediaSession = function (params) {
+webrtc.Call = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
-    that.className = 'webrtc.MediaSession';
+    that.className = 'webrtc.Call';
 
     if (!that.initiator) {
         that.initiator = false;
@@ -42,7 +42,7 @@ webrtc.MediaSession = function (params) {
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
-    var mediaSettings = clientObj.getMediaSettings();
+    var callSettings = clientObj.getCallSettings();
     var options = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
@@ -50,16 +50,16 @@ webrtc.MediaSession = function (params) {
         ]
     };
 
-    if (params.mediaSettings && params.mediaSettings.constraints) {
-        mediaSettings.constraints = params.mediaSettings.constraints;
+    if (params.callSettings && params.callSettings.constraints) {
+        callSettings.constraints = params.callSettings.constraints;
     }
 
-    if (params.mediaSettings && params.mediaSettings.servers) {
-        mediaSettings.servers = params.mediaSettings.servers;
+    if (params.callSettings && params.callSettings.servers) {
+        callSettings.servers = params.callSettings.servers;
     }
 
-    /*if (mediaSettings.servers.iceServers.length === 0) {
-        mediaSettings.servers.iceServers.push(createIceServer('stun:stun.l.google.com:19302'));
+    /*if (callSettings.servers.iceServers.length === 0) {
+        callSettings.servers.iceServers.push(createIceServer('stun:stun.l.google.com:19302'));
     }*/
 
     var report = {
@@ -80,12 +80,12 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Start the process of obtaining media.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.start
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.start
      */
     var start = that.publicize('start', function () {
         if (!that.username) {
-            throw new Error("Can't use a MediaSession without username.");
+            throw new Error("Can't use a Call without username.");
         }
         report.startCount += 1;
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
@@ -94,8 +94,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Start the process of network and media negotiation. Called by the initiator only.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.startCall
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.startCall
      */
     var startCall = function () {
         log.trace('startCall');
@@ -108,8 +108,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Save the local stream. Kick off SDP creation.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onReceiveUserMedia
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onReceiveUserMedia
      * @private
      */
     var onReceiveUserMedia = function (stream, oneConstraints, index) {
@@ -151,12 +151,11 @@ webrtc.MediaSession = function (params) {
         setTimeout(function () {
             videoElement.play();
         }, 100);
-        that.fire('stream:local:received', videoElement);
+        that.fire('local-stream-received', videoElement);
         videoElement.used = true;
 
         if (mediaStreams.length === 1) {
             if (that.initiator) {
-                that.fire('call:initiate');
                 startCall();
             } else {
                 acceptCall();
@@ -166,8 +165,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.requestMedia
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.requestMedia
      * @todo Find out when we can stop deleting TURN servers
      * @private
      */
@@ -180,15 +179,15 @@ webrtc.MediaSession = function (params) {
         log.trace(requestMedia);
 
         try {
-            pc = new RTCPeerConnection(mediaSettings.servers, options);
+            pc = new RTCPeerConnection(callSettings.servers, options);
         } catch (e) {
             /* TURN is not supported, delete them from the array.
              * TODO: Find out when we can remove this workaround
              */
             log.debug("Removing TURN servers.");
-            for (var i in mediaSettings.servers.iceServers) {
-                if (mediaSettings.servers.iceServers.hasOwnProperty(i)) {
-                    url = mediaSettings.servers.iceServers[i].url;
+            for (var i in callSettings.servers.iceServers) {
+                if (callSettings.servers.iceServers.hasOwnProperty(i)) {
+                    url = callSettings.servers.iceServers[i].url;
                     if (url.toLowerCase().indexOf('turn') > -1) {
                         toDelete.push(i);
                     }
@@ -196,9 +195,9 @@ webrtc.MediaSession = function (params) {
             }
             toDelete.sort(function (a, b) { return b - a; });
             toDelete.forEach(function (value, index) {
-                mediaSettings.servers.iceServers.splice(index);
+                callSettings.servers.iceServers.splice(index);
             });
-            pc = new RTCPeerConnection(mediaSettings.servers, options);
+            pc = new RTCPeerConnection(callSettings.servers, options);
         }
 
         pc.onaddstream = onRemoteStreamAdded;
@@ -217,7 +216,7 @@ webrtc.MediaSession = function (params) {
             savedOffer = null;
         }
 
-        mediaSettings.constraints.forOwn(function (oneConstraints, index) {
+        callSettings.constraints.forOwn(function (oneConstraints, index) {
             try {
                 log.debug("Running getUserMedia with constraints");
                 log.debug(oneConstraints);
@@ -234,8 +233,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Handle any error that comes up during the process of getting user media.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onUserMediaError
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onUserMediaError
      * @private
      */
     var onUserMediaError = function (p, oneConstraints, index) {
@@ -247,13 +246,13 @@ webrtc.MediaSession = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        stopMedia(!that.initiator);
+        stopCall(!that.initiator);
     };
 
     /**
      * Process the initial offer received from the remote side if we are not the initiator.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.acceptCall
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.acceptCall
      * @private
      */
     var acceptCall = function () {
@@ -263,14 +262,14 @@ webrtc.MediaSession = function (params) {
             savedOffer = null;
         } else {
             log.error("Can't process offer--no SDP!");
-            stopMedia(true);
+            stopCall(true);
         }
     };
 
     /**
      * Listen for the remote side to remove media in the middle of the call.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onRemoteStreamRemoved
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onRemoteStreamRemoved
      * @private
      */
     var onRemoteStreamRemoved = function (evt) {
@@ -279,8 +278,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Listen for the remote side to add additional media in the middle of the call.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onRemoteStreamAdded
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onRemoteStreamAdded
      * @private
      */
     var onRemoteStreamAdded = function (evt) {
@@ -305,7 +304,7 @@ webrtc.MediaSession = function (params) {
         setTimeout(function () {
             videoElement.play();
         }, 100);
-        that.fire('stream:remote:received', videoElement);
+        that.fire('remote-stream-received', videoElement);
         videoElement.used = true;
 
         mediaStreams.push(webrtc.MediaStream({
@@ -316,8 +315,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Listen for RTCPeerConnection state change.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onStateChange
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onStateChange
      * @private
      */
     var onStateChange = function (p, a) {
@@ -327,8 +326,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Listen for ICE change.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onIceChange
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onIceChange
      * @private
      */
     var onIceChange = function (p) {
@@ -338,8 +337,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Process a local ICE Candidate
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onIceCandidate
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onIceCandidate
      * @private
      */
     var onIceCandidate = function (oCan) {
@@ -358,8 +357,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Handle renegotiation
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onNegotiationNeeded
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onNegotiationNeeded
      * @private
      */
     var onNegotiationNeeded = function (oCan) {
@@ -369,8 +368,8 @@ webrtc.MediaSession = function (params) {
     /**
      * Process any ICE candidates that we received either from the browser or the other side while
      * we were trying to set up our RTCPeerConnection to handle them.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.processQueues
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.processQueues
      * @private
      */
     var processQueues = function () {
@@ -394,8 +393,8 @@ webrtc.MediaSession = function (params) {
     /**
      * Save an SDP we've gotten from the browser which will be an offer and send it to the other
      * side.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.saveOfferAndSend
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.saveOfferAndSend
      * @param {RTCSessionDescription} oSession
      * @private
      */
@@ -415,8 +414,8 @@ webrtc.MediaSession = function (params) {
     /**
      * Save our SDP we've gotten from the browser which will be an answer and send it to the
      * other side.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.saveAnswerAndSend
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.saveAnswerAndSend
      * @param {RTCSessionDescription} oSession
      * @private
      */
@@ -435,8 +434,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Handle shutting the session down if the other side hangs up.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onRemoteHangup
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onRemoteHangup
      * @private
      */
     var onRemoteHangup = function () {
@@ -447,19 +446,19 @@ webrtc.MediaSession = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        stopMedia(false);
+        stopCall(false);
     };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
      * sendSignal is not false and we have not received a bye signal from the remote party.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.stopMedia
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.stopCall
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      * @todo TODO: Make it so the dev doesn't have to know when to send a bye.
      */
-    var stopMedia = that.publicize('stopMedia', function (sendSignal) {
+    var stopCall = that.publicize('stopCall', function (sendSignal) {
         that.state = 'ended';
         clientObj.updateTurnCredentials();
         if (pc === null) {
@@ -478,10 +477,10 @@ webrtc.MediaSession = function (params) {
 
         that.fire('hangup', sendSignal);
         that.ignore();
-        signalingChannel.ignore('received:offer', onOffer);
-        signalingChannel.ignore('received:answer', onAnswer);
-        signalingChannel.ignore('received:candidate', processCandidate);
-        signalingChannel.ignore('received:bye', onBye);
+        signalingChannel.ignore('offer', onOffer);
+        signalingChannel.ignore('answer', onAnswer);
+        signalingChannel.ignore('candidate', processCandidate);
+        signalingChannel.ignore('bye', onBye);
 
         mediaStreams.forOwn(function (stream) {
             stream.stop();
@@ -498,15 +497,15 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Tell the browser about the offer we received.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.processOffer
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.processOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @private
      */
     var processOffer = function (oSession) {
         oSession.type = 'offer';
         log.trace('processOffer');
-        log.trace(oSession);
+        log.debug(oSession);
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oSession), function () {
                 log.debug('set remote desc of offer succeeded');
@@ -521,7 +520,7 @@ webrtc.MediaSession = function (params) {
                 report.callStoppedReason = 'setLocalDescr failed at offer.';
                 log.error(oSession);
                 log.error(p);
-                that.stopMedia();
+                that.stopCall();
             });
         } catch (e) {
             log.error("error processing offer: " + e.message);
@@ -530,8 +529,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Indicate whether a call is being setup or is in progress.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.isActive
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.isActive
      * @returns {boolean}
      */
     var isActive = that.publicize('isActive', function () {
@@ -552,8 +551,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onOffer
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @private
      */
@@ -575,8 +574,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Save the answer and tell the browser about it.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onAnswer
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onAnswer
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @private
      */
@@ -594,15 +593,15 @@ webrtc.MediaSession = function (params) {
             log.error('set remote desc of answer failed');
             report.callStoppedReason = 'setRemoteDescription failed at answer.';
             log.error(oSession);
-            that.stopMedia();
+            that.stopCall();
         });
     };
 
     /**
      * Save the candidate. If we initiated the call, place the candidate into the queue so
      * we can process them after we receive the answer.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.processCandidate
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.processCandidate
      * @param {RTCIceCandidate} oCan The ICE candidate.
      * @private
      */
@@ -632,9 +631,9 @@ webrtc.MediaSession = function (params) {
     };
 
     /**
-     * Get the state of the MediaSession
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.getState
+     * Get the state of the Call
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getState
      * @returns {string}
      */
     var getState = that.publicize('getState', function () {
@@ -642,9 +641,9 @@ webrtc.MediaSession = function (params) {
     });
 
     /**
-     * Indicate whether the logged-in User initated the MediaSession.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.isInitiator
+     * Indicate whether the logged-in User initated the Call.
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.isInitiator
      * @returns {boolean}
      */
     var isInitiator = that.publicize('isInitiator', function () {
@@ -653,8 +652,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Return the ID of the remote endpoint.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.getContactID
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getContactID
      * @returns {string}
      */
     var getContactID = that.publicize('getContactID', function () {
@@ -663,8 +662,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Return all MediaStreams
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.getStreams
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getStreams
      * @returns {webrtc.MediaStream[]}
      */
     var getStreams = that.publicize('getStreams', function () {
@@ -673,8 +672,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Return all local MediaStreams
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.getLocalStreams
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getLocalStreams
      * @returns {webrtc.MediaStream[]}
      */
     var getLocalStreams = that.publicize('getLocalStreams', function () {
@@ -691,8 +690,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Return all remote MediaStreams
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.getRemoteStreams
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getRemoteStreams
      * @returns {webrtc.MediaStream[]}
      */
     var getRemoteStreams = that.publicize('getRemoteStreams', function () {
@@ -709,8 +708,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * If video is muted, unmute. If not muted, mute. TODO: How should this behave?
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.toggleVideo
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.toggleVideo
      */
     var toggleVideo = that.publicize('toggleVideo', function () {
         if (that.isActive()) {
@@ -724,8 +723,8 @@ webrtc.MediaSession = function (params) {
 
     /**
      * If audio is muted, unmute. If not muted, mute. TODO: How should this behave?
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.toggleAudio
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.toggleAudio
      */
     var toggleAudio = that.publicize('toggleAudio', function () {
         if (that.isActive()) {
@@ -739,9 +738,9 @@ webrtc.MediaSession = function (params) {
 
     /**
      * Mute video. TODO: How should this behave?
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.muteVideo
-     * @fires webrtc.MediaSession#video:muted
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.muteVideo
+     * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
         log.trace('muting video');
@@ -749,14 +748,14 @@ webrtc.MediaSession = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.muteVideo();
         });
-        that.fire('video:muted');
+        that.fire('video-muted');
     });
 
     /**
      * Unmute video. TODO: How should this behave?
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.unmuteVideo
-     * @fires webrtc.MediaSession#video:unmuted
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.unmuteVideo
+     * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
         log.trace('unmuting video');
@@ -764,14 +763,14 @@ webrtc.MediaSession = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.unmuteVideo();
         });
-        that.fire('video:unmuted');
+        that.fire('video-unmuted');
     });
 
     /**
      * Mute audio. TODO: How should this behave?
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.muteAudio
-     * @fires webrtc.MediaSession#audio:muted
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.muteAudio
+     * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
         log.trace('muting audio');
@@ -779,14 +778,14 @@ webrtc.MediaSession = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.muteAudio();
         });
-        that.fire('audio:muted');
+        that.fire('audio-muted');
     });
 
     /**
      * Unmute audio. TODO: How should this behave?
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.unmuteAudio
-     * @fires webrtc.MediaSession#audio:unmuted
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.unmuteAudio
+     * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
         log.trace('unmuting audio');
@@ -794,34 +793,34 @@ webrtc.MediaSession = function (params) {
         mediaStreams.forOwn(function (stream) {
             stream.unmuteAudio();
         });
-        that.fire('audio:unmuted');
+        that.fire('audio-unmuted');
     });
 
     /**
      * Set receivedBye to true and stop media.
-     * @memberof! webrtc.MediaSession
-     * @method webrtc.MediaSession.onBye
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.onBye
      * @private
      */
     var onBye = function () {
         receivedBye = true;
-        stopMedia();
+        stopCall();
     };
 
-    signalingChannel.listen('received:offer', onOffer);
-    signalingChannel.listen('received:answer', onAnswer);
-    signalingChannel.listen('received:candidate', processCandidate);
-    signalingChannel.listen('received:bye', onBye);
+    signalingChannel.listen('offer', onOffer);
+    signalingChannel.listen('answer', onAnswer);
+    signalingChannel.listen('candidate', processCandidate);
+    signalingChannel.listen('bye', onBye);
 
     return that;
-}; // End webrtc.MediaSession
+}; // End webrtc.Call
 
 /**
  * Create a new MediaStream.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.MediaStream
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Manage native MediaStreams.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -832,7 +831,7 @@ webrtc.MediaSession = function (params) {
 webrtc.MediaStream = function (params) {
     "use strict";
     params = params || {};
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     that.className = 'webrtc.MediaStream';
 
     var stream = params.stream;
@@ -851,44 +850,44 @@ webrtc.MediaStream = function (params) {
      * Mute the audio on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.muteAudio
-     * @fires webrtc.MediaStream#audio:muted
+     * @fires webrtc.MediaStream#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
         stream.audioTracks[0].enabled = false;
-        that.fire('audio:muted');
+        that.fire('audio-muted');
     });
 
     /**
      * Mute the video on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.muteVideo
-     * @fires webrtc.MediaStream#video:muted
+     * @fires webrtc.MediaStream#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
         stream.videoTracks[0].enabled = false;
-        that.fire('video:muted');
+        that.fire('video-muted');
     });
 
     /**
      * Unmute the audio on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.unmuteAudio
-     * @fires webrtc.MediaStream#audio:unmuted
+     * @fires webrtc.MediaStream#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
         stream.audioTracks[0].enabled = true;
-        that.fire('audio:unmuted');
+        that.fire('audio-unmuted');
     });
 
     /**
      * Unmute the video on this MediaStream
      * @memberof! webrtc.MediaStream
      * @method webrtc.MediaStream.unmuteVideo
-     * @fires webrtc.MediaStream#video:unmuted
+     * @fires webrtc.MediaStream#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
         stream.videoTracks[0].enabled = true;
-        that.fire('video:unmuted');
+        that.fire('video-unmuted');
     });
 
     /**

@@ -17,7 +17,7 @@ describe("A webrtc.AbstractUser ", function () {
     expect(typeof user.getClass).toBe('function');
   });
 
-  it("extends webrtc.EventThrower.", function () {
+  it("extends webrtc.EventEmitter.", function () {
     expect(typeof user.listen).toBe('function');
     expect(typeof user.ignore).toBe('function');
     expect(typeof user.fire).toBe('function');
@@ -30,7 +30,7 @@ describe("A webrtc.AbstractUser ", function () {
     expect(typeof user.setPresence).toBe('function');
     expect(typeof user.canSendAudio).toBe('function');
     expect(typeof user.canSendVideo).toBe('function');
-    expect(typeof user.hasMedia).toBe('function');
+    expect(typeof user.callInProgress).toBe('function');
   });
 
   /*
@@ -46,7 +46,7 @@ describe("A webrtc.AbstractUser ", function () {
    */
   it("contains some important methods.", function () {
     expect(typeof user.getUserSession).toBe('function');
-    expect(typeof user.getContactList).toBe('function');
+    expect(typeof user.getContacts).toBe('function');
     expect(typeof user.setOnline).toBe('function');
   });
 

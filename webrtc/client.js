@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.Client
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
@@ -12,11 +12,9 @@
  * @property {object} clientSettings Client settings.
  * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
  * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
- * @property {function} chatMessage Class extending webrtc.AbstractMessage to use for chat messages.
- * @property {function} signalingMessage Class extending webrtc.AbstractMessage to use for
- * signaling.
- * @property {function} presenceMessage Class extending webrtc.AbstractMessage to use for presence
- * messages.
+ * @property {function} chatMessage Class to use for chat messages.
+ * @property {function} signalingMessage Class to use for signaling.
+ * @property {function} presenceMessage Class to use for presence messages.
  * @property {webrtc.User} user Logged-in user's User object.
  */
 /*global webrtc: false */
@@ -24,7 +22,7 @@ webrtc.Client = function (params) {
     "use strict";
     params = params || {};
     var client = webrtc.makeUniqueID().toString();
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     webrtc.instances[client] = that;
     that.className = 'webrtc.Client';
 
@@ -38,7 +36,7 @@ webrtc.Client = function (params) {
     var clientSettings = params.clientSettings || {};
     log.debug("Client ID is " + client);
 
-    var mediaSettings = {
+    var callSettings = {
         constraints: params.constraints || [{
             video : { mandatory: { minWidth: 640, minHeight: 480 } },
             audio : true,
@@ -119,19 +117,19 @@ webrtc.Client = function (params) {
      * @memberof! webrtc.Client
      * @method webrtc.Client.updateTurnCredentials
      */
-      var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
-          if (mediaSettings.disableTurn === true) {
-              return;
-          }
+    var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
+        if (callSettings.disableTurn === true) {
+            return;
+        }
 
-          clearInterval(turnRefresher);
-          signalingChannel.getTurnCredentials().done(function (creds) {
-              mediaSettings.servers.iceServers = creds;
-          }, function (error){
-              throw error;
-          });
-          turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
-      });
+        clearInterval(turnRefresher);
+        signalingChannel.getTurnCredentials().done(function (creds) {
+            callSettings.servers.iceServers = creds;
+        }, function (error) {
+            throw error;
+        });
+        turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
+    });
 
     /**
      * Log out specified UserSession or all UserSessions if no usernames are passed. Sets
@@ -197,27 +195,27 @@ webrtc.Client = function (params) {
     /**
      * Get an object containing the default media constraints and other media settings.
      * @memberof! webrtc.Client
-     * @method webrtc.Client.getMediaSettings
+     * @method webrtc.Client.getCallSettings
      * @returns {object} An object containing the media settings which will be used in
      * webrtc calls.
      */
-    var getMediaSettings = that.publicize('getMediaSettings', function () {
-        return mediaSettings;
+    var getCallSettings = that.publicize('getCallSettings', function () {
+        return callSettings;
     });
 
     /**
      * Set the default media constraints and other media settings.
      * @memberof! webrtc.Client
-     * @method webrtc.Client.setDefaultMediaSettings
+     * @method webrtc.Client.setDefaultCallSettings
      * @param {object} Object containing settings to modify.
      */
-    var setDefaultMediaSettings = that.publicize('setDefaultMediaSettings', function (settings) {
+    var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (settings) {
         settings = settings || {};
         if (settings.constraints) {
-            mediaSettings.constraints = settings.constraints;
+            callSettings.constraints = settings.constraints;
         }
         if (settings.servers) {
-            mediaSettings.servers = settings.servers;
+            callSettings.servers = settings.servers;
         }
     });
 

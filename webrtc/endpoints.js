@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.AbstractPresentable
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Information describing a nameable entity which has presence and skills.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -19,7 +19,7 @@ webrtc.AbstractPresentable = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.AbstractPresentable';
 
@@ -36,14 +36,14 @@ webrtc.AbstractPresentable = function (params) {
     };
 
     /**
-     * Indicate whether the entity has an active MediaSession. Should we only return true if
+     * Indicate whether the entity has an active Call. Should we only return true if
      * media is flowing, or anytime a WebRTC session is active? Should it return true if the
      * engaged in a media session on another device?
      * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.hasMedia
+     * @method webrtc.AbstractPresentable.callInProgress
      * @returns {boolean}
      */
-    var hasMedia = that.publicize('hasMedia', function () {
+    var callInProgress = that.publicize('callInProgress', function () {
         return false;
     });
 
@@ -135,7 +135,7 @@ webrtc.AbstractPresentable = function (params) {
  * properties on the class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * @returns {webrtc.Endpoint}
- * @property {webrtc.MediaSession[]} mediaSessions Array of MediaSessions in progress.
+ * @property {webrtc.Call[]} calls Array of Calls in progress.
  * this?
  */
 webrtc.AbstractEndpoint = function (params) {
@@ -146,7 +146,7 @@ webrtc.AbstractEndpoint = function (params) {
     delete that.client;
     that.className = 'webrtc.AbstractEndpoint';
 
-    that.mediaSessions = [];
+    that.calls = [];
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
 
     /**
@@ -164,22 +164,22 @@ webrtc.AbstractEndpoint = function (params) {
     });
 
     /**
-     * Start the process of obtaining media
+     * Start a call.
      * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.startMedia
-     * @param {object} mediaSettings Group of media settings from which WebRTC constraints
+     * @method webrtc.AbstractEndpoint.startCall
+     * @param {object} callSettings Group of media settings from which WebRTC constraints
      * will be generated and with which the SDP will be modified.
-     * @returns {webrtc.MediaSession}
+     * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (mediaSettings) {
+    var startCall = that.publicize('startCall', function (callSettings) {
     });
 
     /**
-     * Stop media.
+     * Stop a call.
      * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.stopMedia
+     * @method webrtc.AbstractEndpoint.stopCall
      */
-    var stopMedia = that.publicize('stopMedia', function () {
+    var stopCall = that.publicize('stopCall', function () {
     });
 
     return that;
@@ -216,7 +216,7 @@ webrtc.AbstractUser = function (params) {
 
     var remoteUserSessions = [];
     var contactList = [];
-    var mediaSessions = [];
+    var calls = [];
 
     var userSession = webrtc.UserSession({
         'token': params.token,
@@ -240,10 +240,10 @@ webrtc.AbstractUser = function (params) {
     /**
      * Get the User's contact list.
      * @memberof! webrtc.AbstractUser
-     * @method webrtc.AbstractUser.getContactList
-     * @returns {webrtc.ContactList}
+     * @method webrtc.AbstractUser.getContacts
+     * @returns {webrtc.Contacts}
      */
-    var getContactList = that.publicize('getContactList', function () {
+    var getContacts = that.publicize('getContacts', function () {
         return contactList;
     });
 
@@ -279,7 +279,7 @@ webrtc.UserSession = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.UserSession';
 
@@ -366,7 +366,7 @@ webrtc.Presentable = function (params) {
     var sessions = [];
     var presence = 'unavailable';
 
-    that.listen('signaling:received', function (message) {
+    that.listen('signal', function (message) {
         try {
             webrtc.getClient(client).getSignalingChannel().routeSignal(message);
         } catch (e) {
@@ -445,7 +445,7 @@ webrtc.Endpoint = function (params) {
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
-        signalingChannel.sendMessage(webrtc.ChatMessage({
+        signalingChannel.sendMessage(webrtc.TextMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getID(),
             'payload': message
@@ -453,25 +453,25 @@ webrtc.Endpoint = function (params) {
     });
 
     /**
-     * Create a new MediaSession for a voice and/or video call. If initiator is set to true,
-     * the MediaSession will start the call.
+     * Create a new Call for a voice and/or video call. If initiator is set to true,
+     * the Call will start the call.
      * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.startMedia
-     * @param {object} Optional MediaSettings which will be used as constraints in getUserMedia.
+     * @method webrtc.Endpoint.startCall
+     * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
-     * @returns {webrtc.MediaSession}
+     * @returns {webrtc.Call}
      */
-    var startMedia = that.publicize('startMedia', function (mediaSettings, initiator) {
+    var startCall = that.publicize('startCall', function (callSettings, initiator) {
         var id = that.getID();
-        var mediaSession = null;
+        var call = null;
         var user = webrtc.getClient(client).user;
 
-        log.trace('startMedia');
+        log.trace('startCall');
         if (initiator === undefined) {
             initiator = true;
         }
 
-        mediaSession = webrtc.MediaSession({
+        call = webrtc.Call({
             'client': client,
             'username': user.getUsername(),
             'remoteEndpoint': id,
@@ -498,12 +498,12 @@ webrtc.Endpoint = function (params) {
             }
         });
 
-        mediaSession.start();
-        user.addMediaSession(mediaSession);
-        mediaSession.listen('hangup', function (locallySignaled) {
-            user.removeMediaSession(id);
+        call.start();
+        user.addCall(call);
+        call.listen('hangup', function (locallySignaled) {
+            user.removeCall(id);
         });
-        return mediaSession;
+        return call;
     });
 
     return that;
@@ -619,8 +619,8 @@ webrtc.User = function (params) {
     that.className = 'webrtc.User';
 
     var remoteUserSessions = {};
-    var mediaSessions = [];
-    var contactList = webrtc.ContactList({'client': client});
+    var calls = [];
+    var contactList = webrtc.Contacts({'client': client});
     var presenceQueue = [];
     var presence = 'unavailable';
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
@@ -642,12 +642,12 @@ webrtc.User = function (params) {
         }
     });
 
-    // listen to webrtc.ContactList#presence -- the contacts's presences
+    // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('new', function (contact) {
-        that.fire('contact:new', contact);
+        that.fire('contact', contact);
     });
 
-    // listen to webrtc.ContactList#presence -- the contacts's presences
+    // listen to webrtc.Contacts#presence -- the contacts's presences
     contactList.listen('presence', function (presenceMessage) {
         var presPayload = presenceMessage.getPayload();
         var from = presenceMessage.getSender();
@@ -672,7 +672,7 @@ webrtc.User = function (params) {
      * Send iq stanza requesting roster.
      * @memberof! webrtc.User
      * @method webrtc.User.getContacts
-     * @returns {Promise<webrtc.ContactList>}
+     * @returns {Promise<webrtc.Contacts>}
      */
     var getContacts = that.publicize('getContacts', function () {
         var deferred = Q.defer();
@@ -721,7 +721,7 @@ webrtc.User = function (params) {
             }
         };
 
-        signalingChannel.getContactList(function (list) {
+        signalingChannel.getContacts(function (list) {
             if (!(list in [null, undefined]) && list.length >= 0) {
                 list.forEach(function (contactInfo) {
                     var contact = webrtc.Contact({
@@ -765,7 +765,7 @@ webrtc.User = function (params) {
                     if (parsed.candidate) {
                         parsed.type = 'candidate';
                     }
-                    contact.fire('signaling:received', webrtc.SignalingMessage({
+                    contact.fire('signal', webrtc.SignalingMessage({
                         'client': client,
                         // yes, the unparsed version. TODO reevaluate?
                         'rawMessage': JSON.stringify(parsed),
@@ -779,7 +779,7 @@ webrtc.User = function (params) {
                 log.debug('message error');
                 log.debug(message);
             }
-            contact.fire('message:received', webrtc.ChatMessage({
+            contact.fire('message', webrtc.TextMessage({
                 'client': client,
                 'rawMessage': message.text,
                 'recipient': that,
@@ -801,52 +801,52 @@ webrtc.User = function (params) {
     });
 
     /**
-     * Get the active MediaSession.  Can there be multiple active MediaSessions? Should we timestamp
-     * them and return the most recently used? Should we create a MediaSession if none exist?
+     * Get the active Call.  Can there be multiple active Calls? Should we timestamp
+     * them and return the most recently used? Should we create a Call if none exist?
      * @memberof! webrtc.User
-     * @method webrtc.User.getActiveMediaSession
-     * @returns {webrtc.MediaSession}
+     * @method webrtc.User.getActiveCall
+     * @returns {webrtc.Call}
      */
-    var getActiveMediaSession = that.publicize('getActiveMediaSession', function () {
+    var getActiveCall = that.publicize('getActiveCall', function () {
         // TODO search by user, create if doesn't exist?
         var session = null;
-        mediaSessions.forEach(function (mediaSession) {
-            if (mediaSession.isActive()) {
-                session = mediaSession;
+        calls.forEach(function (call) {
+            if (call.isActive()) {
+                session = call;
             }
         });
         return session;
     });
 
     /**
-     * Get the MediaSession with the contact specified.
+     * Get the Call with the contact specified.
      * @memberof! webrtc.User
-     * @method webrtc.User.getMediaSessionByContact
+     * @method webrtc.User.getCallByContact
      * @param {string} Contact ID
-     * @returns {webrtc.MediaSession}
+     * @returns {webrtc.Call}
      */
-    var getMediaSessionByContact = that.publicize('getMediaSessionByContact',
+    var getCallByContact = that.publicize('getCallByContact',
         function (contactId) {
             var session = null;
             var contact = null;
-            var mediaSettings = null;
+            var callSettings = null;
 
-            mediaSessions.forEach(function (mediaSession) {
-                if (mediaSession.remoteEndpoint === contactId) {
-                    if (mediaSession.getState() === 'ended') {
+            calls.forEach(function (call) {
+                if (call.remoteEndpoint === contactId) {
+                    if (call.getState() === 'ended') {
                         return;
                     }
-                    session = mediaSession;
+                    session = call;
                 }
             });
 
             if (session === null) {
                 try {
                     contact = contactList.get(contactId);
-                    mediaSettings = webrtc.getClient(client).getMediaSettings();
-                    session = contact.startMedia(mediaSettings, false);
+                    callSettings = webrtc.getClient(client).getCallSettings();
+                    session = contact.startCall(callSettings, false);
                 } catch (e) {
-                    log.error("Couldn't create MediaSession: " + e.message);
+                    log.error("Couldn't create Call: " + e.message);
                 }
             }
 
@@ -857,33 +857,33 @@ webrtc.User = function (params) {
     /**
      * Associate the media session with this user.
      * @memberof! webrtc.User
-     * @method webrtc.User.addMediaSession
-     * @param {webrtc.MediaSession} mediaSession
-     * @fires webrtc.User#media:started
+     * @method webrtc.User.addCall
+     * @param {webrtc.Call} call
+     * @fires webrtc.User#call-started
      */
-    var addMediaSession = that.publicize('addMediaSession', function (mediaSession) {
-        mediaSessions.push(mediaSession);
-        that.fire('media:started', mediaSession, mediaSession.getContactID());
+    var addCall = that.publicize('addCall', function (call) {
+        calls.push(call);
+        that.fire('call-started', call, call.getContactID());
     });
 
     /**
      * Remove the media session.
      * @memberof! webrtc.User
-     * @method webrtc.User.removeMediaSession
+     * @method webrtc.User.removeCall
      * @param {string} Optional Contact ID
      */
-    var removeMediaSession = that.publicize('removeMediaSession', function (contactId) {
+    var removeCall = that.publicize('removeCall', function (contactId) {
         var toDelete = null;
 
         if (!contactId) {
-            throw new Error("Must specify contactId of MediaSession to remove.");
+            throw new Error("Must specify contactId of Call to remove.");
         }
 
         // Loop backward since we're modifying the array in place.
-        for (var i = mediaSessions.length - 1; i >= 0; i -= 1) {
-            var mediaSession = mediaSessions[i];
-            if (mediaSession.remoteEndpoint === contactId) {
-                mediaSessions.splice(i);
+        for (var i = calls.length - 1; i >= 0; i -= 1) {
+            var call = calls[i];
+            if (call.remoteEndpoint === contactId) {
+                calls.splice(i);
             }
         }
     });

@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.AbstractIdentityProvider
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Generic Identity provider class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -14,7 +14,7 @@ webrtc.AbstractIdentityProvider = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.AbstractIdentityProvider';
 
@@ -158,23 +158,23 @@ webrtc.IdentityProvider = function (params) {
 }; // End webrtc.IdentityProvider
 
 /**
- * Create a new ContactList.
+ * Create a new Contacts.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.ContactList
+ * @class webrtc.Contacts
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc Container for User contacts.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.ContactList}
+ * @returns {webrtc.Contacts}
  */
-webrtc.ContactList = function (params) {
+webrtc.Contacts = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventThrower(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
-    that.className = 'webrtc.ContactList';
+    that.className = 'webrtc.Contacts';
 
     that.length = 0;
     var contacts = {};
@@ -182,10 +182,10 @@ webrtc.ContactList = function (params) {
 
     /**
      * Add a contact to the list.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.add
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.add
      * @param {webrtc.AbstractEndpoint} contact A contact to add to the list.
-     * @fires webrtc.ContactList#new If the contact doesn't already exist.
+     * @fires webrtc.Contacts#new If the contact doesn't already exist.
      */
     var add = that.publicize('add', function (contact) {
         if (contact instanceof webrtc.AbstractPresentable || !contact.getID) {
@@ -200,8 +200,8 @@ webrtc.ContactList = function (params) {
 
     /**
      * Get a contact from the list.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.get
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.get
      * @param {string} contactID A contact to get from the list.
      * @returns {webrtc.Endpoint} The endpoint whose getID() function matches the string.
      */
@@ -211,8 +211,8 @@ webrtc.ContactList = function (params) {
 
     /**
      * Filter the contact list on any params, return list of matching contacts.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.filter
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.filter
      * @param {object} params An object literal with attributes and values to match.
      * @returns {webrtc.Endpoint[]} The endpoints whose attributes match the filter.
      */
@@ -238,10 +238,10 @@ webrtc.ContactList = function (params) {
 
     /**
      * Remove a contact from the list.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.remove
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.remove
      * @param {string} contactID A contact to remove from the list.
-     * @fires webrtc.ContactList#remove
+     * @fires webrtc.Contacts#remove
      */
     var remove = that.publicize('remove', function (contactID) {
         if (contacts.hasOwnProperty(contactID)) {
@@ -253,8 +253,8 @@ webrtc.ContactList = function (params) {
 
     /**
      * Get a list of contacts.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.getContacts
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.getContacts
      * @param {string} sortField An optional contact attribute to sort on.
      * @return {webrtc.Contact[]}
      */
@@ -297,8 +297,8 @@ webrtc.ContactList = function (params) {
     /**
      * Add a presence message to the presence queue for processing after the roster has been
      * processed.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.queuePresence
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.queuePresence
      * @param {object} message An XMPP presence stanza to save.
      */
     var queuePresence = that.publicize('queuePresence', function (message) {
@@ -307,9 +307,9 @@ webrtc.ContactList = function (params) {
 
     /**
      * Process the presence queue.
-     * @memberof! webrtc.ContactList
-     * @method webrtc.ContactList.processPresenceQueue
-     * @fires webrtc.ContactList#presence:update
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.processPresenceQueue
+     * @fires webrtc.Contacts#presence:update
      */
     var processPresenceQueue = that.publicize('processPresenceQueue', function () {
         for (var i = 0; i <= presenceQueue.length; i += 1) {
@@ -321,4 +321,4 @@ webrtc.ContactList = function (params) {
     });
 
     return that;
-}; // End webrtc.ContactList
+}; // End webrtc.Contacts

@@ -1,154 +1,19 @@
 /**
  * Create a new SignalingChannel.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.AbstractSignalingChannel
- * @constructor
- * @augments webrtc.EventThrower
- * @classdesc Wrap signaling protocols in a generic class. This class is meant to be extended. It
- * cannot be used as-is. It is expected that an implementing class will also implement additional
- * formatting methods and perhaps methods for sending particular types of messages.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.SignalingChannel}
- */
-/*global webrtc: false */
-webrtc.AbstractSignalingChannel = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.EventThrower(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractSignalingChannel';
-
-    var state = 'new';
-
-    /**
-     * Open and initiate a signaling protocol connection or session.
-     * @memberof! webrtc.AbstractSignalingChannel
-     * @method webrtc.AbstractSignalingChannel.open
-     * @abstract
-     */
-    var open = that.publicize('open', function () {
-        state = 'open';
-    });
-
-    /**
-     * Close a signaling protocol connection or session.
-     * @memberof! webrtc.AbstractSignalingChannel
-     * @method webrtc.AbstractSignalingChannel.close
-     * @abstract
-     */
-    var close = that.publicize('close', function () {
-        state = 'closed';
-    });
-
-    /**
-     * Get the state of the signaling protocol connection or session.
-     * @memberof! webrtc.AbstractSignalingChannel
-     * @method webrtc.AbstractSignalingChannel.getState
-     * @abstract
-     * @returns {string}
-     */
-    var getState = that.publicize('getState', function () {
-        return state;
-    });
-
-    /**
-     * Get the state of the signaling protocol connection or session.
-     * @memberof! webrtc.AbstractSignalingChannel
-     * @method webrtc.AbstractSignalingChannel.isOpen
-     * @abstract
-     */
-    var isOpen = that.publicize('isOpen', function () {
-        return state === 'open';
-    });
-
-    /**
-     * Send a message on the signaling protocol.
-     * @memberof! webrtc.AbstractSignalingChannel
-     * @method webrtc.AbstractSignalingChannel.send
-     * @param {string|object} message The string or object to stringify and send.
-     * @abstract
-     */
-    var send = that.publicize('send', function (message) {
-    });
-
-    return that;
-}; // End webrtc.AbstractSignalingChannel
-
-/**
- * Create a new Message.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.AbstractMessage
- * @constructor
- * @augments webrtc.Class
- * @classdesc A message.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.Message}
- */
-webrtc.AbstractMessage = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.Class(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractMessage';
-
-    var rawMessage = null;
-    var payload = null;
-    var recipient = null;
-    var sender = null;
-
-    /**
-     * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.AbstractMessage
-     * @method webrtc.AbstractMessage.parse
-     * @param {object|string} rawMessage Optional message to parse and replace rawMessage with.
-     * @abstract
-     */
-    var parse = that.publicize('parse', function (thisMsg) {
-    });
-
-    /**
-     * Get the text portion of the chat message.
-     * @memberof! webrtc.AbstractMessage
-     * @method webrtc.AbstractMessage.getPayload
-     * @returns {object|string} Message payload.
-     * @abstract
-     */
-    var getPayload = that.publicize('getPayload', function () {
-    });
-
-    /**
-     * Attempt to construct a string from the payload.
-     * @memberof! webrtc.AbstractMessage
-     * @method webrtc.AbstractMessage.getText
-     * @returns {string} A string that may represent the value of the payload.
-     * @abstract
-     */
-    var getText = that.publicize('getText', function () {
-    });
-
-    return that;
-}; // End webrtc.AbstractMessage
-
-/**
- * Create a new SignalingChannel.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingChannel
- * @augments webrtc.AbstractSignalingChannel
  * @constructor
  * @classdesc REST API Signaling class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.SignalingChannel}
  */
+ /*global webrtc: false */
 webrtc.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractSignalingChannel(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.SignalingChannel';
 
@@ -272,9 +137,9 @@ webrtc.SignalingChannel = function (params) {
      * Call the API to get a list of the user's contacts. Call the API to register interest
      * in presence notifications for all users on the contact list.
      * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getContactList
+     * @method webrtc.SignalingChannel.getContacts
      */
-    var getContactList = that.publicize('getContactList', function (onContacts, onPresence) {
+    var getContacts = that.publicize('getContacts', function (onContacts, onPresence) {
         wsCall({
             'path': '/v1/contacts/'
         }, function (contactList) {
@@ -304,18 +169,36 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
-     * @fires webrtc.Endpoint#message:sent
      */
     var sendMessage = that.publicize('sendMessage', function (message) {
+        var msgText = message.getPayload();
+        var recipient = null;
+
+        try {
+            recipient = message.getRecipient().getID();
+        } catch (e) {
+            log.debug("Can't get message recipient.");
+            return;
+        }
+
+        if ([null, undefined, ""].indexOf(recipient) > -1) {
+            log.debug("Can't send message without recipient.");
+            return;
+        }
+
+        if ([null, undefined, ""].indexOf(msgText) > -1) {
+            log.debug("Can't send message without message text.");
+            return;
+        }
+
         wsCall({
             'path': '/v1/chat',
             'httpMethod': 'POST',
             'parameters': {
-                'destUserId': message.getRecipient().getID(),
-                'text': message.getPayload()
+                'destUserId': recipient,
+                'text': msgText
             }
         }, null);
-        message.getRecipient().fire('message:sent', message);
     });
 
     /**
@@ -380,7 +263,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {webrtc.SignalingMessage} message A message to route
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
-        var mediaSession = webrtc.getClient(client).user.getMediaSessionByContact(message.sender);
+        var call = webrtc.getClient(client).user.getCallByContact(message.sender);
         var signal = message.getPayload();
 
         switch (signal.type) {
@@ -388,7 +271,7 @@ webrtc.SignalingChannel = function (params) {
         case 'answer':
         case 'candidate':
         case 'bye':
-            that.fire('received:' + signal.type, signal);
+            that.fire(signal.type, signal);
             break;
         case 'error':
             log.warn("Received an error");
@@ -490,10 +373,10 @@ webrtc.SignalingChannel = function (params) {
             var result = [];
 
             if (!creds || !creds.uris) {
-                deferred.reject(new Error(credentials.message || "Can't get TURN credentials."));
+                deferred.reject(new Error(creds.message || "Can't get TURN credentials."));
             }
 
-            creds.uris.forEach(function(uri) {
+            creds.uris.forEach(function (uri) {
                 var cred = null;
 
                 if (!uri) {
@@ -558,7 +441,6 @@ webrtc.SignalingChannel = function (params) {
 
         socket[params.httpMethod](params.path, params.parameters, function (response) {
             log.debug("wsCall response to " + params.httpMethod + " " + params.path);
-            log.debug(response);
             if (responseHandler) {
                 responseHandler(response, {
                     'uri' : params.path,
@@ -701,24 +583,23 @@ webrtc.SignalingChannel = function (params) {
 }; // End webrtc.SignalingChannel
 
 /**
- * Create a new ChatMessage.
+ * Create a new TextMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.ChatMessage
+ * @class webrtc.TextMessage
  * @constructor
- * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.ChatMessage}
+ * @returns {webrtc.TextMessage}
  */
-webrtc.ChatMessage = function (params) {
+webrtc.TextMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractMessage(params);
+    var that = params;
     delete that.client;
 
-    that.className = 'webrtc.ChatMessage';
+    that.className = 'webrtc.TextMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
     var payload = params.payload; // Only set on outgoing message.
     var sender = params.sender;
@@ -726,8 +607,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload. In this base class, assume text.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.parse
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
@@ -736,8 +617,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Get the whole payload.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getPayload
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getPayload
      * @returns {string}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -746,8 +627,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Get the whole chat message.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getText
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', function () {
@@ -756,8 +637,8 @@ webrtc.ChatMessage = function (params) {
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.getRecipient
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -769,14 +650,13 @@ webrtc.ChatMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.ChatMessage
+}; // End webrtc.TextMessage
 
 /**
  * Create a new SignalingMessage.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingMessage
  * @constructor
- * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -786,7 +666,7 @@ webrtc.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractMessage(params);
+    var that = params;
     delete that.client;
     that.className = 'webrtc.SignalingMessage';
 
@@ -797,8 +677,8 @@ webrtc.SignalingMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.parse
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
@@ -851,7 +731,6 @@ webrtc.SignalingMessage = function (params) {
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.PresenceMessage
  * @constructor
- * @augments webrtc.AbstractMessage
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -861,7 +740,7 @@ webrtc.PresenceMessage = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractMessage(params);
+    var that = params;
     delete that.client;
     that.className = 'webrtc.PresenceMessage';
 
@@ -873,8 +752,8 @@ webrtc.PresenceMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.ChatMessage
-     * @method webrtc.ChatMessage.parse
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {

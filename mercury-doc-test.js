@@ -3,7 +3,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class DocumentationTest
  * @constructor
- * @augments webrtc.EventThrower
+ * @augments webrtc.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
@@ -19,13 +19,13 @@
  * @property {webrtc.User} user Logged-in user's User object.
  * @copyright Digium 2013
  * @license Proprietary
- * {@link webrtc.XMPPChatMessage}
- * {@linkcode webrtc.XMPPChatMessage}
- * {@linkplain webrtc.XMPPChatMessage}
+ * {@link webrtc.XMPPTextMessage}
+ * {@linkcode webrtc.XMPPTextMessage}
+ * {@linkplain webrtc.XMPPTextMessage}
  * {@link http://digium.com}
  * [Some caption]{@link http://digium.com}
- * {@link webrtc.XMPPChatMessage some caption}
- * @mixes webrtc.EventThrower
+ * {@link webrtc.XMPPTextMessage some caption}
+ * @mixes webrtc.EventEmitter
  * @requires jQuery.js
  * @see DocumentationTest
  * @see http://google.com
@@ -36,7 +36,7 @@
  */
 DocumentationTest = function(params) {
 	params = params || {};
-	var that = webrtc.EventThrower(params);
+	var that = webrtc.EventEmitter(params);
 	/**
 	 * @public
 	 * @constant
@@ -86,7 +86,7 @@ DocumentationTest = function(params) {
 		 */
 		signalingChannel: 'XMPPSignalingChannel',
 		identityProvider: 'XMPPIdentityProvider',
-		chatMessage: 'XMPPChatMessage',
+		chatMessage: 'XMPPTextMessage',
 		signalingMessage: 'XMPPSignalingMessage',
 		presenceMessage: 'XMPPPresenceMessage',
 	};
@@ -121,10 +121,10 @@ DocumentationTest = function(params) {
 	that.presenceMessage = findClass(that.appSettings.presenceMessage);
 	/**
 	 * @access public
-	 * @desc The mediaSession in progress
-	 * @typedef webrtc.MediaSession
+	 * @desc The call in progress
+	 * @typedef webrtc.Call
 	 */
-	that.mediaSession = findClass(that.appSettings.mediaSession);
+	that.call = findClass(that.appSettings.call);
 	/**
 	 * @access public
 	 * @default null

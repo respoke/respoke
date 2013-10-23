@@ -134,17 +134,17 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.ContactList#new
+ * @event webrtc.Contacts#new
  * @type {webrtc.Contact}
  */
 
 /**
- * @event webrtc.ContactList#remove
+ * @event webrtc.Contacts#remove
  * @type {webrtc.Contact}
  */
 
 /**
- * @event webrtc.ContactList#presence
+ * @event webrtc.Contacts#presence
  * @type {object}
  */
 
@@ -154,134 +154,84 @@ webrtc.Class = function (params) {
  */
 
 /**
- * @event webrtc.Endpoint#message:sent
+ * @event webrtc.Endpoint#message
  * @type {object}
  */
 
 /**
- * @event webrtc.Endpoint#message:received
+ * @event webrtc.Endpoint#signaling
  * @type {object}
  */
 
 /**
- * @event webrtc.Endpoint#signaling:sent
- * @type {object}
- */
-
-/**
- * @event webrtc.Endpoint#signaling:received
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#stream:local:received
+ * @event webrtc.Call#local-stream-received
  * @type {DOM}
  */
 
 /**
- * @event webrtc.MediaSession#stream:remote:received
+ * @event webrtc.Call#remote-stream-received
  * @type {DOM}
  */
 
 /**
- * @event webrtc.MediaSession#stream:remote:removed
+ * @event webrtc.Call#remote-stream-removed
  * @type {object}
  */
 
 /**
- * @event webrtc.MediaSession#candidate:local
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#candidate:remote
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#sdp:remote:received
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#sdp:remote:saved
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#sdp:remote:error
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#sdp:local:created
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#sdp:local:saved
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#sdp:local:error
- * @type {object}
- */
-
-/**
- * @event webrtc.MediaSession#hangup
+ * @event webrtc.Call#hangup
  * @type {boolean}
  */
 
 /**
- * @event webrtc.MediaSession#video:muted
+ * @event webrtc.Call#video-muted
  */
 
 /**
- * @event webrtc.MediaSession#video:unmuted
+ * @event webrtc.Call#video-unmuted
  */
 
 /**
- * @event webrtc.MediaSession#audio:muted
+ * @event webrtc.Call#audio-muted
  */
 
 /**
- * @event webrtc.MediaSession#audio:unmuted
+ * @event webrtc.Call#audio-unmuted
  */
 
 /**
- * @event webrtc.MediaStream#video:muted
+ * @event webrtc.MediaStream#video-muted
  */
 
 /**
- * @event webrtc.MediaStream#video:unmuted
+ * @event webrtc.MediaStream#video-unmuted
  */
 
 /**
- * @event webrtc.MediaStream#audio:muted
+ * @event webrtc.MediaStream#audio-muted
  */
 
 /**
- * @event webrtc.MediaStream#audio:unmuted
+ * @event webrtc.MediaStream#audio-unmuted
  */
 
 /**
- * @event webrtc.SignalingChannel#received:offer
+ * @event webrtc.SignalingChannel#offer
  * @type {RTCSessionDescription}
  */
 
 /**
- * @event webrtc.SignalingChannel#received:answer
+ * @event webrtc.SignalingChannel#answer
  * @type {RTCSessionDescription}
  */
 
 /**
- * @event webrtc.SignalingChannel#received:candidate
+ * @event webrtc.SignalingChannel#candidate
  * @type {RTCIceCandidate}
  */
 
 /**
- * @event webrtc.SignalingChannel#received:bye
+ * @event webrtc.SignalingChannel#bye
  */
 
 Q.longStackSupport = true;
