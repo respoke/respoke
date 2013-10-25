@@ -4,8 +4,7 @@
  * @class webrtc.Call
  * @constructor
  * @augments webrtc.EventEmitter
- * @classdesc WebRTC Call including getContactMedia, path and codec negotation, and
- * call state.
+ * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.Call}
@@ -82,6 +81,7 @@ webrtc.Call = function (params) {
      * Start the process of obtaining media.
      * @memberof! webrtc.Call
      * @method webrtc.Call.start
+     * @fires webrtc.Call#start
      */
     var start = that.publicize('start', function () {
         if (!that.username) {
@@ -89,6 +89,7 @@ webrtc.Call = function (params) {
         }
         report.startCount += 1;
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
+        that.fire('start');
         requestMedia();
     });
 
@@ -148,19 +149,21 @@ webrtc.Call = function (params) {
         videoElement.muted = true;
         videoElement.autoplay = true;
         attachMediaStream(videoElement, stream);
-        setTimeout(function () {
-            videoElement.play();
-        }, 100);
         that.fire('local-stream-received', videoElement);
         videoElement.used = true;
 
         if (mediaStreams.length === 1) {
             if (that.initiator) {
                 startCall();
+            } else if (savedOffer) {
+                processOffer(savedOffer);
+                savedOffer = null;
             } else {
-                acceptCall();
+                log.error("Can't process offer--no SDP!");
+                stop(true);
             }
         }
+        videoElement.play();
     };
 
     /**
@@ -246,24 +249,7 @@ webrtc.Call = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        stopCall(!that.initiator);
-    };
-
-    /**
-     * Process the initial offer received from the remote side if we are not the initiator.
-     * @memberof! webrtc.Call
-     * @method webrtc.Call.acceptCall
-     * @private
-     */
-    var acceptCall = function () {
-        log.trace('acceptCall');
-        if (savedOffer) {
-            processOffer(savedOffer);
-            savedOffer = null;
-        } else {
-            log.error("Can't process offer--no SDP!");
-            stopCall(true);
-        }
+        stop(!that.initiator);
     };
 
     /**
@@ -446,19 +432,18 @@ webrtc.Call = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        stopCall(false);
+        stop(false);
     };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
      * sendSignal is not false and we have not received a bye signal from the remote party.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.stopCall
+     * @method webrtc.Call.stop
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
-     * @todo TODO: Make it so the dev doesn't have to know when to send a bye.
      */
-    var stopCall = that.publicize('stopCall', function (sendSignal) {
+    var stop = that.publicize('stop', function (sendSignal) {
         that.state = 'ended';
         clientObj.updateTurnCredentials();
         if (pc === null) {
@@ -494,12 +479,28 @@ webrtc.Call = function (params) {
         pc = null;
     });
 
+    /*
+     * Expose stop as reject for accept/reject workflow.
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.reject
+     * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
+     * a hangup signal to the remote side.
+     */
+    var reject = that.publicize('reject', stop);
+
+    /**
+     * Expose start as accept for accept/reject workflow.
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.accept
+     */
+    var accept = that.publicize('accept', start);
 
     /**
      * Tell the browser about the offer we received.
      * @memberof! webrtc.Call
      * @method webrtc.Call.processOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
+     * @fires webrtc.Call#accept
      * @private
      */
     var processOffer = function (oSession) {
@@ -509,6 +510,7 @@ webrtc.Call = function (params) {
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oSession), function () {
                 log.debug('set remote desc of offer succeeded');
+                that.fire('accept');
                 pc.createAnswer(saveAnswerAndSend, function (p) {
                     log.error("Error creating SDP answer.");
                     report.callStoppedReason = 'Error creating SDP answer.';
@@ -520,7 +522,7 @@ webrtc.Call = function (params) {
                 report.callStoppedReason = 'setLocalDescr failed at offer.';
                 log.error(oSession);
                 log.error(p);
-                that.stopCall();
+                that.stop();
             });
         } catch (e) {
             log.error("error processing offer: " + e.message);
@@ -593,7 +595,7 @@ webrtc.Call = function (params) {
             log.error('set remote desc of answer failed');
             report.callStoppedReason = 'setRemoteDescription failed at answer.';
             log.error(oSession);
-            that.stopCall();
+            that.stop();
         });
     };
 
@@ -804,7 +806,7 @@ webrtc.Call = function (params) {
      */
     var onBye = function () {
         receivedBye = true;
-        stopCall();
+        stop();
     };
 
     signalingChannel.listen('offer', onOffer);

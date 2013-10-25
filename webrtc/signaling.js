@@ -268,6 +268,7 @@ webrtc.SignalingChannel = function (params) {
 
         switch (signal.type) {
         case 'offer':
+        case 'accept':
         case 'answer':
         case 'candidate':
         case 'bye':

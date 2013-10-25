@@ -1016,11 +1016,11 @@ webrtc.User = function (params) {
      * @memberof! webrtc.User
      * @method webrtc.User.addCall
      * @param {webrtc.Call} call
-     * @fires webrtc.User#call-started
+     * @fires webrtc.User#call
      */
     var addCall = that.publicize('addCall', function (call) {
         calls.push(call);
-        that.fire('call-started', call, call.getContactID());
+        that.fire('call', call, call.getContactID());
     });
 
     /**
