@@ -5,14 +5,16 @@ webdriver.promise.controlFlow().on('uncaughtException', function(e) {
 });
 
 function getWebDriver(options) {
-    if (!options) {
-        options = {timeout: 10000, capabilities: {'browserName': 'chrome','chromeOptions': {"args": ['--incognito']}}};
-    }
+    var selenium_server_url = process.env["SELENIUM_SERVER_URL"] || "http://127.0.0.1:4444/wd/hub";
+    var browserName = process.env["SELENIUM_BROWSER"] || 'chrome';
 
+    if (!options) {
+        options = {timeout: 10000, capabilities: {'browserName': browserName,'chromeOptions': {"args": ['--incognito']}}};
+    }
     var driver = new webdriver.Builder().
-                usingServer('http://127.0.0.1:4444/wd/hub').
-                withCapabilities(options.capabilities).
-                build();
+            usingServer(selenium_server_url).
+            withCapabilities(options.capabilities).
+            build();
     driver.manage().timeouts().setScriptTimeout(options.timeout);
 
     return driver;
