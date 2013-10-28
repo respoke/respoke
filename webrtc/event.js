@@ -75,20 +75,26 @@ webrtc.EventEmitter = function (params) {
      * the listener
      */
     var fire = that.publicize('fire', function (eventType) {
+        var args = null;
+        var count = 0;
+
         if (!eventType || !eventList[eventType]) {
             return;
         }
-        var args = Array.prototype.slice.call(arguments, 1);
+
+        args = Array.prototype.slice.call(arguments, 1);
         eventList[eventType].forEach(function (listener) {
             if (typeof listener === 'function') {
                 try {
                     listener.apply(that, args);
+                    count += 1;
                 } catch (e) {
                     log.error('Error in ' + that.className + "#" + eventType + ": " + e.message);
                     log.error(e.stack);
                 }
             }
         });
+        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called.");
     });
 
     return that;
