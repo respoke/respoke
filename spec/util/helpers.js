@@ -169,11 +169,11 @@ module.exports = {
     },
 
     testFixtureBeforeTest: function (options, cb) {
-        fs.readFile(process.cwd() + '/collective/spec/util/jquery.js', {encoding: 'utf8'}, function (err, data) {
+        fs.readFile(__dirname + '/../../../../../collective/spec/util/jquery.js', {encoding: 'utf8'}, function (err, data) {
         var jquery = data;
-        fs.readFile(process.cwd() + '/collective/spec/util/api_client.js', {encoding: 'utf8'}, function (err, data) {
+        fs.readFile(__dirname + '/../../../../../collective/spec/util/api_client.js', {encoding: 'utf8'}, function (err, data) {
             var apiClientString = data;
-            fs.readFile(process.cwd() + '/collective/spec/util/fixture.js', {encoding: 'utf8'}, function (err, data) {
+            fs.readFile(__dirname + '/../../../../../collective/spec/util/fixture.js', {encoding: 'utf8'}, function (err, data) {
                 var fixtureString = data;
                 fixtureString = fixtureString.replace('var fixture', "window['fixture']");
                 driver = getWebDriver();
