@@ -466,7 +466,7 @@ webrtc.Endpoint = function (params) {
         var call = null;
         var user = webrtc.getClient(client).user;
 
-        log.trace('startCall');
+        log.trace('Endpoint.startCall');
         if (initiator === undefined) {
             initiator = true;
         }
@@ -498,6 +498,9 @@ webrtc.Endpoint = function (params) {
             }
         });
 
+        if (initiator === true) {
+            call.start();
+        }
         user.addCall(call);
         call.listen('hangup', function (locallySignaled) {
             user.removeCall(id);

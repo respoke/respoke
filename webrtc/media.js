@@ -99,7 +99,10 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.startCall
      */
     var startCall = function () {
-        log.trace('startCall');
+        if (that.initiator !== true) {
+            return;
+        }
+        log.trace('Call.startCall');
         report.startCallCount += 1;
         log.info('creating offer');
         pc.createOffer(saveOfferAndSend, function (p) {
@@ -119,8 +122,7 @@ webrtc.Call = function (params) {
 
         that.state = 'media flowing';
         log.debug('User gave permission to use media.');
-        log.trace(onReceiveUserMedia);
-        log.trace(stream);
+        log.trace('onReceiveUserMedia');
 
         if (pc === null) {
             log.error("Peer connection is null!");
@@ -148,9 +150,9 @@ webrtc.Call = function (params) {
         // We won't want our local video outputting audio.
         videoElement.muted = true;
         videoElement.autoplay = true;
+        videoElement.used = true;
         attachMediaStream(videoElement, stream);
         that.fire('local-stream-received', videoElement);
-        videoElement.used = true;
 
         if (mediaStreams.length === 1) {
             if (that.initiator) {
@@ -163,7 +165,6 @@ webrtc.Call = function (params) {
                 stop(true);
             }
         }
-        videoElement.play();
     };
 
     /**
@@ -179,7 +180,7 @@ webrtc.Call = function (params) {
         var url = '';
 
         report.callStarted = now.getTime();
-        log.trace(requestMedia);
+        log.trace('requestMedia');
 
         try {
             pc = new RTCPeerConnection(callSettings.servers, options);
@@ -207,17 +208,8 @@ webrtc.Call = function (params) {
         pc.onremovestream = onRemoteStreamRemoved;
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
-        /*pc.oniceconnectionstatechange = function (p) {
-            log.trace('oniceconnectionstatechange');
-            log.trace(p);
-        };*/
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
-
-        if (savedOffer) {
-            processOffer(savedOffer);
-            savedOffer = null;
-        }
 
         callSettings.constraints.forOwn(function (oneConstraints, index) {
             try {
@@ -286,12 +278,9 @@ webrtc.Call = function (params) {
         }
 
         videoElement.autoplay = true;
-        attachMediaStream(videoElement, evt.stream);
-        setTimeout(function () {
-            videoElement.play();
-        }, 100);
-        that.fire('remote-stream-received', videoElement);
         videoElement.used = true;
+        attachMediaStream(videoElement, evt.stream);
+        that.fire('remote-stream-received', videoElement);
 
         mediaStreams.push(webrtc.MediaStream({
             'stream': evt.stream,
@@ -306,8 +295,6 @@ webrtc.Call = function (params) {
      * @private
      */
     var onStateChange = function (p, a) {
-        log.trace('iceState is ' + p.currentTarget.iceState);
-        log.trace('readyState is ' + p.currentTarget.readyState);
     };
 
     /**
@@ -317,8 +304,6 @@ webrtc.Call = function (params) {
      * @private
      */
     var onIceChange = function (p) {
-        log.trace('pc event: ice changed');
-        log.trace(p);
     };
 
     /**
@@ -569,7 +554,6 @@ webrtc.Call = function (params) {
             report.lastSDPString = oSession.sdp;
         } else {
             log.warn('Got initiate in precall state.');
-            log.trace("rejecting call.");
             signalTerminate();
         }
     };
@@ -586,7 +570,7 @@ webrtc.Call = function (params) {
         log.debug('remote side sdp is');
         log.debug(oSession);
 
-        savedOffer = oSession;
+        savedOffer = oSession; // TODO is this necessary?
         receivedAnswer = true;
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
@@ -745,8 +729,6 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
-        log.trace('muting video');
-
         mediaStreams.forOwn(function (stream) {
             stream.muteVideo();
         });
@@ -760,8 +742,6 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
-        log.trace('unmuting video');
-
         mediaStreams.forOwn(function (stream) {
             stream.unmuteVideo();
         });
@@ -775,8 +755,6 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
-        log.trace('muting audio');
-
         mediaStreams.forOwn(function (stream) {
             stream.muteAudio();
         });
@@ -790,8 +768,6 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
-        log.trace('unmuting audio');
-
         mediaStreams.forOwn(function (stream) {
             stream.unmuteAudio();
         });
