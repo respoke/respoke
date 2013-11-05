@@ -25,7 +25,7 @@ module.exports = {
 
         this.driver = driver;
         this.clientName = clientName;
-        this.baseURL = baseURL || 'http://localhost:1337'
+        this.baseURL = baseURL || 'https://testing.digiumlabs.com:1337'
 
         this.init = function (appId) {
             return this.driver.executeScript("window['" + this.clientName + "'] = webrtc.Client({clientSettings: {appId: '" + appId + "', baseURL: '" + this.baseURL + "'}});");
@@ -177,7 +177,7 @@ module.exports = {
                 var fixtureString = data;
                 fixtureString = fixtureString.replace('var fixture', "window['fixture']");
                 driver = getWebDriver();
-                driver.get('http://localhost:' + process.env.SERVER_PORT + '/test.html').then(function () {
+                driver.get(process.env['MERCURY_URL'] + '/index.html').then(function () {
                     driver.executeScript(jquery + "    " + apiClientString + "    " + fixtureString).then(function () {
                             driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
                                     "window['fix'] = window['fixture']('Events Spec', " + JSON.stringify(options) + "); " +

@@ -28,7 +28,7 @@ describe("Connection", function () {
     beforeEach(function (done) {
         driver = helpers.webDriver();
         client = new Client(driver, clientName);
-        indexPromise = driver.get('http://localhost:' + process.env.SERVER_PORT + '/index.html');
+        indexPromise = driver.get(process.env['MERCURY_URL'] + '/index.html');
         indexPromise.then(function () {
             client.init(env.appId).then(done);
         });
@@ -81,7 +81,7 @@ describe("Authentication", function () {
     beforeEach(function (done) {
         driver = helpers.webDriver();
         client = new Client(driver, clientName);
-        indexPromise = driver.get('http://localhost:' + process.env.SERVER_PORT + '/index.html');
+        indexPromise = driver.get(process.env['MERCURY_URL'] + '/index.html');
         indexPromise.then(function () {
             client.init(env.appId).then( function () {
                 client.connect().then(done);
@@ -227,7 +227,7 @@ describe("settings", function () {
     beforeEach(function (done) {
         driver = helpers.webDriver();
         client = new Client(driver, clientName);
-        indexPromise = driver.get('http://localhost:' + process.env.SERVER_PORT + '/index.html');
+        indexPromise = driver.get(process.env['MERCURY_URL'] + '/index.html');
         indexPromise.then(function () {
             client.init(env.appId).then(function () {
                 client.connect().then(function () {
