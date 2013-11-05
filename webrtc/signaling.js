@@ -30,6 +30,15 @@ webrtc.SignalingChannel = function (params) {
         'presence': []
     };
 
+    var errors = {
+        400: "Can't perform this action: missing or invalid parameters.",
+        401: "Can't perform this action: not authenticated.",
+        403: "Can't perform this action: not authorized.",
+        404: "Item not found.",
+        409: "Can't perform this action: item in the wrong state.",
+        500: "Can't perform this action: server problem.",
+    };
+
     /**
      * Open a connection to the REST API. This is where we would do apikey validation/app
      * authentication if we want to do that.
@@ -130,6 +139,10 @@ webrtc.SignalingChannel = function (params) {
                     'type': presenceString || "available"
                 }
             }
+        }, function (res, params, err) {
+            if (err && err.message) {
+                throw new Error(err.message);
+            }
         });
     });
 
@@ -142,21 +155,32 @@ webrtc.SignalingChannel = function (params) {
     var getContacts = that.publicize('getContacts', function (onContacts, onPresence) {
         wsCall({
             'path': '/v1/contacts/'
-        }, function (contactList) {
+        }, function (contactList, params, err) {
             var userIdList = [];
+
+            if (err && err.message) {
+                throw new Error(err.message);
+            }
+
             contactList.forEach(function (contact) {
                 userIdList.push({'userId': contact.id});
             });
+
             if (onContacts) {
                 onContacts(contactList);
             }
+
             wsCall({
                 'path': '/v1/presence/observer',
                 'httpMethod' : 'POST',
                 'parameters': {
                     'users': userIdList
                 }
-            }, function (presenceList) {
+            }, function (presenceList, params, err) {
+                if (err && err.message) {
+                    throw new Error(err.message);
+                }
+
                 if (onPresence) {
                     onPresence(presenceList);
                 }
@@ -198,7 +222,11 @@ webrtc.SignalingChannel = function (params) {
                 'destUserId': recipient,
                 'text': msgText
             }
-        }, null);
+        }, function (res, params, err) {
+            if (err && err.message) {
+                throw new Error(err.message);
+            }
+        });
     });
 
     /**
@@ -319,17 +347,28 @@ webrtc.SignalingChannel = function (params) {
                     'appId': appId
                 }
             }, function (response) {
-                var pieces = baseURL.split(/:\/\//);
-                var protocol = pieces[0];
-                var pieces = pieces[1].split(/:/);
-                var host = pieces[0];
-                var port = pieces[1];
+                var pieces = [];
+                var protocol = null;
+                var host = null;
+                var port = null;
+
+                if (response.code !== 200) {
+                    throw new Error(response.message);
+                }
+
+                pieces = baseURL.split(/:\/\//);
+                protocol = pieces[0];
+                pieces = pieces[1].split(/:/);
+                host = pieces[0];
+                port = pieces[1];
+
                 socket = io.connect(baseURL, {
                     'host': host,
                     'port': port,
                     'protocol': protocol,
                     'secure': (protocol === 'https')
                 });
+
                 socket.on('connect', function () {
                     handlerQueue.forOwn(function (array, category) {
                         if (!array) {
@@ -342,21 +381,40 @@ webrtc.SignalingChannel = function (params) {
                         array = [];
                     });
                 });
+
                 socket.on('signaling', that.routeSignal);
-                if (response.code === 200) {
-                    wsCall({
-                        'path': '/v1/usersessions',
-                        'httpMethod': 'POST',
-                        'parameters': {
-                            'presence': {
-                                'show': "no show",
-                                'status': "Hey, I'm having fun!",
-                                'type': "available"
-                            }
+
+                wsCall({
+                    'path': '/v1/usersessions',
+                    'httpMethod': 'POST',
+                    'parameters': {
+                        'presence': {
+                            'show': "no show",
+                            'status': "Hey, I'm having fun!",
+                            'type': "available"
                         }
-                    });
-                }
-                callback(response);
+                    }
+                }, function (res, params, err) {
+                    if (err && err.message) {
+                        throw new Error(err.message);
+                    }
+                });
+
+                wsCall({
+                    'path': '/v1/users',
+                    'httpMethod': 'GET',
+                    'parameters': {
+                        'username': username
+                    }
+                }, function (res, data, err) {
+                    if (err && err.message) {
+                        callback(null, err.message);
+                    }
+                    res[0].client = client;
+                    res[0].loggedIn = true;
+                    res[0].timeLoggedIn = new Date();
+                    callback(webrtc.User(res[0]), null);
+                });
             });
         }
     );
@@ -374,11 +432,11 @@ webrtc.SignalingChannel = function (params) {
         wsCall({
             'httpMethod': 'GET',
             'path': '/v1/turncredentials'
-        }, function (creds) {
+        }, function (creds, params, err) {
             var result = [];
 
             if (!creds || !creds.uris) {
-                deferred.reject(new Error(creds.message || "Can't get TURN credentials."));
+                deferred.reject(err.message);
             }
 
             creds.uris.forEach(function (uri) {
@@ -438,21 +496,34 @@ webrtc.SignalingChannel = function (params) {
         }
 
         if (responseHandler === undefined) { // allow null to indicate no handler
-            responseHandler = function (response, data) {
+            responseHandler = function (response, data, error) {
                 log.debug('default responseHandler');
-                log.debug(response);
+                log.debug(response, data, error);
             };
         }
 
-        log.debug('kicking off socket[' + params.httpMethod + "]()",
+        log.debug('kicking off socket.' + params.httpMethod + "()",
             params.path, params.parameters);
+
         socket[params.httpMethod](params.path, params.parameters, function (response) {
+            var e = null;
+            var errString = null;
+
             log.debug("wsCall response to " + params.httpMethod + " " + params.path);
+
+            if (response !== null && response.code !== 200) {
+                errString = response.message || response.error || errors[response.code];
+                e = {
+                    'code': response.code,
+                    'message': errString
+                };
+            }
+
             if (responseHandler) {
                 responseHandler(response, {
                     'uri' : params.path,
                     'params' : params.parameters
-                });
+                }, e);
             }
         });
     };

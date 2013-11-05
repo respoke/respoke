@@ -104,18 +104,11 @@ webrtc.IdentityProvider = function (params) {
             signalingChannel.open();
         }
         deferred = Q.defer();
-        signalingChannel.authenticate(username, password, function (response, request) {
-            if (response.code === 200) {
-                user = webrtc.User({
-                    'client': client,
-                    'username': username,
-                    'loggedIn': true
-                });
+        signalingChannel.authenticate(username, password, function (user, errorMessage) {
+            if (user) {
                 deferred.resolve(user);
-            } else if (response.code === 403) {
-                deferred.reject(new Error("Authentication failed."));
             } else {
-                deferred.reject(new Error("Unknown error in authentication attempt."));
+                deferred.reject(new Error(errorMessage));
             }
         });
         return deferred.promise;
