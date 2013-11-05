@@ -91,30 +91,14 @@ describe('System Events', function () {
     });
 
     describe("Endpoint Events", function () {
-        /**
-         * @event webrtc.Endpoint#message:sent
-         * @type {object}
-         */
-        it("should receive event for webrtc.Endpoint#message:sent", function (done) {
-            client1.listenOnContactEvent(username2, 'message:sent', 'messageSent').then(function () {
-                client1.sendMessage(username2, 'Hi!').then(function () {
-                    setTimeout(function () {
-                        client1.getValue('messageSent.getText()').then(function (value) {
-                            expect(value).toBe('Hi!');
-                            done();
-                        });
-                    }, 1000);
-                });
-            });
-        });
 
         /*
          * @event webrtc.Endpoint#message:received
          * @type {object}
          */
 
-        it("should receive event for webrtc.Endpoint#message:received", function (done) {
-            client2.listenOnContactEvent(username1, 'message:received', 'messageReceived').then(function () {
+        it("should receive event for webrtc.Endpoint#message", function (done) {
+            client2.listenOnContactEvent(username1, 'message', 'messageReceived').then(function () {
                 client1.sendMessage(username2, 'Howdy!').then(function () {
                     setTimeout(function () {
                         client2.getValue('messageReceived.getText()').then(function (value) {

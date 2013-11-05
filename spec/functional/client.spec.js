@@ -255,11 +255,11 @@ describe("settings", function () {
         });
     });
 
-    it("MediaSettings should have mediaSettings", function () {
+    it("CallSettings should have callSettings", function () {
         indexPromise.then(function () {
-            client.getMediaSettings().then(function (mediaSettings) {
-                expect(mediaSettings).toBeDefined();
-                expect(mediaSettings.constraints).toBeDefined();
+            client.getCallSettings().then(function (callSettings) {
+                expect(callSettings).toBeDefined();
+                expect(callSettings.constraints).toBeDefined();
             });
         });
     });

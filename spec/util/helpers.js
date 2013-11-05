@@ -60,11 +60,11 @@ module.exports = {
         this.getClientSettings = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].getClientSettings();");
         };
-        this.getMediaSettings = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].getMediaSettings();");
+        this.getCallSettings = function () {
+            return this.driver.executeScript("return window['" + this.clientName + "'].getCallSettings();");
         };
-        this.setDefaultMediaSettings = function (mediaSettings) {
-            return this.driver.executeScript("window['" + this.clientName + "'].setDefaultMediaSettings(" + mediaSettings + ");");
+        this.setDefaultCallSettings = function (callSettings) {
+            return this.driver.executeScript("window['" + this.clientName + "'].setDefaultCallSettings(" + JSON.stringify(callSettings) + ");");
         };
         this.getSignalingChannel = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].getSignalingChannel();");
@@ -123,8 +123,8 @@ module.exports = {
         this.canSendVideo = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.canSendVideo();");
         };
-        this.hasMedia = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.hasMedia();");
+        this.callInProgress = function () {
+            return this.driver.executeScript("return window['" + this.clientName + "'].user.callInProgress();");
         };
         this.sendMessage = function (username, message) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +

@@ -108,8 +108,8 @@ describe('Presence setup', function () {
             });
         });
 
-        it("#hasMedia", function (done) {
-            client1.hasMedia().then(function (b) {
+        it("#callInProgress", function (done) {
+            client1.callInProgress().then(function (b) {
                 expect(b).toBe(false);
                 done();
             });
