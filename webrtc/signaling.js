@@ -39,7 +39,7 @@ webrtc.SignalingChannel = function (params) {
     var open = that.publicize('open', function () {
         if (appId === null) {
             var clientSettings = webrtc.getClient(client).getClientSettings();
-            baseURL = 'https://demo.digiumlabs.com:1337';
+            baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337';
             appId = clientSettings.appId;
         }
         if (!appId) {
