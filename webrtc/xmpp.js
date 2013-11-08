@@ -389,7 +389,7 @@ webrtc.IdentityProvider = function (params) {
             signalingChannel.open();
         }
         deferred = Q.defer();
-        signalingChannel.authenticate(username, password, function (statusCode) {
+        signalingChannel.authenticate(username, password, function onAuth (statusCode) {
             var user = null;
 
             if (statusCode === Strophe.Status.CONNECTED) {
@@ -426,7 +426,7 @@ webrtc.IdentityProvider = function (params) {
      */
     var logout = that.publicize('logout', function () {
         log.trace("User logout");
-        signalingChannel.listen('closed', function () {
+        signalingChannel.listen('closed', function loggedOutHandler () {
             loggedIn = false;
         });
         signalingChannel.close();
@@ -479,7 +479,7 @@ webrtc.Presentable = function (params) {
     var resources = [];
     var presence = 'unavailable';
 
-    that.listen('signal', function (message) {
+    that.listen('signal', function signalHandler (message) {
         try {
             webrtc.getClient(client).getSignalingChannel().routeSignal(message);
         } catch (e) {
@@ -706,7 +706,7 @@ webrtc.Endpoint = function (params) {
 
         call.start();
         user.addCall(call);
-        call.listen('hangup', function (locallySignaled) {
+        call.listen('hangup', function hangupHandler (locallySignaled) {
             user.removeCall(id);
         });
         return call;
@@ -765,7 +765,7 @@ webrtc.Contact = function (params) {
      */
     var resolvePresence = function () {
         var options = [];
-        resources.forOwn(function (resource) {
+        resources.forOwn(function checkEachPresence (resource) {
             options.push(resource.presence);
             switch (resource.presence) {
             case 'chat':
@@ -838,7 +838,7 @@ webrtc.User = function (params) {
     });
 
     // listen to webrtc.User#presence:update -- the logged-in user's presence
-    that.listen("presence", function (presenceString) {
+    that.listen("presence", function presenceHandler (presenceString) {
         presence = presenceString;
         if (signalingChannel && signalingChannel.isOpen()) {
             log.info('sending my presence update ' + presenceString);
@@ -849,12 +849,12 @@ webrtc.User = function (params) {
     });
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
-    contactList.listen('new', function (contact) {
+    contactList.listen('new', newContactHandler function (contact) {
         that.fire('contact', contact);
     });
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
-    contactList.listen('presence', function (presenceMessage) {
+    contactList.listen('presence', function contactPresenceHandler (presenceMessage) {
         var presPayload = null;
         var from = null;
         var jid = null;
@@ -905,14 +905,16 @@ webrtc.User = function (params) {
             deferred.reject(new Error("Can't request contacts unless logged in."));
             return deferred.promise;
         }
-        deferred.promise.then(function (contactList) {
-            setTimeout(function () { contactList.processPresenceQueue(); }, 1000);
-        }).done();
+        deferred.promise.done(function successHandler (contactList) {
+            setTimeout(function runQueue () { contactList.processPresenceQueue(); }, 1000);
+        }, function errorHandler (e) {
+            throw e;
+        });
 
         /* This seems like not a good place to define this handler, but it must have access
          * to the promise that getContacts must return, so it is necessary.
          */
-        signalingChannel.addHandler('iq', function (stanza) {
+        signalingChannel.addHandler('iq', function iqHandler (stanza) {
             log.debug(stanza);
             itemElements = $j(stanza).find("item");
 
@@ -921,7 +923,7 @@ webrtc.User = function (params) {
                 return true;
             }
 
-            itemElements.each(function () {
+            itemElements.each(function processEachContact () {
                 var sub = $j(this).attr('subscription');
                 var jid = $j(this).attr('jid');
                 var name = $j(this).attr('name');
@@ -972,7 +974,7 @@ webrtc.User = function (params) {
     var getActiveCall = that.publicize('getActiveCall', function () {
         // TODO search by user, create if doesn't exist?
         var session = null;
-        calls.forEach(function (call) {
+        calls.forEach(function checkEachCall (call) {
             if (call.isActive()) {
                 session = call;
             }
@@ -991,7 +993,7 @@ webrtc.User = function (params) {
             function (contactJID) {
                 var session = null;
                 var contact = null;
-                calls.forEach(function (call) {
+                calls.forEach(function checkEachCall (call) {
                     if (call.remoteEndpoint === contactJID) {
                         session = call;
                     }
@@ -1036,7 +1038,7 @@ webrtc.User = function (params) {
             calls = [];
         }
 
-        calls.forEach(function (call, index) {
+        calls.forEach(function checkEachCall (call, index) {
             if (call.remoteEndpoint === contactJID) {
                 toDelete = index;
             }
@@ -1061,7 +1063,7 @@ webrtc.User = function (params) {
         /* Now we know this user cares about their own presence, we can assume he
          * will also care about his contacts' presences.
          */
-        signalingChannel.addHandler('presence', function (stanza) {
+        signalingChannel.addHandler('presence', function presenceHandler (stanza) {
             log.debug(stanza);
             var message = webrtc.PresenceMessage({
                 'rawMessage': stanza,
@@ -1079,7 +1081,7 @@ webrtc.User = function (params) {
         /* There's not really a better place for us to know the user will care about receiving
          * messages. We'll just put it here since messages tend to go along with presence.
          */
-        signalingChannel.addHandler('message', function (stanza) {
+        signalingChannel.addHandler('message', function messageHandler (stanza) {
             var from = stanza.getAttribute('from');
             var type = stanza.getAttribute('type');
             var fromPieces = [];

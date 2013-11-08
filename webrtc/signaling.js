@@ -109,7 +109,7 @@ webrtc.SignalingChannel = function (params) {
         call({
             'path': '/v1/authsession',
             'httpMethod': 'DELETE'
-        }, function (response) {
+        }, function handleResponse (response) {
             if (!response.error) {
                 socket.disconnect();
                 deferred.resolve("Logged out.");
@@ -139,7 +139,7 @@ webrtc.SignalingChannel = function (params) {
                     'type': presenceString || "available"
                 }
             }
-        }, function (res, params, err) {
+        }, function handleResponse (res, params, err) {
             if (err && err.message) {
                 throw new Error(err.message);
             }
@@ -155,14 +155,14 @@ webrtc.SignalingChannel = function (params) {
     var getContacts = that.publicize('getContacts', function (onContacts, onPresence) {
         wsCall({
             'path': '/v1/contacts/'
-        }, function (contactList, params, err) {
+        }, function handleResponse (contactList, params, err) {
             var userIdList = [];
 
             if (err && err.message) {
                 throw new Error(err.message);
             }
 
-            contactList.forEach(function (contact) {
+            contactList.forEach(function saveEachId (contact) {
                 userIdList.push({'userId': contact.id});
             });
 
@@ -176,7 +176,7 @@ webrtc.SignalingChannel = function (params) {
                 'parameters': {
                     'users': userIdList
                 }
-            }, function (presenceList, params, err) {
+            }, function handleResponse (presenceList, params, err) {
                 if (err && err.message) {
                     throw new Error(err.message);
                 }
@@ -222,7 +222,7 @@ webrtc.SignalingChannel = function (params) {
                 'destUserId': recipient,
                 'text': msgText
             }
-        }, function (res, params, err) {
+        }, function handleResponse (res, params, err) {
             if (err && err.message) {
                 throw new Error(err.message);
             }
@@ -346,7 +346,7 @@ webrtc.SignalingChannel = function (params) {
                     'password': password,
                     'appId': appId
                 }
-            }, function (response) {
+            }, function handleResponse (response) {
                 var pieces = [];
                 var protocol = null;
                 var host = null;
@@ -369,13 +369,13 @@ webrtc.SignalingChannel = function (params) {
                     'secure': (protocol === 'https')
                 });
 
-                socket.on('connect', function () {
-                    handlerQueue.forOwn(function (array, category) {
+                socket.on('connect', function handleConnect () {
+                    handlerQueue.forOwn(function addEachHandlerType (array, category) {
                         if (!array) {
                             return;
                         }
 
-                        array.forEach(function (handler) {
+                        array.forEach(function addEachHandler (handler) {
                             socket.on(category, handler);
                         });
                         array = [];
@@ -394,7 +394,7 @@ webrtc.SignalingChannel = function (params) {
                             'type': "available"
                         }
                     }
-                }, function (res, params, err) {
+                }, function handleResponse (res, params, err) {
                     if (err && err.message) {
                         throw new Error(err.message);
                     }
@@ -406,7 +406,7 @@ webrtc.SignalingChannel = function (params) {
                     'parameters': {
                         'username': username
                     }
-                }, function (res, data, err) {
+                }, function handleResponse (res, data, err) {
                     if (err && err.message) {
                         callback(null, err.message);
                     }
@@ -432,14 +432,14 @@ webrtc.SignalingChannel = function (params) {
         wsCall({
             'httpMethod': 'GET',
             'path': '/v1/turncredentials'
-        }, function (creds, params, err) {
+        }, function handleResponse (creds, params, err) {
             var result = [];
 
             if (!creds || !creds.uris) {
                 deferred.reject(err.message);
             }
 
-            creds.uris.forEach(function (uri) {
+            creds.uris.forEach(function saveTurnUri (uri) {
                 var cred = null;
 
                 if (!uri) {
@@ -505,7 +505,7 @@ webrtc.SignalingChannel = function (params) {
         log.debug('kicking off socket.' + params.httpMethod + "()",
             params.path, params.parameters);
 
-        socket[params.httpMethod](params.path, params.parameters, function (response) {
+        socket[params.httpMethod](params.path, params.parameters, function handleResponse(response){
             var e = null;
             var errString = null;
 
@@ -641,7 +641,7 @@ webrtc.SignalingChannel = function (params) {
             return '';
         }
 
-        params.forOwn(function (value, name) {
+        params.forOwn(function formatParam (value, name) {
             /* Skip objects -- We won't know how to name these. */
             if (typeof value === 'array') {
                 strings.push([name, value.join(',')].join('='));

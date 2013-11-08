@@ -99,14 +99,14 @@ webrtc.Client = function (params) {
      */
     var login = that.publicize('login', function (userAccount, token) {
         var userPromise = that.identityProvider.login(userAccount, token);
-        userPromise.done(function (user) {
+        userPromise.done(function successHandler (user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
             log.info('logged in as user ' + user.getDisplayName());
             log.debug(user);
 
             updateTurnCredentials();
-        }, function (error) {
+        }, function errorHandler (error) {
             log.error(error.message);
         });
         return userPromise;
@@ -123,9 +123,9 @@ webrtc.Client = function (params) {
         }
 
         clearInterval(turnRefresher);
-        signalingChannel.getTurnCredentials().done(function (creds) {
+        signalingChannel.getTurnCredentials().done(function successHandler (creds) {
             callSettings.servers.iceServers = creds;
-        }, function (error) {
+        }, function errorHandler (error) {
             throw error;
         });
         turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
@@ -146,12 +146,12 @@ webrtc.Client = function (params) {
 
         var logoutPromise = that.identityProvider.logout();
 
-        logoutPromise.done(function () {
+        logoutPromise.done(function successHandler () {
             that.user.fire('loggedout');
             that.user = null;
             that.fire('loggedout');
             clearInterval(turnRefresher);
-        }, function (err) {
+        }, function errorHandler (err) {
             throw err;
         });
 

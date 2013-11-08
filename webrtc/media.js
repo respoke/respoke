@@ -105,7 +105,7 @@ webrtc.Call = function (params) {
         log.trace('Call.startCall');
         report.startCallCount += 1;
         log.info('creating offer');
-        pc.createOffer(saveOfferAndSend, function (p) {
+        pc.createOffer(saveOfferAndSend, function errorHandler (p) {
             log.error('createOffer failed');
         }, null);
     };
@@ -197,8 +197,8 @@ webrtc.Call = function (params) {
                     }
                 }
             }
-            toDelete.sort(function (a, b) { return b - a; });
-            toDelete.forEach(function (value, index) {
+            toDelete.sort(function sorter (a, b) { return b - a; });
+            toDelete.forEach(function deleteByIndex (value, index) {
                 callSettings.servers.iceServers.splice(index);
             });
             pc = new RTCPeerConnection(callSettings.servers, options);
@@ -211,13 +211,13 @@ webrtc.Call = function (params) {
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
 
-        callSettings.constraints.forOwn(function (oneConstraints, index) {
+        callSettings.constraints.forOwn(function tryConstraint (oneConstraints, index) {
             try {
                 log.debug("Running getUserMedia with constraints");
                 log.debug(oneConstraints);
-                getUserMedia(oneConstraints, function (p) {
+                getUserMedia(oneConstraints, function successHandler (p) {
                     onReceiveUserMedia(p, oneConstraints, index);
-                }, function (p) {
+                }, function errorHandler (p) {
                     onUserMediaError(p, oneConstraints, index);
                 });
             } catch (e) {
@@ -374,9 +374,9 @@ webrtc.Call = function (params) {
         log.debug('setting and sending initiate');
         log.debug(oSession);
         report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function (p) {
+        pc.setLocalDescription(oSession, function successHandler (p) {
             signalInitiate(oSession);
-        }, function (p) {
+        }, function errorHandler (p) {
             log.error('setLocalDescription failed');
             log.error(p);
         });
@@ -395,9 +395,9 @@ webrtc.Call = function (params) {
         log.debug('setting and sending accept');
         log.debug(oSession);
         report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function (p) {
+        pc.setLocalDescription(oSession, function successHandler (p) {
             signalAccept(oSession);
-        }, function (p) {
+        }, function errorHandler (p) {
             log.error('setLocalDescription failed');
             log.error(p);
         });
@@ -452,7 +452,7 @@ webrtc.Call = function (params) {
         signalingChannel.ignore('candidate', processCandidate);
         signalingChannel.ignore('bye', onBye);
 
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function stopEach (stream) {
             stream.stop();
         });
 
@@ -493,16 +493,16 @@ webrtc.Call = function (params) {
         log.trace('processOffer');
         log.debug(oSession);
         try {
-            pc.setRemoteDescription(new RTCSessionDescription(oSession), function () {
+            pc.setRemoteDescription(new RTCSessionDescription(oSession), function successHandler (){
                 log.debug('set remote desc of offer succeeded');
                 that.fire('accept');
-                pc.createAnswer(saveAnswerAndSend, function (p) {
+                pc.createAnswer(saveAnswerAndSend, function errorHandler (p) {
                     log.error("Error creating SDP answer.");
                     report.callStoppedReason = 'Error creating SDP answer.';
                     log.error(p);
                 });
                 that.savedOffer = null;
-            }, function (p) {
+            }, function errorHandler (p) {
                 log.error('set remote desc of offer failed');
                 report.callStoppedReason = 'setLocalDescr failed at offer.';
                 log.error(oSession);
@@ -575,12 +575,16 @@ webrtc.Call = function (params) {
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
 
-        pc.setRemoteDescription(new RTCSessionDescription(oSession), processQueues, function (p) {
-            log.error('set remote desc of answer failed');
-            report.callStoppedReason = 'setRemoteDescription failed at answer.';
-            log.error(oSession);
-            that.stop();
-        });
+        pc.setRemoteDescription(
+            new RTCSessionDescription(oSession),
+            processQueues,
+            function errorHandler(p) {
+                log.error('set remote desc of answer failed');
+                report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                log.error(oSession);
+                that.stop();
+            }
+        );
     };
 
     /**
@@ -665,7 +669,7 @@ webrtc.Call = function (params) {
     var getLocalStreams = that.publicize('getLocalStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function addLocal (stream) {
             if (stream.isLocal()) {
                 streams.push(stream);
             }
@@ -683,7 +687,7 @@ webrtc.Call = function (params) {
     var getRemoteStreams = that.publicize('getRemoteStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function addRemote (stream) {
             if (!stream.isLocal()) {
                 streams.push(stream);
             }
@@ -729,7 +733,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function muteEach (stream) {
             stream.muteVideo();
         });
         that.fire('video-muted');
@@ -742,7 +746,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function unmuteEach (stream) {
             stream.unmuteVideo();
         });
         that.fire('video-unmuted');
@@ -755,7 +759,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function muteEach (stream) {
             stream.muteAudio();
         });
         that.fire('audio-muted');
@@ -768,7 +772,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
-        mediaStreams.forOwn(function (stream) {
+        mediaStreams.forOwn(function unmuteEach (stream) {
             stream.unmuteAudio();
         });
         that.fire('audio-unmuted');

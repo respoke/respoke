@@ -55,7 +55,7 @@ webrtc.EventEmitter = function (params) {
             eventList[eventType] = [];
             return;
         }
-        eventList[eventType].reverse().forEach(function (eachListener, index) {
+        eventList[eventType].reverse().forEach(function checkListener (eachListener, index) {
             if (listener === eachListener) {
                 /* TODO: don't know if this will work. Functionally, should be fine since we
                  * are moving in reverse, but it may be prohibited by the JS engine. */
@@ -83,7 +83,7 @@ webrtc.EventEmitter = function (params) {
         }
 
         args = Array.prototype.slice.call(arguments, 1);
-        eventList[eventType].forEach(function (listener) {
+        eventList[eventType].forEach(function fireListener (listener) {
             if (typeof listener === 'function') {
                 try {
                     listener.apply(that, args);

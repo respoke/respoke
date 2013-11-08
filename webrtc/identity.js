@@ -104,7 +104,7 @@ webrtc.IdentityProvider = function (params) {
             signalingChannel.open();
         }
         deferred = Q.defer();
-        signalingChannel.authenticate(username, password, function (user, errorMessage) {
+        signalingChannel.authenticate(username, password, function onAuth (user, errorMessage) {
             if (user) {
                 deferred.resolve(user);
             } else {
@@ -126,11 +126,11 @@ webrtc.IdentityProvider = function (params) {
 
         var logoutPromise = signalingChannel.logout();
 
-        logoutPromise.done(function () {
+        logoutPromise.done(function successHandler () {
             that.fire("loggedout");
             signalingChannel.close();
             loggedIn = false;
-        }, function (e) {
+        }, function errorHandler (e) {
             throw new Error("Couldn't log out:", e.message);
         });
 
@@ -216,7 +216,7 @@ webrtc.Contacts = function (params) {
             params = {'id': params};
         }
 
-        contacts.forEach(function (contact, index) {
+        contacts.forEach(function filterEach (contact, index) {
             var paramNames = Object.keys(params);
             for (var i = 0; i < paramNames.length; i += 1) {
                 if (contact[paramNames[i]] !== params[paramNames[i]]) {
@@ -254,12 +254,14 @@ webrtc.Contacts = function (params) {
     var getContacts = that.publicize('getContacts', function (sortField) {
         var values = [];
         sortField = sortField || 'id';
-        contacts.forOwn(function (value, key) {
+
+        // Make an array of the values of the contacts dict
+        contacts.forOwn(function addValue (value, key) {
             values.push(value);
         });
         that.length = values.length;
 
-        values = values.sort(function (a, b) {
+        values = values.sort(function fieldSorter (a, b) {
             if (!(sortField in a) || !(sortField in b)) {
                 log.warn("sortField doesn't exist in both objects.");
                 return 0;
