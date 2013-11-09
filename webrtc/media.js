@@ -40,7 +40,7 @@ webrtc.Call = function (params) {
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
-    var callSettings = clientObj.getCallSettings();
+    var callSettings = params.callSettings;
     var options = {
         optional: [
             { DtlsSrtpKeyAgreement: true },

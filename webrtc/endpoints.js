@@ -464,7 +464,8 @@ webrtc.Endpoint = function (params) {
     var startCall = that.publicize('startCall', function (callSettings, initiator) {
         var id = that.getID();
         var call = null;
-        var user = webrtc.getClient(client).user;
+        var clientObj = webrtc.getClient(client);
+        var user = clientObj.user;
 
         log.trace('Endpoint.startCall');
         if (initiator === undefined) {
@@ -476,6 +477,7 @@ webrtc.Endpoint = function (params) {
             'username': user.getUsername(),
             'remoteEndpoint': id,
             'initiator': initiator,
+            'callSettings': clientObj.getCallSettings(),
             'signalInitiate' : function (sdp) {
                 signalingChannel.sendSDP(that, sdp);
             },
