@@ -477,17 +477,13 @@ webrtc.Endpoint = function (params) {
             'remoteEndpoint': id,
             'initiator': initiator,
             'signalInitiate' : function (sdp) {
-                sdp.type = 'offer';
                 signalingChannel.sendSDP(that, sdp);
             },
             'signalAccept' : function (sdp) {
-                sdp.type = 'answer';
                 signalingChannel.sendSDP(that, sdp);
             },
             'signalCandidate' : function (oCan) {
-                if (oCan !== null) {
-                    signalingChannel.sendCandidate(that, oCan);
-                }
+                signalingChannel.sendCandidate(that, oCan);
             },
             'signalTerminate' : function () {
                 signalingChannel.sendBye(that);

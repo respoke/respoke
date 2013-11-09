@@ -34,7 +34,6 @@ webrtc.Call = function (params) {
     var clientObj = webrtc.getClient(client);
     var localVideoElements = params.localVideoElements || [];
     var remoteVideoElements = params.remoteVideoElements || [];
-    var signalingChannel = clientObj.getSignalingChannel();
     var remoteEndpoint = params.remoteEndpoint;
     var signalInitiate = params.signalInitiate;
     var signalAccept = params.signalAccept;
@@ -322,7 +321,9 @@ webrtc.Call = function (params) {
             candidateSendingQueue.push(oCan.candidate);
         } else if (!that.initiator) {
             report.candidatesSent.push(oCan.candidate);
-            signalCandidate(oCan.candidate);
+            if (oCan.candidate) {
+                signalCandidate(oCan.candidate);
+            }
         }
     };
 
@@ -356,7 +357,7 @@ webrtc.Call = function (params) {
         candidateSendingQueue = [];
         for (var i = 0; i <= candidateReceivingQueue.length; i += 1) {
             can = candidateReceivingQueue[i];
-            processCandidate(can);
+            addRemoteCandidate(can);
         }
         candidateReceivingQueue = [];
     };
@@ -375,6 +376,7 @@ webrtc.Call = function (params) {
         log.debug(oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler (p) {
+            oSession.type = 'offer';
             signalInitiate(oSession);
         }, function errorHandler (p) {
             log.error('setLocalDescription failed');
@@ -396,6 +398,7 @@ webrtc.Call = function (params) {
         log.debug(oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler (p) {
+            oSession.type = 'answer';
             signalAccept(oSession);
         }, function errorHandler (p) {
             log.error('setLocalDescription failed');
@@ -447,10 +450,6 @@ webrtc.Call = function (params) {
 
         that.fire('hangup', sendSignal);
         that.ignore();
-        signalingChannel.ignore('offer', onOffer);
-        signalingChannel.ignore('answer', onAnswer);
-        signalingChannel.ignore('candidate', processCandidate);
-        signalingChannel.ignore('bye', onBye);
 
         mediaStreams.forOwn(function stopEach (stream) {
             stream.stop();
@@ -539,11 +538,10 @@ webrtc.Call = function (params) {
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.onOffer
+     * @method webrtc.Call.setOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
-     * @private
      */
-    var onOffer = function (oSession) {
+    var setOffer = that.publicize('setOffer', function (oSession) {
         that.state = 'setup';
         log.debug('got offer');
         log.debug(oSession);
@@ -556,16 +554,15 @@ webrtc.Call = function (params) {
             log.warn('Got initiate in precall state.');
             signalTerminate();
         }
-    };
+    });
 
     /**
      * Save the answer and tell the browser about it.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.onAnswer
+     * @method webrtc.Call.setAnswer
      * @param {RTCSessionDescription} oSession The remote SDP.
-     * @private
      */
-    var onAnswer = function (oSession) {
+    var setAnswer = that.publicize('setAnswer', function (oSession) {
         that.state = 'setup';
         log.debug('remote side sdp is');
         log.debug(oSession);
@@ -585,23 +582,22 @@ webrtc.Call = function (params) {
                 that.stop();
             }
         );
-    };
+    });
 
     /**
      * Save the candidate. If we initiated the call, place the candidate into the queue so
      * we can process them after we receive the answer.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.processCandidate
+     * @method webrtc.Call.addRemoteCandidate
      * @param {RTCIceCandidate} oCan The ICE candidate.
-     * @private
      */
-    var processCandidate = function (oCan) {
+    var addRemoteCandidate = that.publicize('addRemoteCandidate', function (oCan) {
         if (!oCan || oCan.candidate === null) {
             log.info("End of candidates.");
             return;
         }
         if (!oCan.hasOwnProperty('sdpMLineIndex') || !oCan.candidate) {
-            log.warn("processCandidate got wrong format!");
+            log.warn("addRemoteCandidate got wrong format!");
             log.warn(oCan);
         }
         if (that.initiator && !receivedAnswer) {
@@ -618,7 +614,7 @@ webrtc.Call = function (params) {
         log.debug('Got a remote candidate.');
         log.debug(oCan);
         report.candidatesReceived.push(oCan);
-    };
+    });
 
     /**
      * Get the state of the Call
@@ -781,18 +777,12 @@ webrtc.Call = function (params) {
     /**
      * Set receivedBye to true and stop media.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.onBye
-     * @private
+     * @method webrtc.Call.setBye
      */
-    var onBye = function () {
+    var setBye = that.publicize('setBye', function () {
         receivedBye = true;
         stop();
-    };
-
-    signalingChannel.listen('offer', onOffer);
-    signalingChannel.listen('answer', onAnswer);
-    signalingChannel.listen('candidate', processCandidate);
-    signalingChannel.listen('bye', onBye);
+    });
 
     return that;
 }; // End webrtc.Call

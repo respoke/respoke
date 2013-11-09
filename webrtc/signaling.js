@@ -296,11 +296,23 @@ webrtc.SignalingChannel = function (params) {
 
         switch (signal.type) {
         case 'offer':
+            call.fire('offer', signal);
+            call.setOffer(signal);
+            break;
         case 'accept':
+            call.fire('accept', signal);
+            break;
         case 'answer':
+            call.fire('answer', signal);
+            call.setAnswer(signal);
+            break;
         case 'candidate':
+            call.fire('candidate', signal);
+            call.addRemoteCandidate(signal);
+            break;
         case 'bye':
-            that.fire(signal.type, signal);
+            call.fire('bye', signal);
+            call.setBye(signal);
             break;
         case 'error':
             log.warn("Received an error");
