@@ -36,26 +36,18 @@ describe('System Events', function () {
     it("test setup", function (done) {
         driver1 = helpers.webDriver();
         client1 = new Client(driver1, client1Name, env.url);
-        indexPromise = driver1.get(process.env['MERCURY_URL'] + '/index.html');
-        indexPromise.then(function () {
-            client1.init(env.appId).then( function () {
-                client1.connect().then(function () {
-                    client1.login(username1, password1).then(function (user) {
-                        driver2 = helpers.webDriver();
-                        client2 = new Client(driver2, client2Name, env.url);
-                        index2Promise = driver2.get(process.env['MERCURY_URL'] + '/index.html');
-                        index2Promise.then(function () {
-                            client2.init(env.appId).then( function () {
-                                client2.connect().then(function () {
-                                    done();
-                                });
-                            });
-                        });
-                    });
-                });
-            });
+        driver1.get(process.env['MERCURY_URL'] + '/index.html');
+        client1.init(env.appId);
+        client1.connect();
+        client1.login(username1, password1).then(function () {
+            driver2 = helpers.webDriver();
+            client2 = new Client(driver2, client2Name, env.url);
+            driver2.get(process.env['MERCURY_URL'] + '/index.html');
+            client2.init(env.appId);
+            client2.connect();
+        }).then(function () {
+            done();
         });
-
     });
 
     describe("Presentable Events", function () {
@@ -64,16 +56,15 @@ describe('System Events', function () {
          * @type {string}
          */
         it("should receive event for webrtc.Presentable#presence on login", function (done) {
-            client1.getContacts().then(function (contactList) {
-                client1.listenOnContactEvent(username2, 'presence', 'contactsPresence').then(function () {
-                    client2.login(username2, password2).then(function (user) {
-                        setTimeout(function () {
-                            client1.getValue('contactsPresence').then(function (value) {
-                                expect(value).toBe('available');
-                                done();
-                            });
-                        }, 1000);
-                    });
+            client1.getContacts();
+            client1.listenOnContactEvent(username2, 'presence', 'contactsPresence').then(function () {
+                client2.login(username2, password2).then(function (user) {
+                    setTimeout(function () {
+                        client1.getValue('contactsPresence').then(function (value) {
+                            expect(value).toBe('available');
+                            done();
+                        });
+                    }, 1000);
                 });
             });
         });

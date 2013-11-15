@@ -1,8 +1,6 @@
 var username1;
-var password1 = 'password';
-
 var username2;
-var password2 = 'password';
+var password = 'password';
 
 var helpers = require('../util/helpers.js');
 var Client = helpers.Client;
@@ -34,25 +32,20 @@ describe('Presence setup', function () {
     it("test setup", function (done) {
         driver1 = helpers.webDriver();
         client1 = new Client(driver1, client1Name, env.url);
-        indexPromise = driver1.get(process.env['MERCURY_URL'] + '/index.html');
-        indexPromise.then(function () {
-            client1.init(env.appId).then( function () {
-                client1.connect().then(function () {
-                    client1.login(username1, password1).then(function (user) {
-                        driver2 = helpers.webDriver();
-                        client2 = new Client(driver2, client2Name, env.url);
-                        index2Promise = driver2.get(process.env['MERCURY_URL'] + '/index.html');
-                        index2Promise.then(function () {
-                            client2.init(env.appId).then( function () {
-                                client2.connect().then(function () {
-                                    done();
-                                });
-                            });
-                        });
-                    });
-                });
-            });
+        driver1.get(process.env['MERCURY_URL'] + '/index.html')
+        client1.init(env.appId);
+        client1.connect();
+        client1.login(username1, password).then(function () {
+            driver2 = helpers.webDriver();
+            client2 = new Client(driver2, client2Name, env.url);
+            driver2.get(process.env['MERCURY_URL'] + '/index.html');
+            client2.init(env.appId);
+            client2.connect();
+        }).then(function () {
+            done();
         });
+
+
     });
 
     describe("Presence", function () {
