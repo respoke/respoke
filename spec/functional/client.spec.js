@@ -96,10 +96,10 @@ describe("client", function () {
 
         it("should call error function when given wrong credentials", function (done) {
             var login = driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                                                    "var userPromise = window['" + clientName + "'].login('" + username + "', 'badpassword'); " +
-                                                    "userPromise.then(function (user) { }, function (error) { " +
-                                                    "    callback(error);" +
-                                                    "});");
+                "var userPromise = window['" + clientName + "'].login('" + username + "', 'badpassword'); " +
+                "userPromise.then(function (user) { }, function (error) { " +
+                "    callback(error);" +
+                "});");
             login.then(function (error) {
                 expect(error).toBeDefined();
                 done();
