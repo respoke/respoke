@@ -478,10 +478,10 @@ webrtc.Endpoint = function (params) {
             'remoteEndpoint': id,
             'initiator': initiator,
             'callSettings': clientObj.getCallSettings(),
-            'signalInitiate' : function (sdp) {
+            'signalOffer' : function (sdp) {
                 signalingChannel.sendSDP(that, sdp);
             },
-            'signalAccept' : function (sdp) {
+            'signalAnswer' : function (sdp) {
                 signalingChannel.sendSDP(that, sdp);
             },
             'signalCandidate' : function (oCan) {
@@ -827,7 +827,7 @@ webrtc.User = function (params) {
      * @returns {webrtc.Call}
      */
     var getCallByContact = that.publicize('getCallByContact',
-        function (contactId) {
+        function (contactId, toCreate) {
             var session = null;
             var contact = null;
             var callSettings = null;
@@ -841,7 +841,7 @@ webrtc.User = function (params) {
                 }
             });
 
-            if (session === null) {
+            if (session === null && toCreate === true) {
                 try {
                     contact = contactList.get(contactId);
                     callSettings = webrtc.getClient(client).getCallSettings();

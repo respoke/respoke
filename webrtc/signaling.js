@@ -291,8 +291,19 @@ webrtc.SignalingChannel = function (params) {
      * @param {webrtc.SignalingMessage} message A message to route
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
-        var call = webrtc.getClient(client).user.getCallByContact(message.sender);
         var signal = message.getPayload();
+        var call = null;
+        var toCreate = true;
+
+        // Only create a new call if this signal is an offer.
+        if (signal.type !== 'offer') {
+            toCreate = false;
+        }
+        call = webrtc.getClient(client).user.getCallByContact(message.sender, toCreate);
+
+        if (!call) {
+            return;
+        }
 
         switch (signal.type) {
         case 'offer':

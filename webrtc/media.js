@@ -35,8 +35,8 @@ webrtc.Call = function (params) {
     var localVideoElements = params.localVideoElements || [];
     var remoteVideoElements = params.remoteVideoElements || [];
     var remoteEndpoint = params.remoteEndpoint;
-    var signalInitiate = params.signalInitiate;
-    var signalAccept = params.signalAccept;
+    var signalOffer = params.signalOffer;
+    var signalAnswer = params.signalAnswer;
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = params.signalCandidate;
@@ -61,7 +61,7 @@ webrtc.Call = function (params) {
     }*/
 
     var report = {
-        'startCallCount' : 0,
+        'answerCount' : 0,
         'startCount' : 0,
         'callStarted' : 0,
         'callStopped' : 0,
@@ -76,6 +76,15 @@ webrtc.Call = function (params) {
         'os' : navigator.platform
     };
 
+    var ST_STARTED = 0;
+    var ST_REVIEW = 1;
+    var ST_APPROVED = 2;
+    var ST_OFFERED = 3;
+    var ST_ANSWERED = 4;
+    var ST_FLOWING = 5;
+    var ST_ENDED = 6;
+    var ST_MEDIA_ERROR = 7;
+
     /**
      * Start the process of obtaining media.
      * @memberof! webrtc.Call
@@ -83,6 +92,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#start
      */
     var start = that.publicize('start', function () {
+        that.state = ST_STARTED;
         if (!that.username) {
             throw new Error("Can't use a Call without username.");
         }
@@ -93,21 +103,54 @@ webrtc.Call = function (params) {
     });
 
     /**
-     * Start the process of network and media negotiation. Called by the initiator only.
+     * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.startCall
+     * @method webrtc.Call.answer
      */
-    var startCall = function () {
-        if (that.initiator !== true) {
+    var answer = that.publicize('answer', function (oSession) {
+        log.trace('Call.answer');
+        that.state = ST_REVIEW;
+        report.answerCount += 1;
+        that.fire('answer');
+
+        if (that.initiator === true) {
+            log.info('creating offer');
+            pc.createOffer(saveOfferAndSend, function errorHandler(p) {
+                log.error('createOffer failed');
+            }, null);
             return;
         }
-        log.trace('Call.startCall');
-        report.startCallCount += 1;
-        log.info('creating offer');
-        pc.createOffer(saveOfferAndSend, function errorHandler (p) {
-            log.error('createOffer failed');
-        }, null);
-    };
+
+        if (!savedOffer) {
+            throw new Error('No saved offer.');
+        }
+
+        savedOffer.type = 'offer';
+        log.trace('processing offer');
+        log.debug(savedOffer);
+
+        try {
+            pc.setRemoteDescription(new RTCSessionDescription(savedOffer),
+                function successHandler() {
+                    log.debug('set remote desc of offer succeeded');
+                    pc.createAnswer(saveAnswerAndSend, function errorHandler(p) {
+                        log.error("Error creating SDP answer.");
+                        report.callStoppedReason = 'Error creating SDP answer.';
+                        log.error(p);
+                    });
+                    that.savedOffer = null;
+                }, function errorHandler(p) {
+                    log.error('set remote desc of offer failed');
+                    report.callStoppedReason = 'setLocalDescr failed at offer.';
+                    log.error(savedOffer);
+                    log.error(p);
+                    that.stop();
+                }
+            );
+        } catch (e) {
+            log.error("error processing offer: " + e.message);
+        }
+    });
 
     /**
      * Save the local stream. Kick off SDP creation.
@@ -119,7 +162,7 @@ webrtc.Call = function (params) {
         var mediaStream = null;
         var videoElement = null;
 
-        that.state = 'media flowing';
+        that.state = ST_APPROVED;
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
 
@@ -152,18 +195,6 @@ webrtc.Call = function (params) {
         videoElement.used = true;
         attachMediaStream(videoElement, stream);
         that.fire('local-stream-received', videoElement);
-
-        if (mediaStreams.length === 1) {
-            if (that.initiator) {
-                startCall();
-            } else if (savedOffer) {
-                processOffer(savedOffer);
-                savedOffer = null;
-            } else {
-                log.error("Can't process offer--no SDP!");
-                stop(true);
-            }
-        }
     };
 
     /**
@@ -196,8 +227,8 @@ webrtc.Call = function (params) {
                     }
                 }
             }
-            toDelete.sort(function sorter (a, b) { return b - a; });
-            toDelete.forEach(function deleteByIndex (value, index) {
+            toDelete.sort(function sorter(a, b) { return b - a; });
+            toDelete.forEach(function deleteByIndex(value, index) {
                 callSettings.servers.iceServers.splice(index);
             });
             pc = new RTCPeerConnection(callSettings.servers, options);
@@ -210,13 +241,13 @@ webrtc.Call = function (params) {
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
 
-        callSettings.constraints.forOwn(function tryConstraint (oneConstraints, index) {
+        callSettings.constraints.forOwn(function tryConstraint(oneConstraints, index) {
             try {
                 log.debug("Running getUserMedia with constraints");
                 log.debug(oneConstraints);
-                getUserMedia(oneConstraints, function successHandler (p) {
+                getUserMedia(oneConstraints, function successHandler(p) {
                     onReceiveUserMedia(p, oneConstraints, index);
-                }, function errorHandler (p) {
+                }, function errorHandler(p) {
                     onUserMediaError(p, oneConstraints, index);
                 });
             } catch (e) {
@@ -233,6 +264,7 @@ webrtc.Call = function (params) {
      */
     var onUserMediaError = function (p, oneConstraints, index) {
         log.trace('onUserMediaError');
+        that.state = ST_MEDIA_ERROR;
         if (p.code === 1) {
             log.warn("Permission denied.");
             report.callStoppedReason = 'Permission denied.';
@@ -260,7 +292,7 @@ webrtc.Call = function (params) {
      * @private
      */
     var onRemoteStreamAdded = function (evt) {
-        that.state = 'media flowing';
+        that.state = ST_FLOWING;
         var mediaStream = null;
         var videoElement = null;
 
@@ -372,13 +404,14 @@ webrtc.Call = function (params) {
      */
     var saveOfferAndSend = function (oSession) {
         oSession.type = 'offer';
-        log.debug('setting and sending initiate');
+        that.state = ST_OFFERED;
+        log.debug('setting and sending offer');
         log.debug(oSession);
         report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function successHandler (p) {
+        pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
-            signalInitiate(oSession);
-        }, function errorHandler (p) {
+            signalOffer(oSession);
+        }, function errorHandler(p) {
             log.error('setLocalDescription failed');
             log.error(p);
         });
@@ -394,13 +427,14 @@ webrtc.Call = function (params) {
      */
     var saveAnswerAndSend = function (oSession) {
         oSession.type = 'answer';
-        log.debug('setting and sending accept');
+        that.state = ST_ANSWERED;
+        log.debug('setting and sending answer');
         log.debug(oSession);
         report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function successHandler (p) {
+        pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
-            signalAccept(oSession);
-        }, function errorHandler (p) {
+            signalAnswer(oSession);
+        }, function errorHandler(p) {
             log.error('setLocalDescription failed');
             log.error(p);
         });
@@ -432,7 +466,13 @@ webrtc.Call = function (params) {
      * a hangup signal to the remote side.
      */
     var stop = that.publicize('stop', function (sendSignal) {
-        that.state = 'ended';
+        // Never send bye if we haven't sent any other signal yet.
+        console.log("at stop, call state is " + that.state);
+        if (that.state < ST_OFFERED) {
+            sendSignal = false;
+        }
+
+        that.state = ST_ENDED;
         clientObj.updateTurnCredentials();
         if (pc === null) {
             return;
@@ -451,7 +491,7 @@ webrtc.Call = function (params) {
         that.fire('hangup', sendSignal);
         that.ignore();
 
-        mediaStreams.forOwn(function stopEach (stream) {
+        mediaStreams.forOwn(function stopEach(stream) {
             stream.stop();
         });
 
@@ -464,54 +504,13 @@ webrtc.Call = function (params) {
     });
 
     /*
-     * Expose stop as reject for accept/reject workflow.
+     * Expose stop as reject for answer/reject workflow.
      * @memberof! webrtc.Call
      * @method webrtc.Call.reject
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     var reject = that.publicize('reject', stop);
-
-    /**
-     * Expose start as accept for accept/reject workflow.
-     * @memberof! webrtc.Call
-     * @method webrtc.Call.accept
-     */
-    var accept = that.publicize('accept', start);
-
-    /**
-     * Tell the browser about the offer we received.
-     * @memberof! webrtc.Call
-     * @method webrtc.Call.processOffer
-     * @param {RTCSessionDescription} oSession The remote SDP.
-     * @fires webrtc.Call#accept
-     * @private
-     */
-    var processOffer = function (oSession) {
-        oSession.type = 'offer';
-        log.trace('processOffer');
-        log.debug(oSession);
-        try {
-            pc.setRemoteDescription(new RTCSessionDescription(oSession), function successHandler (){
-                log.debug('set remote desc of offer succeeded');
-                that.fire('accept');
-                pc.createAnswer(saveAnswerAndSend, function errorHandler (p) {
-                    log.error("Error creating SDP answer.");
-                    report.callStoppedReason = 'Error creating SDP answer.';
-                    log.error(p);
-                });
-                that.savedOffer = null;
-            }, function errorHandler (p) {
-                log.error('set remote desc of offer failed');
-                report.callStoppedReason = 'setLocalDescr failed at offer.';
-                log.error(oSession);
-                log.error(p);
-                that.stop();
-            });
-        } catch (e) {
-            log.error("error processing offer: " + e.message);
-        }
-    };
 
     /**
      * Indicate whether a call is being setup or is in progress.
@@ -542,7 +541,7 @@ webrtc.Call = function (params) {
      * @param {RTCSessionDescription} oSession The remote SDP.
      */
     var setOffer = that.publicize('setOffer', function (oSession) {
-        that.state = 'setup';
+        that.state = ST_OFFERED;
         log.debug('got offer');
         log.debug(oSession);
 
@@ -551,7 +550,7 @@ webrtc.Call = function (params) {
             report.sdpsReceived.push(oSession);
             report.lastSDPString = oSession.sdp;
         } else {
-            log.warn('Got initiate in precall state.');
+            log.warn('Got offer in precall state.');
             signalTerminate();
         }
     });
@@ -563,7 +562,7 @@ webrtc.Call = function (params) {
      * @param {RTCSessionDescription} oSession The remote SDP.
      */
     var setAnswer = that.publicize('setAnswer', function (oSession) {
-        that.state = 'setup';
+        that.state = ST_ANSWERED;
         log.debug('remote side sdp is');
         log.debug(oSession);
 
@@ -665,7 +664,7 @@ webrtc.Call = function (params) {
     var getLocalStreams = that.publicize('getLocalStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function addLocal (stream) {
+        mediaStreams.forOwn(function addLocal(stream) {
             if (stream.isLocal()) {
                 streams.push(stream);
             }
@@ -683,7 +682,7 @@ webrtc.Call = function (params) {
     var getRemoteStreams = that.publicize('getRemoteStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function addRemote (stream) {
+        mediaStreams.forOwn(function addRemote(stream) {
             if (!stream.isLocal()) {
                 streams.push(stream);
             }
@@ -729,7 +728,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
-        mediaStreams.forOwn(function muteEach (stream) {
+        mediaStreams.forOwn(function muteEach(stream) {
             stream.muteVideo();
         });
         that.fire('video-muted');
@@ -742,7 +741,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
-        mediaStreams.forOwn(function unmuteEach (stream) {
+        mediaStreams.forOwn(function unmuteEach(stream) {
             stream.unmuteVideo();
         });
         that.fire('video-unmuted');
@@ -755,7 +754,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
-        mediaStreams.forOwn(function muteEach (stream) {
+        mediaStreams.forOwn(function muteEach(stream) {
             stream.muteAudio();
         });
         that.fire('audio-muted');
@@ -768,7 +767,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
-        mediaStreams.forOwn(function unmuteEach (stream) {
+        mediaStreams.forOwn(function unmuteEach(stream) {
             stream.unmuteAudio();
         });
         that.fire('audio-unmuted');
