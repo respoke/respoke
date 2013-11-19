@@ -25,7 +25,7 @@ module.exports = {
 
         this.driver = driver;
         this.clientName = clientName;
-        this.baseURL = baseURL || 'http://localhost:1337'
+        this.baseURL = baseURL || 'https://testing.digiumlabs.com:1337'
 
         this.init = function (appId) {
             return this.driver.executeScript("window['" + this.clientName + "'] = webrtc.Client({clientSettings: {appId: '" + appId + "', baseURL: '" + this.baseURL + "'}});");
@@ -60,11 +60,11 @@ module.exports = {
         this.getClientSettings = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].getClientSettings();");
         };
-        this.getMediaSettings = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].getMediaSettings();");
+        this.getCallSettings = function () {
+            return this.driver.executeScript("return window['" + this.clientName + "'].getCallSettings();");
         };
-        this.setDefaultMediaSettings = function (mediaSettings) {
-            return this.driver.executeScript("window['" + this.clientName + "'].setDefaultMediaSettings(" + mediaSettings + ");");
+        this.setDefaultCallSettings = function (callSettings) {
+            return this.driver.executeScript("window['" + this.clientName + "'].setDefaultCallSettings(" + JSON.stringify(callSettings) + ");");
         };
         this.getSignalingChannel = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].getSignalingChannel();");
@@ -123,8 +123,8 @@ module.exports = {
         this.canSendVideo = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.canSendVideo();");
         };
-        this.hasMedia = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.hasMedia();");
+        this.callInProgress = function () {
+            return this.driver.executeScript("return window['" + this.clientName + "'].user.callInProgress();");
         };
         this.sendMessage = function (username, message) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
@@ -177,7 +177,7 @@ module.exports = {
                 var fixtureString = data;
                 fixtureString = fixtureString.replace('var fixture', "window['fixture']");
                 driver = getWebDriver();
-                driver.get('http://localhost:' + process.env.SERVER_PORT + '/test.html').then(function () {
+                driver.get(process.env['MERCURY_URL'] + '/index.html').then(function () {
                     driver.executeScript(jquery + "    " + apiClientString + "    " + fixtureString).then(function () {
                             driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
                                     "window['fix'] = window['fixture']('Events Spec', " + JSON.stringify(options) + "); " +

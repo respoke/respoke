@@ -1,11 +1,7 @@
 var username1;
-var password1 = 'password';
-
 var username2;
-var password2 = 'password';
-
 var username3;
-var password3 = 'password';
+var password = 'password';
 
 var helpers = require('../util/helpers.js');
 var Client = helpers.Client;
@@ -42,39 +38,26 @@ describe('Messaging', function () {
     it("test setup", function (done) {
         driver1 = helpers.webDriver();
         client1 = new Client(driver1, client1Name, env.url);
-        indexPromise = driver1.get('http://localhost:' + process.env.SERVER_PORT + '/index.html');
-        indexPromise.then(function () {
-            client1.init(env.appId).then( function () {
-                client1.connect().then(function () {
-                    client1.login(username1, password1).then(function (user) {
-                        driver2 = helpers.webDriver();
-                        client2 = new Client(driver2, client2Name, env.url);
-                        index2Promise = driver2.get('http://localhost:' + process.env.SERVER_PORT + '/index.html');
-                        index2Promise.then(function () {
-                            client2.init(env.appId).then( function () {
-                                client2.connect().then(function () {
-                                    client2.login(username2, password2).then(function (user) {
-                                        driver3 = helpers.webDriver();
-                                        client3 = new Client(driver3, client3Name, env.url);
-                                        index3Promise = driver3.get('http://localhost:' + process.env.SERVER_PORT + '/index.html');
-                                        index3Promise.then(function () {
-                                            client3.init(env.appId).then( function () {
-                                                client3.connect().then(function () {
-                                                    client3.login(username3, password3).then(function (user) {
-                                                        done();
-                                                    });
-                                                });
-                                            });
-                                        });
-                                    });
-                                });
-                            });
-                        });
-                    });
-                });
-            });
+        driver1.get(process.env['MERCURY_URL'] + '/index.html');
+        client1.init(env.appId);
+        client1.connect();
+        client1.login(username1, password).then(function () {
+            driver2 = helpers.webDriver();
+            client2 = new Client(driver2, client2Name, env.url);
+            driver2.get(process.env['MERCURY_URL'] + '/index.html');
+            client2.init(env.appId);
+            client2.connect();
+            client2.login(username2, password);
+        }).then(function () {
+            driver3 = helpers.webDriver();
+            client3 = new Client(driver3, client3Name, env.url);
+            driver3.get(process.env['MERCURY_URL'] + '/index.html');
+            client3.init(env.appId);
+            client3.connect();
+            client3.login(username3, password);
+        }).then(function () {
+            done();
         });
-
     });
 
     describe("send and receive messages", function () {
@@ -89,55 +72,24 @@ describe('Messaging', function () {
         });
 
         it("can send messages to multiple contacts", function (done) {
-            client2.listenOnContactEvent(username1, 'message:received', 'messageReceived').then(function () {
-                client3.listenOnContactEvent(username1, 'message:received', 'messageReceived').then(function () {
-                    client1.sendMessage(username2, 'testMessage-username1').then(function () {
-                        client1.sendMessage(username3, 'testMessage-username1').then(function () {
-                            setTimeout(function () {
-                                client2.getValue('messageReceived.getText()').then(function (value) {
-                                    expect(value).toBe('testMessage-username1');
-                                    client3.getValue('messageReceived.getText()').then(function (value) {
-                                        expect(value).toBe('testMessage-username1');
-                                        done();
-                                    });
-                                });
-                            }, 1000);
-                        });
-                    });
+            client2.listenOnContactEvent(username1, 'message', 'messageReceived').then(function () {
+                client3.listenOnContactEvent(username1, 'message', 'messageReceived').then(function () {
+                    client1.sendMessage(username2, 'testMessage-username1');
+                    client1.sendMessage(username3, 'testMessage-username1');
                 });
             });
-        });
-    });
 
-    describe("Endpoints", function () {
-
-        it("create endpoints and send messages", function (done) {
-            client1.getID().then(function (id1) {
-                client2.getID().then(function (id2) {
-                    client1.createEndpoint('endpoint2', id2).then(function () {
-                        client2.createEndpoint('endpoint1', id1).then(function () {
-                            client1.listen('endpoint2', 'message:sent', 'endpoint2Message').then(function () {
-                                client2.listen('endpoint1', 'message:sent', 'endpoint1Message').then(function (){
-                                    client1.sendEndpointMessage('endpoint2', 'testMessage-endpoint1').then(function () {
-                                        client2.sendEndpointMessage('endpoint1', 'testMessage-endpoint2').then(function () {
-                                            setTimeout(function () {
-                                                client1.getValue('endpoint2Message.getText()').then(function (result) {
-                                                    expect(result).toBe('testMessage-endpoint1')
-                                                    client2.getValue('endpoint1Message.getText()').then(function (result) {
-                                                        expect(result).toBe('testMessage-endpoint2');
-                                                        done();
-                                                    });
-                                                });
-                                            }, 1000);
-                                        });
-                                    });
-                                });
-                            });
-                        });
+            setTimeout(function () {
+                client2.getValue('messageReceived.getText()').then(function (value) {
+                    expect(value).toBe('testMessage-username1');
+                    client3.getValue('messageReceived.getText()').then(function (value) {
+                        expect(value).toBe('testMessage-username1');
+                        done();
                     });
                 });
-            });
-        });
+            }, 1000);
+
+        }, 10000);
     });
 
     it("test teardown", function (done) {
