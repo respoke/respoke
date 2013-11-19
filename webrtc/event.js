@@ -45,23 +45,25 @@ webrtc.EventEmitter = function (params) {
      * @param {function} listener An optional function to remove from the specified event.
      */
     var ignore = that.publicize('ignore', function (eventType, listener) {
+        // Remove all events from this object
         if (eventType === undefined) {
-            // Remove all events from this object
             eventList = {};
             return;
         }
+
+        // Remove all listeners from this event.
         if (listener === undefined) {
-            // Remove all listener from this event.
             eventList[eventType] = [];
             return;
         }
-        eventList[eventType].reverse().forEach(function checkListener (eachListener, index) {
-            if (listener === eachListener) {
-                /* TODO: don't know if this will work. Functionally, should be fine since we
-                 * are moving in reverse, but it may be prohibited by the JS engine. */
-                eventList[eventType].splice(index, 1);
+
+        // Remove only one listener from this event.
+        for (var i = eventList[eventType].length-1; i >= 0; i =- 1) {
+            if (listener === eventList[eventType][i]) {
+                eventList[eventType].splice(i, 1);
+                return;
             }
-        });
+        };
     });
 
     /**
