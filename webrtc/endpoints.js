@@ -37,8 +37,8 @@ webrtc.AbstractPresentable = function (params) {
 
     /**
      * Indicate whether the entity has an active Call. Should we only return true if
-     * media is flowing, or anytime a WebRTC session is active? Should it return true if the
-     * engaged in a media session on another device?
+     * media is flowing, or anytime a WebRTC call is active? Should it return true if the
+     * engaged in a Call on another device?
      * @memberof! webrtc.AbstractPresentable
      * @method webrtc.AbstractPresentable.callInProgress
      * @returns {boolean}
@@ -131,7 +131,7 @@ webrtc.AbstractPresentable = function (params) {
  * @constructor
  * @classdesc Information which represents an entity which can send and receive messages and media
  * to and from the logged-in User. As proper Endpoints are anonymous (no identity provider) there
- * can be no multiple sessions per Endpoint.
+ * can be no multiple calls per Endpoint.
  * properties on the class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * @returns {webrtc.Endpoint}
@@ -192,7 +192,7 @@ webrtc.AbstractEndpoint = function (params) {
  * @constructor
  * @classdesc Information describing a User this client app cannot send messages to or initate
  * media with along with a collection of sessions across one or more devices. Should this be
- * sessions only logged in with this appKey?
+ * user sessions only logged in with this appKey?
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.User}
@@ -548,8 +548,6 @@ webrtc.Contact = function (params) {
     var setPresence = that.publicize('setPresence', function (presenceString, sessionId) {
         // undefined is a valid presenceString equivalent to available.
         presenceString = presenceString || 'available';
-        console.log('presenceString');
-        console.log(presenceString);
 
         if (!sessions.hasOwnProperty(sessionId)) {
             sessions[sessionId] = {
@@ -558,8 +556,6 @@ webrtc.Contact = function (params) {
             };
         }
         sessions[sessionId].presence = presenceString;
-        log.debug('after setPresence');
-        log.debug(sessions);
         resolvePresence();
     });
 
@@ -810,13 +806,13 @@ webrtc.User = function (params) {
      */
     var getActiveCall = that.publicize('getActiveCall', function () {
         // TODO search by user, create if doesn't exist?
-        var session = null;
-        calls.forEach(function (call) {
-            if (call.isActive()) {
-                session = call;
+        var call = null;
+        calls.forEach(function (one) {
+            if (one.isActive()) {
+                call = one;
             }
         });
-        return session;
+        return call;
     });
 
     /**
@@ -828,62 +824,61 @@ webrtc.User = function (params) {
      */
     var getCallByContact = that.publicize('getCallByContact',
         function (contactId, toCreate) {
-            var session = null;
+            var call = null;
             var contact = null;
             var callSettings = null;
 
-            calls.forEach(function (call) {
-                if (call.remoteEndpoint === contactId) {
-                    if (call.getState() === 'ended') {
+            calls.forEach(function (one) {
+                if (one.remoteEndpoint === contactId) {
+                    if (one.getState() >= 6) { // ended or media error
                         return;
                     }
-                    session = call;
+                    call = one;
                 }
             });
 
-            if (session === null && toCreate === true) {
+            if (call === null && toCreate === true) {
                 try {
                     contact = contactList.get(contactId);
                     callSettings = webrtc.getClient(client).getCallSettings();
-                    session = contact.startCall(callSettings, false);
+                    call = contact.startCall(callSettings, false);
                 } catch (e) {
                     log.error("Couldn't create Call: " + e.message);
                 }
             }
 
-            return session;
+            return call;
         }
     );
 
     /**
-     * Associate the media session with this user.
+     * Associate the call with this user.
      * @memberof! webrtc.User
      * @method webrtc.User.addCall
      * @param {webrtc.Call} call
      * @fires webrtc.User#call
      */
     var addCall = that.publicize('addCall', function (call) {
-        calls.push(call);
-        that.fire('call', call, call.getContactID());
+        if (calls.indexOf(call) === -1) {
+            calls.push(call);
+            that.fire('call', call, call.getContactID());
+        }
     });
 
     /**
-     * Remove the media session.
+     * Remove the call.
      * @memberof! webrtc.User
      * @method webrtc.User.removeCall
      * @param {string} Optional Contact ID
      */
     var removeCall = that.publicize('removeCall', function (contactId) {
-        var toDelete = null;
-
         if (!contactId) {
             throw new Error("Must specify contactId of Call to remove.");
         }
 
         // Loop backward since we're modifying the array in place.
         for (var i = calls.length - 1; i >= 0; i -= 1) {
-            var call = calls[i];
-            if (call.remoteEndpoint === contactId) {
+            if (calls[i].remoteEndpoint === contactId) {
                 calls.splice(i);
             }
         }

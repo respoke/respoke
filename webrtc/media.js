@@ -19,6 +19,7 @@ webrtc.Call = function (params) {
     var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.Call';
+    that.id = webrtc.makeUniqueID().toString();
 
     if (!that.initiator) {
         that.initiator = false;
@@ -34,6 +35,8 @@ webrtc.Call = function (params) {
     var clientObj = webrtc.getClient(client);
     var localVideoElements = params.localVideoElements || [];
     var remoteVideoElements = params.remoteVideoElements || [];
+    var videoLocalElement = null;
+    var videoRemoteElement = null;
     var remoteEndpoint = params.remoteEndpoint;
     var signalOffer = params.signalOffer;
     var signalAnswer = params.signalAnswer;
@@ -55,10 +58,6 @@ webrtc.Call = function (params) {
     if (params.callSettings && params.callSettings.servers) {
         callSettings.servers = params.callSettings.servers;
     }
-
-    /*if (callSettings.servers.iceServers.length === 0) {
-        callSettings.servers.iceServers.push(createIceServer('stun:stun.l.google.com:19302'));
-    }*/
 
     var report = {
         'answerCount' : 0,
@@ -160,7 +159,6 @@ webrtc.Call = function (params) {
      */
     var onReceiveUserMedia = function (stream, oneConstraints, index) {
         var mediaStream = null;
-        var videoElement = null;
 
         that.state = ST_APPROVED;
         log.debug('User gave permission to use media.');
@@ -179,23 +177,41 @@ webrtc.Call = function (params) {
         stream.id = clientObj.user.getID() + index;
         pc.addStream(stream);
 
-        for (var i = 0; (i < localVideoElements.length && videoElement === null); i += 1) {
+        for (var i = 0; (i < localVideoElements.length && videoLocalElement === null); i += 1) {
             if (localVideoElements[i].tagName === 'VIDEO' && !localVideoElements[i].used) {
                 videoElement = localVideoElements[i];
             }
         }
 
-        if (videoElement === null) {
-            videoElement = document.createElement('video');
+        if (videoLocalElement === null) {
+            videoLocalElement = document.createElement('video');
         }
 
         // We won't want our local video outputting audio.
-        videoElement.muted = true;
-        videoElement.autoplay = true;
-        videoElement.used = true;
-        attachMediaStream(videoElement, stream);
-        that.fire('local-stream-received', videoElement);
+        videoLocalElement.muted = true;
+        videoLocalElement.autoplay = true;
+        videoLocalElement.used = true;
+        attachMediaStream(videoLocalElement, stream);
+        that.fire('local-stream-received', videoLocalElement);
     };
+
+    /**
+     * Return local video element.
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getLocalElement
+     */
+    var getLocalElement = that.publicize('getLocalElement', function () {
+        return videoLocalElement;
+    });
+
+    /**
+     * Return remote video element.
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.getRemoteElement
+     */
+    var getRemoteElement = that.publicize('getRemoteElement', function () {
+        return videoRemoteElement;
+    });
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
@@ -294,24 +310,23 @@ webrtc.Call = function (params) {
     var onRemoteStreamAdded = function (evt) {
         that.state = ST_FLOWING;
         var mediaStream = null;
-        var videoElement = null;
 
         log.trace('received remote media');
 
-        for (var i = 0; (i < remoteVideoElements.length && videoElement === null); i += 1) {
+        for (var i = 0; (i < remoteVideoElements.length && videoRemoteElement === null); i += 1) {
             if (remoteVideoElements[i].tagName === 'VIDEO' && !remoteVideoElements[i].used) {
-                videoElement = remoteVideoElements[i];
+                videoRemoteElement = remoteVideoElements[i];
             }
         }
 
-        if (videoElement === null) {
-            videoElement = document.createElement('video');
+        if (videoRemoteElement === null) {
+            videoRemoteElement = document.createElement('video');
         }
 
-        videoElement.autoplay = true;
-        videoElement.used = true;
-        attachMediaStream(videoElement, evt.stream);
-        that.fire('remote-stream-received', videoElement);
+        videoRemoteElement.autoplay = true;
+        videoRemoteElement.used = true;
+        attachMediaStream(videoRemoteElement, evt.stream);
+        that.fire('remote-stream-received', videoRemoteElement);
 
         mediaStreams.push(webrtc.MediaStream({
             'stream': evt.stream,
@@ -466,17 +481,22 @@ webrtc.Call = function (params) {
      * a hangup signal to the remote side.
      */
     var stop = that.publicize('stop', function (sendSignal) {
+        if (that.state === ST_ENDED) {
+            // This function got called twice.
+            log.trace("Call.stop got called twice.");
+            return;
+        }
         // Never send bye if we haven't sent any other signal yet.
-        console.log("at stop, call state is " + that.state);
+        log.trace("at stop, call state is " + that.state);
         if (that.state < ST_OFFERED) {
             sendSignal = false;
         }
 
         that.state = ST_ENDED;
         clientObj.updateTurnCredentials();
-        if (pc === null) {
+        /*if (pc === null) {
             return;
-        }
+        }*/
         log.debug('hanging up');
 
         sendSignal = (typeof sendSignal === 'boolean' ? sendSignal : true);
@@ -524,7 +544,7 @@ webrtc.Call = function (params) {
         log.trace('isActive');
 
         if (!pc || receivedBye === true) {
-            return false;
+            return inProgress;
         }
 
         inProgress = pc.readyState in ['new', 'active'];
@@ -622,7 +642,7 @@ webrtc.Call = function (params) {
      * @returns {string}
      */
     var getState = that.publicize('getState', function () {
-        return pc ? pc.readyState : "before";
+        return pc ? that.state : "before";
     });
 
     /**

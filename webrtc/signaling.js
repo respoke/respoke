@@ -293,15 +293,17 @@ webrtc.SignalingChannel = function (params) {
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.getPayload();
         var call = null;
-        var toCreate = true;
+        var toCreate = false;
+
+        log.debug(signal.type, signal);
 
         // Only create a new call if this signal is an offer.
-        if (signal.type !== 'offer') {
-            toCreate = false;
+        if (signal.type === 'offer') {
+            toCreate = true;
         }
         call = webrtc.getClient(client).user.getCallByContact(message.sender, toCreate);
 
-        if (!call) {
+        if (!toCreate && !call) {
             return;
         }
 
