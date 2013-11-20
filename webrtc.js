@@ -104,7 +104,7 @@ webrtc.Class = function (params) {
     params = params || {};
     var client = params.client;
     delete that.client;
-    params.forOwn(function copyParam (thing, name) {
+    params.forOwn(function copyParam(thing, name) {
         that[name] = thing;
     });
 

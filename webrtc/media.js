@@ -177,7 +177,7 @@ webrtc.Call = function (params) {
 
         for (var i = 0; (i < localVideoElements.length && videoLocalElement === null); i += 1) {
             if (localVideoElements[i].tagName === 'VIDEO' && !localVideoElements[i].used) {
-                videoElement = localVideoElements[i];
+                videoLocalElement = localVideoElements[i];
             }
         }
 

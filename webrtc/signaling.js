@@ -394,8 +394,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} password The user's password.
      * @param {function} onStatusChange A function to which to call on every state change.
      */
-    var authenticate = that.publicize('authenticate',
-        function (username, password, callback) {
+    var authenticate = that.publicize('authenticate', function (username, password, callback) {
             call({
                 'httpMethod': "POST",
                 'path': '/v1/authsession',

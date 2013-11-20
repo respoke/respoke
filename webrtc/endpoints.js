@@ -432,23 +432,23 @@ webrtc.Endpoint = function (params) {
             'remoteEndpoint': id,
             'initiator': initiator,
             'callSettings': clientObj.getCallSettings(),
-            'signalOffer' : function (sdp) {
+            'signalOffer': function (sdp) {
                 log.trace('signalOffer');
                 signalingChannel.sendSDP(that, sdp);
             },
-            'signalAnswer' : function (sdp) {
+            'signalAnswer': function (sdp) {
                 log.trace('signalAnswer');
                 signalingChannel.sendSDP(that, sdp);
             },
-            'signalCandidate' : function (oCan) {
+            'signalCandidate': function (oCan) {
                 oCan.type = 'candidate';
                 signalingChannel.sendCandidate(that, oCan);
             },
-            'signalTerminate' : function () {
+            'signalTerminate': function () {
                 log.trace('signalTerminate');
                 signalingChannel.sendBye(that);
             },
-            'signalReport' : function (oReport) {
+            'signalReport': function (oReport) {
                 log.debug("Not sending report");
                 log.debug(oReport);
             }
@@ -458,7 +458,7 @@ webrtc.Endpoint = function (params) {
             call.start();
         }
         user.addCall(call);
-        call.listen('hangup', function (locallySignaled) {
+        call.listen('hangup', function hangupListener(locallySignaled) {
             user.removeCall(id);
         });
         return call;
@@ -534,7 +534,7 @@ webrtc.Contact = function (params) {
          * sessionId. This will cause the first element in the sessionsId to be the id of the
          * session with the highest priority presence. Then we can access it by the 0 index.
          */
-        sessionIds = sessionIds.sort(function (a, b) {
+        sessionIds = sessionIds.sort(function sorter(a, b) {
             var indexA = options.indexOf(sessions[a].presence);
             var indexB = options.indexOf(sessions[b].presence);
             // Move it to the end of the list if it isn't one of our accepted presence values
@@ -586,7 +586,7 @@ webrtc.User = function (params) {
     });
 
     // listen to webrtc.User#presence:update -- the logged-in user's presence
-    that.listen("presence", function (presenceString) {
+    that.listen("presence", function presenceListener(presenceString) {
         presence = presenceString;
         if (signalingChannel && signalingChannel.isOpen()) {
             log.info('sending my presence update ' + presenceString);
@@ -597,12 +597,12 @@ webrtc.User = function (params) {
     });
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
-    contactList.listen('new', function (contact) {
+    contactList.listen('new', function newContactListener(contact) {
         that.fire('contact', contact);
     });
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
-    contactList.listen('presence', function (presenceMessage) {
+    contactList.listen('presence', function presenceListener(presenceMessage) {
         var presPayload = presenceMessage.getPayload();
         var from = presenceMessage.getSender();
         var sessionId = presenceMessage.getSessionID();
@@ -652,12 +652,10 @@ webrtc.User = function (params) {
             return deferred.promise;
         }
 
-        deferred.promise.then(function (contactList) {
+        deferred.promise.then(function successHandler(contactList) {
             log.debug("got contact list", contactList);
-            setTimeout(function () {
-                contactList.processPresenceQueue();
-            }, 1000);
-        }, function (err) {
+            setTimeout(contactList.processPresenceQueue, 1000);
+        }, function errorHandler(err) {
             throw err;
         }).done();
 
@@ -686,9 +684,9 @@ webrtc.User = function (params) {
             }
         };
 
-        signalingChannel.getContacts(function (list) {
+        signalingChannel.getContacts(function contactsHandler(list) {
             if (!(list in [null, undefined]) && list.length >= 0) {
-                list.forEach(function (contactInfo) {
+                list.forEach(function addEachContact(contactInfo) {
                     var contact = webrtc.Contact({
                         'client': client,
                         'id': contactInfo.id,
@@ -702,9 +700,9 @@ webrtc.User = function (params) {
             } else {
                 deferred.reject(new Error("Can't get contact list: " + list.error));
             }
-        }, function (presenceList) {
+        }, function presenceHandler(presenceList) {
             if (presenceList && presenceList.length > 0) {
-                presenceList.forEach(function (presence) {
+                presenceList.forEach(function fireEachPresence(presence) {
                     contactList.fire('presence', webrtc.PresenceMessage({'rawMessage': presence}));
                 });
             }
@@ -755,7 +753,7 @@ webrtc.User = function (params) {
     var getActiveCall = that.publicize('getActiveCall', function () {
         // TODO search by user, create if doesn't exist?
         var call = null;
-        calls.forEach(function (one) {
+        calls.forEach(function findCall(one) {
             if (one.isActive()) {
                 call = one;
             }
@@ -770,34 +768,31 @@ webrtc.User = function (params) {
      * @param {string} Contact ID
      * @returns {webrtc.Call}
      */
-    var getCallByContact = that.publicize('getCallByContact',
-        function (contactId, toCreate) {
-            var call = null;
-            var contact = null;
-            var callSettings = null;
+    var getCallByContact = that.publicize('getCallByContact', function (contactId, toCreate) {
+        var call = null;
+        var contact = null;
+        var callSettings = null;
 
-            calls.forEach(function (one) {
-                if (one.remoteEndpoint === contactId) {
-                    if (one.getState() >= 6) { // ended or media error
-                        return;
-                    }
-                    call = one;
+        calls.forEach(function findCall(one) {
+            if (one.remoteEndpoint === contactId) {
+                if (one.getState() >= 6) { // ended or media error
+                    return;
                 }
-            });
-
-            if (call === null && toCreate === true) {
-                try {
-                    contact = contactList.get(contactId);
-                    callSettings = webrtc.getClient(client).getCallSettings();
-                    call = contact.startCall(callSettings, false);
-                } catch (e) {
-                    log.error("Couldn't create Call: " + e.message);
-                }
+                call = one;
             }
+        });
 
-            return call;
+        if (call === null && toCreate === true) {
+            try {
+                contact = contactList.get(contactId);
+                callSettings = webrtc.getClient(client).getCallSettings();
+                call = contact.startCall(callSettings, false);
+            } catch (e) {
+                log.error("Couldn't create Call: " + e.message);
+            }
         }
-    );
+        return call;
+    });
 
     /**
      * Associate the call with this user.

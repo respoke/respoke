@@ -58,12 +58,12 @@ webrtc.EventEmitter = function (params) {
         }
 
         // Remove only one listener from this event.
-        for (var i = eventList[eventType].length-1; i >= 0; i =- 1) {
+        for (var i = eventList[eventType].length - 1; i >= 0; i -= 1) {
             if (listener === eventList[eventType][i]) {
                 eventList[eventType].splice(i, 1);
                 return;
             }
-        };
+        }
     });
 
     /**
@@ -85,7 +85,7 @@ webrtc.EventEmitter = function (params) {
         }
 
         args = Array.prototype.slice.call(arguments, 1);
-        eventList[eventType].forEach(function fireListener (listener) {
+        eventList[eventType].forEach(function fireListener(listener) {
             if (typeof listener === 'function') {
                 try {
                     listener.apply(that, args);
