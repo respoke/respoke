@@ -158,8 +158,6 @@ webrtc.Call = function (params) {
      * @private
      */
     var onReceiveUserMedia = function (stream, oneConstraints, index) {
-        var mediaStream = null;
-
         that.state = ST_APPROVED;
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
@@ -309,8 +307,6 @@ webrtc.Call = function (params) {
      */
     var onRemoteStreamAdded = function (evt) {
         that.state = ST_FLOWING;
-        var mediaStream = null;
-
         log.trace('received remote media');
 
         for (var i = 0; (i < remoteVideoElements.length && videoRemoteElement === null); i += 1) {
