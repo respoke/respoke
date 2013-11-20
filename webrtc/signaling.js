@@ -36,7 +36,7 @@ webrtc.SignalingChannel = function (params) {
         403: "Can't perform this action: not authorized.",
         404: "Item not found.",
         409: "Can't perform this action: item in the wrong state.",
-        500: "Can't perform this action: server problem.",
+        500: "Can't perform this action: server problem."
     };
 
     /**
@@ -109,7 +109,7 @@ webrtc.SignalingChannel = function (params) {
         call({
             'path': '/v1/authsession',
             'httpMethod': 'DELETE'
-        }, function handleResponse (response) {
+        }, function handleResponse(response) {
             if (!response.error) {
                 socket.disconnect();
                 deferred.resolve("Logged out.");
@@ -139,7 +139,7 @@ webrtc.SignalingChannel = function (params) {
                     'type': presenceString || "available"
                 }
             }
-        }, function handleResponse (res, params, err) {
+        }, function handleResponse(res, params, err) {
             if (err && err.message) {
                 throw new Error(err.message);
             }
@@ -155,14 +155,14 @@ webrtc.SignalingChannel = function (params) {
     var getContacts = that.publicize('getContacts', function (onContacts, onPresence) {
         wsCall({
             'path': '/v1/contacts/'
-        }, function handleResponse (contactList, params, err) {
+        }, function handleResponse(contactList, params, err) {
             var userIdList = [];
 
             if (err && err.message) {
                 throw new Error(err.message);
             }
 
-            contactList.forEach(function saveEachId (contact) {
+            contactList.forEach(function saveEachId(contact) {
                 userIdList.push({'userId': contact.id});
             });
 
@@ -176,7 +176,7 @@ webrtc.SignalingChannel = function (params) {
                 'parameters': {
                     'users': userIdList
                 }
-            }, function handleResponse (presenceList, params, err) {
+            }, function handleResponse(presenceList, params, err) {
                 if (err && err.message) {
                     throw new Error(err.message);
                 }
@@ -222,7 +222,7 @@ webrtc.SignalingChannel = function (params) {
                 'destUserId': recipient,
                 'text': msgText
             }
-        }, function handleResponse (res, params, err) {
+        }, function handleResponse(res, params, err) {
             if (err && err.message) {
                 throw new Error(err.message);
             }
@@ -230,47 +230,79 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
-     * Send message to server.
+     * Send a signaling message.
      * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.send
-     * @param {string} recipient The recipient of the message.
-     * @param {object} msgObj A JavaScript object to JSONify before sending.
-     * @deprecated
+     * @method webrtc.SignalingChannel.sendSignal
+     * @param {string} message The string The signal to send.
      */
-    var send = that.publicize('send', function (recipient, msgObj) {
+    var sendSignal = that.publicize('sendSignal', function (signal) {
+        log.debug('signal', signal);
+        var signalText = signal.getPayload();
+        log.debug('signalText', signalText);
+        var recipient = null;
+
+        try {
+            recipient = signal.getRecipient().getID();
+        } catch (e) {
+            log.error("Can't get signal recipient.");
+            return;
+        }
+
+        if ([null, undefined, ""].indexOf(recipient) > -1) {
+            log.error("Can't send signal without recipient.");
+            return;
+        }
+
+        if ([null, undefined, ""].indexOf(signalText) > -1) {
+            log.error("Can't send signal without signal text.");
+            return;
+        }
+
+        wsCall({
+            'path': '/v1/signaling',
+            'httpMethod': 'POST',
+            'parameters': {
+                'to': recipient,
+                'signal': signalText
+            }
+        }, function handleResponse(res, params, err) {
+            if (err && err.message) {
+                throw new Error(err.message);
+            }
+        });
     });
 
     /**
      * Send an ICE candidate.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendCandidate
-     * @param {string} recipient The JID of the recipient.
+     * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
     var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
-        recipient.sendMessage(JSON.stringify(candObj));
+        recipient.sendSignal(JSON.stringify(candObj));
     });
 
     /**
      * Send an SDP.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendSDP
-     * @param {string} recipient The JID of the recipient.
+     * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
     var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
-        recipient.sendMessage(JSON.stringify(sdpObj));
+        recipient.sendSignal(JSON.stringify(sdpObj));
     });
 
     /**
      * Send a message terminating the WebRTC session.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.sendBye
-     * @param {string} recipient The JID of the recipient.
+     * @param {webrtc.Contact} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
      */
     var sendBye = that.publicize('sendBye', function (recipient, reason) {
-        recipient.sendMessage(JSON.stringify({'type': 'bye', 'reason': reason}));
+        recipient.sendSignal(JSON.stringify({'type': 'bye', 'reason': reason}));
     });
 
     /**
@@ -292,6 +324,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.getPayload();
+        var clientObj = webrtc.getClient(client);
         var call = null;
         var toCreate = false;
 
@@ -301,7 +334,7 @@ webrtc.SignalingChannel = function (params) {
         if (signal.type === 'offer') {
             toCreate = true;
         }
-        call = webrtc.getClient(client).user.getCallByContact(message.sender, toCreate);
+        call = clientObj.user.getCallByContact(message.getSender(), toCreate);
 
         if (!toCreate && !call) {
             return;
@@ -371,7 +404,7 @@ webrtc.SignalingChannel = function (params) {
                     'password': password,
                     'appId': appId
                 }
-            }, function handleResponse (response) {
+            }, function handleResponse(response) {
                 var pieces = [];
                 var protocol = null;
                 var host = null;
@@ -394,20 +427,25 @@ webrtc.SignalingChannel = function (params) {
                     'secure': (protocol === 'https')
                 });
 
-                socket.on('connect', function handleConnect () {
-                    handlerQueue.forOwn(function addEachHandlerType (array, category) {
+                socket.on('connect', function handleConnect() {
+                    handlerQueue.forOwn(function addEachHandlerType(array, category) {
                         if (!array) {
                             return;
                         }
 
-                        array.forEach(function addEachHandler (handler) {
+                        array.forEach(function addEachHandler(handler) {
                             socket.on(category, handler);
                         });
                         array = [];
                     });
                 });
 
-                socket.on('signaling', that.routeSignal);
+                socket.on('signal', function signalHandler(message) {
+                    var message = webrtc.SignalingMessage({
+                        'rawMessage': message
+                    });
+                    that.routeSignal(message);
+                });
 
                 wsCall({
                     'path': '/v1/usersessions',
@@ -419,19 +457,19 @@ webrtc.SignalingChannel = function (params) {
                             'type': "available"
                         }
                     }
-                }, function handleResponse (res, params, err) {
+                }, function handleResponse(res, params, err) {
                     if (err && err.message) {
                         throw new Error(err.message);
                     }
                 });
 
                 wsCall({
-                    'path': '/v1/users',
+                    'path': '/v1/users/',
                     'httpMethod': 'GET',
                     'parameters': {
                         'username': username
                     }
-                }, function handleResponse (res, data, err) {
+                }, function handleResponse(res, data, err) {
                     if (err && err.message) {
                         callback(null, err.message);
                     }
@@ -457,14 +495,14 @@ webrtc.SignalingChannel = function (params) {
         wsCall({
             'httpMethod': 'GET',
             'path': '/v1/turncredentials'
-        }, function handleResponse (creds, params, err) {
+        }, function handleResponse(creds, params, err) {
             var result = [];
 
             if (!creds || !creds.uris) {
                 deferred.reject(err.message);
             }
 
-            creds.uris.forEach(function saveTurnUri (uri) {
+            creds.uris.forEach(function saveTurnUri(uri) {
                 var cred = null;
 
                 if (!uri) {
@@ -530,27 +568,29 @@ webrtc.SignalingChannel = function (params) {
         log.debug('kicking off socket.' + params.httpMethod + "()",
             params.path, params.parameters);
 
-        socket[params.httpMethod](params.path, params.parameters, function handleResponse(response){
-            var e = null;
-            var errString = null;
+        socket[params.httpMethod](params.path, params.parameters,
+            function handleResponse(response) {
+                var e = null;
+                var errString = null;
 
-            log.debug("wsCall response to " + params.httpMethod + " " + params.path);
+                log.debug("wsCall response to " + params.httpMethod + " " + params.path);
 
-            if (response !== null && response.code !== 200) {
-                errString = response.message || response.error || errors[response.code];
-                e = {
-                    'code': response.code,
-                    'message': errString
-                };
+                if (response !== null && response.code !== 200) {
+                    errString = response.message || response.error || errors[response.code];
+                    e = {
+                        'code': response.code,
+                        'message': errString
+                    };
+                }
+
+                if (responseHandler) {
+                    responseHandler(response, {
+                        'uri' : params.path,
+                        'params' : params.parameters
+                    }, e);
+                }
             }
-
-            if (responseHandler) {
-                responseHandler(response, {
-                    'uri' : params.path,
-                    'params' : params.parameters
-                }, e);
-            }
-        });
+        );
     };
 
     /**
@@ -666,7 +706,7 @@ webrtc.SignalingChannel = function (params) {
             return '';
         }
 
-        params.forOwn(function formatParam (value, name) {
+        params.forOwn(function formatParam(value, name) {
             /* Skip objects -- We won't know how to name these. */
             if (typeof value === 'array') {
                 strings.push([name, value.join(',')].join('='));
@@ -698,9 +738,7 @@ webrtc.SignalingChannel = function (params) {
 webrtc.TextMessage = function (params) {
     "use strict";
     params = params || {};
-    var client = params.client;
     var that = params;
-    delete that.client;
 
     that.className = 'webrtc.TextMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
@@ -768,28 +806,40 @@ webrtc.TextMessage = function (params) {
 webrtc.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
-    var client = params.client;
     var that = params;
-    delete that.client;
     that.className = 'webrtc.SignalingMessage';
 
-    var rawMessage = params.rawMessage;
-    var payload = null;
+    var rawMessage = params.rawMessage; // Only set on incoming message.
+    var payload = params.payload; // Only set on outgoing message.
     var sender = params.sender;
     var recipient = params.recipient;
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.parse
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
-        try {
-            payload = JSON.parse(rawMessage || thisMsg);
-        } catch (e) {
-            log.error("Not a JSON message!");
+        var pieces = [];
+        var sessionId = null;
+
+        if (thisMsg) {
+            rawMessage = thisMsg;
         }
+
+        try {
+            pieces = rawMessage.header.from.split(':')[1].split('@');
+            sender = pieces[0];
+            sessionId = pieces[1];
+        } catch (e) {
+            // Wasn't a socket message.
+            sender = rawMessage.userId;
+            sessionId = rawMessage.sessionId;
+        }
+
+        delete rawMessage.header;
+        payload = JSON.parse(rawMessage.signal);
     });
 
     /**
@@ -822,6 +872,16 @@ webrtc.SignalingMessage = function (params) {
         return recipient;
     });
 
+    /**
+     * Get the sender.
+     * @memberof! webrtc.SignalingMessage
+     * @method webrtc.SignalingMessage.getSender
+     * @returns {string}
+     */
+    var getSender = that.publicize('getSender', function () {
+        return sender;
+    });
+
     if (rawMessage) {
         parse();
     }
@@ -842,9 +902,7 @@ webrtc.SignalingMessage = function (params) {
 webrtc.PresenceMessage = function (params) {
     "use strict";
     params = params || {};
-    var client = params.client;
     var that = params;
-    delete that.client;
     that.className = 'webrtc.PresenceMessage';
 
     var rawMessage = params.rawMessage;

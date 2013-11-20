@@ -164,6 +164,20 @@ webrtc.AbstractEndpoint = function (params) {
     });
 
     /**
+     * Send a signal to an Endpoint
+     * @memberof! webrtc.AbstractEndpoint
+     * @method webrtc.AbstractEndpoint.sendSignal
+     * @param {string} message A signal to be sent.
+     * @param {successCallback} onSuccess
+     * @param {failureCallback} onFailure
+     */
+    var sendSignal = that.publicize('sendSignal', function (signal, onSuccess, onFailure) {
+        if (signalingChannel.isOpen()) {
+            signalingChannel.sendSignal(signal);
+        }
+    });
+
+    /**
      * Start a call.
      * @memberof! webrtc.AbstractEndpoint
      * @method webrtc.AbstractEndpoint.startCall
@@ -184,81 +198,6 @@ webrtc.AbstractEndpoint = function (params) {
 
     return that;
 }; // End webrtc.AbstractEndpoint
-
-/**
- * Create a new User, which represents the currently logged-in User.
- * @class webrtc.AbstractUser
- * @author Erin Spiceland <espiceland@digium.com>
- * @constructor
- * @classdesc Information describing a User this client app cannot send messages to or initate
- * media with along with a collection of sessions across one or more devices. Should this be
- * user sessions only logged in with this appKey?
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.User}
- * @augments webrtc.AbstractPresentable
- * @property {string} name Display name for this group of user accounts.
- * @property {string} id Unique ID for this group of user accounts. This could be some
- * combination of the identity provider and the identity provider's unique ID.
- * @property {enum} presence Resolved presence information across one or more sessions.
- * @property {object} skills Information describing skills and features this Endpoint supports
- * @property {webrtc.AbstractContact[]} contactList Array of Contacts representing the User's contact list.
- * across all devices.
- */
-
-webrtc.AbstractUser = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.AbstractPresentable(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractUser';
-
-    var remoteUserSessions = [];
-    var contactList = [];
-    var calls = [];
-
-    var userSession = webrtc.UserSession({
-        'token': params.token,
-        'timeLoggedIn': params.timeLoggedIn || new Date(),
-        'loggedIn': params.loggedIn
-    });
-    delete params.token;
-    delete params.timeLoggedIn;
-    delete params.loggedIn;
-
-    /**
-     * Get the User's locally logged-in UserSession
-     * @memberof! webrtc.AbstractUser
-     * @method webrtc.AbstractUser.getUserSession
-     * @returns {webrtc.UserSession}
-     */
-    var getUserSession = that.publicize('getUserSession', function () {
-        return userSession;
-    });
-
-    /**
-     * Get the User's contact list.
-     * @memberof! webrtc.AbstractUser
-     * @method webrtc.AbstractUser.getContacts
-     * @returns {webrtc.Contacts}
-     */
-    var getContacts = that.publicize('getContacts', function () {
-        return contactList;
-    });
-
-    /**
-     * Mark the User as online or available.
-     * @memberof! webrtc.AbstractUser
-     * @method webrtc.AbstractUser.setOnline
-     * @abstract
-     */
-    var setOnline = that.publicize('setOnline', function () {
-        that.setPresence('available');
-    });
-
-    return that;
-}; // End webrtc.AbstractUser
 
 /**
  * Create a new UserSession.
@@ -366,14 +305,6 @@ webrtc.Presentable = function (params) {
     var sessions = [];
     var presence = 'unavailable';
 
-    that.listen('signal', function (message) {
-        try {
-            webrtc.getClient(client).getSignalingChannel().routeSignal(message);
-        } catch (e) {
-            log.error("Couldn't route message: " + e.message);
-        }
-    });
-
     /**
      * Return the user ID
      * @memberof! webrtc.Presentable
@@ -453,6 +384,24 @@ webrtc.Endpoint = function (params) {
     });
 
     /**
+     * Send a signal to the endpoint.
+     * @memberof! webrtc.Endpoint
+     * @method webrtc.Endpoint.sendSignal
+     * @params {object} message The signal to send
+     */
+    var sendSignal = that.publicize('sendSignal', function (signal) {
+        log.trace('Endpoint.sendSignal');
+        var sigMessage = webrtc.SignalingMessage({
+            'recipient': that,
+            'sender': webrtc.getClient(client).user.getID(),
+            'payload': signal
+        });
+        log.debug(signal);
+        log.debug(sigMessage);
+        signalingChannel.sendSignal(sigMessage);
+    });
+
+    /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
@@ -484,15 +433,19 @@ webrtc.Endpoint = function (params) {
             'initiator': initiator,
             'callSettings': clientObj.getCallSettings(),
             'signalOffer' : function (sdp) {
+                log.trace('signalOffer');
                 signalingChannel.sendSDP(that, sdp);
             },
             'signalAnswer' : function (sdp) {
+                log.trace('signalAnswer');
                 signalingChannel.sendSDP(that, sdp);
             },
             'signalCandidate' : function (oCan) {
+                oCan.type = 'candidate';
                 signalingChannel.sendCandidate(that, oCan);
             },
             'signalTerminate' : function () {
+                log.trace('signalTerminate');
                 signalingChannel.sendBye(that);
             },
             'signalReport' : function (oReport) {
@@ -670,6 +623,16 @@ webrtc.User = function (params) {
     });
 
     /**
+     * Return the user's cached contact list.
+     * @memberof! webrtc.User
+     * @method webrtc.User.getContactList
+     * @returns {webrtc.Contacts}
+     */
+    var getContactList = that.publicize('getContactList', function () {
+        return contactList;
+    });
+
+    /**
      * Get user's Contacts from server.
      * @memberof! webrtc.User
      * @method webrtc.User.getContacts
@@ -760,27 +723,7 @@ webrtc.User = function (params) {
                 log.warn("No such contact " + message.header.from);
                 return;
             }
-            // TODO remove all this when we have a real signaling API
-            try {
-                var parsed = JSON.parse(message.text);
-                if (parsed && typeof parsed === 'object') {
-                    if (parsed.candidate) {
-                        parsed.type = 'candidate';
-                    }
-                    contact.fire('signal', webrtc.SignalingMessage({
-                        'client': client,
-                        // yes, the unparsed version. TODO reevaluate?
-                        'rawMessage': JSON.stringify(parsed),
-                        'recipient': that,
-                        'sender': contact.getID()
-                    }));
-                    return;
-                }
-            } catch (e) {
-                // not JSON, assume chat message
-                log.debug('message error');
-                log.debug(message);
-            }
+
             contact.fire('message', webrtc.TextMessage({
                 'client': client,
                 'rawMessage': message.text,
