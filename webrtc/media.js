@@ -482,9 +482,9 @@ webrtc.Call = function (params) {
             log.trace("Call.stop got called twice.");
             return;
         }
-        // Never send bye if we haven't sent any other signal yet.
+        // Never send bye if we are the initiator but we haven't sent any other signal yet.
         log.trace("at stop, call state is " + that.state);
-        if (that.state < ST_OFFERED) {
+        if (that.initiator === true && that.state < ST_OFFERED) {
             sendSignal = false;
         }
 

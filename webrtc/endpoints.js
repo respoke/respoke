@@ -472,6 +472,11 @@ webrtc.Endpoint = function (params) {
             initiator = true;
         }
 
+        if (!id) {
+            log.error("Can't start a call without contact ID!");
+            return;
+        }
+
         call = webrtc.Call({
             'client': client,
             'username': user.getUsername(),
