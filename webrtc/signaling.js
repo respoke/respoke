@@ -26,7 +26,7 @@ webrtc.SignalingChannel = function (params) {
 
     var handlerQueue = {
         'chat': [],
-        'signaling': [],
+        'signal': [],
         'presence': []
     };
 
@@ -440,7 +440,7 @@ webrtc.SignalingChannel = function (params) {
                     });
                 });
 
-                socket.on('signal', function signalHandler(message) {
+                that.addHandler('signal', function signalHandler(message) {
                     var message = webrtc.SignalingMessage({
                         'rawMessage': message
                     });

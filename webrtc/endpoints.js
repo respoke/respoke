@@ -712,7 +712,7 @@ webrtc.User = function (params) {
 
         signalingChannel.addHandler('presence', presenceHandler);
 
-        signalingChannel.addHandler('chat', function (message) {
+        signalingChannel.addHandler('chat', function messageHandler(message) {
             var contact;
             try {
                 contact = contactList.get(message.header.from.split(':')[1]);
