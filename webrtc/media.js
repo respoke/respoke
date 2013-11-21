@@ -42,9 +42,9 @@ webrtc.Call = function (params) {
     var signalAnswer = params.signalAnswer;
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
-    var signalCandidate = function () {
-        params.signalCandidate();
-        report.candidatesSent.push(oCan.candidate);
+    var signalCandidate = function (oCan) {
+        params.signalCandidate(oCan);
+        report.candidatesSent.push(oCan);
     };
     var callSettings = params.callSettings;
     var options = {
@@ -354,8 +354,8 @@ webrtc.Call = function (params) {
             return;
         }
 
-        if (callSettings.forceTurn === true
-                && oCan.candidate.candidate.indexOf("typ relay") === -1) {
+        if (callSettings.forceTurn === true &&
+                oCan.candidate.candidate.indexOf("typ relay") === -1) {
             return;
         }
 
@@ -396,7 +396,7 @@ webrtc.Call = function (params) {
         }
         candidateSendingQueue = [];
         for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            addRemoteCandidate(candidateReceivingQueue[i])
+            addRemoteCandidate(candidateReceivingQueue[i]);
         }
         candidateReceivingQueue = [];
     };
