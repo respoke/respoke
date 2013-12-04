@@ -31,6 +31,7 @@ webrtc.SignalingChannel = function (params) {
     };
 
     var errors = {
+        // TODO convert this to strings
         400: "Can't perform this action: missing or invalid parameters.",
         401: "Can't perform this action: not authenticated.",
         403: "Can't perform this action: not authorized.",
@@ -107,7 +108,7 @@ webrtc.SignalingChannel = function (params) {
     var logout = that.publicize('logout', function () {
         var deferred = Q.defer();
         call({
-            'path': '/v1/authsession',
+            'path': '/v1/authsessions',
             'httpMethod': 'DELETE'
         }, function handleResponse(response) {
             if (!response.error) {
@@ -171,7 +172,7 @@ webrtc.SignalingChannel = function (params) {
             }
 
             wsCall({
-                'path': '/v1/presence/observer',
+                'path': '/v1/presenceobservers',
                 'httpMethod' : 'POST',
                 'parameters': {
                     'users': userIdList
@@ -397,7 +398,7 @@ webrtc.SignalingChannel = function (params) {
     var authenticate = that.publicize('authenticate', function (username, password, callback) {
             call({
                 'httpMethod': "POST",
-                'path': '/v1/authsession',
+                'path': '/v1/authsessions',
                 'parameters': {
                     'username': username,
                     'password': password,
@@ -493,7 +494,7 @@ webrtc.SignalingChannel = function (params) {
         var deferred = Q.defer();
         wsCall({
             'httpMethod': 'GET',
-            'path': '/v1/turncredentials'
+            'path': '/v1/turn'
         }, function handleResponse(creds, params, err) {
             var result = [];
 
@@ -572,8 +573,6 @@ webrtc.SignalingChannel = function (params) {
                 var e = null;
                 var errString = null;
 
-                log.debug("wsCall response to " + params.httpMethod + " " + params.path);
-
                 if (response !== null && response.code !== 200) {
                     errString = response.message || response.error || errors[response.code];
                     e = {
@@ -582,11 +581,15 @@ webrtc.SignalingChannel = function (params) {
                     };
                 }
 
+                log.debug(params.httpMethod + " " + params.path, response, e);
+
                 if (responseHandler) {
                     responseHandler(response, {
                         'uri' : params.path,
                         'params' : params.parameters
                     }, e);
+                } else if (e) {
+                    throw new Error(e);
                 }
             }
         );
@@ -669,6 +672,7 @@ webrtc.SignalingChannel = function (params) {
                 return;
             }
             if (this.status === 0) {
+                log.error("Security problem!")
                 return;
             }
             if ([200, 204, 205, 302, 403, 404, 418].indexOf(this.status) > -1) {
