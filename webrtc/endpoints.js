@@ -414,6 +414,7 @@ webrtc.Endpoint = function (params) {
         var id = that.getID();
         var call = null;
         var clientObj = webrtc.getClient(client);
+        var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
 
         log.trace('Endpoint.startCall');
@@ -426,12 +427,17 @@ webrtc.Endpoint = function (params) {
             return;
         }
 
+        // Apply call-specific callSettings to the app's defaults
+        callSettings.forOwn(function copyParam(thing, name) {
+            combinedCallSettings[name] = thing;
+        });
+
         call = webrtc.Call({
             'client': client,
             'username': user.getUsername(),
             'remoteEndpoint': id,
             'initiator': initiator,
-            'callSettings': clientObj.getCallSettings(),
+            'callSettings': combinedCallSettings,
             'signalOffer': function (sdp) {
                 log.trace('signalOffer');
                 signalingChannel.sendSDP(that, sdp);

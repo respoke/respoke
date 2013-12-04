@@ -42,7 +42,10 @@ webrtc.Call = function (params) {
     var signalAnswer = params.signalAnswer;
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
-    var signalCandidate = params.signalCandidate;
+    var signalCandidate = function (oCan) {
+        params.signalCandidate(oCan);
+        report.candidatesSent.push(oCan);
+    };
     var callSettings = params.callSettings;
     var options = {
         optional: [
@@ -50,14 +53,6 @@ webrtc.Call = function (params) {
             { RtpDataChannels: false }
         ]
     };
-
-    if (params.callSettings && params.callSettings.constraints) {
-        callSettings.constraints = params.callSettings.constraints;
-    }
-
-    if (params.callSettings && params.callSettings.servers) {
-        callSettings.servers = params.callSettings.servers;
-    }
 
     var report = {
         'answerCount' : 0,
@@ -355,18 +350,21 @@ webrtc.Call = function (params) {
      * @private
      */
     var onIceCandidate = function (oCan) {
-        if (!oCan.candidate) {
+        if (!oCan.candidate || !oCan.candidate.candidate) {
             return;
         }
+
+        if (callSettings.forceTurn === true &&
+                oCan.candidate.candidate.indexOf("typ relay") === -1) {
+            return;
+        }
+
         log.debug("original browser-generated candidate object");
         log.debug(oCan.candidate);
         if (that.initiator && !receivedAnswer) {
             candidateSendingQueue.push(oCan.candidate);
-        } else if (!that.initiator) {
-            report.candidatesSent.push(oCan.candidate);
-            if (oCan.candidate) {
-                signalCandidate(oCan.candidate);
-            }
+        } else {
+            signalCandidate(oCan.candidate);
         }
     };
 
@@ -393,14 +391,12 @@ webrtc.Call = function (params) {
          * never has a valid PeerConnection at a time when we don't
          * have one. */
         var can = null;
-        for (var i = 0; i <= candidateSendingQueue.length; i += 1) {
-            can = candidateSendingQueue[i];
-            signalCandidate(can);
+        for (var i = 0; i < candidateSendingQueue.length; i += 1) {
+            signalCandidate(candidateSendingQueue[i]);
         }
         candidateSendingQueue = [];
-        for (var i = 0; i <= candidateReceivingQueue.length; i += 1) {
-            can = candidateReceivingQueue[i];
-            addRemoteCandidate(can);
+        for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
+            addRemoteCandidate(candidateReceivingQueue[i]);
         }
         candidateReceivingQueue = [];
     };
@@ -608,12 +604,11 @@ webrtc.Call = function (params) {
      */
     var addRemoteCandidate = that.publicize('addRemoteCandidate', function (oCan) {
         if (!oCan || oCan.candidate === null) {
-            log.info("End of candidates.");
             return;
         }
         if (!oCan.hasOwnProperty('sdpMLineIndex') || !oCan.candidate) {
-            log.warn("addRemoteCandidate got wrong format!");
-            log.warn(oCan);
+            log.warn("addRemoteCandidate got wrong format!", oCan);
+            return;
         }
         if (that.initiator && !receivedAnswer) {
             candidateReceivingQueue.push(oCan);
@@ -623,11 +618,10 @@ webrtc.Call = function (params) {
         try {
             pc.addIceCandidate(new RTCIceCandidate(oCan));
         } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message);
-            log.error(oCan);
+            log.error("Couldn't add ICE candidate: " + e.message, oCan);
+            return;
         }
-        log.debug('Got a remote candidate.');
-        log.debug(oCan);
+        log.debug('Got a remote candidate.', oCan);
         report.candidatesReceived.push(oCan);
     });
 
