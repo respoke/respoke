@@ -672,7 +672,7 @@ webrtc.SignalingChannel = function (params) {
                 return;
             }
             if (this.status === 0) {
-                log.error("Security problem!")
+                log.error("Can't reach server or certificate mismatch!")
                 return;
             }
             if ([200, 204, 205, 302, 403, 404, 418].indexOf(this.status) > -1) {
