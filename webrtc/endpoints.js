@@ -428,9 +428,11 @@ webrtc.Endpoint = function (params) {
         }
 
         // Apply call-specific callSettings to the app's defaults
-        callSettings.forOwn(function copyParam(thing, name) {
-            combinedCallSettings[name] = thing;
-        });
+        if (callSettings) {
+            callSettings.forOwn(function copyParam(thing, name) {
+                combinedCallSettings[name] = thing;
+            });
+        }
 
         call = webrtc.Call({
             'client': client,

@@ -220,7 +220,7 @@ webrtc.SignalingChannel = function (params) {
             'path': '/v1/chat',
             'httpMethod': 'POST',
             'parameters': {
-                'destUserId': recipient,
+                'to': recipient,
                 'text': msgText
             }
         }, function handleResponse(res, params, err) {
