@@ -1,6 +1,6 @@
 var client = webrtc.Client();
-describe("A webrtc.AbstractUser ", function () {
-  var user = webrtc.AbstractUser({
+describe("A webrtc.User ", function () {
+  var user = webrtc.User({
     "client": client.getID(),
     "name": "Mickey Mouse",
     "id": "JH5K34J5K34J3453K4J53K45",
@@ -38,7 +38,7 @@ describe("A webrtc.AbstractUser ", function () {
    */
   it("has the correct class name.", function () {
     expect(user.className).not.toBeFalsy();
-    expect(user.getClass()).toBe('webrtc.AbstractUser');
+    expect(user.getClass()).toBe('webrtc.User');
   });
 
   /*
