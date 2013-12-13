@@ -677,11 +677,13 @@ webrtc.SignalingChannel = function (params) {
             }
             if ([200, 204, 205, 302, 403, 404, 418].indexOf(this.status) > -1) {
                 response.code = this.status;
-                try {
-                    response.result = JSON.parse(this.response);
-                } catch (e) {
-                    response.result = this.response;
-                    response.error = "Invalid JSON.";
+                if (this.response) {
+                    try {
+                        response.result = JSON.parse(this.response);
+                    } catch (e) {
+                        response.result = this.response;
+                        response.error = "Invalid JSON.";
+                    }
                 }
                 log.debug(response);
                 responseHandler(response, {
