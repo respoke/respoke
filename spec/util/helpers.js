@@ -169,27 +169,25 @@ module.exports = {
     },
 
     testFixtureBeforeTest: function (options, cb) {
-        fs.readFile(__dirname + '/../../../../../collective/spec/util/jquery.js', {encoding: 'utf8'}, function (err, data) {
-        var jquery = data;
-        fs.readFile(__dirname + '/../../../../../collective/spec/util/api_client.js', {encoding: 'utf8'}, function (err, data) {
-            var apiClientString = data;
-            fs.readFile(__dirname + '/../../../../../collective/spec/util/fixture.js', {encoding: 'utf8'}, function (err, data) {
-                var fixtureString = data;
-                fixtureString = fixtureString.replace('var fixture', "window['fixture']");
-                driver = getWebDriver();
-                driver.get(process.env['MERCURY_URL'] + '/index.html').then(function () {
-                    driver.executeScript(jquery + "    " + apiClientString + "    " + fixtureString).then(function () {
-                            driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                                    "window['fix'] = window['fixture']('Events Spec', " + JSON.stringify(options) + "); " +
-                                    "window['fix'].beforeTest(function (err, env) { " +
-                                    "   callback(env); " +
-                                    "}); "
-                                    ).then(function (environment) {
-                                        cb(driver, environment);
-                                    });
-                        });
+        var seeds_data = fs.readFileSync(__dirname + '/../../../../../collective/lib/seeds_data.js', {encoding: 'utf8'});
+        var jquery = fs.readFileSync(__dirname + '/../../../../../collective/spec/util/jquery.js', {encoding: 'utf8'});
+        var apiClientString = fs.readFileSync(__dirname + '/../../../../../collective/spec/util/api_client.js', {encoding: 'utf8'});
+        var fixtureString = fs.readFileSync(__dirname + '/../../../../../collective/spec/util/fixture.js', {encoding: 'utf8'});
+        fixtureString = fixtureString.replace('var fixture', "window['fixture']");
+        seeds_data = seeds_data.replace("module.exports.CONFIG = {", "window['config'] = { ");
+        seeds_data = seeds_data.concat("; function trudat() { return true; };");
+        fixtureString = fixtureString.replace('module.exports.CONFIG', "window['config']");
+        driver = getWebDriver();
+        driver.get(process.env['MERCURY_URL'] + '/index.html').then(function () {
+            driver.executeScript(seeds_data + "   " + jquery + "    " + apiClientString + "    " + fixtureString).then(function () {
+                driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
+                        "window['fix'] = window['fixture']('Events Spec', " + JSON.stringify(options) + "); " +
+                        "window['fix'].beforeTest(function (err, env) { " +
+                        "   callback(env); " +
+                        "}); "
+                    ).then(function (environment) {
+                        cb(driver, environment);
                     });
-                });
             });
         });
     },
