@@ -9,7 +9,7 @@ function getWebDriver(options) {
     var browserName = process.env["SELENIUM_BROWSER"] || 'chrome';
 
     if (!options) {
-        options = {timeout: 10000, capabilities: {'browserName': browserName,'chromeOptions': {"args": ['--incognito']}}};
+        options = {timeout: 15000, capabilities: {'browserName': browserName,'chromeOptions': {"args": ['--incognito']}}};
     }
     var driver = new webdriver.Builder().
             usingServer(selenium_server_url).

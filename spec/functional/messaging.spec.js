@@ -58,7 +58,7 @@ describe('Messaging', function () {
         }).then(function () {
             done();
         });
-    });
+    }, 15000);
 
     describe("send and receive messages", function () {
 
