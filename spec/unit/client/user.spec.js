@@ -1,84 +1,90 @@
+
+var expect = chai.expect;
+
 var client = webrtc.Client();
+
 describe("A webrtc.User ", function () {
-  var user = webrtc.User({
-    "client": client.getID(),
-    "name": "Mickey Mouse",
-    "id": "JH5K34J5K34J3453K4J53K45",
-    "timeLoggedIn": new Date(),
-    "loggedIn": true,
-    "gloveColor": "white"
-  });
-  var firedPresence = false;
+    var user = webrtc.User({
+        "client": client.getID(),
+        "name": "Mickey Mouse",
+        "id": "JH5K34J5K34J3453K4J53K45",
+        "timeLoggedIn": new Date(),
+        "loggedIn": true,
+        "gloveColor": "white"
+    });
 
-  /*
-   * Inheritance
-   */
-  it("extends webrtc.Class.", function () {
-    expect(typeof user.getClass).toBe('function');
-  });
+    /*
+    * Inheritance
+    */
+    it("extends webrtc.Class.", function () {
+        expect(typeof user.getClass).to.equal('function');
+    });
 
-  it("extends webrtc.EventEmitter.", function () {
-    expect(typeof user.listen).toBe('function');
-    expect(typeof user.ignore).toBe('function');
-    expect(typeof user.fire).toBe('function');
-  });
+    it("extends webrtc.EventEmitter.", function () {
+        expect(typeof user.listen).to.equal('function');
+        expect(typeof user.ignore).to.equal('function');
+        expect(typeof user.fire).to.equal('function');
+    });
 
-  it("extends webrtc.AbstractPresentable.", function () {
-    expect(typeof user.getID).toBe('function');
-    expect(typeof user.getName).toBe('function');
-    expect(typeof user.getPresence).toBe('function');
-    expect(typeof user.setPresence).toBe('function');
-    expect(typeof user.canSendAudio).toBe('function');
-    expect(typeof user.canSendVideo).toBe('function');
-    expect(typeof user.callInProgress).toBe('function');
-  });
+    it("extends webrtc.AbstractPresentable.", function () {
+        expect(typeof user.getID).to.equal('function');
+        expect(typeof user.getName).to.equal('function');
+        expect(typeof user.getPresence).to.equal('function');
+        expect(typeof user.setPresence).to.equal('function');
+        expect(typeof user.canSendAudio).to.equal('function');
+        expect(typeof user.canSendVideo).to.equal('function');
+        expect(typeof user.callInProgress).to.equal('function');
+    });
 
-  /*
-   * Make sure there is a className attribute and getClass method on every instance.
-   */
-  it("has the correct class name.", function () {
-    expect(user.className).not.toBeFalsy();
-    expect(user.getClass()).toBe('webrtc.User');
-  });
+    /*
+    * Make sure there is a className attribute and getClass method on every instance.
+    */
+    it("has the correct class name.", function () {
+        expect(user.className).to.be.ok;
+        expect(user.getClass()).to.equal('webrtc.User');
+    });
 
-  /*
-   * Native methods
-   */
-  it("contains some important methods.", function () {
-    expect(typeof user.getUserSession).toBe('function');
-    expect(typeof user.getContacts).toBe('function');
-    expect(typeof user.setOnline).toBe('function');
-  });
+    /*
+    * Native methods
+    */
+    it("contains some important methods.", function () {
+        expect(typeof user.getUserSession).to.equal('function');
+        expect(typeof user.getContacts).to.equal('function');
+        expect(typeof user.setOnline).to.equal('function');
+    });
 
-  /*
-   * Presence
-   */
-  it("can set and get presence and fires the correct event.", function () {
-    var newPresence = 'xa';
+    /*
+    * Presence
+    */
+    it("can set and get presence and fires the correct event.", function () {
+        var newPresence = 'xa';
 
-    spyOn(user, "fire");
+        sinon.spy(user, "fire");
+        try {
+            user.setPresence(newPresence);
 
-    user.setPresence(newPresence);
+            expect(user.getPresence()).to.equal(newPresence);
+            expect(user.fire.calledWith('presence')).to.equal(true);
+        } finally {
+            user.fire.restore();
+        }
+    });
 
-    expect(user.getPresence()).toBe(newPresence);
-    expect(user.fire).toHaveBeenCalledWith('presence', newPresence);
-  });
+    /*
+    * Constructor
+    */
+    it("saves unexpected developer-specified parameters.", function () {
+        expect(user.gloveColor).to.equal('white');
+    });
 
-  /*
-   * Constructor
-   */
-  it("saves unexpected developer-specified parameters.", function () {
-    expect(user.gloveColor).toBe('white');
-  });
+    it("doesn't expose the signaling channel", function () {
+        expect(user.signalingChannel).to.not.exist;
+        expect(user.getSignalingChannel).to.not.exist;
+    });
 
-  it("doesn't expose the signaling channel", function () {
-    expect(user.signalingChannel).toBeUndefined();
-    expect(user.getSignalingChannel).toBeUndefined();
-  });
-
-  it("has a user session.", function () {
-	var userSession = user.getUserSession();
-	expect(userSession).not.toBe(undefined);
-	expect(userSession.timeLoggedIn).not.toBe(undefined);
-  });
+    it("has a user session.", function () {
+        var userSession = user.getUserSession();
+        expect(userSession).to.not.equal(undefined);
+        expect(userSession.timeLoggedIn).to.not.equal(undefined);
+    });
 });
