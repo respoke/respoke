@@ -826,7 +826,6 @@ webrtc.SignalingMessage = function (params) {
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
-        var pieces = [];
         var sessionId = null;
 
         if (thisMsg) {
@@ -834,9 +833,8 @@ webrtc.SignalingMessage = function (params) {
         }
 
         try {
-            pieces = rawMessage.header.from.split(':')[1].split('@');
-            sender = pieces[0];
-            sessionId = pieces[1];
+            sender = rawMessage.header.from;
+            sessionId = rawMessage.header.fromSession;
         } catch (e) {
             // Wasn't a socket message.
             sender = rawMessage.userId;
@@ -923,15 +921,13 @@ webrtc.PresenceMessage = function (params) {
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (thisMsg) {
-        var pieces;
         if (thisMsg) {
             rawMessage = thisMsg;
         }
 
         try {
-            pieces = rawMessage.header.from.split(':')[1].split('@');
-            sender = pieces[0];
-            sessionId = pieces[1];
+            sender = rawMessage.header.from;
+            sessionId = rawMessage.header.fromSession;
         } catch (e) {
             // Wasn't a socket message.
             sender = rawMessage.userId;
