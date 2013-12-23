@@ -720,13 +720,14 @@ webrtc.User = function (params) {
 
         signalingChannel.addHandler('chat', function messageHandler(message) {
             var contact;
+            var source = message.header.from + '@' + message.header.fromSession;
             try {
-                contact = contactList.get(message.header.from.split(':')[1]);
+                contact = contactList.get(source);
             } catch (e) {
                 throw new Error("Couldn't parse chat message.");
             }
             if (!contact) {
-                log.warn("No such contact " + message.header.from);
+                log.warn("No such contact " + source);
                 return;
             }
 
