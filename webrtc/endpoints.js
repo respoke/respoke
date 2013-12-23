@@ -720,7 +720,11 @@ webrtc.User = function (params) {
 
         signalingChannel.addHandler('chat', function messageHandler(message) {
             var contact;
-            var source = message.header.from + '@' + message.header.fromSession;
+            var source = message.header.from;
+            if (message.header.fromSession) {
+               source += '@' + message.header.fromSession;
+            }
+
             try {
                 contact = contactList.get(source);
             } catch (e) {
