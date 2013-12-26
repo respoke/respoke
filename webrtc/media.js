@@ -85,7 +85,7 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.start
      * @fires webrtc.Call#start
      */
-    var start = that.publicize('start', function () {
+    var start = that.publicize('start', function (callSettingsOverride) {
         that.state = ST_STARTED;
         if (!that.username) {
             throw new Error("Can't use a Call without username.");
@@ -93,7 +93,7 @@ webrtc.Call = function (params) {
         report.startCount += 1;
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
         that.fire('start');
-        requestMedia();
+        requestMedia(callSettingsOverride);
     });
 
     /**
@@ -213,10 +213,18 @@ webrtc.Call = function (params) {
      * @todo Find out when we can stop deleting TURN servers
      * @private
      */
-    var requestMedia = function () {
+    var requestMedia = function (callSettingsOverride) {
         var now = new Date();
         var toDelete = [];
         var url = '';
+
+        callSettingsOverride = callSettingsOverride || {};
+        if (callSettingsOverride.servers) {
+            callSettings.servers = callSettingsOverride.servers;
+        }
+        if (callSettingsOverride.constraints) {
+            callSettings.constraints = callSettingsOverride.constraints;
+        }
 
         report.callStarted = now.getTime();
         log.trace('requestMedia');
