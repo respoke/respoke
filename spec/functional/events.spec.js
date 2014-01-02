@@ -6,15 +6,14 @@ var password2 = 'password';
 
 var helpers = require('../util/helpers.js');
 var Client = helpers.Client;
-
-
+var expect = require('chai').expect;
 var driver;
-var testFixture;
 var env;
 
-
-
 describe('System Events', function () {
+
+    this.timeout(30000);
+
     var driver1;
     var client1;
     var client1Name = 'client1';
@@ -23,30 +22,27 @@ describe('System Events', function () {
     var client2;
     var client2Name = 'client2';
 
-    it("fixture setup", function (done) {
+    before(function (done) {
         helpers.testFixtureBeforeTest({randomUserNames: 2, createContacts: true}, function (d, environment) {
             driver = d;
             env = environment;
             username1 = env.users[0].username;
             username2 = env.users[1].username;
-            done();
-        });
-    });
 
-    it("test setup", function (done) {
-        driver1 = helpers.webDriver();
-        client1 = new Client(driver1, client1Name, env.url);
-        driver1.get(process.env['MERCURY_URL'] + '/index.html');
-        client1.init(env.appId);
-        client1.connect();
-        client1.login(username1, password1).then(function () {
-            driver2 = helpers.webDriver();
-            client2 = new Client(driver2, client2Name, env.url);
-            driver2.get(process.env['MERCURY_URL'] + '/index.html');
-            client2.init(env.appId);
-            client2.connect();
-        }).then(function () {
-            done();
+            driver1 = helpers.webDriver();
+            client1 = new Client(driver1, client1Name, env.url);
+            driver1.get(process.env['MERCURY_URL'] + '/index.html');
+            client1.init(env.appId);
+            client1.connect();
+            client1.login(username1, password1).then(function () {
+                driver2 = helpers.webDriver();
+                client2 = new Client(driver2, client2Name, env.url);
+                driver2.get(process.env['MERCURY_URL'] + '/index.html');
+                client2.init(env.appId);
+                client2.connect();
+            }).then(function () {
+                    done();
+                });
         });
     });
 
@@ -61,7 +57,7 @@ describe('System Events', function () {
                 client2.login(username2, password2).then(function (user) {
                     setTimeout(function () {
                         client1.getValue('contactsPresence').then(function (value) {
-                            expect(value).toBe('available');
+                            expect(value).to.equal('available');
                             done();
                         });
                     }, 1000);
@@ -73,7 +69,7 @@ describe('System Events', function () {
             client2.setPresence('unavailable').then(function () {
                 setTimeout(function () {
                     client1.getValue('contactsPresence').then(function (value) {
-                        expect(value).toBe('unavailable');
+                        expect(value).to.equal('unavailable');
                         done();
                     });
                 }, 1000);
@@ -93,7 +89,7 @@ describe('System Events', function () {
                 client1.sendMessage(username2, 'Howdy!').then(function () {
                     setTimeout(function () {
                         client2.getValue('messageReceived.getText()').then(function (value) {
-                            expect(value).toBe('Howdy!');
+                            expect(value).to.equal('Howdy!');
                             done();
                         });
                     }, 1000);
@@ -247,13 +243,9 @@ describe('System Events', function () {
      */
     });
 
-    it("test teardown", function (done) {
+    after(function (done) {
         driver1.quit();
         driver2.quit();
-        done();
-    });
-
-    it("fixture teardown", function (done) {
         helpers.testFixtureAfterTest(driver, done);
     });
 });

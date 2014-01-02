@@ -1,5 +1,6 @@
 var helpers = require('../util/helpers.js');
 var Client = helpers.Client;
+var expect = require('chai').expect;
 var fixtureDriver;
 
 var clientName = 'client1';
@@ -10,15 +11,15 @@ var env;
 
 describe("client", function () {
 
-    describe("fixture setup", function () {
-        it("fixture setup", function (done) {
-            helpers.testFixtureBeforeTest({randomUserNames: 2}, function (d, environment) {
-                fixtureDriver = d;
-                env = environment;
-                username = env.users[0].username;
-                username2 = env.users[1].username;
-                done();
-            });
+    this.timeout(30000);
+
+    before(function (done) {
+        helpers.testFixtureBeforeTest({randomUserNames: 2}, function (d, environment) {
+            fixtureDriver = d;
+            env = environment;
+            username = env.users[0].username;
+            username2 = env.users[1].username;
+            done();
         });
     });
 
@@ -40,7 +41,7 @@ describe("client", function () {
 
         it("not connected", function (done) {
             client.isConnected().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
                 done();
             });
         });
@@ -48,7 +49,7 @@ describe("client", function () {
         it("connected", function (done) {
             client.connect();
             client.isConnected().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
                 done();
             });
         });
@@ -57,7 +58,7 @@ describe("client", function () {
             client.connect();
             client.disconnect();
             client.isConnected().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
                 done();
             });
         });
@@ -82,14 +83,14 @@ describe("client", function () {
 
         it("not authenticated", function () {
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
             });
         });
 
         it("login", function (done) {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
                 client.logout().then(done);
             });
         });
@@ -103,7 +104,7 @@ describe("client", function () {
                 "    callback(error);" +
                 "});");
             login.then(function (error) {
-                expect(error).toBeDefined();
+                expect(error).to.exist;
                 done();
             });
         });
@@ -111,11 +112,11 @@ describe("client", function () {
         it("logout", function (done) {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
             });
             client.logout();
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
                 done();
             });
         });
@@ -124,11 +125,11 @@ describe("client", function () {
         xit("should login / logout / login", function (done) {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true)
+                expect(result).to.equal(true)
             });
             client.logout();
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
             });
             // client = new Client(driver, clientName + '2');
             // client.init(env.appId);
@@ -136,7 +137,7 @@ describe("client", function () {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
                 console.log(result);
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
                 done();
             });
         });
@@ -144,15 +145,15 @@ describe("client", function () {
         xit("should logout twice after login with no side effects", function (done) {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
             });
             client.logout();
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
             });
             client.logout();
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
                 done();
             });
         });
@@ -161,11 +162,11 @@ describe("client", function () {
         xit("should login user 1, logout user1, and login user2", function (done) {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
             });
             client.logout();
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(false);
+                expect(result).to.equal(false);
             });
             // client = new Client(driver, clientName + '3');
             // client.init(env.appId);
@@ -173,7 +174,7 @@ describe("client", function () {
             client.login(username2, password);
             client.isLoggedIn().then(function (result) {
                 console.log(result);
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
                 done();
             });
         });
@@ -181,11 +182,11 @@ describe("client", function () {
         it("should login user twice", function (done) {
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
             });
             client.login(username, password);
             client.isLoggedIn().then(function (result) {
-                expect(result).toBe(true);
+                expect(result).to.equal(true);
                 done();
             });
         });
@@ -218,30 +219,28 @@ describe("client", function () {
         it("getClientSettings should have appId", function () {
             indexPromise.then(function () {
                 client.getClientSettings().then(function (clientSettings) {
-                    expect(clientSettings.appId).toBeDefined();
-                    expect(clientSettings.appId).toBe(env.appId);
+                    expect(clientSettings.appId).to.exist;
+                    expect(clientSettings.appId).to.equal(env.appId);
                 });
             });
         });
 
         it("CallSettings should have callSettings", function () {
             client.getCallSettings().then(function (callSettings) {
-                expect(callSettings).toBeDefined();
-                expect(callSettings.constraints).toBeDefined();
+                expect(callSettings).to.exist;
+                expect(callSettings.constraints).to.exist;
             });
         });
 
         it("getSignalingChannel should have a signaling channel", function () {
             client.getSignalingChannel().then(function (signalingChannel) {
-                expect(signalingChannel).toBeDefined();
+                expect(signalingChannel).to.exist;
             });
         });
     });
 
-    describe("fixture teardown", function () {
-        it("teardown fixture", function (done) {
-            helpers.testFixtureAfterTest(fixtureDriver, done);
-        });
+    after(function (done) {
+        helpers.testFixtureAfterTest(fixtureDriver, done);
     });
 });
 
