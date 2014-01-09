@@ -14,5 +14,9 @@
   "license": "Proprietary",
   "dependencies": {
     "uglify-js": "~2.4.0"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.2",
+    "grunt-contrib-uglify": "~0.2.7"
   }
 }
