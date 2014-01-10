@@ -170,7 +170,7 @@ module.exports = {
 
     testFixtureBeforeTest: function (options, cb) {
         var seeds_data = fs.readFileSync(__dirname + '/../../../../../collective/lib/seeds_data.js', {encoding: 'utf8'});
-        var jquery = fs.readFileSync(__dirname + '/../../../../../collective/spec/util/jquery.js', {encoding: 'utf8'});
+        var jquery = fs.readFileSync(__dirname + '/../../../../../collective/assets/js/jquery.js', {encoding: 'utf8'});
         var apiClientString = fs.readFileSync(__dirname + '/../../../../../collective/spec/util/api_client.js', {encoding: 'utf8'});
         var fixtureString = fs.readFileSync(__dirname + '/../../../../../collective/spec/util/fixture.js', {encoding: 'utf8'});
         fixtureString = fixtureString.replace('var fixture', "window['fixture']");
