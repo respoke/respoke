@@ -185,7 +185,7 @@ webrtc.AbstractEndpoint = function (params) {
      * will be generated and with which the SDP will be modified.
      * @returns {webrtc.Call}
      */
-    var startCall = that.publicize('startCall', function (callSettings) {
+    var startCall = that.publicize('startCall', function (params) {
     });
 
     /**
@@ -410,7 +410,7 @@ webrtc.Endpoint = function (params) {
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startCall = that.publicize('startCall', function (callSettings, initiator) {
+    var startCall = that.publicize('startCall', function (params) {
         var id = that.getID();
         var call = null;
         var clientObj = webrtc.getClient(client);
@@ -418,8 +418,8 @@ webrtc.Endpoint = function (params) {
         var user = clientObj.user;
 
         log.trace('Endpoint.startCall');
-        if (initiator === undefined) {
-            initiator = true;
+        if (params.initiator === undefined) {
+            params.initiator = true;
         }
 
         if (!id) {
@@ -428,41 +428,38 @@ webrtc.Endpoint = function (params) {
         }
 
         // Apply call-specific callSettings to the app's defaults
-        if (callSettings) {
-            callSettings.forOwn(function copyParam(thing, name) {
+        if (params.callSettings) {
+            params.callSettings.forOwn(function copyParam(thing, name) {
                 combinedCallSettings[name] = thing;
             });
         }
+        params.callSettings = combinedCallSettings;
+        params.client = client;
+        params.username = user.getUsername();
+        params.remoteEndpoint = id;
+        params.signalOffer = function (sdp) {
+            log.trace('signalOffer');
+            signalingChannel.sendSDP(that, sdp);
+        };
+        params.signalAnswer = function (sdp) {
+            log.trace('signalAnswer');
+            signalingChannel.sendSDP(that, sdp);
+        };
+        params.signalCandidate = function (oCan) {
+            oCan.type = 'candidate';
+            signalingChannel.sendCandidate(that, oCan);
+        };
+        params.signalTerminate = function () {
+            log.trace('signalTerminate');
+            signalingChannel.sendBye(that);
+        };
+        params.signalReport = function (oReport) {
+            log.debug("Not sending report");
+            log.debug(oReport);
+        };
+        call = webrtc.Call(params);
 
-        call = webrtc.Call({
-            'client': client,
-            'username': user.getUsername(),
-            'remoteEndpoint': id,
-            'initiator': initiator,
-            'callSettings': combinedCallSettings,
-            'signalOffer': function (sdp) {
-                log.trace('signalOffer');
-                signalingChannel.sendSDP(that, sdp);
-            },
-            'signalAnswer': function (sdp) {
-                log.trace('signalAnswer');
-                signalingChannel.sendSDP(that, sdp);
-            },
-            'signalCandidate': function (oCan) {
-                oCan.type = 'candidate';
-                signalingChannel.sendCandidate(that, oCan);
-            },
-            'signalTerminate': function () {
-                log.trace('signalTerminate');
-                signalingChannel.sendBye(that);
-            },
-            'signalReport': function (oReport) {
-                log.debug("Not sending report");
-                log.debug(oReport);
-            }
-        });
-
-        if (initiator === true) {
+        if (params.initiator === true) {
             call.start();
         }
         user.addCall(call);
@@ -799,7 +796,10 @@ webrtc.User = function (params) {
             try {
                 contact = contactList.get(contactId);
                 callSettings = webrtc.getClient(client).getCallSettings();
-                call = contact.startCall(callSettings, false);
+                call = contact.startCall({
+                    callSettings: callSettings,
+                    initiator: false
+                });
             } catch (e) {
                 log.error("Couldn't create Call: " + e.message);
             }

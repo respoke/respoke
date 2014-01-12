@@ -29,6 +29,9 @@ webrtc.Call = function (params) {
     var savedOffer = null;
     var receivedAnswer = false;
     var receivedBye = false;
+    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
+    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
+    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
     var candidateSendingQueue = [];
     var candidateReceivingQueue = [];
     var mediaStreams = [];
@@ -85,15 +88,25 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.start
      * @fires webrtc.Call#start
      */
-    var start = that.publicize('start', function (callSettingsOverride) {
+    var start = that.publicize('start', function (params) {
         that.state = ST_STARTED;
+        params = params || {};
+
+        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
+        previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : previewLocalMedia;
+
         if (!that.username) {
             throw new Error("Can't use a Call without username.");
         }
         report.startCount += 1;
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
         that.fire('start');
-        requestMedia(callSettingsOverride);
+
+        if (receiveOnly !== true) {
+            requestMedia(params.callSettings);
+        } else if (typeof previewLocalMedia !== 'function') {
+            answer();
+        }
     });
 
     /**
@@ -162,12 +175,6 @@ webrtc.Call = function (params) {
             return;
         }
 
-        mediaStreams.push(webrtc.MediaStream({
-            'stream': stream,
-            'isLocal': true
-        }));
-
-        stream.id = clientObj.user.getID();
         pc.addStream(stream);
 
         for (var i = 0; (i < localVideoElements.length && videoLocalElement === null); i += 1) {
@@ -180,12 +187,41 @@ webrtc.Call = function (params) {
             videoLocalElement = document.createElement('video');
         }
 
-        // We won't want our local video outputting audio.
-        videoLocalElement.muted = true;
-        videoLocalElement.autoplay = true;
-        videoLocalElement.used = true;
-        attachMediaStream(videoLocalElement, stream);
-        that.fire('local-stream-received', videoLocalElement);
+        // This still needs some work. Using cached streams causes an unused video element to be passed
+        // back to the App. This is because we assume at the moment that only one local media video element
+        // will be needed. The first one passed back will contain media and the others will fake it. Media
+        // will still be sent with every peer connection. Also need to study the use of getLocalElement
+        // and the implications of passing back a video element with no media attached.
+        if (webrtc.streams[callSettings.constraints]) {
+            webrtc.streams[callSettings.constraints].numPc += 1;
+            setTimeout(function () {
+                that.fire('local-stream-received', videoLocalElement);
+            }, 500);
+        } else {
+            stream.numPc = 1;
+            webrtc.streams[callSettings.constraints] = stream;
+            mediaStreams.push(webrtc.MediaStream({
+                'stream': stream,
+                'isLocal': true
+            }));
+
+            stream.id = clientObj.user.getID();
+            attachMediaStream(videoLocalElement, stream);
+            // We won't want our local video outputting audio.
+            videoLocalElement.muted = true;
+            videoLocalElement.autoplay = true;
+            videoLocalElement.used = true;
+
+            that.fire('local-stream-received', videoLocalElement);
+        }
+
+        if (typeof previewLocalMedia === 'function') {
+            setTimeout(function () {
+                previewLocalMedia(videoLocalElement, that);
+            }, 100);
+        } else {
+            answer();
+        }
     };
 
     /**
@@ -213,17 +249,17 @@ webrtc.Call = function (params) {
      * @todo Find out when we can stop deleting TURN servers
      * @private
      */
-    var requestMedia = function (callSettingsOverride) {
+    var requestMedia = function (finalCallSettings) {
         var now = new Date();
         var toDelete = [];
         var url = '';
 
-        callSettingsOverride = callSettingsOverride || {};
-        if (callSettingsOverride.servers) {
-            callSettings.servers = callSettingsOverride.servers;
+        finalCallSettings = finalCallSettings || {};
+        if (finalCallSettings.servers) {
+            callSettings.servers = finalCallSettings.servers;
         }
-        if (callSettingsOverride.constraints) {
-            callSettings.constraints = callSettingsOverride.constraints;
+        if (finalCallSettings.constraints) {
+            callSettings.constraints = finalCallSettings.constraints;
         }
 
         report.callStarted = now.getTime();
@@ -258,9 +294,22 @@ webrtc.Call = function (params) {
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
 
-        log.debug("Running getUserMedia with constraints");
-        log.debug(callSettings.constraints);
-        getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
+        if (webrtc.streams[callSettings.constraints]) {
+            log.debug('using old stream');
+            onReceiveUserMedia(webrtc.streams[callSettings.constraints]);
+            return;
+        }
+
+        try {
+            log.debug("Running getUserMedia with constraints");
+            log.debug(callSettings.constraints);
+            // TODO set webrtc.streams[callSettings.constraints] = true as a flag that we are already
+            // attempting to obtain this media so the race condition where gUM is called twice with
+            // the same constraints when calls are placed too quickly together doesn't occur.
+            getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
+        } catch (e) {
+            log.error("Couldn't get user media: " + e.message);
+        }
     };
 
     /**
@@ -314,6 +363,7 @@ webrtc.Call = function (params) {
 
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
+        videoRemoteElement.play();
         attachMediaStream(videoRemoteElement, evt.stream);
         that.fire('remote-stream-received', videoRemoteElement);
 
@@ -476,13 +526,14 @@ webrtc.Call = function (params) {
             log.trace("Call.stop got called twice.");
             return;
         }
+        that.state = ST_ENDED;
+
         // Never send bye if we are the initiator but we haven't sent any other signal yet.
         log.trace("at stop, call state is " + that.state);
         if (that.initiator === true && that.state < ST_OFFERED) {
             sendSignal = false;
         }
 
-        that.state = ST_ENDED;
         clientObj.updateTurnCredentials();
         /*if (pc === null) {
             return;
@@ -501,8 +552,13 @@ webrtc.Call = function (params) {
         that.fire('hangup', sendSignal);
         that.ignore();
 
-        mediaStreams.forOwn(function stopEach(stream) {
-            stream.stop();
+        mediaStreams.forOwn(function stopEach(mediaStream) {
+            var stream = mediaStream.getStream();
+            stream.numPc -= 1;
+            if (stream.numPc === 0){
+                stream.stop();
+                delete webrtc.streams[callSettings.constraints];
+            }
         });
 
         if (pc) {
@@ -908,6 +964,16 @@ webrtc.MediaStream = function (params) {
      */
     var getURL = that.publicize('getURL', function () {
         //return webkitURL.createObjectURL(stream);
+    });
+
+    /**
+     * Get the stream
+     * @memberof! webrtc.MediaStream
+     * @method webrtc.MediaStream.getStream
+     * @return {MediaStream}
+     */
+    var getStream = that.publicize('getStream', function () {
+        return stream;
     });
 
     return that;

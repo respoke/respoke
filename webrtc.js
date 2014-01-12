@@ -13,7 +13,8 @@
  * @global
  */
 var webrtc = {
-    'instances': {}
+    streams: {},
+    instances: {}
 };
 log.setLevel('debug');
 
