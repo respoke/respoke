@@ -37,12 +37,12 @@ webrtc.Client = function (params) {
     log.debug("Client ID is " + client);
 
     var callSettings = {
-        constraints: params.constraints || [{
+        constraints: params.constraints || {
             video : { mandatory: { minWidth: 640, minHeight: 480 } },
             audio : true,
             optional: [],
             mandatory: {}
-        }],
+        },
         servers: params.servers || {
             iceServers: []
         }

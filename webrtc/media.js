@@ -152,7 +152,7 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.onReceiveUserMedia
      * @private
      */
-    var onReceiveUserMedia = function (stream, oneConstraints, index) {
+    var onReceiveUserMedia = function (stream) {
         that.state = ST_APPROVED;
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
@@ -167,7 +167,7 @@ webrtc.Call = function (params) {
             'isLocal': true
         }));
 
-        stream.id = clientObj.user.getID() + index;
+        stream.id = clientObj.user.getID();
         pc.addStream(stream);
 
         for (var i = 0; (i < localVideoElements.length && videoLocalElement === null); i += 1) {
@@ -258,19 +258,9 @@ webrtc.Call = function (params) {
         pc.onstatechange = onStateChange;
         pc.onicechange = onIceChange;
 
-        callSettings.constraints.forOwn(function tryConstraint(oneConstraints, index) {
-            try {
-                log.debug("Running getUserMedia with constraints");
-                log.debug(oneConstraints);
-                getUserMedia(oneConstraints, function successHandler(p) {
-                    onReceiveUserMedia(p, oneConstraints, index);
-                }, function errorHandler(p) {
-                    onUserMediaError(p, oneConstraints, index);
-                });
-            } catch (e) {
-                log.error("Couldn't get user media: " + e.message);
-            }
-        });
+        log.debug("Running getUserMedia with constraints");
+        log.debug(callSettings.constraints);
+        getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
     };
 
     /**
@@ -279,7 +269,7 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.onUserMediaError
      * @private
      */
-    var onUserMediaError = function (p, oneConstraints, index) {
+    var onUserMediaError = function (p) {
         log.trace('onUserMediaError');
         that.state = ST_MEDIA_ERROR;
         if (p.code === 1) {
