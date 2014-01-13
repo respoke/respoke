@@ -45,8 +45,6 @@ describe("A webrtc.AbstractEndpoint ", function () {
      * Native methods
      */
     it("contains some important methods.", function () {
-        expect(typeof endpoint.call).to.equal('function');
-        expect(typeof endpoint.hangup).to.equal('function');
         expect(typeof endpoint.sendMessage).to.equal('function');
     });
 
