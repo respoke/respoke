@@ -58,8 +58,6 @@ webrtc.Call = function (params) {
     };
 
     var report = {
-        'answerCount' : 0,
-        'startCount' : 0,
         'callStarted' : 0,
         'callStopped' : 0,
         'roomkey' : null,
@@ -85,10 +83,10 @@ webrtc.Call = function (params) {
     /**
      * Start the process of obtaining media.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.start
-     * @fires webrtc.Call#start
+     * @method webrtc.Call.answer
+     * @fires webrtc.Call#answer
      */
-    var start = that.publicize('start', function (params) {
+    var answer = that.publicize('answer', function (params) {
         that.state = ST_STARTED;
         params = params || {};
 
@@ -98,27 +96,25 @@ webrtc.Call = function (params) {
         if (!that.username) {
             throw new Error("Can't use a Call without username.");
         }
-        report.startCount += 1;
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
-        that.fire('start');
+        that.fire('answer');
 
         if (receiveOnly !== true) {
             requestMedia(params.callSettings);
         } else if (typeof previewLocalMedia !== 'function') {
-            answer();
+            approve();
         }
     });
 
     /**
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.answer
+     * @method webrtc.Call.approve.
      */
-    var answer = that.publicize('answer', function (oSession) {
-        log.trace('Call.answer');
+    var approve = that.publicize('approve', function (oSession) {
+        log.trace('Call.approve');
         that.state = ST_REVIEW;
-        report.answerCount += 1;
-        that.fire('answer');
+        that.fire('approve');
 
         if (that.initiator === true) {
             log.info('creating offer');
@@ -220,7 +216,7 @@ webrtc.Call = function (params) {
                 previewLocalMedia(videoLocalElement, that);
             }, 100);
         } else {
-            answer();
+            approve();
         }
     };
 
@@ -570,7 +566,7 @@ webrtc.Call = function (params) {
     });
 
     /*
-     * Expose stop as reject for answer/reject workflow.
+     * Expose stop as reject for approve/reject workflow.
      * @memberof! webrtc.Call
      * @method webrtc.Call.reject
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending

@@ -177,25 +177,6 @@ webrtc.AbstractEndpoint = function (params) {
         }
     });
 
-    /**
-     * Start a call.
-     * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.startCall
-     * @param {object} callSettings Group of media settings from which WebRTC constraints
-     * will be generated and with which the SDP will be modified.
-     * @returns {webrtc.Call}
-     */
-    var startCall = that.publicize('startCall', function (params) {
-    });
-
-    /**
-     * Stop a call.
-     * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.stopCall
-     */
-    var stopCall = that.publicize('stopCall', function () {
-    });
-
     return that;
 }; // End webrtc.AbstractEndpoint
 
@@ -402,22 +383,32 @@ webrtc.Endpoint = function (params) {
     });
 
     /**
+     * Hangup a call with a contact 
+     * @memberof! webrtc.Endpoint
+     * @method webrtc.Endpoint.hangup
+     */
+    var hangup = that.publicize('hangup', function () {
+        var call = clientObj.user.getCallByContact(that.getID());
+        call.hangup();
+    });
+
+    /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.startCall
+     * @method webrtc.Endpoint.call
      * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startCall = that.publicize('startCall', function (params) {
+    var call = that.publicize('call', function (params) {
         var id = that.getID();
         var call = null;
         var clientObj = webrtc.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
 
-        log.trace('Endpoint.startCall');
+        log.trace('Endpoint.call');
         if (params.initiator === undefined) {
             params.initiator = true;
         }
@@ -460,7 +451,7 @@ webrtc.Endpoint = function (params) {
         call = webrtc.Call(params);
 
         if (params.initiator === true) {
-            call.start();
+            call.answer();
         }
         user.addCall(call);
         call.listen('hangup', function hangupListener(locallySignaled) {
@@ -796,7 +787,7 @@ webrtc.User = function (params) {
             try {
                 contact = contactList.get(contactId);
                 callSettings = webrtc.getClient(client).getCallSettings();
-                call = contact.startCall({
+                call = contact.call({
                     callSettings: callSettings,
                     initiator: false
                 });
