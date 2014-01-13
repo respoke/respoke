@@ -191,7 +191,7 @@ webrtc.Call = function (params) {
         if (webrtc.streams[callSettings.constraints]) {
             webrtc.streams[callSettings.constraints].numPc += 1;
             setTimeout(function () {
-                that.fire('local-stream-received', videoLocalElement);
+                that.fire('local-stream-received', videoLocalElement, that);
             }, 500);
         } else {
             stream.numPc = 1;
@@ -208,7 +208,7 @@ webrtc.Call = function (params) {
             videoLocalElement.autoplay = true;
             videoLocalElement.used = true;
 
-            that.fire('local-stream-received', videoLocalElement);
+            that.fire('local-stream-received', videoLocalElement, that);
         }
 
         if (typeof previewLocalMedia === 'function') {
@@ -361,7 +361,7 @@ webrtc.Call = function (params) {
         videoRemoteElement.used = true;
         videoRemoteElement.play();
         attachMediaStream(videoRemoteElement, evt.stream);
-        that.fire('remote-stream-received', videoRemoteElement);
+        that.fire('remote-stream-received', videoRemoteElement, that);
 
         mediaStreams.push(webrtc.MediaStream({
             'stream': evt.stream,

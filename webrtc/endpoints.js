@@ -383,16 +383,6 @@ webrtc.Endpoint = function (params) {
     });
 
     /**
-     * Hangup a call with a contact 
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.hangup
-     */
-    var hangup = that.publicize('hangup', function () {
-        var call = clientObj.user.getCallByContact(that.getID());
-        call.hangup();
-    });
-
-    /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
