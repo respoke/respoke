@@ -177,25 +177,6 @@ webrtc.AbstractEndpoint = function (params) {
         }
     });
 
-    /**
-     * Start a call.
-     * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.startCall
-     * @param {object} callSettings Group of media settings from which WebRTC constraints
-     * will be generated and with which the SDP will be modified.
-     * @returns {webrtc.Call}
-     */
-    var startCall = that.publicize('startCall', function (callSettings) {
-    });
-
-    /**
-     * Stop a call.
-     * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.stopCall
-     */
-    var stopCall = that.publicize('stopCall', function () {
-    });
-
     return that;
 }; // End webrtc.AbstractEndpoint
 
@@ -405,21 +386,21 @@ webrtc.Endpoint = function (params) {
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
      * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.startCall
+     * @method webrtc.Endpoint.call
      * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
      */
-    var startCall = that.publicize('startCall', function (callSettings, initiator) {
+    var call = that.publicize('call', function (params) {
         var id = that.getID();
         var call = null;
         var clientObj = webrtc.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
 
-        log.trace('Endpoint.startCall');
-        if (initiator === undefined) {
-            initiator = true;
+        log.trace('Endpoint.call');
+        if (params.initiator === undefined) {
+            params.initiator = true;
         }
 
         if (!id) {
@@ -428,42 +409,39 @@ webrtc.Endpoint = function (params) {
         }
 
         // Apply call-specific callSettings to the app's defaults
-        if (callSettings) {
-            callSettings.forOwn(function copyParam(thing, name) {
+        if (params.callSettings) {
+            params.callSettings.forOwn(function copyParam(thing, name) {
                 combinedCallSettings[name] = thing;
             });
         }
+        params.callSettings = combinedCallSettings;
+        params.client = client;
+        params.username = user.getUsername();
+        params.remoteEndpoint = id;
+        params.signalOffer = function (sdp) {
+            log.trace('signalOffer');
+            signalingChannel.sendSDP(that, sdp);
+        };
+        params.signalAnswer = function (sdp) {
+            log.trace('signalAnswer');
+            signalingChannel.sendSDP(that, sdp);
+        };
+        params.signalCandidate = function (oCan) {
+            oCan.type = 'candidate';
+            signalingChannel.sendCandidate(that, oCan);
+        };
+        params.signalTerminate = function () {
+            log.trace('signalTerminate');
+            signalingChannel.sendBye(that);
+        };
+        params.signalReport = function (oReport) {
+            log.debug("Not sending report");
+            log.debug(oReport);
+        };
+        call = webrtc.Call(params);
 
-        call = webrtc.Call({
-            'client': client,
-            'username': user.getUsername(),
-            'remoteEndpoint': id,
-            'initiator': initiator,
-            'callSettings': combinedCallSettings,
-            'signalOffer': function (sdp) {
-                log.trace('signalOffer');
-                signalingChannel.sendSDP(that, sdp);
-            },
-            'signalAnswer': function (sdp) {
-                log.trace('signalAnswer');
-                signalingChannel.sendSDP(that, sdp);
-            },
-            'signalCandidate': function (oCan) {
-                oCan.type = 'candidate';
-                signalingChannel.sendCandidate(that, oCan);
-            },
-            'signalTerminate': function () {
-                log.trace('signalTerminate');
-                signalingChannel.sendBye(that);
-            },
-            'signalReport': function (oReport) {
-                log.debug("Not sending report");
-                log.debug(oReport);
-            }
-        });
-
-        if (initiator === true) {
-            call.start();
+        if (params.initiator === true) {
+            call.answer();
         }
         user.addCall(call);
         call.listen('hangup', function hangupListener(locallySignaled) {
@@ -799,7 +777,10 @@ webrtc.User = function (params) {
             try {
                 contact = contactList.get(contactId);
                 callSettings = webrtc.getClient(client).getCallSettings();
-                call = contact.startCall(callSettings, false);
+                call = contact.call({
+                    callSettings: callSettings,
+                    initiator: false
+                });
             } catch (e) {
                 log.error("Couldn't create Call: " + e.message);
             }

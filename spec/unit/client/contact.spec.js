@@ -34,8 +34,8 @@ describe("A webrtc.AbstractContact", function () {
     });
 
     it("extends webrtc.AbstractEndpoint.", function () {
-        expect(typeof contact.startCall).to.equal('function');
-        expect(typeof contact.stopCall).to.equal('function');
+        expect(typeof contact.call).to.equal('function');
+        expect(typeof contact.hangup).to.equal('function');
         expect(typeof contact.sendMessage).to.equal('function');
     });
 
