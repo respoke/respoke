@@ -700,7 +700,7 @@ webrtc.User = function (params) {
             var contact;
             var source = message.header.from;
             if (message.header.fromSession) {
-               source += '@' + message.header.fromSession;
+                source += '@' + message.header.fromSession;
             }
 
             try {

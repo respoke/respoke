@@ -672,7 +672,7 @@ webrtc.SignalingChannel = function (params) {
                 return;
             }
             if (this.status === 0) {
-                log.error("Can't reach server or certificate mismatch!")
+                log.error("Status is 0: Incomplete request, SSL error, or CORS error.");
                 return;
             }
             if ([200, 204, 205, 302, 403, 404, 418].indexOf(this.status) > -1) {

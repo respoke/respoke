@@ -551,7 +551,7 @@ webrtc.Call = function (params) {
         mediaStreams.forOwn(function stopEach(mediaStream) {
             var stream = mediaStream.getStream();
             stream.numPc -= 1;
-            if (stream.numPc === 0){
+            if (stream.numPc === 0) {
                 stream.stop();
                 delete webrtc.streams[callSettings.constraints];
             }
