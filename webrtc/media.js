@@ -100,7 +100,7 @@ webrtc.Call = function (params) {
         that.fire('answer');
 
         if (receiveOnly !== true) {
-            requestMedia(params.callSettings);
+            requestMedia(params);
         } else if (typeof previewLocalMedia !== 'function') {
             approve();
         }
