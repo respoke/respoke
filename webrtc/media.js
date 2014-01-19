@@ -306,8 +306,7 @@ webrtc.Call = function (params) {
         }
 
         try {
-            log.debug("Running getUserMedia with constraints");
-            log.debug(callSettings.constraints);
+            log.debug("Running getUserMedia with constraints", callSettings.constraints);
             // TODO set webrtc.streams[callSettings.constraints] = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
@@ -412,8 +411,7 @@ webrtc.Call = function (params) {
             return;
         }
 
-        log.debug("original browser-generated candidate object");
-        log.debug(oCan.candidate);
+        log.debug("local candidate", oCan.candidate);
         if (that.initiator && !receivedAnswer) {
             candidateSendingQueue.push(oCan.candidate);
         } else {
@@ -465,8 +463,7 @@ webrtc.Call = function (params) {
     var saveOfferAndSend = function (oSession) {
         oSession.type = 'offer';
         that.state = ST_OFFERED;
-        log.debug('setting and sending offer');
-        log.debug(oSession);
+        log.debug('setting and sending offer', oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
@@ -488,8 +485,7 @@ webrtc.Call = function (params) {
     var saveAnswerAndSend = function (oSession) {
         oSession.type = 'answer';
         that.state = ST_ANSWERED;
-        log.debug('setting and sending answer');
-        log.debug(oSession);
+        log.debug('setting and sending answer', oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
@@ -612,8 +608,7 @@ webrtc.Call = function (params) {
      * @param {RTCSessionDescription} oSession The remote SDP.
      */
     var setOffer = that.publicize('setOffer', function (oSession) {
-        log.debug('got offer');
-        log.debug(oSession);
+        log.debug('got offer', oSession);
 
         savedOffer = oSession;
         if (!that.initiator) {
@@ -637,8 +632,7 @@ webrtc.Call = function (params) {
      */
     var setAnswer = that.publicize('setAnswer', function (oSession) {
         that.state = ST_ANSWERED;
-        log.debug('remote side sdp is');
-        log.debug(oSession);
+        log.debug('got answer', oSession);
 
         savedOffer = oSession; // TODO is this necessary?
         receivedAnswer = true;
