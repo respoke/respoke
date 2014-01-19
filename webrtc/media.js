@@ -72,7 +72,7 @@ webrtc.Call = function (params) {
     };
 
     var ST_STARTED = 0;
-    var ST_REVIEW = 1;
+    var ST_APPROVED = 1;
     var ST_APPROVED = 2;
     var ST_OFFERED = 3;
     var ST_ANSWERED = 4;
@@ -113,7 +113,7 @@ webrtc.Call = function (params) {
      */
     var approve = that.publicize('approve', function (oSession) {
         log.trace('Call.approve');
-        that.state = ST_REVIEW;
+        that.state = ST_APPROVED;
         that.fire('approve');
 
         if (that.initiator === true) {
@@ -122,10 +122,11 @@ webrtc.Call = function (params) {
                 log.error('createOffer failed');
             }, null);
             return;
-        }
-
-        if (!savedOffer) {
-            throw new Error('No saved offer.');
+        } else {
+            if (!savedOffer) {
+                log.debug('No saved offer.');
+                return;
+            }
         }
 
         savedOffer.type = 'offer';
@@ -611,6 +612,10 @@ webrtc.Call = function (params) {
         if (!that.initiator) {
             report.sdpsReceived.push(oSession);
             report.lastSDPString = oSession.sdp;
+            if (that.state === ST_APPROVED) {
+                // We called approve alreayd without the offer. Call it again now that we have it
+                approve();
+            }
         } else {
             log.warn('Got offer in precall state.');
             signalTerminate();
