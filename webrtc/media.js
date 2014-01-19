@@ -72,7 +72,7 @@ webrtc.Call = function (params) {
     };
 
     var ST_STARTED = 0;
-    var ST_APPROVED = 1;
+    var ST_INREVIEW = 1;
     var ST_APPROVED = 2;
     var ST_OFFERED = 3;
     var ST_ANSWERED = 4;
@@ -111,9 +111,9 @@ webrtc.Call = function (params) {
      * @memberof! webrtc.Call
      * @method webrtc.Call.approve.
      */
-    var approve = that.publicize('approve', function (oSession) {
-        log.trace('Call.approve');
+    var approve = that.publicize('approve', function () {
         that.state = ST_APPROVED;
+        log.trace('Call.approve');
         that.fire('approve');
 
         if (that.initiator === true) {
@@ -123,15 +123,22 @@ webrtc.Call = function (params) {
             }, null);
             return;
         } else {
-            if (!savedOffer) {
-                log.debug('No saved offer.');
-                return;
+            if (savedOffer) {
+                processOffer();
             }
         }
+    });
 
+    /**
+     * Process a remote offer if we are not the initiator.
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.processOffer
+     * @private
+     */
+    var processOffer = function () {
         savedOffer.type = 'offer';
-        log.trace('processing offer');
-        log.debug(savedOffer);
+        log.trace('processOffer');
+        log.debug('processOffer', savedOffer);
 
         try {
             pc.setRemoteDescription(new RTCSessionDescription(savedOffer),
@@ -151,10 +158,11 @@ webrtc.Call = function (params) {
                     that.stop();
                 }
             );
+            that.state = ST_OFFERED;
         } catch (e) {
             log.error("error processing offer: " + e.message);
         }
-    });
+    };
 
     /**
      * Save the local stream. Kick off SDP creation.
@@ -163,7 +171,6 @@ webrtc.Call = function (params) {
      * @private
      */
     var onReceiveUserMedia = function (stream) {
-        that.state = ST_APPROVED;
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
 
@@ -213,6 +220,7 @@ webrtc.Call = function (params) {
         }
 
         if (typeof previewLocalMedia === 'function') {
+            that.state = ST_INREVIEW;
             setTimeout(function () {
                 previewLocalMedia(videoLocalElement, that);
             }, 100);
@@ -604,7 +612,6 @@ webrtc.Call = function (params) {
      * @param {RTCSessionDescription} oSession The remote SDP.
      */
     var setOffer = that.publicize('setOffer', function (oSession) {
-        that.state = ST_OFFERED;
         log.debug('got offer');
         log.debug(oSession);
 
@@ -613,8 +620,8 @@ webrtc.Call = function (params) {
             report.sdpsReceived.push(oSession);
             report.lastSDPString = oSession.sdp;
             if (that.state === ST_APPROVED) {
-                // We called approve alreayd without the offer. Call it again now that we have it
-                approve();
+                // We called approve already without the offer. Call it again now that we have it
+                processOffer();
             }
         } else {
             log.warn('Got offer in precall state.');
