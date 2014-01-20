@@ -90,6 +90,7 @@ webrtc.IdentityProvider = function (params) {
      * @param {string} password The user's password.
      * @param {function} onSuccess
      * @param {function} onError
+     * @param {function} onIncomingCall
      * @returns {Promise<webrtc.User>}
      */
     var login = that.publicize('login', function (params) {
@@ -107,6 +108,11 @@ webrtc.IdentityProvider = function (params) {
         }
         signalingChannel.authenticate(params.username, params.password, function onAuth(user, errorMessage) {
             if (user) {
+                if (!params.onIncomingCall) {
+                    log.warn("No onIncomingCall passed to Client.login.");
+                } else {
+                    user.listen('call', params.onIncomingCall);
+                }
                 deferred.resolve(user);
             } else {
                 deferred.reject(new Error(errorMessage));
