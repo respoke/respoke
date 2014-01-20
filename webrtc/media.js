@@ -147,7 +147,7 @@ webrtc.Call = function (params) {
                     report.callStoppedReason = 'setLocalDescr failed at offer.';
                     log.error(savedOffer);
                     log.error(p);
-                    that.stop();
+                    hangup();
                 }
             );
         } catch (e) {
@@ -324,7 +324,7 @@ webrtc.Call = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        stop(!that.initiator);
+        hangup(!that.initiator);
     };
 
     /**
@@ -505,27 +505,27 @@ webrtc.Call = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        stop(false);
+        hangup(false);
     };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
      * sendSignal is not false and we have not received a bye signal from the remote party.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.stop
+     * @method webrtc.Call.hangup
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var stop = that.publicize('stop', function (sendSignal) {
+    var hangup = that.publicize('hangup', function (sendSignal) {
         if (that.state === ST_ENDED) {
             // This function got called twice.
-            log.trace("Call.stop got called twice.");
+            log.trace("Call.hangup got called twice.");
             return;
         }
         that.state = ST_ENDED;
 
         // Never send bye if we are the initiator but we haven't sent any other signal yet.
-        log.trace("at stop, call state is " + that.state);
+        log.trace("at hangup, call state is " + that.state);
         if (that.initiator === true && that.state < ST_OFFERED) {
             sendSignal = false;
         }
@@ -566,13 +566,13 @@ webrtc.Call = function (params) {
     });
 
     /*
-     * Expose stop as reject for approve/reject workflow.
+     * Expose hangup as reject for approve/reject workflow.
      * @memberof! webrtc.Call
      * @method webrtc.Call.reject
      * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var reject = that.publicize('reject', stop);
+    var reject = that.publicize('reject', hangup);
 
     /**
      * Indicate whether a call is being setup or is in progress.
@@ -640,7 +640,7 @@ webrtc.Call = function (params) {
                 log.error('set remote desc of answer failed');
                 report.callStoppedReason = 'setRemoteDescription failed at answer.';
                 log.error(oSession);
-                that.stop();
+                hangup();
             }
         );
     });
@@ -840,7 +840,7 @@ webrtc.Call = function (params) {
      */
     var setBye = that.publicize('setBye', function () {
         receivedBye = true;
-        stop();
+        hangup();
     });
 
     return that;
