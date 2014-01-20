@@ -623,10 +623,16 @@ webrtc.User = function (params) {
      * @memberof! webrtc.User
      * @method webrtc.User.getContacts
      * @returns {Promise<webrtc.Contacts>}
+     * @param {function} onSuccess optional
+     * @param {function} onError optional
      */
-    var getContacts = that.publicize('getContacts', function () {
+    var getContacts = that.publicize('getContacts', function (params) {
         var deferred = Q.defer();
         var itemElements = [];
+
+        if (params.onSuccess) {
+            deferred.promise.done(params.onSuccess, params.onError || function (e) {});
+        }
 
         if (!userSession.isLoggedIn()) {
             deferred.reject(new Error("Can't request contacts unless logged in."));
@@ -638,12 +644,12 @@ webrtc.User = function (params) {
             return deferred.promise;
         }
 
-        deferred.promise.then(function successHandler(contactList) {
+        deferred.promise.done(function successHandler(contactList) {
             log.debug("got contact list", contactList);
             setTimeout(contactList.processPresenceQueue, 1000);
         }, function errorHandler(err) {
             throw err;
-        }).done();
+        });
 
         var presenceHandler = function (message) {
             var contact;

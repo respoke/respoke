@@ -92,13 +92,14 @@ webrtc.Client = function (params) {
      * @memberof! webrtc.Client
      * @method webrtc.Client.login
      * @returns {Promise<webrtc.User>}
-     * @param {object} userAccount Optional user account to log in with.
-     * @param {string} token Optional OAuth token to use, if the user has logged in before,
-     * or password if not using oAuth or OpenSocial.
+     * @param {object} username Optional user account to log in with.
+     * @param {string} password Optional password or oAuth token.
+     * @param {function} onSuccess
+     * @param {function} onError
      * @returns {Promise<webrtc.User>}
      */
-    var login = that.publicize('login', function (userAccount, token) {
-        var userPromise = that.identityProvider.login(userAccount, token);
+    var login = that.publicize('login', function (params) {
+        var userPromise = that.identityProvider.login(params.username, params.password);
         userPromise.done(function successHandler(user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
@@ -109,6 +110,10 @@ webrtc.Client = function (params) {
         }, function errorHandler(error) {
             log.error(error.message);
         });
+
+        if (params.onSuccess) {
+            userPromise.done(params.onSuccess, params.onError || function (e) {});
+        }
         return userPromise;
     });
 

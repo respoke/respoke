@@ -22,6 +22,18 @@ log.setLevel('debug');
  * @static
  * @member webrtc
  * @returns {webrtc.Client}
+ * @params {object} Parameters to the webrtc.Client constructor.
+ */
+webrtc.connect = function (params) {
+    "use strict";
+    return webrtc.Client(params);
+};
+
+/**
+ * @static
+ * @member webrtc
+ * @returns {webrtc.Client}
+ * @params {number} The Client ID.
  */
 webrtc.getClient = function (id) {
     "use strict";
@@ -41,10 +53,6 @@ webrtc.makeUniqueID = function () {
     return Math.floor(Math.random() * 100000000);
 };
 
-/**
- * Loop, checking hasOwnProperty() before acting on elements.
- * @params {func} A function to call on each element that is the object's own.
- */
 Object.defineProperty(Object.prototype, 'forOwn', {
     value: function (func) {
         "use strict";
