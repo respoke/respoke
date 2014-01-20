@@ -62,8 +62,8 @@ webrtc.makePromise = function (onSuccess, onError) {
     "use strict";
     var deferred = Q.defer();
     if (onSuccess || onError) {
-        onSuccess = onSuccess || function () {};
-        onError = onError || function () {};
+        onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
+        onError = typeof onError === 'function' ? onError : function () {};
         deferred.promise.done(onSuccess, onError);
     }
     return deferred;

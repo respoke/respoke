@@ -128,7 +128,8 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendPresence
      * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
      */
-    var sendPresence = that.publicize('sendPresence', function (presenceString) {
+    var sendPresence = that.publicize('sendPresence', function (presenceString, onSuccess, onError) {
+        var presencePromise = webrtc.makePromise(onSuccess, onError);
         log.trace("Signaling sendPresence");
         wsCall({
             'path': '/v1/presence',
@@ -141,10 +142,13 @@ webrtc.SignalingChannel = function (params) {
                 }
             }
         }, function handleResponse(res, params, err) {
-            if (err && err.message) {
-                throw new Error(err.message);
+            if (res.code === '200') {
+                presencePromise.resolve();
+            } else {
+                presencePromise.reject(new Error(err.message));
             }
         });
+        return presencePromise.promise;
     });
 
     /**
@@ -195,9 +199,10 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
      */
-    var sendMessage = that.publicize('sendMessage', function (message) {
+    var sendMessage = that.publicize('sendMessage', function (message, onSuccess, onError) {
         var msgText = message.getPayload();
         var recipient = null;
+        var messagePromise = webrtc.makePromise(onSuccess, onError);
 
         try {
             recipient = message.getRecipient().getID();
@@ -224,10 +229,13 @@ webrtc.SignalingChannel = function (params) {
                 'text': msgText
             }
         }, function handleResponse(res, params, err) {
-            if (err && err.message) {
-                throw new Error(err.message);
+            if (res.code === 200) {
+                messagePromise.resolve();
+            } else {
+                messagePromise.reject(new Error(err.message));
             }
         });
+        return messagePromise.promise;
     });
 
     /**
@@ -236,11 +244,10 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendSignal
      * @param {string} message The string The signal to send.
      */
-    var sendSignal = that.publicize('sendSignal', function (signal) {
-        log.debug('signal', signal);
+    var sendSignal = that.publicize('sendSignal', function (signal, onSuccess, onError) {
         var signalText = signal.getPayload();
-        log.debug('signalText', signalText);
         var recipient = null;
+        var signalPromise = webrtc.makePromise(onSuccess, onError);
 
         try {
             recipient = signal.getRecipient().getID();
@@ -267,10 +274,13 @@ webrtc.SignalingChannel = function (params) {
                 'signal': signalText
             }
         }, function handleResponse(res, params, err) {
-            if (err && err.message) {
-                throw new Error(err.message);
+            if (res.code === 200) {
+                signalPromise.resolve();
+            } else {
+                signalPromise.reject(new Error(err.message));
             }
         });
+        return signalPromise.promise;
     });
 
     /**
@@ -281,7 +291,10 @@ webrtc.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
     var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
-        recipient.sendSignal(JSON.stringify(candObj));
+        recipient.sendSignal(JSON.stringify(candObj), function () {
+        }, function (e) {
+            throw e;
+        });
     });
 
     /**
@@ -292,7 +305,10 @@ webrtc.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
     var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
-        recipient.sendSignal(JSON.stringify(sdpObj));
+        recipient.sendSignal(JSON.stringify(sdpObj), function () {
+        }, function (e) {
+            throw e;
+        });
     });
 
     /**
@@ -303,7 +319,10 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} reason The reason the session is being terminated.
      */
     var sendBye = that.publicize('sendBye', function (recipient, reason) {
-        recipient.sendSignal(JSON.stringify({'type': 'bye', 'reason': reason}));
+        recipient.sendSignal(JSON.stringify({'type': 'bye', 'reason': reason}), function () {
+        }, function (e) {
+            throw e;
+        });
     });
 
     /**

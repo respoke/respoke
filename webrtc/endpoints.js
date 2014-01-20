@@ -356,12 +356,12 @@ webrtc.Endpoint = function (params) {
      * @method webrtc.Endpoint.sendMessage
      * @params {object} message The message to send
      */
-    var sendMessage = that.publicize('sendMessage', function (message) {
-        signalingChannel.sendMessage(webrtc.TextMessage({
+    var sendMessage = that.publicize('sendMessage', function (params) {
+        return signalingChannel.sendMessage(webrtc.TextMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getID(),
-            'payload': message
-        }));
+            'payload': params.message
+        }), params.onSuccess, params.onError);
     });
 
     /**
@@ -370,16 +370,16 @@ webrtc.Endpoint = function (params) {
      * @method webrtc.Endpoint.sendSignal
      * @params {object} message The signal to send
      */
-    var sendSignal = that.publicize('sendSignal', function (signal) {
+    var sendSignal = that.publicize('sendSignal', function (params) {
         log.trace('Endpoint.sendSignal');
         var sigMessage = webrtc.SignalingMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getID(),
-            'payload': signal
+            'payload': params.signal
         });
-        log.debug(signal);
+        log.debug(params.signal);
         log.debug(sigMessage);
-        signalingChannel.sendSignal(sigMessage);
+        signalingChannel.sendSignal(sigMessage, params.onSuccess, params.onError);
     });
 
     /**
