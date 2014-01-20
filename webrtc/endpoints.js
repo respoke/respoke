@@ -627,12 +627,8 @@ webrtc.User = function (params) {
      * @param {function} onError optional
      */
     var getContacts = that.publicize('getContacts', function (params) {
-        var deferred = Q.defer();
+        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         var itemElements = [];
-
-        if (params.onSuccess) {
-            deferred.promise.done(params.onSuccess, params.onError || function (e) {});
-        }
 
         if (!userSession.isLoggedIn()) {
             deferred.reject(new Error("Can't request contacts unless logged in."));

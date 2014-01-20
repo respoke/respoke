@@ -105,8 +105,8 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.logout
      * @returns Promise<String>
      */
-    var logout = that.publicize('logout', function () {
-        var deferred = Q.defer();
+    var logout = that.publicize('logout', function (params) {
+        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         call({
             'path': '/v1/authsessions',
             'httpMethod': 'DELETE'

@@ -53,6 +53,22 @@ webrtc.makeUniqueID = function () {
     return Math.floor(Math.random() * 100000000);
 };
 
+/**
+ * @static
+ * @member webrtc
+ * @returns {number}
+ */
+webrtc.makePromise = function (onSuccess, onError) {
+    "use strict";
+    var deferred = Q.defer();
+    if (onSuccess || onError) {
+        onSuccess = onSuccess || function () {};
+        onError = onError || function () {};
+        deferred.promise.done(onSuccess, onError);
+    }
+    return deferred;
+};
+
 Object.defineProperty(Object.prototype, 'forOwn', {
     value: function (func) {
         "use strict";

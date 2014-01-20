@@ -88,10 +88,12 @@ webrtc.IdentityProvider = function (params) {
      * @method webrtc.IdentityProvider.login
      * @param {string} username The user's username.
      * @param {string} password The user's password.
+     * @param {function} onSuccess
+     * @param {function} onError
      * @returns {Promise<webrtc.User>}
      */
-    var login = that.publicize('login', function (username, password) {
-        var deferred = null;
+    var login = that.publicize('login', function (params) {
+        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         var user = null;
 
         log.trace("User login");
@@ -103,8 +105,7 @@ webrtc.IdentityProvider = function (params) {
         if (!signalingChannel.isOpen()) {
             signalingChannel.open();
         }
-        deferred = Q.defer();
-        signalingChannel.authenticate(username, password, function onAuth(user, errorMessage) {
+        signalingChannel.authenticate(params.username, params.password, function onAuth(user, errorMessage) {
             if (user) {
                 deferred.resolve(user);
             } else {
@@ -119,12 +120,14 @@ webrtc.IdentityProvider = function (params) {
      * @memberof! webrtc.IdentityProvider
      * @method webrtc.IdentityProvider.logout
      * @fires webrtc.IdentityProvider#loggedout
+     * @param {function} onSuccess
+     * @param {function} onError
      * @returns Promise<String>
      */
-    var logout = that.publicize('logout', function () {
+    var logout = that.publicize('logout', function (params) {
         log.trace("User logout");
 
-        var logoutPromise = signalingChannel.logout();
+        var logoutPromise = signalingChannel.logout(params);
 
         logoutPromise.done(function successHandler() {
             that.fire("loggedout");

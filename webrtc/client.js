@@ -99,7 +99,7 @@ webrtc.Client = function (params) {
      * @returns {Promise<webrtc.User>}
      */
     var login = that.publicize('login', function (params) {
-        var userPromise = that.identityProvider.login(params.username, params.password);
+        var userPromise = that.identityProvider.login(params);
         userPromise.done(function successHandler(user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
@@ -111,9 +111,6 @@ webrtc.Client = function (params) {
             log.error(error.message);
         });
 
-        if (params.onSuccess) {
-            userPromise.done(params.onSuccess, params.onError || function (e) {});
-        }
         return userPromise;
     });
 
@@ -141,10 +138,12 @@ webrtc.Client = function (params) {
      * Client.user to null.
      * @memberof! webrtc.Client
      * @method webrtc.Client.logout
+     * @param {function} onSuccess
+     * @param {function} onError
      * @fires webrtc.User#loggedout
      * @fires webrtc.Client#loggedout
      */
-    var logout = that.publicize('logout', function () {
+    var logout = that.publicize('logout', function (params) {
         if (that.user === null) {
             return;
         }
