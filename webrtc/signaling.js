@@ -289,17 +289,20 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendCandidate
      * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
-     * TODO make this call SignalingChannel.sendSignal not Endpoint.sendSignal
      */
     var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
-        return recipient.sendSignal({
-            signal: JSON.stringify(candObj),
-            onSuccess: function signalSuccess() {
-            },
-            onError: function signalFailure(e) {
+        var signalMessage = webrtc.SignalingMessage({
+            'recipient': recipient,
+            'sender': webrtc.getClient(client).user.getID(),
+            'payload': JSON.stringify(candObj)
+        });
+        return that.sendSignal(
+            signalMessage,
+            function sdpSuccess() {},
+            function sdpFailure(e) {
                 throw e;
             }
-        });
+        );
     });
 
     /**
@@ -308,17 +311,20 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendSDP
      * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
-     * TODO make this call SignalingChannel.sendSignal not Endpoint.sendSignal
      */
     var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
-        return recipient.sendSignal({
-            signal: JSON.stringify(sdpObj),
-            onSuccess: function sdpSuccess() {
-            },
-            onError: function sdpFailure(e) {
+        var signalMessage = webrtc.SignalingMessage({
+            'recipient': recipient,
+            'sender': webrtc.getClient(client).user.getID(),
+            'payload': JSON.stringify(sdpObj)
+        });
+        return that.sendSignal(
+            signalMessage,
+            function sdpSuccess() {},
+            function sdpFailure(e) {
                 throw e;
             }
-        });
+        );
     });
 
     /**
@@ -327,17 +333,20 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendBye
      * @param {webrtc.Contact} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
-     * TODO make this call SignalingChannel.sendSignal not Endpoint.sendSignal
      */
     var sendBye = that.publicize('sendBye', function (recipient, reason) {
-        return recipient.sendSignal({
-            signal: JSON.stringify({'type': 'bye', 'reason': reason}),
-            onSuccess: function byeSuccess() {
-            },
-            onError: function byeFailure(e) {
+        var signalMessage = webrtc.SignalingMessage({
+            'recipient': recipient,
+            'sender': webrtc.getClient(client).user.getID(),
+            'payload': JSON.stringify({'type': 'bye', 'reason': reason})
+        });
+        return that.sendSignal(
+            signalMessage,
+            function sdpSuccess() {},
+            function sdpFailure(e) {
                 throw e;
             }
-        });
+        );
     });
 
     /**

@@ -370,14 +370,13 @@ webrtc.Endpoint = function (params) {
      * @params {object} message The signal to send
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
-        log.trace('Endpoint.sendSignal');
+        log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
         var signalMessage = webrtc.SignalingMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getID(),
-            'payload': params.signal
+            'payload': params.signal // JSON in string form
         });
-        console.log('signalingChannel.sendSignal', signalMessage.getPayload(), params.onSuccess, params.onError);
-        signalingChannel.sendSignal(signalMessage, params.onSuccess, params.onError);
+        return signalingChannel.sendSignal(signalMessage, params.onSuccess, params.onError);
     });
 
     /**
