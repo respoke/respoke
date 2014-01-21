@@ -1,179 +1,4 @@
-/**
- * Create a new Presentable, the base class for User, Endpoint, and Contact.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.AbstractPresentable
- * @constructor
- * @augments webrtc.EventEmitter
- * @classdesc Information describing a nameable entity which has presence and skills.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.Presentable}
- * @property {string} name Display name for this entity.
- * @property {string} id Unique ID for this entity.
- * @property {enum} presence Resolved presence information across one or more sessions.
- * @property {object} skills Information describing skills and features this entity supports
- * across all devices.
- */
 /*global webrtc: false */
-webrtc.AbstractPresentable = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.EventEmitter(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractPresentable';
-
-    var presence = 'unavailable';
-    var skills = {
-        'video': {
-            'send': true,
-            'receive': true
-        },
-        'audio': {
-            'send': true,
-            'receive': true
-        }
-    };
-
-    /**
-     * Indicate whether the entity has an active Call. Should we only return true if
-     * media is flowing, or anytime a WebRTC call is active? Should it return true if the
-     * engaged in a Call on another device?
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.callInProgress
-     * @returns {boolean}
-     */
-    var callInProgress = that.publicize('callInProgress', function () {
-        return false;
-    });
-
-    /**
-     * Indicate whether the entity is capable of sending audio.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.canSendAudio
-     * @returns {boolean}
-     */
-    var canSendAudio = that.publicize('canSendAudio', function () {
-        return skills.audio.send;
-    });
-
-    /**
-     * Indicate whether the entity is capable of sending video.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.canSendVideo
-     * @returns {boolean}
-     */
-    var canSendVideo = that.publicize('canSendVideo', function () {
-        return skills.video.send;
-    });
-
-    /**
-     * Get the unique id.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.getID
-     * @returns {string} A unique ID for the object.
-     */
-    var getID = that.publicize('getID', function () {
-        return that.id;
-    });
-
-    /**
-     * Get the name.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.getName
-     * @returns {string} The name of the object.
-     */
-    var getName = that.publicize('getName', function () {
-        return that.name;
-    });
-
-    /**
-     * Get the display name.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.getDisplayName
-     * @returns {string} The display name of the object.
-     */
-    var getDisplayName = that.publicize('getDisplayName', function () {
-        return that.name;
-    });
-
-    /**
-     * Get the presence.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.getPresence
-     * @returns {string}
-     */
-    var getPresence = that.publicize('getPresence', function () {
-        return presence;
-    });
-
-    /**
-     * Set the presence.
-     * @memberof! webrtc.AbstractPresentable
-     * @method webrtc.AbstractPresentable.setPresence
-     * @param {string} presence
-     * @returns {string}
-     * @fires webrtc.AbstractPresentable#presence
-     */
-    var setPresence = that.publicize('setPresence', function (newPresence) {
-        presence = newPresence;
-        that.fire('presence', presence);
-    });
-
-    return that;
-}; // End webrtc.AbstractPresentable
-
-/**
- * Create a new Endpoint.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.AbstractEndpoint
- * @augments webrtc.AbstractPresentable
- * @constructor
- * @classdesc Information which represents an entity which can send and receive messages and media
- * to and from the logged-in User. As proper Endpoints are anonymous (no identity provider) there
- * can be no multiple calls per Endpoint.
- * properties on the class.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * @returns {webrtc.Endpoint}
- * @property {webrtc.Call[]} calls Array of Calls in progress.
- * this?
- */
-webrtc.AbstractEndpoint = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.AbstractPresentable(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractEndpoint';
-
-    that.calls = [];
-    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
-
-    /**
-     * Send a message to an Endpoint
-     * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.sendMessage
-     * @param {string} message A message to be sent.
-     * @param {successCallback} onSuccess
-     * @param {failureCallback} onFailure
-     */
-    var sendMessage = that.publicize('sendMessage', function (message, onSuccess, onFailure) {
-    });
-
-    /**
-     * Send a signal to an Endpoint
-     * @memberof! webrtc.AbstractEndpoint
-     * @method webrtc.AbstractEndpoint.sendSignal
-     * @param {string} message A signal to be sent.
-     * @param {successCallback} onSuccess
-     * @param {failureCallback} onFailure
-     */
-    var sendSignal = that.publicize('sendSignal', function (signal, onSuccess, onFailure) {
-    });
-
-    return that;
-}; // End webrtc.AbstractEndpoint
-
 /**
  * Create a new UserSession.
  * @class webrtc.UserSession
@@ -228,41 +53,11 @@ webrtc.UserSession = function (params) {
 }; // End webrtc.UserSession
 
 /**
- * Create a new Contact, which represents an identity.
- * @constructor
- * @classdesc Information describing an identity. Should this be UserSessions? Should it be only
- * sessions logged in with this appKey?
- * @augments webrtc.AbstractEndpoint
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.Contact}
- */
-webrtc.AbstractContact = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.AbstractEndpoint(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractContact';
-
-    /**
-     * Get the history of messages between this Contact and the logged-in User.
-     * @memberof! webrtc.AbstractContact
-     * @method webrtc.AbstractContact.getMessages
-     * @returns {object[]} An array of message objects.
-     */
-    var getMessages = that.publicize('getMessages', function () {
-    });
-
-    return that;
-}; // End webrtc.AbstractContact
-
-/**
  * Create a new Presentable.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments webrtc.AbstractPresentable
+ * @augments webrtc.EventEmitter
  * @classdesc Presentable class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -273,7 +68,7 @@ webrtc.Presentable = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractPresentable(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.Presentable';
 
@@ -319,6 +114,40 @@ webrtc.Presentable = function (params) {
      */
     var getStatus = that.publicize('getStatus', function () {
         return presence;
+    });
+
+    /**
+     * Indicate whether the entity has an active Call. Should we only return true if
+     * media is flowing, or anytime a WebRTC call is active? Should it return true if the
+     * engaged in a Call on another device?
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.callInProgress
+     * @returns {boolean}
+     */
+    var callInProgress = that.publicize('callInProgress', function () {
+        return false;
+    });
+    /**
+     * Get the presence.
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getPresence
+     * @returns {string}
+     */
+    var getPresence = that.publicize('getPresence', function () {
+        return presence;
+    });
+
+    /**
+     * Set the presence.
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.setPresence
+     * @param {string} presence
+     * @returns {string}
+     * @fires webrtc.Presentable#presence
+     */
+    var setPresence = that.publicize('setPresence', function (newPresence) {
+        presence = newPresence;
+        that.fire('presence', presence);
     });
 
     return that;
@@ -540,7 +369,7 @@ webrtc.Contact = function (params) {
 }; // End webrtc.Contact
 
 /**
- * Create a new User. This class does NOT extend {webrtc.AbstractUser} but it really should!
+ * Create a new User.
  * Should we attempt to support multiple inheritance?
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor

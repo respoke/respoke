@@ -2,8 +2,8 @@ var expect = chai.expect;
 
 var client = webrtc.Client();
 
-describe("A webrtc.AbstractEndpoint ", function () {
-    var endpoint = webrtc.AbstractEndpoint({
+describe("A webrtc.Endpoint ", function () {
+    var endpoint = webrtc.Endpoint({
         "client": client.getID(),
         "name": "Mickey Mouse",
         "id": "JH5K34J5K34J3453K4J53K45",
@@ -23,13 +23,12 @@ describe("A webrtc.AbstractEndpoint ", function () {
         expect(typeof endpoint.fire).to.equal('function');
     });
 
-    it("extends webrtc.AbstractPresentable.", function () {
+    it("extends webrtc.Presentable.", function () {
         expect(typeof endpoint.getID).to.equal('function');
-        expect(typeof endpoint.getName).to.equal('function');
+        expect(typeof endpoint.getDisplayName).to.equal('function');
+        expect(typeof endpoint.getUsername).to.equal('function');
         expect(typeof endpoint.getPresence).to.equal('function');
         expect(typeof endpoint.setPresence).to.equal('function');
-        expect(typeof endpoint.canSendAudio).to.equal('function');
-        expect(typeof endpoint.canSendVideo).to.equal('function');
         expect(typeof endpoint.callInProgress).to.equal('function');
     });
 
@@ -38,7 +37,7 @@ describe("A webrtc.AbstractEndpoint ", function () {
      */
     it("has the correct class name.", function () {
         expect(endpoint.className).to.be.ok;
-        expect(endpoint.getClass()).to.equal('webrtc.AbstractEndpoint');
+        expect(endpoint.getClass()).to.equal('webrtc.Endpoint');
     });
 
     /*
@@ -46,6 +45,8 @@ describe("A webrtc.AbstractEndpoint ", function () {
      */
     it("contains some important methods.", function () {
         expect(typeof endpoint.sendMessage).to.equal('function');
+        expect(typeof endpoint.sendSignal).to.equal('function');
+        expect(typeof endpoint.call).to.equal('function');
     });
 
     /*

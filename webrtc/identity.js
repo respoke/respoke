@@ -1,71 +1,10 @@
-/**
- * Create a new IdentityProvider.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.AbstractIdentityProvider
- * @constructor
- * @augments webrtc.EventEmitter
- * @classdesc Generic Identity provider class.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.IdentityProvider}
- */
 /*global webrtc: false */
-webrtc.AbstractIdentityProvider = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.EventEmitter(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractIdentityProvider';
-
-    var loggedIn = false;
-
-    /**
-     * Log a user in.
-     * @memberof! webrtc.AbstractIdentityProvider
-     * @method webrtc.AbstractIdentityProvider.login
-     * @abstract
-     * @param {string} username The  user's username.
-     * @param {string} password The  user's password.
-     * @param {successCallback} onSuccess
-     */
-    var login = that.publicize('login', function (username, password, onSuccess, onFailure) {
-    });
-
-    /**
-     * Log a user out.
-     * @memberof! webrtc.AbstractIdentityProvider
-     * @method webrtc.AbstractIdentityProvider.logout
-     * @abstract
-     */
-    var logout = that.publicize('logout', function () {
-        /* Include this in your implementation
-        loggedIn = false;
-        */
-    });
-
-    /**
-     * Whether logged in
-     * @memberof! webrtc.AbstractIdentityProvider
-     * @method webrtc.AbstractIdentityProvider.isLoggedIn
-     * @abstract
-     * @return {boolean}
-     */
-    var isLoggedIn = that.publicize('isLoggedIn', function () {
-        /* Include this in your implementation
-        return loggedIn;
-        */
-    });
-
-    return that;
-}; // End webrtc.AbstractIdentityProvider
-
 /**
  * Create a new XMPPIdentityProvider.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments webrtc.AbstractIdentityProvider
+ * @augments webrtc.EventEmitter
  * @classdesc XMPP Identity provider class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -75,7 +14,7 @@ webrtc.IdentityProvider = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractIdentityProvider(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.IdentityProvider';
 
@@ -182,11 +121,11 @@ webrtc.Contacts = function (params) {
      * Add a contact to the list.
      * @memberof! webrtc.Contacts
      * @method webrtc.Contacts.add
-     * @param {webrtc.AbstractEndpoint} contact A contact to add to the list.
+     * @param {webrtc.Endpoint} contact A contact to add to the list.
      * @fires webrtc.Contacts#new If the contact doesn't already exist.
      */
     var add = that.publicize('add', function (contact) {
-        if (contact instanceof webrtc.AbstractPresentable || !contact.getID) {
+        if (contact instanceof webrtc.Presentable || !contact.getID) {
             throw new Error("Can't add endpoint to list. Wrong type!");
         }
         if (!(contact.getID() in contacts)) {
