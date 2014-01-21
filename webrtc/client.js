@@ -108,7 +108,7 @@ webrtc.Client = function (params) {
 
             updateTurnCredentials();
         }, function errorHandler(error) {
-            log.error(error.message);
+            throw error;
         });
 
         return userPromise;

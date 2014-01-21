@@ -923,7 +923,7 @@ webrtc.User = function (params) {
                 return true;
             }
 
-            itemElements.each(function processEachContact() {
+            itemElements.forEach(function processEachContact() {
                 var sub = $j(this).attr('subscription');
                 var jid = $j(this).attr('jid');
                 var name = $j(this).attr('name');

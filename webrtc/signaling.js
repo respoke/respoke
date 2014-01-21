@@ -142,10 +142,10 @@ webrtc.SignalingChannel = function (params) {
                 }
             }
         }, function handleResponse(res, params, err) {
-            if (res.code === '200') {
-                presencePromise.resolve();
+            if (err) {
+                presencePromise.reject(err);
             } else {
-                presencePromise.reject(new Error(err.message));
+                presencePromise.resolve();
             }
         });
         return presencePromise.promise;
@@ -229,10 +229,10 @@ webrtc.SignalingChannel = function (params) {
                 'text': msgText
             }
         }, function handleResponse(res, params, err) {
-            if (res.code === 200) {
-                messagePromise.resolve();
+            if (err) {
+                messagePromise.reject(err);
             } else {
-                messagePromise.reject(new Error(err.message));
+                messagePromise.resolve();
             }
         });
         return messagePromise.promise;
@@ -274,10 +274,10 @@ webrtc.SignalingChannel = function (params) {
                 'signal': signalText
             }
         }, function handleResponse(res, params, err) {
-            if (res.code === 200) {
-                signalPromise.resolve();
+            if (err) {
+                signalPromise.reject(err);
             } else {
-                signalPromise.reject(new Error(err.message));
+                signalPromise.resolve();
             }
         });
         return signalPromise.promise;
@@ -289,11 +289,16 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendCandidate
      * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
+     * TODO make this call SignalingChannel.sendSignal not Endpoint.sendSignal
      */
     var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
-        recipient.sendSignal(JSON.stringify(candObj), function () {
-        }, function (e) {
-            throw e;
+        return recipient.sendSignal({
+            signal: JSON.stringify(candObj),
+            onSuccess: function signalSuccess() {
+            },
+            onError: function signalFailure(e) {
+                throw e;
+            }
         });
     });
 
@@ -303,11 +308,16 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendSDP
      * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
+     * TODO make this call SignalingChannel.sendSignal not Endpoint.sendSignal
      */
     var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
-        recipient.sendSignal(JSON.stringify(sdpObj), function () {
-        }, function (e) {
-            throw e;
+        return recipient.sendSignal({
+            signal: JSON.stringify(sdpObj),
+            onSuccess: function sdpSuccess() {
+            },
+            onError: function sdpFailure(e) {
+                throw e;
+            }
         });
     });
 
@@ -317,11 +327,16 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendBye
      * @param {webrtc.Contact} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
+     * TODO make this call SignalingChannel.sendSignal not Endpoint.sendSignal
      */
     var sendBye = that.publicize('sendBye', function (recipient, reason) {
-        recipient.sendSignal(JSON.stringify({'type': 'bye', 'reason': reason}), function () {
-        }, function (e) {
-            throw e;
+        return recipient.sendSignal({
+            signal: JSON.stringify({'type': 'bye', 'reason': reason}),
+            onSuccess: function byeSuccess() {
+            },
+            onError: function byeFailure(e) {
+                throw e;
+            }
         });
     });
 
@@ -407,80 +422,84 @@ webrtc.SignalingChannel = function (params) {
     });
 
     /**
-     * Authenticate to via Strophe and call the handler on state change.
+     * Authenticate to the cloud and call the handler on state change.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.authenticate
      * @param {string} username The user's username.
      * @param {string} password The user's password.
      * @param {function} onStatusChange A function to which to call on every state change.
      */
-    var authenticate = that.publicize('authenticate', function (username, password, callback) {
-            call({
-                'httpMethod': "POST",
-                'path': '/v1/authsessions',
+    var authenticate = that.publicize('authenticate', function (username, password, onSuccess, onError) {
+        var authPromise = webrtc.makePromise(onSuccess, onError);
+
+        call({
+            'httpMethod': "POST",
+            'path': '/v1/authsessions',
+            'parameters': {
+                'username': username,
+                'password': password,
+                'appId': appId
+            }
+        }, function handleResponse(response) {
+            var pieces = [];
+            var protocol = null;
+            var host = null;
+            var port = null;
+
+            if (response.code !== 200) {
+                authPromise.reject(new Error(response.message));
+                return;
+            }
+
+            pieces = baseURL.split(/:\/\//);
+            protocol = pieces[0];
+            pieces = pieces[1].split(/:/);
+            host = pieces[0];
+            port = pieces[1];
+
+            socket = io.connect(baseURL, {
+                'host': host,
+                'port': port,
+                'protocol': protocol,
+                'secure': (protocol === 'https')
+            });
+
+            socket.on('connect', function handleConnect() {
+                handlerQueue.forOwn(function addEachHandlerType(array, category) {
+                    if (!array) {
+                        return;
+                    }
+
+                    array.forEach(function addEachHandler(handler) {
+                        socket.on(category, handler);
+                    });
+                    array = [];
+                });
+            });
+
+            that.addHandler('signal', function signalHandler(message) {
+                var message = webrtc.SignalingMessage({
+                    'rawMessage': message
+                });
+                that.routeSignal(message);
+            });
+
+            wsCall({
+                'path': '/v1/usersessions',
+                'httpMethod': 'POST',
                 'parameters': {
-                    'username': username,
-                    'password': password,
-                    'appId': appId
-                }
-            }, function handleResponse(response) {
-                var pieces = [];
-                var protocol = null;
-                var host = null;
-                var port = null;
-
-                if (response.code !== 200) {
-                    throw new Error(response.message);
-                }
-
-                pieces = baseURL.split(/:\/\//);
-                protocol = pieces[0];
-                pieces = pieces[1].split(/:/);
-                host = pieces[0];
-                port = pieces[1];
-
-                socket = io.connect(baseURL, {
-                    'host': host,
-                    'port': port,
-                    'protocol': protocol,
-                    'secure': (protocol === 'https')
-                });
-
-                socket.on('connect', function handleConnect() {
-                    handlerQueue.forOwn(function addEachHandlerType(array, category) {
-                        if (!array) {
-                            return;
-                        }
-
-                        array.forEach(function addEachHandler(handler) {
-                            socket.on(category, handler);
-                        });
-                        array = [];
-                    });
-                });
-
-                that.addHandler('signal', function signalHandler(message) {
-                    var message = webrtc.SignalingMessage({
-                        'rawMessage': message
-                    });
-                    that.routeSignal(message);
-                });
-
-                wsCall({
-                    'path': '/v1/usersessions',
-                    'httpMethod': 'POST',
-                    'parameters': {
-                        'presence': {
-                            'show': "no show",
-                            'status': "Hey, I'm having fun!",
-                            'type': "available"
-                        }
+                    'presence': {
+                        'show': "no show",
+                        'status': "Hey, I'm having fun!",
+                        'type': "available"
                     }
-                }, function handleResponse(res, params, err) {
-                    if (err && err.message) {
-                        throw new Error(err.message);
-                    }
-                });
+                }
+            }, function handleResponse(res, params, err) {
+                if (err) {
+                    console.log("rejecting after usersessions", err);
+                    authPromise.reject(err);
+                    return;
+                }
 
                 wsCall({
                     'path': '/v1/users/',
@@ -489,17 +508,19 @@ webrtc.SignalingChannel = function (params) {
                         'username': username
                     }
                 }, function handleResponse(res, data, err) {
-                    if (err && err.message) {
-                        callback(null, err.message);
+                    if (err) {
+                        authPromise.reject(err);
+                        return;
                     }
                     res[0].client = client;
                     res[0].loggedIn = true;
                     res[0].timeLoggedIn = new Date();
-                    callback(webrtc.User(res[0]), null);
+                    authPromise.resolve(webrtc.User(res[0]));
                 });
             });
-        }
-    );
+        });
+        return authPromise.promise;
+    });
 
     /**
      * Get ephemeral TURN credentials.  This method is called every 20 hours in setInterval
@@ -579,8 +600,7 @@ webrtc.SignalingChannel = function (params) {
 
         if (responseHandler === undefined) { // allow null to indicate no handler
             responseHandler = function (response, data, error) {
-                log.debug('default responseHandler');
-                log.debug(response, data, error);
+                log.debug('default responseHandler', response, data, error);
             };
         }
 
@@ -592,15 +612,12 @@ webrtc.SignalingChannel = function (params) {
                 var e = null;
                 var errString = null;
 
-                if (response !== null && response.code !== 200) {
-                    errString = response.message || response.error || errors[response.code];
-                    e = {
-                        'code': response.code,
-                        'message': errString
-                    };
+                if (response !== null) {
+                    errString = response.message || response.error;
+                    if (errString) {
+                        e = new Error(errString);
+                    }
                 }
-
-                log.debug(params.httpMethod + " " + params.path, response, e);
 
                 if (responseHandler) {
                     responseHandler(response, {

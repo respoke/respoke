@@ -94,9 +94,7 @@ webrtc.IdentityProvider = function (params) {
      * @returns {Promise<webrtc.User>}
      */
     var login = that.publicize('login', function (params) {
-        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         var user = null;
-
         log.trace("User login");
         log.debug('client is ' + client);
 
@@ -106,19 +104,17 @@ webrtc.IdentityProvider = function (params) {
         if (!signalingChannel.isOpen()) {
             signalingChannel.open();
         }
-        signalingChannel.authenticate(params.username, params.password, function onAuth(user, errorMessage) {
-            if (user) {
-                if (!params.onIncomingCall) {
-                    log.warn("No onIncomingCall passed to Client.login.");
-                } else {
-                    user.listen('call', params.onIncomingCall);
-                }
-                deferred.resolve(user);
+
+        var promise = signalingChannel.authenticate(params.username, params.password,
+                params.onSuccess, params.onError);
+        promise.done(function (user) {
+            if (!params.onIncomingCall) {
+                log.warn("No onIncomingCall passed to Client.login.");
             } else {
-                deferred.reject(new Error(errorMessage));
+                user.listen('call', params.onIncomingCall);
             }
-        });
-        return deferred.promise;
+        }, function () {});
+        return promise;
     });
 
     /**

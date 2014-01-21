@@ -158,9 +158,6 @@ webrtc.AbstractEndpoint = function (params) {
      * @param {failureCallback} onFailure
      */
     var sendMessage = that.publicize('sendMessage', function (message, onSuccess, onFailure) {
-        if (signalingChannel.isOpen()) {
-            signalingChannel.send(message);
-        }
     });
 
     /**
@@ -172,9 +169,6 @@ webrtc.AbstractEndpoint = function (params) {
      * @param {failureCallback} onFailure
      */
     var sendSignal = that.publicize('sendSignal', function (signal, onSuccess, onFailure) {
-        if (signalingChannel.isOpen()) {
-            signalingChannel.sendSignal(signal);
-        }
     });
 
     return that;
@@ -357,11 +351,16 @@ webrtc.Endpoint = function (params) {
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
-        return signalingChannel.sendMessage(webrtc.TextMessage({
-            'recipient': that,
-            'sender': webrtc.getClient(client).user.getID(),
-            'payload': params.message
-        }), params.onSuccess, params.onError);
+        console.log('Endpoint.sendMessage');
+        if (signalingChannel.isOpen()) {
+            return signalingChannel.sendMessage(webrtc.TextMessage({
+                'recipient': that,
+                'sender': webrtc.getClient(client).user.getID(),
+                'payload': params.message
+            }), params.onSuccess, params.onError);
+        } else {
+            params.onError(new Error("No connection to the server."));
+        }
     });
 
     /**
@@ -372,14 +371,13 @@ webrtc.Endpoint = function (params) {
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.trace('Endpoint.sendSignal');
-        var sigMessage = webrtc.SignalingMessage({
+        var signalMessage = webrtc.SignalingMessage({
             'recipient': that,
             'sender': webrtc.getClient(client).user.getID(),
             'payload': params.signal
         });
-        log.debug(params.signal);
-        log.debug(sigMessage);
-        signalingChannel.sendSignal(sigMessage, params.onSuccess, params.onError);
+        console.log('signalingChannel.sendSignal', signalMessage.getPayload(), params.onSuccess, params.onError);
+        signalingChannel.sendSignal(signalMessage, params.onSuccess, params.onError);
     });
 
     /**
@@ -418,6 +416,9 @@ webrtc.Endpoint = function (params) {
         params.client = client;
         params.username = user.getUsername();
         params.remoteEndpoint = id;
+
+        // This is terrible. Code path bounces back and forth from signaling.js to endpoint.js at least
+        // twice. Fix this.
         params.signalOffer = function (sdp) {
             log.trace('signalOffer');
             signalingChannel.sendSDP(that, sdp);
