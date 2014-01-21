@@ -38,7 +38,7 @@ webrtc.Client = function (params) {
 
     var callSettings = {
         constraints: params.constraints || {
-            video : { mandatory: { minWidth: 640, minHeight: 480 } },
+            video : true,
             audio : true,
             optional: [],
             mandatory: {}
