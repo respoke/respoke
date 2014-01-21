@@ -48,7 +48,7 @@ describe("A webrtc.Presentable ", function () {
         sinon.spy(presentable, "fire");
 
         try {
-            presentable.setPresence(newPresence);
+            presentable.setPresence({presence: newPresence});
 
             expect(presentable.getPresence()).to.equal(newPresence);
             expect(presentable.fire.calledWith('presence')).to.equal(true);

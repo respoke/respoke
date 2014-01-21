@@ -108,14 +108,15 @@ webrtc.SignalingChannel = function (params) {
     var logout = that.publicize('logout', function (params) {
         var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         call({
-            'path': '/v1/authsessions',
-            'httpMethod': 'DELETE'
-        }, function handleResponse(response) {
-            if (!response.error) {
-                socket.disconnect();
-                deferred.resolve("Logged out.");
-            } else {
-                deferred.reject(new Error("Couldn't log out."));
+            path: '/v1/authsessions',
+            httpMethod: 'DELETE',
+            responseHandler: function (response) {
+                if (!response.error) {
+                    socket.disconnect();
+                    deferred.resolve("Logged out.");
+                } else {
+                    deferred.reject(new Error("Couldn't log out."));
+                }
             }
         });
         return deferred.promise;
@@ -128,24 +129,25 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendPresence
      * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
      */
-    var sendPresence = that.publicize('sendPresence', function (presenceString, onSuccess, onError) {
-        var presencePromise = webrtc.makePromise(onSuccess, onError);
+    var sendPresence = that.publicize('sendPresence', function (params) {
+        var presencePromise = webrtc.makePromise(params.onSuccess, params.onError);
         log.trace("Signaling sendPresence");
         wsCall({
-            'path': '/v1/presence',
-            'httpMethod': 'POST',
-            'parameters': {
+            path: '/v1/presence',
+            httpMethod: 'POST',
+            parameters: {
                 'presence': {
-                    'show': "no show",
+                    show: "no show",
                     'status': "Hey, I'm having fun!",
-                    'type': presenceString || "available"
+                    type: params.presence || "available"
                 }
-            }
-        }, function handleResponse(res, params, err) {
-            if (err) {
-                presencePromise.reject(err);
-            } else {
-                presencePromise.resolve();
+            },
+            responseHandler: function (res, params, err) {
+                if (err) {
+                    presencePromise.reject(err);
+                } else {
+                    presencePromise.resolve();
+                }
             }
         });
         return presencePromise.promise;
@@ -157,39 +159,41 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getContacts
      */
-    var getContacts = that.publicize('getContacts', function (onContacts, onPresence) {
+    var getContacts = that.publicize('getContacts', function (params) {
         wsCall({
-            'path': '/v1/contacts/'
-        }, function handleResponse(contactList, params, err) {
-            var userIdList = [];
+            path: '/v1/contacts/',
+            responseHandler: function (contactList, dataParams, err) {
+                var userIdList = [];
 
-            if (err && err.message) {
-                throw new Error(err.message);
-            }
-
-            contactList.forEach(function saveEachId(contact) {
-                userIdList.push({'userId': contact.id});
-            });
-
-            if (onContacts) {
-                onContacts(contactList);
-            }
-
-            wsCall({
-                'path': '/v1/presenceobservers',
-                'httpMethod' : 'POST',
-                'parameters': {
-                    'users': userIdList
-                }
-            }, function handleResponse(presenceList, params, err) {
                 if (err && err.message) {
-                    throw new Error(err.message);
+                    throw err;
                 }
 
-                if (onPresence) {
-                    onPresence(presenceList);
+                contactList.forEach(function saveEachId(contact) {
+                    userIdList.push({'userId': contact.id});
+                });
+
+                if (params.onContacts) {
+                    params.onContacts(contactList);
                 }
-            });
+
+                wsCall({
+                    path: '/v1/presenceobservers',
+                    httpMethod: 'POST',
+                    parameters: {
+                        users: userIdList
+                    },
+                    responseHandler: function (presenceList, dataParams, err) {
+                        if (err && err.message) {
+                            throw err;
+                        }
+
+                        if (params.onPresence) {
+                            params.onPresence(presenceList);
+                        }
+                    }
+                });
+            }
         });
     });
 
@@ -199,13 +203,13 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
      */
-    var sendMessage = that.publicize('sendMessage', function (message, onSuccess, onError) {
-        var msgText = message.getPayload();
+    var sendMessage = that.publicize('sendMessage', function (params) {
+        var msgText = params.message.getPayload();
         var recipient = null;
-        var messagePromise = webrtc.makePromise(onSuccess, onError);
+        var messagePromise = webrtc.makePromise(params.onSuccess, params.onError);
 
         try {
-            recipient = message.getRecipient().getID();
+            recipient = params.message.getRecipient().getID();
         } catch (e) {
             log.debug("Can't get message recipient.");
             return;
@@ -222,17 +226,18 @@ webrtc.SignalingChannel = function (params) {
         }
 
         wsCall({
-            'path': '/v1/chat',
-            'httpMethod': 'POST',
-            'parameters': {
+            path: '/v1/chat',
+            httpMethod: 'POST',
+            parameters: {
                 'to': recipient,
                 'text': msgText
-            }
-        }, function handleResponse(res, params, err) {
-            if (err) {
-                messagePromise.reject(err);
-            } else {
-                messagePromise.resolve();
+            },
+            responseHandler: function (res, dataParams, err) {
+                if (err) {
+                    messagePromise.reject(err);
+                } else {
+                    messagePromise.resolve();
+                }
             }
         });
         return messagePromise.promise;
@@ -244,13 +249,13 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.sendSignal
      * @param {string} message The string The signal to send.
      */
-    var sendSignal = that.publicize('sendSignal', function (signal, onSuccess, onError) {
-        var signalText = signal.getPayload();
+    var sendSignal = that.publicize('sendSignal', function (params) {
+        var signalText = params.signal.getPayload();
         var recipient = null;
-        var signalPromise = webrtc.makePromise(onSuccess, onError);
+        var signalPromise = webrtc.makePromise(params.onSuccess, params.onError);
 
         try {
-            recipient = signal.getRecipient().getID();
+            recipient = params.signal.getRecipient().getID();
         } catch (e) {
             log.error("Can't get signal recipient.");
             return;
@@ -267,17 +272,18 @@ webrtc.SignalingChannel = function (params) {
         }
 
         wsCall({
-            'path': '/v1/signaling',
-            'httpMethod': 'POST',
-            'parameters': {
+            path: '/v1/signaling',
+            httpMethod: 'POST',
+            parameters: {
                 'to': recipient,
                 'signal': signalText
-            }
-        }, function handleResponse(res, params, err) {
-            if (err) {
-                signalPromise.reject(err);
-            } else {
-                signalPromise.resolve();
+            },
+            responseHandler: function (res, dataParams, err) {
+                if (err) {
+                    signalPromise.reject(err);
+                } else {
+                    signalPromise.resolve();
+                }
             }
         });
         return signalPromise.promise;
@@ -290,19 +296,18 @@ webrtc.SignalingChannel = function (params) {
      * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
-    var sendCandidate = that.publicize('sendCandidate', function (recipient, candObj) {
-        var signalMessage = webrtc.SignalingMessage({
-            'recipient': recipient,
-            'sender': webrtc.getClient(client).user.getID(),
-            'payload': JSON.stringify(candObj)
-        });
-        return that.sendSignal(
-            signalMessage,
-            function sdpSuccess() {},
-            function sdpFailure(e) {
+    var sendCandidate = that.publicize('sendCandidate', function (params) {
+        return that.sendSignal({
+            signal: webrtc.SignalingMessage({
+                recipient: params.recipient,
+                sender: webrtc.getClient(client).user.getID(),
+                payload: JSON.stringify(params.candObj)
+            }),
+            onSuccess: function () {},
+            onError: function (e) {
                 throw e;
             }
-        );
+        });
     });
 
     /**
@@ -312,19 +317,18 @@ webrtc.SignalingChannel = function (params) {
      * @param {webrtc.Contact} recipient The recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
-    var sendSDP = that.publicize('sendSDP', function (recipient, sdpObj) {
-        var signalMessage = webrtc.SignalingMessage({
-            'recipient': recipient,
-            'sender': webrtc.getClient(client).user.getID(),
-            'payload': JSON.stringify(sdpObj)
-        });
-        return that.sendSignal(
-            signalMessage,
-            function sdpSuccess() {},
-            function sdpFailure(e) {
+    var sendSDP = that.publicize('sendSDP', function (params) {
+        return that.sendSignal({
+            signal: webrtc.SignalingMessage({
+                'recipient': params.recipient,
+                'sender': webrtc.getClient(client).user.getID(),
+                'payload': JSON.stringify(params.sdpObj)
+            }),
+            onSuccess: function () {},
+            onError: function (e) {
                 throw e;
             }
-        );
+        });
     });
 
     /**
@@ -334,30 +338,18 @@ webrtc.SignalingChannel = function (params) {
      * @param {webrtc.Contact} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
      */
-    var sendBye = that.publicize('sendBye', function (recipient, reason) {
-        var signalMessage = webrtc.SignalingMessage({
-            'recipient': recipient,
-            'sender': webrtc.getClient(client).user.getID(),
-            'payload': JSON.stringify({'type': 'bye', 'reason': reason})
-        });
-        return that.sendSignal(
-            signalMessage,
-            function sdpSuccess() {},
-            function sdpFailure(e) {
+    var sendBye = that.publicize('sendBye', function (params) {
+        return that.sendSignal({
+            signal: webrtc.SignalingMessage({
+                'recipient': params.recipient,
+                'sender': webrtc.getClient(client).user.getID(),
+                'payload': JSON.stringify({'type': 'bye', 'reason': params.reason})
+            }),
+            onSuccess: function () {},
+            onError: function (e) {
                 throw e;
             }
-        );
-    });
-
-    /**
-     * Parse a message and find the JSON signaling blob in it.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.parseText
-     * @param {object} msgString A signaling message.
-     * @return {object} signalingObj A JavaScript object containing the signaling information.
-     */
-    var parseText = that.publicize('parseText', function (msgString) {
-        return msgString;
+        });
     });
 
     /**
@@ -378,7 +370,10 @@ webrtc.SignalingChannel = function (params) {
         if (signal.type === 'offer') {
             toCreate = true;
         }
-        call = clientObj.user.getCallByContact(message.getSender(), toCreate);
+        call = clientObj.user.getCallByContact({
+            contactId: message.getSender(),
+            create: toCreate
+        });
 
         if (!toCreate && !call) {
             return;
@@ -422,11 +417,11 @@ webrtc.SignalingChannel = function (params) {
      * @param {function} handler A function to which to pass the message
      * @deprecated Not sure how we will route messages yet.
      */
-    var addHandler = that.publicize('addHandler', function (type, handler) {
+    var addHandler = that.publicize('addHandler', function (params) {
         if (socket.socket && socket.socket.open) {
-            socket.on(type, handler);
+            socket.on(params.type, params.handler);
         } else {
-            handlerQueue[type].push(handler);
+            handlerQueue[params.type].push(params.handler);
         }
     });
 
@@ -438,95 +433,101 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} password The user's password.
      * @param {function} onStatusChange A function to which to call on every state change.
      */
-    var authenticate = that.publicize('authenticate', function (username, password, onSuccess, onError) {
-        var authPromise = webrtc.makePromise(onSuccess, onError);
+    var authenticate = that.publicize('authenticate', function (params) {
+        var authPromise = webrtc.makePromise(params.onSuccess, params.onError);
 
         call({
-            'httpMethod': "POST",
-            'path': '/v1/authsessions',
-            'parameters': {
-                'username': username,
-                'password': password,
+            httpMethod: "POST",
+            path: '/v1/authsessions',
+            parameters: {
+                'username': params.username,
+                'password': params.password,
                 'appId': appId
-            }
-        }, function handleResponse(response) {
-            var pieces = [];
-            var protocol = null;
-            var host = null;
-            var port = null;
+            },
+            responseHandler: function (response) {
+                var pieces = [];
+                var protocol = null;
+                var host = null;
+                var port = null;
 
-            if (response.code !== 200) {
-                authPromise.reject(new Error(response.message));
-                return;
-            }
-
-            pieces = baseURL.split(/:\/\//);
-            protocol = pieces[0];
-            pieces = pieces[1].split(/:/);
-            host = pieces[0];
-            port = pieces[1];
-
-            socket = io.connect(baseURL, {
-                'host': host,
-                'port': port,
-                'protocol': protocol,
-                'secure': (protocol === 'https')
-            });
-
-            socket.on('connect', function handleConnect() {
-                handlerQueue.forOwn(function addEachHandlerType(array, category) {
-                    if (!array) {
-                        return;
-                    }
-
-                    array.forEach(function addEachHandler(handler) {
-                        socket.on(category, handler);
-                    });
-                    array = [];
-                });
-            });
-
-            that.addHandler('signal', function signalHandler(message) {
-                var message = webrtc.SignalingMessage({
-                    'rawMessage': message
-                });
-                that.routeSignal(message);
-            });
-
-            wsCall({
-                'path': '/v1/usersessions',
-                'httpMethod': 'POST',
-                'parameters': {
-                    'presence': {
-                        'show': "no show",
-                        'status': "Hey, I'm having fun!",
-                        'type': "available"
-                    }
-                }
-            }, function handleResponse(res, params, err) {
-                if (err) {
-                    console.log("rejecting after usersessions", err);
-                    authPromise.reject(err);
+                if (response.code !== 200) {
+                    authPromise.reject(new Error(response.message));
                     return;
                 }
 
-                wsCall({
-                    'path': '/v1/users/',
-                    'httpMethod': 'GET',
-                    'parameters': {
-                        'username': username
-                    }
-                }, function handleResponse(res, data, err) {
-                    if (err) {
-                        authPromise.reject(err);
-                        return;
-                    }
-                    res[0].client = client;
-                    res[0].loggedIn = true;
-                    res[0].timeLoggedIn = new Date();
-                    authPromise.resolve(webrtc.User(res[0]));
+                pieces = baseURL.split(/:\/\//);
+                protocol = pieces[0];
+                pieces = pieces[1].split(/:/);
+                host = pieces[0];
+                port = pieces[1];
+
+                socket = io.connect(baseURL, {
+                    'host': host,
+                    'port': port,
+                    'protocol': protocol,
+                    'secure': (protocol === 'https')
                 });
-            });
+
+                socket.on('connect', function handleConnect() {
+                    handlerQueue.forOwn(function addEachHandlerType(array, category) {
+                        if (!array) {
+                            return;
+                        }
+
+                        array.forEach(function addEachHandler(handler) {
+                            socket.on(category, handler);
+                        });
+                        array = [];
+                    });
+                });
+
+                that.addHandler({
+                    type: 'signal',
+                    handler: function signalHandler(message) {
+                        var message = webrtc.SignalingMessage({
+                            'rawMessage': message
+                        });
+                        that.routeSignal(message);
+                    }
+                });
+
+                wsCall({
+                    path: '/v1/usersessions',
+                    httpMethod: 'POST',
+                    parameters: {
+                        'presence': {
+                            'show': "no show",
+                            'status': "Hey, I'm having fun!",
+                            'type': "available"
+                        }
+                    },
+                    responseHandler: function (res, dataParams, err) {
+                        if (err) {
+                            console.log("rejecting after usersessions", err);
+                            authPromise.reject(err);
+                            return;
+                        }
+
+                        wsCall({
+                            path: '/v1/users/',
+                            httpMethod: 'GET',
+                            parameters: {
+                                username: params.username
+                            },
+                            responseHandler: function (res, dataParams, err) {
+                                if (err) {
+                                    authPromise.reject(err);
+                                    return;
+                                }
+                                res[0].client = client;
+                                res[0].loggedIn = true;
+                                res[0].timeLoggedIn = new Date();
+                                authPromise.resolve(webrtc.User(res[0]));
+                            }
+                        });
+                    }
+                });
+            }
         });
         return authPromise.promise;
     });
@@ -539,44 +540,36 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getTurnCredentials
      */
-    var getTurnCredentials = that.publicize('getTurnCredentials', function (onCredentials) {
+    var getTurnCredentials = that.publicize('getTurnCredentials', function () {
         var deferred = Q.defer();
         wsCall({
-            'httpMethod': 'GET',
-            'path': '/v1/turn'
-        }, function handleResponse(creds, params, err) {
-            var result = [];
+            httpMethod: 'GET',
+            path: '/v1/turn',
+            responseHandler: function (creds, dataParams, err) {
+                var result = [];
 
-            if (!creds || !creds.uris) {
-                deferred.reject(err.message);
-            }
-
-            creds.uris.forEach(function saveTurnUri(uri) {
-                var cred = null;
-
-                if (!uri) {
+                if (!creds || !creds.uris) {
+                    deferred.reject(err);
                     return;
                 }
 
-                cred = createIceServer(uri, creds.username, creds.password);
-                result.push(cred);
-                /*
-                 * I'm not entirely sure that we can trust createIceServer. This is the code
-                 * to convert back to the old method of TURN format, with no 'username' attribute.
-                 * Someday we will be able to delete this.
-                uri = uri.replace('turn:', 'turn:' + creds.username + '@');
-                uri = uri.replace('?transport=udp', '');
-                result.push({
-                    'url': uri,
-                    'credential': cred.credential
-                });*/
-            });
+                creds.uris.forEach(function saveTurnUri(uri) {
+                    var cred = null;
 
-            if (result.length === 0) {
-                deferred.reject(new Error("Got no TURN credentials."));
+                    if (!uri) {
+                        return;
+                    }
+
+                    cred = createIceServer(uri, creds.username, creds.password);
+                    result.push(cred);
+                });
+
+                if (result.length === 0) {
+                    deferred.reject(new Error("Got no TURN credentials."));
+                }
+
+                deferred.resolve(result);
             }
-
-            deferred.resolve(result);
         });
         return deferred.promise;
     });
@@ -592,7 +585,7 @@ webrtc.SignalingChannel = function (params) {
      * @private
      * @param {object} params Object containing httpMethod, objectId, path, and parameters.
      */
-    var wsCall = function (params, responseHandler) {
+    var wsCall = function (params) {
         if (!params) {
             throw new Error('No params.');
         }
@@ -607,8 +600,8 @@ webrtc.SignalingChannel = function (params) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
         }
 
-        if (responseHandler === undefined) { // allow null to indicate no handler
-            responseHandler = function (response, data, error) {
+        if (params.responseHandler === undefined) { // allow null to indicate no handler
+            params.responseHandler = function (response, data, error) {
                 log.debug('default responseHandler', response, data, error);
             };
         }
@@ -628,8 +621,8 @@ webrtc.SignalingChannel = function (params) {
                     }
                 }
 
-                if (responseHandler) {
-                    responseHandler(response, {
+                if (params.responseHandler) {
+                    params.responseHandler(response, {
                         'uri' : params.path,
                         'params' : params.parameters
                     }, e);
@@ -651,7 +644,7 @@ webrtc.SignalingChannel = function (params) {
      * @private
      * @param {object} params Object containing httpMethod, objectId, path, and parameters.
      */
-    var call = function (params, responseHandler) {
+    var call = function (params) {
         /* Params go in the URI for GET, DELETE, same format for
          * POST and PUT, but they must be sent separately after the
          * request is opened. */
@@ -682,8 +675,8 @@ webrtc.SignalingChannel = function (params) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
         }
 
-        if (!responseHandler) {
-            responseHandler = function (response, data) {
+        if (!params.responseHandler) {
+            params.responseHandler = function (response, data) {
                 log.debug('default responseHandler');
                 log.debug(response);
             };
@@ -731,7 +724,7 @@ webrtc.SignalingChannel = function (params) {
                     }
                 }
                 log.debug(response);
-                responseHandler(response, {
+                params.responseHandler(response, {
                     'uri' : uri,
                     'params' : params.parameters
                 });
@@ -802,8 +795,11 @@ webrtc.TextMessage = function (params) {
      * @method webrtc.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
-    var parse = that.publicize('parse', function (thisMsg) {
-        payload = thisMsg || rawMessage;
+    var parse = that.publicize('parse', function (params) {
+        if (params && params.message) {
+            rawMessage = params.message;
+        }
+        payload = rawMessage;
     });
 
     /**
@@ -870,11 +866,11 @@ webrtc.SignalingMessage = function (params) {
      * @method webrtc.SignalingMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
-    var parse = that.publicize('parse', function (thisMsg) {
+    var parse = that.publicize('parse', function (params) {
         var sessionId = null;
 
-        if (thisMsg) {
-            rawMessage = thisMsg;
+        if (params && params.signal) {
+            rawMessage = params.signal;
         }
 
         try {
@@ -965,9 +961,9 @@ webrtc.PresenceMessage = function (params) {
      * @method webrtc.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
-    var parse = that.publicize('parse', function (thisMsg) {
-        if (thisMsg) {
-            rawMessage = thisMsg;
+    var parse = that.publicize('parse', function (params) {
+        if (params && params.message) {
+            rawMessage = params.message;
         }
 
         try {

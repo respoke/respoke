@@ -44,8 +44,7 @@ webrtc.IdentityProvider = function (params) {
             signalingChannel.open();
         }
 
-        var promise = signalingChannel.authenticate(params.username, params.password,
-                params.onSuccess, params.onError);
+        var promise = signalingChannel.authenticate(params);
         promise.done(function (user) {
             if (!params.onIncomingCall) {
                 log.warn("No onIncomingCall passed to Client.login.");
@@ -104,6 +103,7 @@ webrtc.IdentityProvider = function (params) {
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.Contacts}
+ * TODO convert this class to an augmented array.
  */
 webrtc.Contacts = function (params) {
     "use strict";
@@ -124,14 +124,14 @@ webrtc.Contacts = function (params) {
      * @param {webrtc.Endpoint} contact A contact to add to the list.
      * @fires webrtc.Contacts#new If the contact doesn't already exist.
      */
-    var add = that.publicize('add', function (contact) {
-        if (contact instanceof webrtc.Presentable || !contact.getID) {
+    var add = that.publicize('add', function (params) {
+        if (params.contact instanceof webrtc.Presentable || !params.contact.getID) {
             throw new Error("Can't add endpoint to list. Wrong type!");
         }
-        if (!(contact.getID() in contacts)) {
+        if (!(params.contact.getID() in contacts)) {
             that.length += 1;
-            that.fire('new', contact);
-            contacts[contact.getID()] = contact;
+            that.fire('new', params.contact);
+            contacts[params.contact.getID()] = params.contact;
         }
     });
 
@@ -142,8 +142,8 @@ webrtc.Contacts = function (params) {
      * @param {string} contactID A contact to get from the list.
      * @returns {webrtc.Endpoint} The endpoint whose getID() function matches the string.
      */
-    var get = that.publicize('get', function (contactID) {
-        return contacts[contactID];
+    var get = that.publicize('get', function (params) {
+        return contacts[params.contactID];
     });
 
     /**
@@ -180,11 +180,11 @@ webrtc.Contacts = function (params) {
      * @param {string} contactID A contact to remove from the list.
      * @fires webrtc.Contacts#remove
      */
-    var remove = that.publicize('remove', function (contactID) {
-        if (contacts.hasOwnProperty(contactID)) {
+    var remove = that.publicize('remove', function (params) {
+        if (contacts.hasOwnProperty(params.contactID)) {
             that.length -= 1;
-            that.fire('remove', contacts[contactID]);
-            contacts[contactID] = undefined;
+            that.fire('remove', contacts[params.contactID]);
+            contacts[params.contactID] = undefined;
         }
     });
 
@@ -195,9 +195,9 @@ webrtc.Contacts = function (params) {
      * @param {string} sortField An optional contact attribute to sort on.
      * @return {webrtc.Contact[]}
      */
-    var getContacts = that.publicize('getContacts', function (sortField) {
+    var getContacts = that.publicize('getContacts', function (params) {
         var values = [];
-        sortField = sortField || 'id';
+        var sortField = params.sortField || 'id';
 
         // Make an array of the values of the contacts dict
         contacts.forOwn(function addValue(value, key) {
@@ -234,11 +234,11 @@ webrtc.Contacts = function (params) {
     });
 
     /**
-     * Add a presence message to the presence queue for processing after the roster has been
+     * Add a presence message to the presence queue for processing after the contact list has been
      * processed.
      * @memberof! webrtc.Contacts
      * @method webrtc.Contacts.queuePresence
-     * @param {object} message An XMPP presence stanza to save.
+     * @param {object} message An presence message to save.
      */
     var queuePresence = that.publicize('queuePresence', function (message) {
         presenceQueue.push(message);

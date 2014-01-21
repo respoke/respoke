@@ -57,7 +57,7 @@ describe("A webrtc.Endpoint ", function () {
 
         sinon.spy(endpoint, "fire");
         try {
-            endpoint.setPresence(newPresence);
+            endpoint.setPresence({presence: newPresence});
 
             expect(endpoint.getPresence()).to.equal(newPresence);
             expect(endpoint.fire.calledWith('presence')).to.equal(true);

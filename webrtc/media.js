@@ -111,7 +111,7 @@ webrtc.Call = function (params) {
      * @memberof! webrtc.Call
      * @method webrtc.Call.approve.
      */
-    var approve = that.publicize('approve', function (oSession) {
+    var approve = that.publicize('approve', function () {
         log.trace('Call.approve');
         that.state = ST_REVIEW;
         that.fire('approve');
@@ -324,7 +324,7 @@ webrtc.Call = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        hangup(!that.initiator);
+        hangup({signal: !that.initiator});
     };
 
     /**
@@ -505,18 +505,19 @@ webrtc.Call = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        hangup(false);
+        hangup({signal: false});
     };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
-     * sendSignal is not false and we have not received a bye signal from the remote party.
+     * signal is not false and we have not received a bye signal from the remote party.
      * @memberof! webrtc.Call
      * @method webrtc.Call.hangup
-     * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
+     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var hangup = that.publicize('hangup', function (sendSignal) {
+    var hangup = that.publicize('hangup', function (params) {
+        params = params || {};
         if (that.state === ST_ENDED) {
             // This function got called twice.
             log.trace("Call.hangup got called twice.");
@@ -527,7 +528,7 @@ webrtc.Call = function (params) {
         // Never send bye if we are the initiator but we haven't sent any other signal yet.
         log.trace("at hangup, call state is " + that.state);
         if (that.initiator === true && that.state < ST_OFFERED) {
-            sendSignal = false;
+            params.signal = false;
         }
 
         clientObj.updateTurnCredentials();
@@ -536,8 +537,8 @@ webrtc.Call = function (params) {
         }*/
         log.debug('hanging up');
 
-        sendSignal = (typeof sendSignal === 'boolean' ? sendSignal : true);
-        if (!receivedBye && sendSignal) {
+        params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
+        if (!receivedBye && params.signal) {
             log.info('sending bye');
             signalTerminate();
         }
@@ -545,7 +546,7 @@ webrtc.Call = function (params) {
         report.callStopped = new Date().getTime();
         signalReport(report);
 
-        that.fire('hangup', sendSignal);
+        that.fire('hangup', params.signal);
         that.ignore();
 
         mediaStreams.forOwn(function stopEach(mediaStream) {
@@ -569,7 +570,7 @@ webrtc.Call = function (params) {
      * Expose hangup as reject for approve/reject workflow.
      * @memberof! webrtc.Call
      * @method webrtc.Call.reject
-     * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
+     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     var reject = that.publicize('reject', hangup);

@@ -213,13 +213,13 @@ webrtc.Client = function (params) {
      * @method webrtc.Client.setDefaultCallSettings
      * @param {object} Object containing settings to modify.
      */
-    var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (settings) {
-        settings = settings || {};
-        if (settings.constraints) {
-            callSettings.constraints = settings.constraints;
+    var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (params) {
+        params = params || {};
+        if (params.constraints) {
+            callSettings.constraints = params.constraints;
         }
-        if (settings.servers) {
-            callSettings.servers = settings.servers;
+        if (params.servers) {
+            callSettings.servers = params.servers;
         }
     });
 

@@ -66,7 +66,7 @@ describe("A webrtc.User ", function () {
 
         sinon.spy(user, "fire");
         try {
-            user.setPresence(newPresence);
+            user.setPresence({presence: newPresence});
 
             expect(user.getPresence()).to.equal(newPresence);
             expect(user.fire.calledWith('presence')).to.equal(true);

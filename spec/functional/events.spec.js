@@ -66,7 +66,7 @@ describe('System Events', function () {
         });
 
         it("should receive event for webrtc.Presentable#presence when sendPresence is called", function (done) {
-            client2.setPresence('unavailable').then(function () {
+            client2.setPresence({presence: 'unavailable'}).then(function () {
                 setTimeout(function () {
                     client1.getValue('contactsPresence').then(function (value) {
                         expect(value).to.equal('unavailable');

@@ -127,6 +127,7 @@ webrtc.Presentable = function (params) {
     var callInProgress = that.publicize('callInProgress', function () {
         return false;
     });
+
     /**
      * Get the presence.
      * @memberof! webrtc.Presentable
@@ -142,11 +143,10 @@ webrtc.Presentable = function (params) {
      * @memberof! webrtc.Presentable
      * @method webrtc.Presentable.setPresence
      * @param {string} presence
-     * @returns {string}
      * @fires webrtc.Presentable#presence
      */
-    var setPresence = that.publicize('setPresence', function (newPresence) {
-        presence = newPresence;
+    var setPresence = that.publicize('setPresence', function (params) {
+        presence = params.presence;
         that.fire('presence', presence);
     });
 
@@ -180,16 +180,15 @@ webrtc.Endpoint = function (params) {
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
-        console.log('Endpoint.sendMessage');
-        if (signalingChannel.isOpen()) {
-            return signalingChannel.sendMessage(webrtc.TextMessage({
+        return signalingChannel.sendMessage({
+            message: webrtc.TextMessage({
                 'recipient': that,
                 'sender': webrtc.getClient(client).user.getID(),
                 'payload': params.message
-            }), params.onSuccess, params.onError);
-        } else {
-            params.onError(new Error("No connection to the server."));
-        }
+            }),
+            onSuccess: params.onSuccess,
+            onError: params.onError
+        });
     });
 
     /**
@@ -200,12 +199,15 @@ webrtc.Endpoint = function (params) {
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
-        var signalMessage = webrtc.SignalingMessage({
-            'recipient': that,
-            'sender': webrtc.getClient(client).user.getID(),
-            'payload': params.signal // JSON in string form
+        return signalingChannel.sendSignal({
+            signal: webrtc.SignalingMessage({
+                'recipient': that,
+                'sender': webrtc.getClient(client).user.getID(),
+                'payload': params.signal // JSON in string form
+            }),
+            onSuccess: params.onSuccess,
+            onError: params.onError
         });
-        return signalingChannel.sendSignal(signalMessage, params.onSuccess, params.onError);
     });
 
     /**
@@ -245,23 +247,32 @@ webrtc.Endpoint = function (params) {
         params.username = user.getUsername();
         params.remoteEndpoint = id;
 
-        // This is terrible. Code path bounces back and forth from signaling.js to endpoint.js at least
-        // twice. Fix this.
         params.signalOffer = function (sdp) {
             log.trace('signalOffer');
-            signalingChannel.sendSDP(that, sdp);
+            signalingChannel.sendSDP({
+                recipient: that,
+                sdpObj: sdp
+            });
         };
         params.signalAnswer = function (sdp) {
             log.trace('signalAnswer');
-            signalingChannel.sendSDP(that, sdp);
+            signalingChannel.sendSDP({
+                recipient: that,
+                sdpObj: sdp
+            });
         };
         params.signalCandidate = function (oCan) {
             oCan.type = 'candidate';
-            signalingChannel.sendCandidate(that, oCan);
+            signalingChannel.sendCandidate({
+                recipient: that,
+                candObj: oCan
+            });
         };
         params.signalTerminate = function () {
             log.trace('signalTerminate');
-            signalingChannel.sendBye(that);
+            signalingChannel.sendBye({
+                recipient: that
+            });
         };
         params.signalReport = function (oReport) {
             log.debug("Not sending report");
@@ -272,9 +283,9 @@ webrtc.Endpoint = function (params) {
         if (params.initiator === true) {
             call.answer();
         }
-        user.addCall(call);
+        user.addCall({call: call});
         call.listen('hangup', function hangupListener(locallySignaled) {
-            user.removeCall(id);
+            user.removeCall({contactId: id});
         });
         return call;
     });
@@ -305,31 +316,33 @@ webrtc.Contact = function (params) {
     var sessions = {};
 
     /**
-     * Get the Contact's presence.
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.getPresence
-     */
-    var getPresence = that.publicize('getPresence', function () {
-        return presence;
-    });
-
-    /**
      * Set the presence on the Contact and the session
      * @memberof! webrtc.Contact
      * @method webrtc.Contact.setPresence
+     * @param {string} presence
+     * @param {string} sessionId
      */
-    var setPresence = that.publicize('setPresence', function (presenceString, sessionId) {
-        // undefined is a valid presenceString equivalent to available.
-        presenceString = presenceString || 'available';
+    var setPresence = that.publicize('setPresence', function (params) {
+        params.presence = params.presence || 'available';
 
-        if (!sessions.hasOwnProperty(sessionId)) {
-            sessions[sessionId] = {
-                'sessionId': sessionId,
-                'presence': presenceString
+        if (!sessions.hasOwnProperty(params.sessionId)) {
+            sessions[params.sessionId] = {
+                'sessionId': params.sessionId,
+                'presence': params.presence
             };
         }
-        sessions[sessionId].presence = presenceString;
+        sessions[params.sessionId].presence = params.presence;
         resolvePresence();
+    });
+
+    /**
+     * Get the presence.
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.getPresence
+     * @returns {string}
+     */
+    var getPresence = that.publicize('getPresence', function () {
+        return presence;
     });
 
     /**
@@ -370,7 +383,6 @@ webrtc.Contact = function (params) {
 
 /**
  * Create a new User.
- * Should we attempt to support multiple inheritance?
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments webrtc.Presentable
@@ -401,11 +413,18 @@ webrtc.User = function (params) {
     });
 
     // listen to webrtc.User#presence:update -- the logged-in user's presence
+    // Change this to override setPresence.
     that.listen("presence", function presenceListener(presenceString) {
         presence = presenceString;
         if (signalingChannel && signalingChannel.isOpen()) {
-            log.info('sending my presence update ' + presenceString);
-            signalingChannel.sendPresence(presenceString);
+            log.info('sending my presence update ' + presence);
+            signalingChannel.sendPresence({
+                presence: presence,
+                onSuccess: function () {},
+                onError: function (err) {
+                    throw err;
+                }
+            });
         } else {
             log.error("Can't send my presence: no signaling channel.");
         }
@@ -421,13 +440,16 @@ webrtc.User = function (params) {
         var presPayload = presenceMessage.getPayload();
         var from = presenceMessage.getSender();
         var sessionId = presenceMessage.getSessionID();
-        var contact = contactList.get(from);
+        var contact = contactList.get({contactID: from});
         /*
          * Parse the message, add the session to contact sessions or usersessions if it's us,
          * modify the contact's presence using contact.setPresence, which will fire the event
          */
         if (contact) {
-            contact.setPresence(presPayload.type, sessionId);
+            contact.setPresence({
+                presence: presPayload.type,
+                sessionId: sessionId
+            });
         } else if (from === webrtc.getClient(client).user.getID()) {
             // logged in user TODO: save userSession
             log.debug("got own presence");
@@ -476,6 +498,7 @@ webrtc.User = function (params) {
             throw err;
         });
 
+        // TODO: Can we move this into the constructor?
         var presenceHandler = function (message) {
             var contact;
             var message = webrtc.PresenceMessage({'rawMessage': message});
@@ -485,7 +508,7 @@ webrtc.User = function (params) {
             }
 
             try {
-                contact = contactList.get(message.getSender());
+                contact = contactList.get({contactID: message.getSender()});
             } catch (e) {
                 throw new Error("Couldn't get presence sender.");
             }
@@ -497,59 +520,71 @@ webrtc.User = function (params) {
             } else {
                 log.debug('presence ' + message.getText() + " set on contact " +
                     contact.getDisplayName());
-                contact.setPresence(message.getText(), message.getSessionID());
+                contact.setPresence({
+                    presence: message.getText(),
+                    sessionId: message.getSessionID()
+                });
             }
         };
 
-        signalingChannel.getContacts(function contactsHandler(list) {
-            if (!(list in [null, undefined]) && list.length >= 0) {
-                list.forEach(function addEachContact(contactInfo) {
-                    var contact = webrtc.Contact({
-                        'client': client,
-                        'id': contactInfo.id,
-                        'username': contactInfo.username,
-                        'email': contactInfo.email,
-                        'name': contactInfo.name
+        signalingChannel.getContacts({
+            onContacts: function contactsHandler(list) {
+                if (!(list in [null, undefined]) && list.length >= 0) {
+                    list.forEach(function addEachContact(contactInfo) {
+                        var contact = webrtc.Contact({
+                            'client': client,
+                            'id': contactInfo.id,
+                            'username': contactInfo.username,
+                            'email': contactInfo.email,
+                            'name': contactInfo.name
+                        });
+                        contactList.add({contact: contact});
                     });
-                    contactList.add(contact);
-                });
-                deferred.resolve(contactList);
-            } else {
-                deferred.reject(new Error("Can't get contact list: " + list.error));
-            }
-        }, function presenceHandler(presenceList) {
-            if (presenceList && presenceList.length > 0) {
-                presenceList.forEach(function fireEachPresence(presence) {
-                    contactList.fire('presence', webrtc.PresenceMessage({'rawMessage': presence}));
-                });
+                    deferred.resolve(contactList);
+                } else {
+                    deferred.reject(new Error("Can't get contact list: " + list.error));
+                }
+            },
+            onPresence: function presenceHandler(presenceList) {
+                if (presenceList && presenceList.length > 0) {
+                    presenceList.forEach(function fireEachPresence(presence) {
+                        contactList.fire('presence', webrtc.PresenceMessage({'rawMessage': presence}));
+                    });
+                }
             }
         });
 
-        signalingChannel.addHandler('presence', presenceHandler);
+        signalingChannel.addHandler({
+            type: 'presence',
+            handler: presenceHandler
+        });
 
-        signalingChannel.addHandler('chat', function messageHandler(message) {
-            var contact;
-            var source = message.header.from;
-            if (message.header.fromSession) {
-                source += '@' + message.header.fromSession;
-            }
+        signalingChannel.addHandler({
+            type: 'chat',
+            handler: function (message) {
+                var contact;
+                var source = message.header.from;
+                if (message.header.fromSession) {
+                    source += '@' + message.header.fromSession;
+                }
 
-            try {
-                contact = contactList.get(source);
-            } catch (e) {
-                throw new Error("Couldn't parse chat message.");
-            }
-            if (!contact) {
-                log.warn("No such contact " + source);
-                return;
-            }
+                try {
+                    contact = contactList.get({contactID: source});
+                } catch (e) {
+                    throw new Error("Couldn't parse chat message.");
+                }
+                if (!contact) {
+                    log.warn("No such contact " + source);
+                    return;
+                }
 
-            contact.fire('message', webrtc.TextMessage({
-                'client': client,
-                'rawMessage': message.text,
-                'recipient': that,
-                'sender': contact.getID()
-            }));
+                contact.fire('message', webrtc.TextMessage({
+                    'client': client,
+                    'rawMessage': message.text,
+                    'recipient': that,
+                    'sender': contact.getID()
+                }));
+            }
         });
 
         return deferred.promise;
@@ -590,13 +625,13 @@ webrtc.User = function (params) {
      * @param {string} Contact ID
      * @returns {webrtc.Call}
      */
-    var getCallByContact = that.publicize('getCallByContact', function (contactId, toCreate) {
+    var getCallByContact = that.publicize('getCallByContact', function (params) {
         var call = null;
         var contact = null;
         var callSettings = null;
 
         calls.forEach(function findCall(one) {
-            if (one.remoteEndpoint === contactId) {
+            if (one.remoteEndpoint === params.contactId) {
                 if (one.getState() >= 6) { // ended or media error
                     return;
                 }
@@ -604,9 +639,9 @@ webrtc.User = function (params) {
             }
         });
 
-        if (call === null && toCreate === true) {
+        if (call === null && params.create === true) {
             try {
-                contact = contactList.get(contactId);
+                contact = contactList.get({contactID: params.contactId});
                 callSettings = webrtc.getClient(client).getCallSettings();
                 call = contact.call({
                     callSettings: callSettings,
@@ -626,10 +661,10 @@ webrtc.User = function (params) {
      * @param {webrtc.Call} call
      * @fires webrtc.User#call
      */
-    var addCall = that.publicize('addCall', function (call) {
-        if (calls.indexOf(call) === -1) {
-            calls.push(call);
-            that.fire('call', call, call.getContactID());
+    var addCall = that.publicize('addCall', function (params) {
+        if (calls.indexOf(params.call) === -1) {
+            calls.push(params.call);
+            that.fire('call', params.call, params.call.getContactID());
         }
     });
 
@@ -639,16 +674,23 @@ webrtc.User = function (params) {
      * @method webrtc.User.removeCall
      * @param {string} Optional Contact ID
      */
-    var removeCall = that.publicize('removeCall', function (contactId) {
-        if (!contactId) {
-            throw new Error("Must specify contactId of Call to remove.");
+    var removeCall = that.publicize('removeCall', function (params) {
+        var match = false;
+        if (!params.contactId && !params.call) {
+            throw new Error("Must specify contactId of Call to remove or the call itself.");
         }
 
         // Loop backward since we're modifying the array in place.
         for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if (calls[i].remoteEndpoint === contactId) {
+            if ((params.contactId && calls[i].getContactID() === params.contactId) ||
+                    (params.call && calls[i] === params.call)) {
                 calls.splice(i);
+                match = true;
             }
+        }
+
+        if (!match) {
+            log.warn("No call removed.");
         }
     });
 
@@ -659,7 +701,7 @@ webrtc.User = function (params) {
      * @method webrtc.User.setOnline
      */
     var setOnline = that.publicize('setOnline', function () {
-        that.setPresence('available');
+        that.setPresence({presence: 'available'});
     });
 
     return that;
