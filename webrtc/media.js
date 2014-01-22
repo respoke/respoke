@@ -28,8 +28,6 @@ webrtc.Call = function (params) {
     var pc = null;
     var defOffer = Q.defer();
     var defApproved = Q.defer();
-    var receivedAnswer = false;
-    var receivedBye = false;
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
     var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
     var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
@@ -416,7 +414,7 @@ webrtc.Call = function (params) {
         }
 
         log.debug("local candidate", oCan.candidate);
-        if (that.initiator && !receivedAnswer) {
+        if (that.initiator && that.state < ST_ANSWERED) {
             candidateSendingQueue.push(oCan.candidate);
         } else {
             signalCandidate(oCan.candidate);
@@ -528,17 +526,15 @@ webrtc.Call = function (params) {
     var hangup = that.publicize('hangup', function (params) {
         params = params || {};
         if (that.state === ST_ENDED) {
-            // This function got called twice.
             log.trace("Call.hangup got called twice.");
             return;
         }
         that.state = ST_ENDED;
 
-
-        // Never send bye if we are the initiator but we haven't sent any other signal yet.
         log.trace("at hangup, call state is " + that.state);
         if (that.initiator === true) {
             if (that.state < ST_OFFERED) {
+                // Never send bye if we are the initiator but we haven't sent any other signal yet.
                 params.signal = false;
             }
         } else {
@@ -548,13 +544,10 @@ webrtc.Call = function (params) {
         }
 
         clientObj.updateTurnCredentials();
-        /*if (pc === null) {
-            return;
-        }*/
         log.debug('hanging up');
 
         params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
-        if (!receivedBye && params.signal) {
+        if (params.signal) {
             log.info('sending bye');
             signalTerminate();
         }
@@ -602,7 +595,7 @@ webrtc.Call = function (params) {
 
         log.trace('isActive');
 
-        if (!pc || receivedBye === true) {
+        if (!pc || that.state < ST_ENDED) {
             return inProgress;
         }
 
@@ -643,7 +636,6 @@ webrtc.Call = function (params) {
         that.state = ST_ANSWERED;
         log.debug('got answer', oSession);
 
-        receivedAnswer = true;
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
 
@@ -674,7 +666,7 @@ webrtc.Call = function (params) {
             log.warn("addRemoteCandidate got wrong format!", oCan);
             return;
         }
-        if (that.initiator && !receivedAnswer) {
+        if (that.initiator && that.state < ST_ANSWERED) {
             candidateReceivingQueue.push(oCan);
             log.debug('Queueing a candidate.');
             return;
@@ -848,13 +840,14 @@ webrtc.Call = function (params) {
     });
 
     /**
-     * Set receivedBye to true and stop media.
+     * Save the hangup reason and hang up.
      * @memberof! webrtc.Call
      * @method webrtc.Call.setBye
      */
-    var setBye = that.publicize('setBye', function () {
-        receivedBye = true;
-        hangup();
+    var setBye = that.publicize('setBye', function (params) {
+        params = params || {};
+        report.callStoppedReason = params.reason || "Remote side hung up";
+        hangup({signal: false});
     });
 
     return that;
