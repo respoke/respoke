@@ -201,8 +201,8 @@ webrtc.Contacts = function (params) {
         var sortField = params.sortField || 'id';
 
         // Make an array of the values of the contacts dict
-        contacts.forOwn(function addValue(value, key) {
-            values.push(value);
+        Object.keys(contacts).forEach(function addValue(key) {
+            values.push(contacts[key]);
         });
         that.length = values.length;
 

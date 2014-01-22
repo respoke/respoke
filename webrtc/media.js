@@ -558,7 +558,7 @@ webrtc.Call = function (params) {
         that.fire('hangup', params.signal);
         that.ignore();
 
-        mediaStreams.forOwn(function stopEach(mediaStream) {
+        mediaStreams.forEach(function stopEach(mediaStream) {
             var stream = mediaStream.getStream();
             stream.numPc -= 1;
             if (stream.numPc === 0) {
@@ -730,7 +730,7 @@ webrtc.Call = function (params) {
     var getLocalStreams = that.publicize('getLocalStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function addLocal(stream) {
+        mediaStreams.forEach(function addLocal(stream) {
             if (stream.isLocal()) {
                 streams.push(stream);
             }
@@ -748,7 +748,7 @@ webrtc.Call = function (params) {
     var getRemoteStreams = that.publicize('getRemoteStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function addRemote(stream) {
+        mediaStreams.forEach(function addRemote(stream) {
             if (!stream.isLocal()) {
                 streams.push(stream);
             }
@@ -794,7 +794,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
-        mediaStreams.forOwn(function muteEach(stream) {
+        mediaStreams.forEach(function muteEach(stream) {
             stream.muteVideo();
         });
         that.fire('video-muted');
@@ -807,7 +807,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
-        mediaStreams.forOwn(function unmuteEach(stream) {
+        mediaStreams.forEach(function unmuteEach(stream) {
             stream.unmuteVideo();
         });
         that.fire('video-unmuted');
@@ -820,7 +820,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
-        mediaStreams.forOwn(function muteEach(stream) {
+        mediaStreams.forEach(function muteEach(stream) {
             stream.muteAudio();
         });
         that.fire('audio-muted');
@@ -833,7 +833,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
-        mediaStreams.forOwn(function unmuteEach(stream) {
+        mediaStreams.forEach(function unmuteEach(stream) {
             stream.unmuteAudio();
         });
         that.fire('audio-unmuted');

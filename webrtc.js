@@ -69,19 +69,6 @@ webrtc.makePromise = function (onSuccess, onError) {
     return deferred;
 };
 
-Object.defineProperty(Object.prototype, 'forOwn', {
-    value: function (func) {
-        "use strict";
-        for (var name in this) {
-            if (this.hasOwnProperty(name)) {
-                func(this[name], name);
-            }
-        }
-    },
-    enumerable: false,
-    configurable: false
-});
-
 /**
  * Find out if a thing is a number.
  * @param {object} number An object to test.
@@ -129,8 +116,8 @@ webrtc.Class = function (params) {
     params = params || {};
     var client = params.client;
     delete that.client;
-    params.forOwn(function copyParam(thing, name) {
-        that[name] = thing;
+    Object.keys(params).forEach(function copyParam(name) {
+        that[name] = params[name];
     });
 
     /**

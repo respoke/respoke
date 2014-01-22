@@ -468,15 +468,15 @@ webrtc.SignalingChannel = function (params) {
                 });
 
                 socket.on('connect', function handleConnect() {
-                    handlerQueue.forOwn(function addEachHandlerType(array, category) {
-                        if (!array) {
+                    Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
+                        if (!handlerQueue[category]) {
                             return;
                         }
 
-                        array.forEach(function addEachHandler(handler) {
+                        handlerQueue[category].forEach(function addEachHandler(handler) {
                             socket.on(category, handler);
                         });
-                        array = [];
+                        handlerQueue[category] = [];
                     });
                 });
 
@@ -747,7 +747,8 @@ webrtc.SignalingChannel = function (params) {
             return '';
         }
 
-        params.forOwn(function formatParam(value, name) {
+        Object.keys(params).forEach(function formatParam(name) {
+            var value = params[name];
             /* Skip objects -- We won't know how to name these. */
             if (typeof value === 'array') {
                 strings.push([name, value.join(',')].join('='));
