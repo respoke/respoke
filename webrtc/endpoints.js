@@ -123,6 +123,7 @@ webrtc.Presentable = function (params) {
      * @method webrtc.Presentable.setPresence
      * @param {string} presence
      * @param {string} sessionId
+     * @fires webrtc.Presentable#presence
      */
     var setPresence = that.publicize('setPresence', function (params) {
         params.presence = params.presence || 'available';
@@ -299,7 +300,6 @@ webrtc.Contact = function (params) {
      * @memberof! webrtc.Contact
      * @method webrtc.Contact.setPresence
      * @private
-     * @fires webrtc.Presentable#presence
      */
     var resolvePresence = that.publicize('resolvePresence', function (params) {
         var presence;
@@ -349,7 +349,6 @@ webrtc.User = function (params) {
     };
     delete that.client;
     that.className = 'webrtc.User';
-    that.resolveUser = null;
 
     var remoteUserSessions = {};
     var calls = [];
@@ -412,7 +411,9 @@ webrtc.User = function (params) {
                 onError: params.onError
             });
         } else {
-            log.error("Can't send my presence: no signaling channel.");
+            if (typeof params.onError === 'function') {
+                params.onError(new Error("Can't send my presence: no connection."));
+            }
         }
     });
 

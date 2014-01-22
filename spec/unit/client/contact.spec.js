@@ -28,13 +28,8 @@ describe("A webrtc.Contact", function () {
         expect(typeof contact.getDisplayName).to.equal('function');
         expect(typeof contact.getUsername).to.equal('function');
         expect(typeof contact.callInProgress).to.equal('function');
-        expect(typeof contact.getStatus).to.equal('function');
-    });
-
-    it("extends webrtc.Endpoint.", function () {
-        expect(typeof contact.sendMessage).to.equal('function');
-        expect(typeof contact.sendSignal).to.equal('function');
-        expect(typeof contact.call).to.equal('function');
+        expect(typeof contact.getPresence).to.equal('function');
+        expect(typeof contact.setPresence).to.equal('function');
     });
 
     /*
@@ -49,8 +44,10 @@ describe("A webrtc.Contact", function () {
     * Native methods
     */
     it("contains some important methods.", function () {
-        expect(typeof contact.getPresence).to.equal('function');
-        expect(typeof contact.setPresence).to.equal('function');
+        expect(typeof contact.sendMessage).to.equal('function');
+        expect(typeof contact.sendSignal).to.equal('function');
+        expect(typeof contact.resolvePresence).to.equal('function');
+        expect(typeof contact.call).to.equal('function');
     });
 
     /*

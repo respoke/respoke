@@ -13,7 +13,6 @@ describe("The webrtc namespace", function() {
         expect(typeof webrtc.UserSession).to.equal('function');
         expect(typeof webrtc.TextMessage).to.equal('function');
         expect(typeof webrtc.Contact).to.equal('function');
-        expect(typeof webrtc.Endpoint).to.equal('function');
         expect(typeof webrtc.IdentityProvider).to.equal('function');
         expect(typeof webrtc.PresenceMessage).to.equal('function');
         expect(typeof webrtc.Presentable).to.equal('function');

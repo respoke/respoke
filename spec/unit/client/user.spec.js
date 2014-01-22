@@ -30,9 +30,9 @@ describe("A webrtc.User ", function () {
         expect(typeof user.getID).to.equal('function');
         expect(typeof user.getDisplayName).to.equal('function');
         expect(typeof user.getUsername).to.equal('function');
+        expect(typeof user.callInProgress).to.equal('function');
         expect(typeof user.getPresence).to.equal('function');
         expect(typeof user.setPresence).to.equal('function');
-        expect(typeof user.callInProgress).to.equal('function');
     });
 
     /*
@@ -61,18 +61,19 @@ describe("A webrtc.User ", function () {
     /*
     * Presence
     */
-    it("can set and get presence and fires the correct event.", function () {
+    it("tries to set presence and errors because of lack of connection", function (done) {
         var newPresence = 'xa';
 
-        sinon.spy(user, "fire");
-        try {
-            user.setPresence({presence: newPresence});
-
-            expect(user.getPresence()).to.equal(newPresence);
-            expect(user.fire.calledWith('presence')).to.equal(true);
-        } finally {
-            user.fire.restore();
-        }
+        user.setPresence({
+            presence: newPresence,
+            onSuccess: function () {
+                done(new Error("User presence succeeded with no connection!"));
+            },
+            onError: function (err) {
+                expect(err.message).to.contain("no connection");
+                done();
+            }
+        });
     });
 
     /*
