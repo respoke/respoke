@@ -197,6 +197,7 @@ webrtc.Contacts = function (params) {
      */
     var getContacts = that.publicize('getContacts', function (params) {
         var values = [];
+        params = params || {};
         var sortField = params.sortField || 'id';
 
         // Make an array of the values of the contacts dict

@@ -106,17 +106,6 @@ webrtc.Presentable = function (params) {
     });
 
     /**
-     * Get the presence of the endpoint.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getStatus
-     * @deprecated Use or override getPresence instead.
-     * @return {string}
-     */
-    var getStatus = that.publicize('getStatus', function () {
-        return presence;
-    });
-
-    /**
      * Indicate whether the entity has an active Call. Should we only return true if
      * media is flowing, or anytime a WebRTC call is active? Should it return true if the
      * engaged in a Call on another device?
@@ -129,6 +118,31 @@ webrtc.Presentable = function (params) {
     });
 
     /**
+     * Set the presence on the object and the session
+     * @memberof! webrtc.Presentable
+     * @method webrtc.Presentable.setPresence
+     * @param {string} presence
+     * @param {string} sessionId
+     */
+    var setPresence = that.publicize('setPresence', function (params) {
+        params.presence = params.presence || 'available';
+        params.sessionId = params.sessionId || 'local';
+
+        sessions[params.sessionId] = {
+            'sessionId': params.sessionId,
+            'presence': params.presence
+        };
+
+        if (typeof that.resolvePresence === 'function') {
+            presence = that.resolvePresence({sessions: sessions});
+        } else {
+            presence = params.presence;
+        }
+
+        that.fire('presence', presence);
+    });
+
+    /**
      * Get the presence.
      * @memberof! webrtc.Presentable
      * @method webrtc.Presentable.getPresence
@@ -138,45 +152,34 @@ webrtc.Presentable = function (params) {
         return presence;
     });
 
-    /**
-     * Set the presence.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.setPresence
-     * @param {string} presence
-     * @fires webrtc.Presentable#presence
-     */
-    var setPresence = that.publicize('setPresence', function (params) {
-        presence = params.presence;
-        that.fire('presence', presence);
-    });
-
     return that;
 }; // End webrtc.Presentable
 
 /**
- * Create a new Endpoint.
+ * Create a new Contact.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments webrtc.Presentable
- * @classdesc Endpoint class
+ * @classdesc Contact class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.Endpoint}
+ * @returns {webrtc.Contact}
  */
-webrtc.Endpoint = function (params) {
+webrtc.Contact = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
     var that = webrtc.Presentable(params);
     delete that.client;
-    that.className = 'webrtc.Endpoint';
+    that.className = 'webrtc.Contact';
+    var sessions = {};
 
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to the endpoint.
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.sendMessage
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.sendMessage
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
@@ -193,12 +196,12 @@ webrtc.Endpoint = function (params) {
 
     /**
      * Send a signal to the endpoint.
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.sendSignal
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.sendSignal
      * @params {object} message The signal to send
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
-        log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
+        log.debug('Contact.sendSignal, no support for custom signaling profiles.');
         return signalingChannel.sendSignal({
             signal: webrtc.SignalingMessage({
                 'recipient': that,
@@ -213,8 +216,8 @@ webrtc.Endpoint = function (params) {
     /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
-     * @memberof! webrtc.Endpoint
-     * @method webrtc.Endpoint.call
+     * @memberof! webrtc.Contact
+     * @method webrtc.Contact.call
      * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
      * @returns {webrtc.Call}
@@ -226,7 +229,7 @@ webrtc.Endpoint = function (params) {
         var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
 
-        log.trace('Endpoint.call');
+        log.trace('Contact.call');
         if (params.initiator === undefined) {
             params.initiator = true;
         }
@@ -290,61 +293,6 @@ webrtc.Endpoint = function (params) {
         return call;
     });
 
-    return that;
-}; // End webrtc.Endpoint
-
-/**
- * Create a new Contact.
- * @author Erin Spiceland <espiceland@digium.com>
- * @constructor
- * @augments webrtc.Endpoint
- * @classdesc Contact class
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.Contact}
- */
-webrtc.Contact = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.Endpoint(params);
-    delete that.client;
-    that.className = 'webrtc.Contact';
-
-    var presence = 'unavailable';
-    var subscription = 'both';
-    var sessions = {};
-
-    /**
-     * Set the presence on the Contact and the session
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.setPresence
-     * @param {string} presence
-     * @param {string} sessionId
-     */
-    var setPresence = that.publicize('setPresence', function (params) {
-        params.presence = params.presence || 'available';
-
-        if (!sessions.hasOwnProperty(params.sessionId)) {
-            sessions[params.sessionId] = {
-                'sessionId': params.sessionId,
-                'presence': params.presence
-            };
-        }
-        sessions[params.sessionId].presence = params.presence;
-        resolvePresence();
-    });
-
-    /**
-     * Get the presence.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getPresence
-     * @returns {string}
-     */
-    var getPresence = that.publicize('getPresence', function () {
-        return presence;
-    });
-
     /**
      * Find the presence out of all known sessions with the highest priority (most availability)
      * and set it as the contact's resolved presence.
@@ -353,9 +301,10 @@ webrtc.Contact = function (params) {
      * @private
      * @fires webrtc.Presentable#presence
      */
-    var resolvePresence = function () {
+    var resolvePresence = that.publicize('resolvePresence', function (params) {
+        var presence;
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
-        var sessionIds = Object.keys(sessions);
+        var sessionIds = Object.keys(params.sessions);
 
         /**
          * Sort the sessionIds array by the priority of the value of the presence of that
@@ -363,20 +312,19 @@ webrtc.Contact = function (params) {
          * session with the highest priority presence. Then we can access it by the 0 index.
          */
         sessionIds = sessionIds.sort(function sorter(a, b) {
-            var indexA = options.indexOf(sessions[a].presence);
-            var indexB = options.indexOf(sessions[b].presence);
+            var indexA = options.indexOf(params.sessions[a].presence);
+            var indexB = options.indexOf(params.sessions[b].presence);
             // Move it to the end of the list if it isn't one of our accepted presence values
             indexA = indexA === -1 ? 1000 : indexA;
             indexB = indexB === -1 ? 1000 : indexB;
             return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
         });
 
-        presence = sessionIds[0] ? sessions[sessionIds[0]].presence : 'unavailable';
+        presence = sessionIds[0] ? params.sessions[sessionIds[0]].presence : 'unavailable';
 
         log.debug("presences resolved to " + presence);
-        that.fire('presence', presence);
-    };
-
+        return presence;
+    });
 
     return that;
 }; // End webrtc.Contact
@@ -396,38 +344,23 @@ webrtc.User = function (params) {
     params = params || {};
     var client = params.client;
     var that = webrtc.Presentable(params);
+    var superClass = {
+        setPresence: that.setPresence
+    };
     delete that.client;
     that.className = 'webrtc.User';
+    that.resolveUser = null;
 
     var remoteUserSessions = {};
     var calls = [];
     var contactList = webrtc.Contacts({'client': client});
     var presenceQueue = [];
-    var presence = 'unavailable';
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     var userSession = webrtc.UserSession({
         'client': client,
         'token': params.token,
         'timeLoggedIn': params.timeLoggedIn,
         'loggedIn': params.loggedIn
-    });
-
-    // listen to webrtc.User#presence:update -- the logged-in user's presence
-    // Change this to override setPresence.
-    that.listen("presence", function presenceListener(presenceString) {
-        presence = presenceString;
-        if (signalingChannel && signalingChannel.isOpen()) {
-            log.info('sending my presence update ' + presence);
-            signalingChannel.sendPresence({
-                presence: presence,
-                onSuccess: function () {},
-                onError: function (err) {
-                    throw err;
-                }
-            });
-        } else {
-            log.error("Can't send my presence: no signaling channel.");
-        }
     });
 
     // listen to webrtc.Contacts#presence -- the contacts's presences
@@ -456,6 +389,30 @@ webrtc.User = function (params) {
         } else {
             log.debug("Got unrecognized presence");
             log.debug(presPayload);
+        }
+    });
+
+    /**
+     * Override Presentable.setPresence to send presence to the server before updating the object.
+     * @memberof! webrtc.User
+     * @method webrtc.User.setPresence
+     * @returns {webrtc.Contacts}
+     */
+    var setPresence = that.publicize('setPresence', function (params) {
+        params = params || {};
+        params.presence = params.presence || "available";
+        if (signalingChannel && signalingChannel.isOpen()) {
+            log.info('sending my presence update ' + params.presence);
+            return signalingChannel.sendPresence({
+                presence: params.presence,
+                onSuccess: function (p) {
+                    superClass.setPresence(params);
+                    params.onSuccess(p);
+                },
+                onError: params.onError
+            });
+        } else {
+            log.error("Can't send my presence: no signaling channel.");
         }
     });
 
@@ -700,8 +657,10 @@ webrtc.User = function (params) {
      * @memberof! webrtc.User
      * @method webrtc.User.setOnline
      */
-    var setOnline = that.publicize('setOnline', function () {
-        that.setPresence({presence: 'available'});
+    var setOnline = that.publicize('setOnline', function (params) {
+        params = params || {};
+        params.presence = params.presence || 'available';
+        return that.setPresence(params);
     });
 
     return that;

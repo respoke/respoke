@@ -503,7 +503,6 @@ webrtc.SignalingChannel = function (params) {
                     },
                     responseHandler: function (res, dataParams, err) {
                         if (err) {
-                            console.log("rejecting after usersessions", err);
                             authPromise.reject(err);
                             return;
                         }
