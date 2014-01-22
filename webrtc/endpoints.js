@@ -406,7 +406,9 @@ webrtc.User = function (params) {
                 presence: params.presence,
                 onSuccess: function (p) {
                     superClass.setPresence(params);
-                    params.onSuccess(p);
+                    if (typeof params.onSuccess === 'function') {
+                        params.onSuccess(p);
+                    }
                 },
                 onError: params.onError
             });
