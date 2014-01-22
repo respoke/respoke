@@ -80,6 +80,17 @@ webrtc.Call = function (params) {
     var ST_MEDIA_ERROR = 7;
 
     /**
+     * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
+     * before we can act on the call.
+     */
+    Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
+        if (approved === true && oOffer && oOffer.sdp) {
+            processOffer(oOffer);
+        }
+    }).done();
+
+
+    /**
      * Start the process of obtaining media.
      * @memberof! webrtc.Call
      * @method webrtc.Call.answer
@@ -90,7 +101,8 @@ webrtc.Call = function (params) {
         params = params || {};
 
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : previewLocalMedia;
+        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
+            params.previewLocalMedia : previewLocalMedia;
 
         if (!that.username) {
             throw new Error("Can't use a Call without username.");
@@ -155,16 +167,6 @@ webrtc.Call = function (params) {
             log.error("error processing offer: ", err);
         }
     };
-
-    /**
-     * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
-     * before we can act on the call.
-     */
-    Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
-        if (approved === true && oOffer && oOffer.sdp) {
-            processOffer(oOffer);
-        }
-    }).done();
 
     /**
      * Save the local stream. Kick off SDP creation.
