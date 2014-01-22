@@ -26,7 +26,8 @@ webrtc.Call = function (params) {
     }
 
     var pc = null;
-    var savedOffer = null;
+    var defOffer = Q.defer();
+    var defApproved = Q.defer();
     var receivedAnswer = false;
     var receivedBye = false;
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
@@ -123,9 +124,7 @@ webrtc.Call = function (params) {
             }, null);
             return;
         } else {
-            if (savedOffer) {
-                processOffer();
-            }
+            defApproved.resolve(true);
         }
     });
 
@@ -135,34 +134,39 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.processOffer
      * @private
      */
-    var processOffer = function () {
-        savedOffer.type = 'offer';
+    var processOffer = function (oOffer) {
         log.trace('processOffer');
-        log.debug('processOffer', savedOffer);
+        log.debug('processOffer', oOffer);
 
         try {
-            pc.setRemoteDescription(new RTCSessionDescription(savedOffer),
+            pc.setRemoteDescription(new RTCSessionDescription(oOffer),
                 function successHandler() {
                     log.debug('set remote desc of offer succeeded');
-                    pc.createAnswer(saveAnswerAndSend, function errorHandler(p) {
-                        log.error("Error creating SDP answer.");
+                    pc.createAnswer(saveAnswerAndSend, function errorHandler(err) {
+                        log.error("Error creating SDP answer.", err);
                         report.callStoppedReason = 'Error creating SDP answer.';
-                        log.error(p);
                     });
-                    that.savedOffer = null;
-                }, function errorHandler(p) {
-                    log.error('set remote desc of offer failed');
+                }, function errorHandler(err) {
+                    log.error('set remote desc of offer failed', err);
                     report.callStoppedReason = 'setLocalDescr failed at offer.';
-                    log.error(savedOffer);
-                    log.error(p);
                     hangup();
                 }
             );
             that.state = ST_OFFERED;
-        } catch (e) {
-            log.error("error processing offer: " + e.message);
+        } catch (err) {
+            log.error("error processing offer: ", err);
         }
     };
+
+    /**
+     * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
+     * before we can act on the call.
+     */
+    Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
+        if (approved === true && oOffer && oOffer.sdp) {
+            processOffer(oOffer);
+        }
+    }).done();
 
     /**
      * Save the local stream. Kick off SDP creation.
@@ -530,10 +534,17 @@ webrtc.Call = function (params) {
         }
         that.state = ST_ENDED;
 
+
         // Never send bye if we are the initiator but we haven't sent any other signal yet.
         log.trace("at hangup, call state is " + that.state);
-        if (that.initiator === true && that.state < ST_OFFERED) {
-            params.signal = false;
+        if (that.initiator === true) {
+            if (that.state < ST_OFFERED) {
+                params.signal = false;
+            }
+        } else {
+            if (defApproved.promise.isPending()) {
+                defApproved.reject(new Error("Call hung up before approval."));
+            }
         }
 
         clientObj.updateTurnCredentials();
@@ -608,18 +619,15 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.setOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
      */
-    var setOffer = that.publicize('setOffer', function (oSession) {
-        log.debug('got offer', oSession);
+    var setOffer = that.publicize('setOffer', function (oOffer) {
+        log.debug('got offer', oOffer);
 
-        savedOffer = oSession;
         if (!that.initiator) {
-            report.sdpsReceived.push(oSession);
-            report.lastSDPString = oSession.sdp;
-            if (that.state === ST_APPROVED) {
-                // We called approve already without the offer. Call it again now that we have it
-                processOffer();
-            }
+            report.sdpsReceived.push(oOffer);
+            report.lastSDPString = oOffer.sdp;
+            defOffer.resolve(oOffer);
         } else {
+            defOffer.reject(new Error("Received offer in a bad state."));
             log.warn('Got offer in precall state.');
             signalTerminate();
         }
@@ -635,7 +643,6 @@ webrtc.Call = function (params) {
         that.state = ST_ANSWERED;
         log.debug('got answer', oSession);
 
-        savedOffer = oSession; // TODO is this necessary?
         receivedAnswer = true;
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
