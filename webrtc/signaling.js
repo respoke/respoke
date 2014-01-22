@@ -381,30 +381,29 @@ webrtc.SignalingChannel = function (params) {
 
         switch (signal.type) {
         case 'offer':
-            call.fire('offer', signal);
             call.setOffer(signal);
+            call.fire('offer', signal);
             break;
         case 'accept':
             call.fire('accept', signal);
             break;
         case 'answer':
-            call.fire('answer', signal);
             call.setAnswer(signal);
+            call.fire('answer', signal);
             break;
         case 'candidate':
-            call.fire('candidate', signal);
             call.addRemoteCandidate(signal);
+            call.fire('candidate', signal);
             break;
         case 'bye':
-            call.fire('bye', signal);
             call.setBye(signal);
+            call.fire('bye', signal);
             break;
         case 'error':
-            log.warn("Received an error");
-            log.warn(signal);
+            log.warn("Received an error", signal);
             break;
         default:
-            log.error("Don't know what to do with msg of unknown type " + signal.type);
+            log.error("Don't know what to do with msg of unknown type", signal.type);
             break;
         }
     });

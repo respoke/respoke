@@ -231,6 +231,7 @@ webrtc.Contact = function (params) {
         var user = clientObj.user;
 
         log.trace('Contact.call');
+        log.debug('Default callSettings is', combinedCallSettings);
         if (params.initiator === undefined) {
             params.initiator = true;
         }
@@ -241,11 +242,10 @@ webrtc.Contact = function (params) {
         }
 
         // Apply call-specific callSettings to the app's defaults
-        if (params.callSettings) {
-            params.callSettings.forOwn(function copyParam(thing, name) {
-                combinedCallSettings[name] = thing;
-            });
-        }
+        combinedCallSettings.constraints = params.constraints || combinedCallSettings.constraints;
+        combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
+        log.debug('Final callSettings is', combinedCallSettings);
+
         params.callSettings = combinedCallSettings;
         params.client = client;
         params.username = user.getUsername();
