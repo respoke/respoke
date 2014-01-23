@@ -1,1 +1,1 @@
-uglifyjs util/socket.io.js util/sails.io.js util/q.js util/loglevel.js util/adapter.js webrtc.js webrtc/event.js webrtc/client.js webrtc/identity.js webrtc/endpoints.js webrtc/signaling.js webrtc/media.js -c  -o webrtc.min.js > /dev/null 2>&1
+uglifyjs util/socket.io.js util/sails.io.js util/q.js util/loglevel.js util/adapter.js webrtc.js webrtc/event.js webrtc/client.js webrtc/identity.js webrtc/endpoints.js webrtc/signalingChannel.js webrtc/call.js -c  -o webrtc.min.js > /dev/null 2>&1
