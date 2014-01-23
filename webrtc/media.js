@@ -89,9 +89,35 @@ webrtc.Call = function (params) {
         }
     }).done();
 
+    /**
+     * Register any event listeners passed in as callbacks
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.registerListeners
+     * @private
+     */
+    var registerListeners = function (params) {
+        if (typeof params.onLocalVideo === 'function') {
+            that.listen('local-stream-received', params.onLocalVideo);
+        }
+
+        if (typeof params.onRemoteVideo === 'function') {
+            that.listen('remote-stream-received', params.onRemoteVideo);
+        }
+
+        if (typeof params.onHangup === 'function') {
+            that.listen('hangup', params.onHangup);
+        }
+    };
 
     /**
-     * Start the process of obtaining media.
+     * Must call registerListeners as part of object construction.
+     */
+    registerListeners(params);
+
+    /**
+     * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiate,
+     * since the library calls this method for the initiate. Developers will use this method to pass in
+     * callbacks for the non-initiate.
      * @memberof! webrtc.Call
      * @method webrtc.Call.answer
      * @fires webrtc.Call#answer
@@ -99,6 +125,8 @@ webrtc.Call = function (params) {
     var answer = that.publicize('answer', function (params) {
         that.state = ST_STARTED;
         params = params || {};
+        log.trace('answer');
+        registerListeners(params);
 
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
@@ -202,9 +230,7 @@ webrtc.Call = function (params) {
         // and the implications of passing back a video element with no media attached.
         if (webrtc.streams[callSettings.constraints]) {
             webrtc.streams[callSettings.constraints].numPc += 1;
-            setTimeout(function () {
-                that.fire('local-stream-received', videoLocalElement, that);
-            }, 500);
+            that.fire('local-stream-received', videoLocalElement, that);
         } else {
             stream.numPc = 1;
             webrtc.streams[callSettings.constraints] = stream;
@@ -225,9 +251,7 @@ webrtc.Call = function (params) {
 
         if (typeof previewLocalMedia === 'function') {
             that.state = ST_INREVIEW;
-            setTimeout(function () {
-                previewLocalMedia(videoLocalElement, that);
-            }, 100);
+            previewLocalMedia(videoLocalElement, that);
         } else {
             approve();
         }

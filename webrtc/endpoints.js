@@ -288,6 +288,8 @@ webrtc.Contact = function (params) {
             call.answer();
         }
         user.addCall({call: call});
+
+        // Don't use params.onHangup here. Will overwrite the developer's callback.
         call.listen('hangup', function hangupListener(locallySignaled) {
             user.removeCall({contactId: id});
         });
