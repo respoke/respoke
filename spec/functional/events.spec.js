@@ -40,9 +40,7 @@ describe('System Events', function () {
                 driver2.get(process.env['MERCURY_URL'] + '/index.html');
                 client2.init(env.appId);
                 client2.connect();
-            }).then(function () {
-                    done();
-                });
+            }).then(done);
         });
     });
 

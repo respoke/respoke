@@ -82,20 +82,6 @@ describe('Presence setup', function () {
             });
         });
 
-        it("#canSendAudio", function (done) {
-            client1.canSendAudio().then(function (b) {
-                expect(b).to.equal(true);
-                done();
-            });
-        });
-
-        it("#canSendVideo", function (done) {
-            client1.canSendVideo().then(function (b) {
-                expect(b).to.equal(true);
-                done();
-            });
-        });
-
         it("#callInProgress", function (done) {
             client1.callInProgress().then(function (b) {
                 expect(b).to.equal(false);

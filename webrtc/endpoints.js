@@ -126,6 +126,7 @@ webrtc.Presentable = function (params) {
      * @fires webrtc.Presentable#presence
      */
     var setPresence = that.publicize('setPresence', function (params) {
+        params = params || {};
         params.presence = params.presence || 'available';
         params.sessionId = params.sessionId || 'local';
 
@@ -184,6 +185,7 @@ webrtc.Contact = function (params) {
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
+        params = params || {};
         return signalingChannel.sendMessage({
             message: webrtc.TextMessage({
                 'recipient': that,
@@ -203,6 +205,7 @@ webrtc.Contact = function (params) {
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.debug('Contact.sendSignal, no support for custom signaling profiles.');
+        params = params || {};
         return signalingChannel.sendSignal({
             signal: webrtc.SignalingMessage({
                 'recipient': that,
@@ -306,6 +309,7 @@ webrtc.Contact = function (params) {
     var resolvePresence = that.publicize('resolvePresence', function (params) {
         var presence;
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
+        params = params || {};
         var sessionIds = Object.keys(params.sessions);
 
         /**
@@ -400,25 +404,21 @@ webrtc.User = function (params) {
      * @returns {webrtc.Contacts}
      */
     var setPresence = that.publicize('setPresence', function (params) {
+        var defPresence;
         params = params || {};
         params.presence = params.presence || "available";
-        if (signalingChannel && signalingChannel.isOpen()) {
-            log.info('sending my presence update ' + params.presence);
-            return signalingChannel.sendPresence({
-                presence: params.presence,
-                onSuccess: function (p) {
-                    superClass.setPresence(params);
-                    if (typeof params.onSuccess === 'function') {
-                        params.onSuccess(p);
-                    }
-                },
-                onError: params.onError
-            });
-        } else {
-            if (typeof params.onError === 'function') {
-                params.onError(new Error("Can't send my presence: no connection."));
-            }
-        }
+        log.info('sending my presence update ' + params.presence);
+        defPresence = signalingChannel.sendPresence({
+            presence: params.presence,
+            onSuccess: function (p) {
+                superClass.setPresence(params);
+                if (typeof params.onSuccess === 'function') {
+                    params.onSuccess(p);
+                }
+            },
+            onError: params.onError
+        });
+        return defPresence.promise;
     });
 
     /**
@@ -440,6 +440,7 @@ webrtc.User = function (params) {
      * @param {function} onError optional
      */
     var getContacts = that.publicize('getContacts', function (params) {
+        params = params || {};
         var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         var itemElements = [];
 

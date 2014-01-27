@@ -106,6 +106,7 @@ webrtc.SignalingChannel = function (params) {
      * @returns Promise<String>
      */
     var logout = that.publicize('logout', function (params) {
+        params = params || {};
         var deferred = webrtc.makePromise(params.onSuccess, params.onError);
         call({
             path: '/v1/authsessions',
@@ -130,6 +131,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
      */
     var sendPresence = that.publicize('sendPresence', function (params) {
+        params = params || {};
         var presencePromise = webrtc.makePromise(params.onSuccess, params.onError);
         log.trace("Signaling sendPresence");
         wsCall({
@@ -150,7 +152,7 @@ webrtc.SignalingChannel = function (params) {
                 }
             }
         });
-        return presencePromise.promise;
+        return presencePromise;
     });
 
     /**
@@ -206,6 +208,7 @@ webrtc.SignalingChannel = function (params) {
     var sendMessage = that.publicize('sendMessage', function (params) {
         var msgText = params.message.getPayload();
         var recipient = null;
+        params = params || {};
         var messagePromise = webrtc.makePromise(params.onSuccess, params.onError);
 
         try {
@@ -252,6 +255,7 @@ webrtc.SignalingChannel = function (params) {
     var sendSignal = that.publicize('sendSignal', function (params) {
         var signalText = params.signal.getPayload();
         var recipient = null;
+        params = params || {};
         var signalPromise = webrtc.makePromise(params.onSuccess, params.onError);
 
         try {
@@ -297,6 +301,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
     var sendCandidate = that.publicize('sendCandidate', function (params) {
+        params = params || {};
         return that.sendSignal({
             signal: webrtc.SignalingMessage({
                 recipient: params.recipient,
@@ -318,6 +323,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
     var sendSDP = that.publicize('sendSDP', function (params) {
+        params = params || {};
         return that.sendSignal({
             signal: webrtc.SignalingMessage({
                 'recipient': params.recipient,
@@ -339,6 +345,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {string} reason The reason the session is being terminated.
      */
     var sendBye = that.publicize('sendBye', function (params) {
+        params = params || {};
         return that.sendSignal({
             signal: webrtc.SignalingMessage({
                 'recipient': params.recipient,
@@ -433,6 +440,7 @@ webrtc.SignalingChannel = function (params) {
      * @param {function} onStatusChange A function to which to call on every state change.
      */
     var authenticate = that.publicize('authenticate', function (params) {
+        params = params || {};
         var authPromise = webrtc.makePromise(params.onSuccess, params.onError);
 
         call({
@@ -606,6 +614,16 @@ webrtc.SignalingChannel = function (params) {
 
         log.debug('kicking off socket.' + params.httpMethod + "()",
             params.path, params.parameters);
+
+        if (!socket || !socket[params.httpMethod]) {
+            if (typeof params.responseHandler === 'function') {
+                params.responseHandler(null, {
+                    'uri' : params.path,
+                    'params' : params.parameters
+                }, new Error("Can't make websocket request: no connection."));
+                return;
+            }
+        }
 
         socket[params.httpMethod](params.path, params.parameters,
             function handleResponse(response) {

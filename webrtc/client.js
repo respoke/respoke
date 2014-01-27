@@ -148,7 +148,7 @@ webrtc.Client = function (params) {
             return;
         }
 
-        var logoutPromise = that.identityProvider.logout();
+        var logoutPromise = that.identityProvider.logout(params);
 
         logoutPromise.done(function successHandler() {
             that.user.fire('loggedout');

@@ -38,7 +38,7 @@ module.exports = {
         };
         this.login = function (username, password) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                "var userPromise = window['" + this.clientName + "'].login('" + username + "', '" + password + "'); " +
+                "var userPromise = window['" + this.clientName + "'].login({username: '" + username + "', password: '" + password + "'}); " +
                 "userPromise.then(function (user) { " +
                 "    window['" + clientName + "']['user'] = user; " +
                 "    callback(user);" +
@@ -86,10 +86,10 @@ module.exports = {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
                     "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
                     "    var contacts = contactList.getContacts(); " +
-                    "    for(var i = 0; i < contacts.length; i ++) { " +
+                    "    for(var i = 0; i < contacts.length; i += 1) { " +
                     "         if (contacts[i].username == '" + username + "') { " +
                     "               contacts[i].listen('" + event + "', function (message) {" +
-                    "                   window['" + this.clientName + "']['" + varName +"'] = message; " +
+                    "                   window['" + this.clientName + "']['" + varName + "'] = message; " +
                     "               }); " +
                     "         } " +
                     "    } " +
@@ -100,7 +100,10 @@ module.exports = {
             return this.driver.executeScript("return window['" + this.clientName + "']." + varName +";");
         };
         this.setPresence = function (params) {
-            return this.driver.executeScript("window['" + this.clientName + "'].user.setPresence('" + params + "');");
+            return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
+                    "window['" + this.clientName + "'].user.setPresence({presence: '" + params.presence + "'}).then(function (contactList) { " +
+                    "    callback();" +
+                    " }); ");
         };
         this.getPresence = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getPresence();");
@@ -117,12 +120,6 @@ module.exports = {
         this.getID = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getID();");
         };
-        this.canSendAudio = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.canSendAudio();");
-        };
-        this.canSendVideo = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.canSendVideo();");
-        };
         this.callInProgress = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.callInProgress();");
         };
@@ -132,31 +129,15 @@ module.exports = {
                     "    var contacts = contactList.getContacts(); " +
                     "    for(var i = 0; i < contacts.length; i ++) { " +
                     "         if (contacts[i].username == '" + username + "') { " +
-                    "               contacts[i].sendMessage('" + message + "'); " +
+                    "               contacts[i].sendMessage({message: '" + message + "'}).then(function () {" +
+                    "                   callback(); " +
+                    "               }); " +
                     "         } " +
                     "    } " +
-                    "    callback(); " +
                     " }); ");
-        };
-        this.getMessages = function (username) {
-            return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    " window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    var contacts = contactList.getContacts(); " +
-                    "    var contact; " +
-                    "    for(var i = 0; i < contacts.length; i ++) { " +
-                    "         if (contacts[i].username == '" + username + "') { " +
-                    "               contact = contacts[i]; " +
-                    "         } " +
-                    "    } " +
-                    "    var messages = contact.getMessages(); " +
-                    "    callback(messages); " +
-                    " }); ");
-        };
-        this.createEndpoint = function (varName, id) {
-            return this.driver.executeScript("window['" + this.clientName + "']." + varName +" = webrtc.Endpoint({id: " + id + ", client: window['" + this.clientName + "'].getID()});");
         };
         this.sendEndpointMessage = function (varName, message) {
-            return this.driver.executeScript("window['" + this.clientName + "']." + varName + ".sendMessage('" + message + "');");
+            return this.driver.executeScript("window['" + this.clientName + "']." + varName + ".sendMessage({message: '" + message + "'});");
         };
         this.getID = function () {
             return this.driver.executeScript("return webrtc.getClient(window['" + this.clientName + "'].getID()).user.getID();")
