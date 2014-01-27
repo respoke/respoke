@@ -22,6 +22,18 @@ log.setLevel('debug');
  * @static
  * @member webrtc
  * @returns {webrtc.Client}
+ * @params {object} Parameters to the webrtc.Client constructor.
+ */
+webrtc.connect = function (params) {
+    "use strict";
+    return webrtc.Client(params);
+};
+
+/**
+ * @static
+ * @member webrtc
+ * @returns {webrtc.Client}
+ * @params {number} The Client ID.
  */
 webrtc.getClient = function (id) {
     "use strict";
@@ -42,21 +54,20 @@ webrtc.makeUniqueID = function () {
 };
 
 /**
- * Loop, checking hasOwnProperty() before acting on elements.
- * @params {func} A function to call on each element that is the object's own.
+ * @static
+ * @member webrtc
+ * @returns {number}
  */
-Object.defineProperty(Object.prototype, 'forOwn', {
-    value: function (func) {
-        "use strict";
-        for (var name in this) {
-            if (this.hasOwnProperty(name)) {
-                func(this[name], name);
-            }
-        }
-    },
-    enumerable: false,
-    configurable: false
-});
+webrtc.makePromise = function (onSuccess, onError) {
+    "use strict";
+    var deferred = Q.defer();
+    if (onSuccess || onError) {
+        onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
+        onError = typeof onError === 'function' ? onError : function () {};
+        deferred.promise.done(onSuccess, onError);
+    }
+    return deferred;
+};
 
 /**
  * Find out if a thing is a number.
@@ -105,8 +116,8 @@ webrtc.Class = function (params) {
     params = params || {};
     var client = params.client;
     delete that.client;
-    params.forOwn(function copyParam(thing, name) {
-        that[name] = thing;
+    Object.keys(params).forEach(function copyParam(name) {
+        that[name] = params[name];
     });
 
     /**

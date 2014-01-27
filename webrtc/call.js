@@ -26,9 +26,8 @@ webrtc.Call = function (params) {
     }
 
     var pc = null;
-    var savedOffer = null;
-    var receivedAnswer = false;
-    var receivedBye = false;
+    var defOffer = Q.defer();
+    var defApproved = Q.defer();
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
     var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
     var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
@@ -81,7 +80,44 @@ webrtc.Call = function (params) {
     var ST_MEDIA_ERROR = 7;
 
     /**
-     * Start the process of obtaining media.
+     * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
+     * before we can act on the call.
+     */
+    Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
+        if (approved === true && oOffer && oOffer.sdp) {
+            processOffer(oOffer);
+        }
+    }).done();
+
+    /**
+     * Register any event listeners passed in as callbacks
+     * @memberof! webrtc.Call
+     * @method webrtc.Call.registerListeners
+     * @private
+     */
+    var registerListeners = function (params) {
+        if (typeof params.onLocalVideo === 'function') {
+            that.listen('local-stream-received', params.onLocalVideo);
+        }
+
+        if (typeof params.onRemoteVideo === 'function') {
+            that.listen('remote-stream-received', params.onRemoteVideo);
+        }
+
+        if (typeof params.onHangup === 'function') {
+            that.listen('hangup', params.onHangup);
+        }
+    };
+
+    /**
+     * Must call registerListeners as part of object construction.
+     */
+    registerListeners(params);
+
+    /**
+     * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiate,
+     * since the library calls this method for the initiate. Developers will use this method to pass in
+     * callbacks for the non-initiate.
      * @memberof! webrtc.Call
      * @method webrtc.Call.answer
      * @fires webrtc.Call#answer
@@ -89,9 +125,12 @@ webrtc.Call = function (params) {
     var answer = that.publicize('answer', function (params) {
         that.state = ST_STARTED;
         params = params || {};
+        log.trace('answer');
+        registerListeners(params);
 
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : previewLocalMedia;
+        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
+            params.previewLocalMedia : previewLocalMedia;
 
         if (!that.username) {
             throw new Error("Can't use a Call without username.");
@@ -123,9 +162,7 @@ webrtc.Call = function (params) {
             }, null);
             return;
         } else {
-            if (savedOffer) {
-                processOffer();
-            }
+            defApproved.resolve(true);
         }
     });
 
@@ -135,32 +172,27 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.processOffer
      * @private
      */
-    var processOffer = function () {
-        savedOffer.type = 'offer';
+    var processOffer = function (oOffer) {
         log.trace('processOffer');
-        log.debug('processOffer', savedOffer);
+        log.debug('processOffer', oOffer);
 
         try {
-            pc.setRemoteDescription(new RTCSessionDescription(savedOffer),
+            pc.setRemoteDescription(new RTCSessionDescription(oOffer),
                 function successHandler() {
                     log.debug('set remote desc of offer succeeded');
-                    pc.createAnswer(saveAnswerAndSend, function errorHandler(p) {
-                        log.error("Error creating SDP answer.");
+                    pc.createAnswer(saveAnswerAndSend, function errorHandler(err) {
+                        log.error("Error creating SDP answer.", err);
                         report.callStoppedReason = 'Error creating SDP answer.';
-                        log.error(p);
                     });
-                    that.savedOffer = null;
-                }, function errorHandler(p) {
-                    log.error('set remote desc of offer failed');
+                }, function errorHandler(err) {
+                    log.error('set remote desc of offer failed', err);
                     report.callStoppedReason = 'setLocalDescr failed at offer.';
-                    log.error(savedOffer);
-                    log.error(p);
-                    that.stop();
+                    hangup();
                 }
             );
             that.state = ST_OFFERED;
-        } catch (e) {
-            log.error("error processing offer: " + e.message);
+        } catch (err) {
+            log.error("error processing offer: ", err);
         }
     };
 
@@ -198,9 +230,7 @@ webrtc.Call = function (params) {
         // and the implications of passing back a video element with no media attached.
         if (webrtc.streams[callSettings.constraints]) {
             webrtc.streams[callSettings.constraints].numPc += 1;
-            setTimeout(function () {
-                that.fire('local-stream-received', videoLocalElement, that);
-            }, 500);
+            that.fire('local-stream-received', videoLocalElement, that);
         } else {
             stream.numPc = 1;
             webrtc.streams[callSettings.constraints] = stream;
@@ -221,9 +251,7 @@ webrtc.Call = function (params) {
 
         if (typeof previewLocalMedia === 'function') {
             that.state = ST_INREVIEW;
-            setTimeout(function () {
-                previewLocalMedia(videoLocalElement, that);
-            }, 100);
+            previewLocalMedia(videoLocalElement, that);
         } else {
             approve();
         }
@@ -332,7 +360,7 @@ webrtc.Call = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        stop(!that.initiator);
+        hangup({signal: !that.initiator});
     };
 
     /**
@@ -412,7 +440,7 @@ webrtc.Call = function (params) {
         }
 
         log.debug("local candidate", oCan.candidate);
-        if (that.initiator && !receivedAnswer) {
+        if (that.initiator && that.state < ST_ANSWERED) {
             candidateSendingQueue.push(oCan.candidate);
         } else {
             signalCandidate(oCan.candidate);
@@ -510,39 +538,42 @@ webrtc.Call = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        stop(false);
+        hangup({signal: false});
     };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
-     * sendSignal is not false and we have not received a bye signal from the remote party.
+     * signal is not false and we have not received a bye signal from the remote party.
      * @memberof! webrtc.Call
-     * @method webrtc.Call.stop
-     * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
+     * @method webrtc.Call.hangup
+     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var stop = that.publicize('stop', function (sendSignal) {
+    var hangup = that.publicize('hangup', function (params) {
+        params = params || {};
         if (that.state === ST_ENDED) {
-            // This function got called twice.
-            log.trace("Call.stop got called twice.");
+            log.trace("Call.hangup got called twice.");
             return;
         }
         that.state = ST_ENDED;
 
-        // Never send bye if we are the initiator but we haven't sent any other signal yet.
-        log.trace("at stop, call state is " + that.state);
-        if (that.initiator === true && that.state < ST_OFFERED) {
-            sendSignal = false;
+        log.trace("at hangup, call state is " + that.state);
+        if (that.initiator === true) {
+            if (that.state < ST_OFFERED) {
+                // Never send bye if we are the initiator but we haven't sent any other signal yet.
+                params.signal = false;
+            }
+        } else {
+            if (defApproved.promise.isPending()) {
+                defApproved.reject(new Error("Call hung up before approval."));
+            }
         }
 
         clientObj.updateTurnCredentials();
-        /*if (pc === null) {
-            return;
-        }*/
         log.debug('hanging up');
 
-        sendSignal = (typeof sendSignal === 'boolean' ? sendSignal : true);
-        if (!receivedBye && sendSignal) {
+        params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
+        if (params.signal) {
             log.info('sending bye');
             signalTerminate();
         }
@@ -550,10 +581,10 @@ webrtc.Call = function (params) {
         report.callStopped = new Date().getTime();
         signalReport(report);
 
-        that.fire('hangup', sendSignal);
+        that.fire('hangup', params.signal);
         that.ignore();
 
-        mediaStreams.forOwn(function stopEach(mediaStream) {
+        mediaStreams.forEach(function stopEach(mediaStream) {
             var stream = mediaStream.getStream();
             stream.numPc -= 1;
             if (stream.numPc === 0) {
@@ -571,13 +602,13 @@ webrtc.Call = function (params) {
     });
 
     /*
-     * Expose stop as reject for approve/reject workflow.
+     * Expose hangup as reject for approve/reject workflow.
      * @memberof! webrtc.Call
      * @method webrtc.Call.reject
-     * @param {boolean} sendSignal Optional flag to indicate whether to send or suppress sending
+     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var reject = that.publicize('reject', stop);
+    var reject = that.publicize('reject', hangup);
 
     /**
      * Indicate whether a call is being setup or is in progress.
@@ -590,7 +621,7 @@ webrtc.Call = function (params) {
 
         log.trace('isActive');
 
-        if (!pc || receivedBye === true) {
+        if (!pc || that.state < ST_ENDED) {
             return inProgress;
         }
 
@@ -607,18 +638,15 @@ webrtc.Call = function (params) {
      * @method webrtc.Call.setOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
      */
-    var setOffer = that.publicize('setOffer', function (oSession) {
-        log.debug('got offer', oSession);
+    var setOffer = that.publicize('setOffer', function (oOffer) {
+        log.debug('got offer', oOffer);
 
-        savedOffer = oSession;
         if (!that.initiator) {
-            report.sdpsReceived.push(oSession);
-            report.lastSDPString = oSession.sdp;
-            if (that.state === ST_APPROVED) {
-                // We called approve already without the offer. Call it again now that we have it
-                processOffer();
-            }
+            report.sdpsReceived.push(oOffer);
+            report.lastSDPString = oOffer.sdp;
+            defOffer.resolve(oOffer);
         } else {
+            defOffer.reject(new Error("Received offer in a bad state."));
             log.warn('Got offer in precall state.');
             signalTerminate();
         }
@@ -634,8 +662,6 @@ webrtc.Call = function (params) {
         that.state = ST_ANSWERED;
         log.debug('got answer', oSession);
 
-        savedOffer = oSession; // TODO is this necessary?
-        receivedAnswer = true;
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
 
@@ -646,7 +672,7 @@ webrtc.Call = function (params) {
                 log.error('set remote desc of answer failed');
                 report.callStoppedReason = 'setRemoteDescription failed at answer.';
                 log.error(oSession);
-                that.stop();
+                hangup();
             }
         );
     });
@@ -666,7 +692,7 @@ webrtc.Call = function (params) {
             log.warn("addRemoteCandidate got wrong format!", oCan);
             return;
         }
-        if (that.initiator && !receivedAnswer) {
+        if (that.initiator && that.state < ST_ANSWERED) {
             candidateReceivingQueue.push(oCan);
             log.debug('Queueing a candidate.');
             return;
@@ -730,7 +756,7 @@ webrtc.Call = function (params) {
     var getLocalStreams = that.publicize('getLocalStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function addLocal(stream) {
+        mediaStreams.forEach(function addLocal(stream) {
             if (stream.isLocal()) {
                 streams.push(stream);
             }
@@ -748,7 +774,7 @@ webrtc.Call = function (params) {
     var getRemoteStreams = that.publicize('getRemoteStreams', function () {
         var streams = [];
 
-        mediaStreams.forOwn(function addRemote(stream) {
+        mediaStreams.forEach(function addRemote(stream) {
             if (!stream.isLocal()) {
                 streams.push(stream);
             }
@@ -794,7 +820,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
-        mediaStreams.forOwn(function muteEach(stream) {
+        mediaStreams.forEach(function muteEach(stream) {
             stream.muteVideo();
         });
         that.fire('video-muted');
@@ -807,7 +833,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
-        mediaStreams.forOwn(function unmuteEach(stream) {
+        mediaStreams.forEach(function unmuteEach(stream) {
             stream.unmuteVideo();
         });
         that.fire('video-unmuted');
@@ -820,7 +846,7 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
-        mediaStreams.forOwn(function muteEach(stream) {
+        mediaStreams.forEach(function muteEach(stream) {
             stream.muteAudio();
         });
         that.fire('audio-muted');
@@ -833,20 +859,21 @@ webrtc.Call = function (params) {
      * @fires webrtc.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
-        mediaStreams.forOwn(function unmuteEach(stream) {
+        mediaStreams.forEach(function unmuteEach(stream) {
             stream.unmuteAudio();
         });
         that.fire('audio-unmuted');
     });
 
     /**
-     * Set receivedBye to true and stop media.
+     * Save the hangup reason and hang up.
      * @memberof! webrtc.Call
      * @method webrtc.Call.setBye
      */
-    var setBye = that.publicize('setBye', function () {
-        receivedBye = true;
-        stop();
+    var setBye = that.publicize('setBye', function (params) {
+        params = params || {};
+        report.callStoppedReason = params.reason || "Remote side hung up";
+        hangup({signal: false});
     });
 
     return that;

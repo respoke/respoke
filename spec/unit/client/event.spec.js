@@ -126,9 +126,9 @@ describe("A webrtc.EventEmitter ", function () {
             [{1: 2, 3: 4}, {1: 2, 3: 4}]
         ];
 
-        args.forOwn(function (set, setIndex) {
+        args.forEach(function (set, setIndex) {
             var argListener = function (thisSet) {
-                thisSet.forOwn(function (item, itemIndex) {
+                thisSet.forEach(function (item, itemIndex) {
                     //console.log("comparing " + args[setIndex][itemIndex] + " and " + item);
                     expect(args[setIndex][itemIndex]).to.equal(item);
                 });

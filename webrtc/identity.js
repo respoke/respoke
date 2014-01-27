@@ -1,71 +1,10 @@
-/**
- * Create a new IdentityProvider.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.AbstractIdentityProvider
- * @constructor
- * @augments webrtc.EventEmitter
- * @classdesc Generic Identity provider class.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
- * @returns {webrtc.IdentityProvider}
- */
 /*global webrtc: false */
-webrtc.AbstractIdentityProvider = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = webrtc.EventEmitter(params);
-    delete that.client;
-    that.className = 'webrtc.AbstractIdentityProvider';
-
-    var loggedIn = false;
-
-    /**
-     * Log a user in.
-     * @memberof! webrtc.AbstractIdentityProvider
-     * @method webrtc.AbstractIdentityProvider.login
-     * @abstract
-     * @param {string} username The  user's username.
-     * @param {string} password The  user's password.
-     * @param {successCallback} onSuccess
-     */
-    var login = that.publicize('login', function (username, password, onSuccess, onFailure) {
-    });
-
-    /**
-     * Log a user out.
-     * @memberof! webrtc.AbstractIdentityProvider
-     * @method webrtc.AbstractIdentityProvider.logout
-     * @abstract
-     */
-    var logout = that.publicize('logout', function () {
-        /* Include this in your implementation
-        loggedIn = false;
-        */
-    });
-
-    /**
-     * Whether logged in
-     * @memberof! webrtc.AbstractIdentityProvider
-     * @method webrtc.AbstractIdentityProvider.isLoggedIn
-     * @abstract
-     * @return {boolean}
-     */
-    var isLoggedIn = that.publicize('isLoggedIn', function () {
-        /* Include this in your implementation
-        return loggedIn;
-        */
-    });
-
-    return that;
-}; // End webrtc.AbstractIdentityProvider
-
 /**
  * Create a new XMPPIdentityProvider.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments webrtc.AbstractIdentityProvider
+ * @augments webrtc.EventEmitter
  * @classdesc XMPP Identity provider class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
@@ -75,7 +14,7 @@ webrtc.IdentityProvider = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.AbstractIdentityProvider(params);
+    var that = webrtc.EventEmitter(params);
     delete that.client;
     that.className = 'webrtc.IdentityProvider';
 
@@ -88,12 +27,13 @@ webrtc.IdentityProvider = function (params) {
      * @method webrtc.IdentityProvider.login
      * @param {string} username The user's username.
      * @param {string} password The user's password.
+     * @param {function} onSuccess
+     * @param {function} onError
+     * @param {function} onIncomingCall
      * @returns {Promise<webrtc.User>}
      */
-    var login = that.publicize('login', function (username, password) {
-        var deferred = null;
+    var login = that.publicize('login', function (params) {
         var user = null;
-
         log.trace("User login");
         log.debug('client is ' + client);
 
@@ -103,15 +43,16 @@ webrtc.IdentityProvider = function (params) {
         if (!signalingChannel.isOpen()) {
             signalingChannel.open();
         }
-        deferred = Q.defer();
-        signalingChannel.authenticate(username, password, function onAuth(user, errorMessage) {
-            if (user) {
-                deferred.resolve(user);
+
+        var promise = signalingChannel.authenticate(params);
+        promise.done(function (user) {
+            if (!params.onIncomingCall) {
+                log.warn("No onIncomingCall passed to Client.login.");
             } else {
-                deferred.reject(new Error(errorMessage));
+                user.listen('call', params.onIncomingCall);
             }
-        });
-        return deferred.promise;
+        }, function () {});
+        return promise;
     });
 
     /**
@@ -119,12 +60,14 @@ webrtc.IdentityProvider = function (params) {
      * @memberof! webrtc.IdentityProvider
      * @method webrtc.IdentityProvider.logout
      * @fires webrtc.IdentityProvider#loggedout
+     * @param {function} onSuccess
+     * @param {function} onError
      * @returns Promise<String>
      */
-    var logout = that.publicize('logout', function () {
+    var logout = that.publicize('logout', function (params) {
         log.trace("User logout");
 
-        var logoutPromise = signalingChannel.logout();
+        var logoutPromise = signalingChannel.logout(params);
 
         logoutPromise.done(function successHandler() {
             that.fire("loggedout");
@@ -160,6 +103,7 @@ webrtc.IdentityProvider = function (params) {
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {webrtc.Contacts}
+ * TODO convert this class to an augmented array.
  */
 webrtc.Contacts = function (params) {
     "use strict";
@@ -177,17 +121,17 @@ webrtc.Contacts = function (params) {
      * Add a contact to the list.
      * @memberof! webrtc.Contacts
      * @method webrtc.Contacts.add
-     * @param {webrtc.AbstractEndpoint} contact A contact to add to the list.
+     * @param {webrtc.Endpoint} contact A contact to add to the list.
      * @fires webrtc.Contacts#new If the contact doesn't already exist.
      */
-    var add = that.publicize('add', function (contact) {
-        if (contact instanceof webrtc.AbstractPresentable || !contact.getID) {
+    var add = that.publicize('add', function (params) {
+        if (params.contact instanceof webrtc.Presentable || !params.contact.getID) {
             throw new Error("Can't add endpoint to list. Wrong type!");
         }
-        if (!(contact.getID() in contacts)) {
+        if (!(params.contact.getID() in contacts)) {
             that.length += 1;
-            that.fire('new', contact);
-            contacts[contact.getID()] = contact;
+            that.fire('new', params.contact);
+            contacts[params.contact.getID()] = params.contact;
         }
     });
 
@@ -198,8 +142,8 @@ webrtc.Contacts = function (params) {
      * @param {string} contactID A contact to get from the list.
      * @returns {webrtc.Endpoint} The endpoint whose getID() function matches the string.
      */
-    var get = that.publicize('get', function (contactID) {
-        return contacts[contactID];
+    var get = that.publicize('get', function (params) {
+        return contacts[params.contactID];
     });
 
     /**
@@ -236,11 +180,11 @@ webrtc.Contacts = function (params) {
      * @param {string} contactID A contact to remove from the list.
      * @fires webrtc.Contacts#remove
      */
-    var remove = that.publicize('remove', function (contactID) {
-        if (contacts.hasOwnProperty(contactID)) {
+    var remove = that.publicize('remove', function (params) {
+        if (contacts.hasOwnProperty(params.contactID)) {
             that.length -= 1;
-            that.fire('remove', contacts[contactID]);
-            contacts[contactID] = undefined;
+            that.fire('remove', contacts[params.contactID]);
+            contacts[params.contactID] = undefined;
         }
     });
 
@@ -251,13 +195,14 @@ webrtc.Contacts = function (params) {
      * @param {string} sortField An optional contact attribute to sort on.
      * @return {webrtc.Contact[]}
      */
-    var getContacts = that.publicize('getContacts', function (sortField) {
+    var getContacts = that.publicize('getContacts', function (params) {
         var values = [];
-        sortField = sortField || 'id';
+        params = params || {};
+        var sortField = params.sortField || 'id';
 
         // Make an array of the values of the contacts dict
-        contacts.forOwn(function addValue(value, key) {
-            values.push(value);
+        Object.keys(contacts).forEach(function addValue(key) {
+            values.push(contacts[key]);
         });
         that.length = values.length;
 
@@ -290,11 +235,11 @@ webrtc.Contacts = function (params) {
     });
 
     /**
-     * Add a presence message to the presence queue for processing after the roster has been
+     * Add a presence message to the presence queue for processing after the contact list has been
      * processed.
      * @memberof! webrtc.Contacts
      * @method webrtc.Contacts.queuePresence
-     * @param {object} message An XMPP presence stanza to save.
+     * @param {object} message An presence message to save.
      */
     var queuePresence = that.publicize('queuePresence', function (message) {
         presenceQueue.push(message);

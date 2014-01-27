@@ -1,7 +1,7 @@
 var expect = chai.expect;
 
-describe("A webrtc.AbstractPresentable ", function () {
-    var presentable = webrtc.AbstractPresentable({
+describe("A webrtc.Presentable ", function () {
+    var presentable = webrtc.Presentable({
         "name": "Mickey Mouse",
         "id": "JH5K34J5K34J3453K4J53K45",
         "gloveColor": "white"
@@ -25,7 +25,7 @@ describe("A webrtc.AbstractPresentable ", function () {
     */
     it("has the correct class name.", function () {
         expect(presentable.className).to.be.ok;
-        expect(presentable.getClass()).to.equal('webrtc.AbstractPresentable');
+        expect(presentable.getClass()).to.equal('webrtc.Presentable');
     });
 
     /*
@@ -33,12 +33,11 @@ describe("A webrtc.AbstractPresentable ", function () {
     */
     it("contains some important methods.", function () {
         expect(typeof presentable.getID).to.equal('function');
-        expect(typeof presentable.getName).to.equal('function');
+        expect(typeof presentable.getDisplayName).to.equal('function');
+        expect(typeof presentable.getUsername).to.equal('function');
+        expect(typeof presentable.callInProgress).to.equal('function');
         expect(typeof presentable.getPresence).to.equal('function');
         expect(typeof presentable.setPresence).to.equal('function');
-        expect(typeof presentable.canSendAudio).to.equal('function');
-        expect(typeof presentable.canSendVideo).to.equal('function');
-        expect(typeof presentable.callInProgress).to.equal('function');
     });
 
     /*
@@ -50,7 +49,7 @@ describe("A webrtc.AbstractPresentable ", function () {
         sinon.spy(presentable, "fire");
 
         try {
-            presentable.setPresence(newPresence);
+            presentable.setPresence({presence: newPresence});
 
             expect(presentable.getPresence()).to.equal(newPresence);
             expect(presentable.fire.calledWith('presence')).to.equal(true);

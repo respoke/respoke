@@ -92,13 +92,14 @@ webrtc.Client = function (params) {
      * @memberof! webrtc.Client
      * @method webrtc.Client.login
      * @returns {Promise<webrtc.User>}
-     * @param {object} userAccount Optional user account to log in with.
-     * @param {string} token Optional OAuth token to use, if the user has logged in before,
-     * or password if not using oAuth or OpenSocial.
+     * @param {object} username Optional user account to log in with.
+     * @param {string} password Optional password or oAuth token.
+     * @param {function} onSuccess
+     * @param {function} onError
      * @returns {Promise<webrtc.User>}
      */
-    var login = that.publicize('login', function (userAccount, token) {
-        var userPromise = that.identityProvider.login(userAccount, token);
+    var login = that.publicize('login', function (params) {
+        var userPromise = that.identityProvider.login(params);
         userPromise.done(function successHandler(user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
@@ -107,8 +108,9 @@ webrtc.Client = function (params) {
 
             updateTurnCredentials();
         }, function errorHandler(error) {
-            log.error(error.message);
+            throw error;
         });
+
         return userPromise;
     });
 
@@ -136,10 +138,12 @@ webrtc.Client = function (params) {
      * Client.user to null.
      * @memberof! webrtc.Client
      * @method webrtc.Client.logout
+     * @param {function} onSuccess
+     * @param {function} onError
      * @fires webrtc.User#loggedout
      * @fires webrtc.Client#loggedout
      */
-    var logout = that.publicize('logout', function () {
+    var logout = that.publicize('logout', function (params) {
         if (that.user === null) {
             return;
         }
@@ -209,13 +213,13 @@ webrtc.Client = function (params) {
      * @method webrtc.Client.setDefaultCallSettings
      * @param {object} Object containing settings to modify.
      */
-    var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (settings) {
-        settings = settings || {};
-        if (settings.constraints) {
-            callSettings.constraints = settings.constraints;
+    var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (params) {
+        params = params || {};
+        if (params.constraints) {
+            callSettings.constraints = params.constraints;
         }
-        if (settings.servers) {
-            callSettings.servers = settings.servers;
+        if (params.servers) {
+            callSettings.servers = params.servers;
         }
     });
 

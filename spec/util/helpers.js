@@ -99,8 +99,8 @@ module.exports = {
         this.getValue = function (varName) {
             return this.driver.executeScript("return window['" + this.clientName + "']." + varName +";");
         };
-        this.setPresence = function (status) {
-            return this.driver.executeScript("window['" + this.clientName + "'].user.setPresence('" + status + "');");
+        this.setPresence = function (params) {
+            return this.driver.executeScript("window['" + this.clientName + "'].user.setPresence('" + params + "');");
         };
         this.getPresence = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getPresence();");
