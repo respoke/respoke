@@ -18,9 +18,9 @@ webrtc.SignalingChannel = function (params) {
     that.className = 'webrtc.SignalingChannel';
 
     var state = 'new';
-    var baseURL = null;
-    var appId = null;
     var socket = null;
+    var clientSettings = null; // client is not set up yet
+    var baseURL = null;
     var xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
 
@@ -41,33 +41,65 @@ webrtc.SignalingChannel = function (params) {
     };
 
     /**
-     * Open a connection to the REST API. This is where we would do apikey validation/app
-     * authentication if we want to do that.
+     * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.open
+     * @param token The App's auth token
+     * @param appId The App's id
+     * @return {Promise<statusString>}
      */
-    var open = that.publicize('open', function () {
-        if (appId === null) {
-            var clientSettings = webrtc.getClient(client).getClientSettings();
-            baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337';
-            appId = clientSettings.appId;
-        }
-        if (!appId) {
-            throw new Error("No appId specified.");
-        }
-        log.trace("Signaling connection open.");
-        state = 'open';
+    var open = that.publicize('open', function (params) {
+        params = params || {};
+        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
+        clientSettings = webrtc.getClient(client).getClientSettings();
+        baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337/v1';
+
+        call({
+            path: '/v1/appauthsessions',
+            httpMethod: 'POST',
+            parameters: {
+                appId: params.appId,
+                tokenId: params.token
+            },
+            responseHandler: function (response) {
+                if (!response.error) {
+                    deferred.resolve("App authenticated.");
+                    log.trace("Signaling connection open to", baseURL);
+                    state = 'open';
+                } else {
+                    deferred.reject(new Error("Couldn't authenticate app."));
+                }
+            }
+        });
+
+        return deferred.promise;
     });
 
     /**
-     * Close a connection to the REST API. This is where we would do apikey invalidation
-     * if we want to do that.
+     * Close a connection to the REST API. Invalidate the appauthsession.
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.close
+     * @return {Promise<statusString>}
      */
-    var close = that.publicize('close', function () {
-        log.trace("Signaling connection closed.");
-        state = 'closed';
+    var close = that.publicize('close', function (params) {
+        params = params || {};
+        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
+
+        call({
+            path: '/v1/appauthsessions',
+            httpMethod: 'DELETE',
+            responseHandler: function (response) {
+                if (!response.error) {
+                    socket.disconnect();
+                    deferred.resolve("App session ended.");
+                    state = 'open';
+                } else {
+                    deferred.reject(new Error("Couldn't end app session."));
+                }
+            }
+        });
+
+        return deferred.promise;
     });
 
     /**
@@ -449,7 +481,7 @@ webrtc.SignalingChannel = function (params) {
             parameters: {
                 'username': params.username,
                 'password': params.password,
-                'appId': appId
+                'appId': params.appId
             },
             responseHandler: function (response) {
                 var pieces = [];
