@@ -54,20 +54,6 @@ describe('Presence setup', function () {
             });
         });
 
-        it("#getDisplayName", function (done) {
-            client1.getDisplayName().then(function (name) {
-                expect(name).to.equal(env.users[0].username);
-                done();
-            });
-        });
-
-        it("#getUsername", function (done) {
-            client1.getUsername().then(function (name) {
-                expect(name).to.equal(env.users[0].username);
-                done();
-            });
-        });
-
         xit("#getName", function (done) {
             client1.getName().then(function (name) {
                 expect(name).to.equal(env.users[0].username);

@@ -33,8 +33,7 @@ describe("A webrtc.Presentable ", function () {
     */
     it("contains some important methods.", function () {
         expect(typeof presentable.getID).to.equal('function');
-        expect(typeof presentable.getDisplayName).to.equal('function');
-        expect(typeof presentable.getUsername).to.equal('function');
+        expect(typeof presentable.getName).to.equal('function');
         expect(typeof presentable.callInProgress).to.equal('function');
         expect(typeof presentable.getPresence).to.equal('function');
         expect(typeof presentable.setPresence).to.equal('function');

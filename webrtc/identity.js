@@ -148,6 +148,16 @@ webrtc.Contacts = function (params) {
     });
 
     /**
+     * Get a contact from the list.
+     * @memberof! webrtc.Contacts
+     * @method webrtc.Contacts.isEmpty
+     * @returns {boolean}
+     */
+    var isEmpty = that.publicize('isEmpty', function (params) {
+        return Object.keys(contacts).length === 0;
+    });
+
+    /**
      * Filter the contact list on any params, return list of matching contacts.
      * @memberof! webrtc.Contacts
      * @method webrtc.Contacts.filter

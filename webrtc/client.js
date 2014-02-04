@@ -136,7 +136,7 @@ webrtc.Client = function (params) {
         userPromise.done(function successHandler(user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
-            log.info('logged in as user ' + user.getDisplayName());
+            log.info('logged in as user ' + user.getName());
             log.debug(user);
 
             updateTurnCredentials();

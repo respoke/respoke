@@ -28,8 +28,7 @@ describe("A webrtc.User ", function () {
 
     it("extends webrtc.Presentable.", function () {
         expect(typeof user.getID).to.equal('function');
-        expect(typeof user.getDisplayName).to.equal('function');
-        expect(typeof user.getUsername).to.equal('function');
+        expect(typeof user.getName).to.equal('function');
         expect(typeof user.callInProgress).to.equal('function');
         expect(typeof user.getPresence).to.equal('function');
         expect(typeof user.setPresence).to.equal('function');

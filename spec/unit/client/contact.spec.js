@@ -25,8 +25,7 @@ describe("A webrtc.Contact", function () {
 
     it("extends webrtc.Presentable.", function () {
         expect(typeof contact.getID).to.equal('function');
-        expect(typeof contact.getDisplayName).to.equal('function');
-        expect(typeof contact.getUsername).to.equal('function');
+        expect(typeof contact.getName).to.equal('function');
         expect(typeof contact.callInProgress).to.equal('function');
         expect(typeof contact.getPresence).to.equal('function');
         expect(typeof contact.setPresence).to.equal('function');

@@ -108,12 +108,6 @@ module.exports = {
         this.getPresence = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getPresence();");
         };
-        this.getDisplayName = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.getDisplayName();");
-        };
-        this.getUsername = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.getUsername();");
-        };
         this.getName = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getName();");
         };

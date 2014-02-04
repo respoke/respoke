@@ -18,6 +18,11 @@ var webrtc = {
 };
 log.setLevel('debug');
 
+Q.longStackSupport = true;
+Q.stackJumpLimit = 5;
+Q.longStackJumpLimit = 20;
+Q.stopUnhandledRejectionTracking();
+
 /**
  * @static
  * @member webrtc
@@ -58,7 +63,7 @@ webrtc.makeUniqueID = function () {
  * @member webrtc
  * @returns {number}
  */
-webrtc.makePromise = function (onSuccess, onError) {
+webrtc.makeDeferred = function (onSuccess, onError) {
     "use strict";
     var deferred = Q.defer();
     if (onSuccess || onError) {
@@ -245,7 +250,3 @@ webrtc.Class = function (params) {
 /**
  * @event webrtc.SignalingChannel#bye
  */
-
-Q.longStackSupport = true;
-Q.stackJumpLimit = 5;
-Q.longStackJumpLimit = 20;

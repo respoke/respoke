@@ -86,23 +86,13 @@ webrtc.Presentable = function (params) {
     });
 
     /**
-     * Get the display name of the endpoint.
+     * Get the name.
      * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getDisplayName
-     * @return {string} displayName
+     * @method webrtc.Presentable.getName
+     * @return {string} name
      */
-    var getDisplayName = that.publicize('getDisplayName', function () {
-        return that.name || that.username || that.id;
-    });
-
-    /**
-     * Get the username.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getUsername
-     * @return {string} displayName
-     */
-    var getUsername = that.publicize('getUsername', function () {
-        return that.username;
+    var getName = that.publicize('getName', function () {
+        return that.name;
     });
 
     /**
@@ -251,7 +241,7 @@ webrtc.Contact = function (params) {
 
         params.callSettings = combinedCallSettings;
         params.client = client;
-        params.username = user.getUsername();
+        params.username = user.getName();
         params.remoteEndpoint = id;
 
         params.signalOffer = function (sdp) {
@@ -404,11 +394,12 @@ webrtc.User = function (params) {
      * @returns {webrtc.Contacts}
      */
     var setPresence = that.publicize('setPresence', function (params) {
-        var defPresence;
+        var promise;
         params = params || {};
         params.presence = params.presence || "available";
         log.info('sending my presence update ' + params.presence);
-        defPresence = signalingChannel.sendPresence({
+
+        promise = signalingChannel.sendPresence({
             presence: params.presence,
             onSuccess: function (p) {
                 superClass.setPresence(params);
@@ -418,7 +409,7 @@ webrtc.User = function (params) {
             },
             onError: params.onError
         });
-        return defPresence.promise;
+        return promise;
     });
 
     /**
@@ -441,15 +432,17 @@ webrtc.User = function (params) {
      */
     var getContacts = that.publicize('getContacts', function (params) {
         params = params || {};
-        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
         var itemElements = [];
+        log.trace('User.getContacts');
 
         if (!userSession.isLoggedIn()) {
             deferred.reject(new Error("Can't request contacts unless logged in."));
             return deferred.promise;
         }
 
-        if (contactList.length > 0) {
+        if (!contactList.isEmpty()) {
+            console.log('resolving early');
             deferred.resolve(contactList);
             return deferred.promise;
         }
@@ -481,8 +474,7 @@ webrtc.User = function (params) {
                 log.debug(message.getSender());
                 log.debug(message.getText());
             } else {
-                log.debug('presence ' + message.getText() + " set on contact " +
-                    contact.getDisplayName());
+                log.debug('presence ' + message.getText() + " set on contact " + contact.getName());
                 contact.setPresence({
                     presence: message.getText(),
                     sessionId: message.getSessionID()
@@ -491,23 +483,6 @@ webrtc.User = function (params) {
         };
 
         signalingChannel.getContacts({
-            onContacts: function contactsHandler(list) {
-                if (!(list in [null, undefined]) && list.length >= 0) {
-                    list.forEach(function addEachContact(contactInfo) {
-                        var contact = webrtc.Contact({
-                            'client': client,
-                            'id': contactInfo.id,
-                            'username': contactInfo.username,
-                            'email': contactInfo.email,
-                            'name': contactInfo.name
-                        });
-                        contactList.add({contact: contact});
-                    });
-                    deferred.resolve(contactList);
-                } else {
-                    deferred.reject(new Error("Can't get contact list: " + list.error));
-                }
-            },
             onPresence: function presenceHandler(presenceList) {
                 if (presenceList && presenceList.length > 0) {
                     presenceList.forEach(function fireEachPresence(presence) {
@@ -515,6 +490,20 @@ webrtc.User = function (params) {
                     });
                 }
             }
+        }).done(function contactsHandler(list) {
+            list.forEach(function addEachContact(contactInfo) {
+                var contact = webrtc.Contact({
+                    'client': client,
+                    'id': contactInfo.endpointId,
+                    'username': contactInfo.endpointId,
+                    'email': contactInfo.endpointId,
+                    'name': contactInfo.endpointId
+                });
+                contactList.add({contact: contact});
+            });
+            deferred.resolve(contactList);
+        }, function (err) {
+            deferred.reject(err);
         });
 
         signalingChannel.addHandler({

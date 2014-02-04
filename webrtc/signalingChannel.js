@@ -139,7 +139,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var logout = that.publicize('logout', function (params) {
         params = params || {};
-        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
         call({
             path: '/v1/authsessions',
             httpMethod: 'DELETE',
@@ -164,27 +164,66 @@ webrtc.SignalingChannel = function (params) {
      */
     var sendPresence = that.publicize('sendPresence', function (params) {
         params = params || {};
-        var presencePromise = webrtc.makePromise(params.onSuccess, params.onError);
         log.trace("Signaling sendPresence");
-        wsCall({
+
+        return wsCall({
             path: '/v1/presence',
             httpMethod: 'POST',
             parameters: {
                 'presence': {
                     show: "no show",
                     'status': "Hey, I'm having fun!",
+                    namespace: appId,
                     type: params.presence || "available"
                 }
             },
-            responseHandler: function (res, params, err) {
-                if (err) {
-                    presencePromise.reject(err);
-                } else {
-                    presencePromise.resolve();
-                }
-            }
+            onSuccess: params.onSuccess,
+            onError: params.onSuccess // TODO params.onError
         });
-        return presencePromise;
+    });
+
+    var getContactChannelId = function (name) {
+        var deferred = webrtc.makeDeferred();
+        log.trace('signalingChannel.getContactChannelId');
+        wsCall({
+            httpMethod: 'POST',
+            path: '/v1/channels/',
+            parameters: {
+                name: name
+            }
+        }).then(function (channel) {
+            deferred.resolve(channel.id);
+        }, function (err) {
+            wsCall({
+                httpMethod: 'GET',
+                path: '/v1/channels/',
+                parameters: {
+                    name: name
+                }
+            }).then(function (channels) {
+                for (var i = 0; i < channels.length; i += 1) {
+                    if (channels[i].name === name) {
+                        deferred.resolve(channels[i].id);
+                        return;
+                    }
+                    deferred.reject(new Error("Couldn't create or find channel", name));
+                }
+            }, function (err) {
+                deferred.reject(new Error("Couldn't create or find channel", name));
+            });
+        });
+        return deferred.promise;
+    };
+
+    /**
+     * Call the API to get a list of the user's contacts. Call the API to register interest
+     * in presence notifications for all users on the contact list.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.getContacts
+     */
+    var subscribeChannel = that.publicize('getContacts', function (params) {
+        params = params || {};
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
     });
 
     /**
@@ -194,41 +233,40 @@ webrtc.SignalingChannel = function (params) {
      * @method webrtc.SignalingChannel.getContacts
      */
     var getContacts = that.publicize('getContacts', function (params) {
-        wsCall({
-            path: '/v1/contacts/',
-            responseHandler: function (contactList, dataParams, err) {
-                var userIdList = [];
+        params = params || {};
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var finalContactList;
+        var channelId;
+        log.trace('signalingChannel.getContacts');
 
-                if (err && err.message) {
-                    throw err;
-                }
-
-                contactList.forEach(function saveEachId(contact) {
-                    userIdList.push({'userId': contact.id});
-                });
-
-                if (params.onContacts) {
-                    params.onContacts(contactList);
-                }
-
-                wsCall({
-                    path: '/v1/presenceobservers',
-                    httpMethod: 'POST',
-                    parameters: {
-                        users: userIdList
-                    },
-                    responseHandler: function (presenceList, dataParams, err) {
-                        if (err && err.message) {
-                            throw err;
-                        }
-
-                        if (params.onPresence) {
-                            params.onPresence(presenceList);
-                        }
-                    }
-                });
-            }
+        getContactChannelId('contactlist').then(function (id) {
+            channelId = id;
+            return wsCall({
+                path: '/v1/channels/%s/subscribers/',
+                objectId: channelId,
+                httpMethod: 'POST'
+            });
+        }, function (err) {
+            console.log("Couldn't get channel id.", err);
+            deferred.reject(err);
+        }).then(function (res) {
+            console.log('subscriber add', res);
+            return wsCall({
+                path: '/v1/channels/%s/subscribers/',
+                objectId: channelId,
+                httpMethod: 'GET'
+            });
+        }, function (err) {
+            console.log("Couldn't subscribe to presence channel.", err);
+            deferred.reject(err);
+        }).done(function (list) {
+            console.log('subscriber list', list);
+            deferred.resolve(list);
+        }, function (err) {
+            console.log("Couldn't get presence subscribers.", err);
+            deferred.reject(err);
         });
+        return deferred.promise;
     });
 
     /**
@@ -241,41 +279,35 @@ webrtc.SignalingChannel = function (params) {
         var msgText = params.message.getPayload();
         var recipient = null;
         params = params || {};
-        var messagePromise = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
         try {
             recipient = params.message.getRecipient().getID();
         } catch (e) {
             log.debug("Can't get message recipient.");
-            return;
+            return deferred.promise;
         }
 
         if ([null, undefined, ""].indexOf(recipient) > -1) {
             log.debug("Can't send message without recipient.");
-            return;
+            return deferred.promise;
         }
 
         if ([null, undefined, ""].indexOf(msgText) > -1) {
             log.debug("Can't send message without message text.");
-            return;
+            return deferred.promise;
         }
 
-        wsCall({
+        return wsCall({
             path: '/v1/chat',
             httpMethod: 'POST',
             parameters: {
                 'to': recipient,
                 'text': msgText
             },
-            responseHandler: function (res, dataParams, err) {
-                if (err) {
-                    messagePromise.reject(err);
-                } else {
-                    messagePromise.resolve();
-                }
-            }
+            onSuccess: params.onSuccess,
+            onError: params.onError
         });
-        return messagePromise.promise;
     });
 
     /**
@@ -288,41 +320,35 @@ webrtc.SignalingChannel = function (params) {
         var signalText = params.signal.getPayload();
         var recipient = null;
         params = params || {};
-        var signalPromise = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
         try {
             recipient = params.signal.getRecipient().getID();
         } catch (e) {
-            log.error("Can't get signal recipient.");
-            return;
+            deferred.resolve(new Error("Can't get signal recipient."));
+            return deferred.promise;
         }
 
         if ([null, undefined, ""].indexOf(recipient) > -1) {
-            log.error("Can't send signal without recipient.");
-            return;
+            deferred.resolve(new Error("Can't send signal without recipient."));
+            return deferred.promise;
         }
 
         if ([null, undefined, ""].indexOf(signalText) > -1) {
-            log.error("Can't send signal without signal text.");
-            return;
+            deferred.resolve(new Error("Can't send signal without signal text."));
+            return deferred.promise;
         }
 
-        wsCall({
+        return wsCall({
             path: '/v1/signaling',
             httpMethod: 'POST',
             parameters: {
                 'to': recipient,
                 'signal': signalText
             },
-            responseHandler: function (res, dataParams, err) {
-                if (err) {
-                    signalPromise.reject(err);
-                } else {
-                    signalPromise.resolve();
-                }
-            }
+            onSuccess: params.onSuccess,
+            onError: params.onError
         });
-        return signalPromise.promise;
     });
 
     /**
@@ -473,7 +499,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var authenticate = that.publicize('authenticate', function (params) {
         params = params || {};
-        var authPromise = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
         call({
             httpMethod: "POST",
@@ -490,7 +516,7 @@ webrtc.SignalingChannel = function (params) {
                 var port = null;
 
                 if (response.code !== 200) {
-                    authPromise.reject(new Error(response.message));
+                    deferred.reject(new Error(response.message));
                     return;
                 }
 
@@ -500,6 +526,7 @@ webrtc.SignalingChannel = function (params) {
                 host = pieces[0];
                 port = pieces[1];
 
+                console.log('socket URL', baseURL, protocol + '://' + host + ':' + port);
                 socket = io.connect(baseURL, {
                     'host': host,
                     'port': port,
@@ -507,6 +534,15 @@ webrtc.SignalingChannel = function (params) {
                     'secure': (protocol === 'https')
                 });
 
+                socket.on('enter', function handleMessage(message) {
+                    console.log("enter websocket message", message);
+                });
+                socket.on('leave', function handleMessage(message) {
+                    console.log("leave websocket message", message);
+                });
+                socket.on('message', function handleMessage(message) {
+                    console.log("Unrecognized websocket message", message);
+                });
                 socket.on('connect', function handleConnect() {
                     Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
                         if (!handlerQueue[category]) {
@@ -517,6 +553,26 @@ webrtc.SignalingChannel = function (params) {
                             socket.on(category, handler);
                         });
                         handlerQueue[category] = [];
+                    });
+
+                    wsCall({
+                        path: '/v1/endpointconnections',
+                        httpMethod: 'POST',
+                        parameters: {
+                            'name': params.username
+                        }
+                    }).then(function (res) {
+                        log.debug('endpointconnections result', res);
+                        deferred.resolve(webrtc.User({
+                            loggedIn: true,
+                            timeLoggedIn: new Date(),
+                            client: client,
+                            id: res.endpointId,
+                            username: params.username
+                        }));
+                    }, function (err) {
+                        log.debug("Couldn't register endpoint.", err);
+                        deferred.reject(err);
                     });
                 });
 
@@ -529,45 +585,9 @@ webrtc.SignalingChannel = function (params) {
                         that.routeSignal(message);
                     }
                 });
-
-                wsCall({
-                    path: '/v1/usersessions',
-                    httpMethod: 'POST',
-                    parameters: {
-                        'presence': {
-                            'show': "no show",
-                            'status': "Hey, I'm having fun!",
-                            'type': "available"
-                        }
-                    },
-                    responseHandler: function (res, dataParams, err) {
-                        if (err) {
-                            authPromise.reject(err);
-                            return;
-                        }
-
-                        wsCall({
-                            path: '/v1/users/',
-                            httpMethod: 'GET',
-                            parameters: {
-                                username: params.username
-                            },
-                            responseHandler: function (res, dataParams, err) {
-                                if (err) {
-                                    authPromise.reject(err);
-                                    return;
-                                }
-                                res[0].client = client;
-                                res[0].loggedIn = true;
-                                res[0].timeLoggedIn = new Date();
-                                authPromise.resolve(webrtc.User(res[0]));
-                            }
-                        });
-                    }
-                });
             }
         });
-        return authPromise.promise;
+        return deferred.promise;
     });
 
     /**
@@ -578,37 +598,41 @@ webrtc.SignalingChannel = function (params) {
      * @memberof! webrtc.SignalingChannel
      * @method webrtc.SignalingChannel.getTurnCredentials
      */
-    var getTurnCredentials = that.publicize('getTurnCredentials', function () {
-        var deferred = Q.defer();
+    var getTurnCredentials = that.publicize('getTurnCredentials', function (params) {
+        params = params || {};
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+
         wsCall({
             httpMethod: 'GET',
-            path: '/v1/turn',
-            responseHandler: function (creds, dataParams, err) {
-                var result = [];
+            path: '/v1/turn'
+        }).done(function (creds) {
+            var result = [];
 
-                if (!creds || !creds.uris) {
-                    deferred.reject(err);
+            if (!creds || !creds.uris) {
+                deferred.reject(new Error("Turn credentials empty."));
+                return;
+            }
+
+            creds.uris.forEach(function saveTurnUri(uri) {
+                var cred = null;
+
+                if (!uri) {
                     return;
                 }
 
-                creds.uris.forEach(function saveTurnUri(uri) {
-                    var cred = null;
+                cred = createIceServer(uri, creds.username, creds.password);
+                result.push(cred);
+            });
 
-                    if (!uri) {
-                        return;
-                    }
-
-                    cred = createIceServer(uri, creds.username, creds.password);
-                    result.push(cred);
-                });
-
-                if (result.length === 0) {
-                    deferred.reject(new Error("Got no TURN credentials."));
-                }
-
-                deferred.resolve(result);
+            if (result.length === 0) {
+                deferred.reject(new Error("Got no TURN credentials."));
             }
+
+            deferred.resolve(result);
+        }, function (err) {
+            deferred.reject(err);
         });
+
         return deferred.promise;
     });
 
@@ -624,12 +648,17 @@ webrtc.SignalingChannel = function (params) {
      * @param {object} params Object containing httpMethod, objectId, path, and parameters.
      */
     var wsCall = function (params) {
+        params = params || {};
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+
         if (!params) {
-            throw new Error('No params.');
+            deferred.reject(new Error('No params.'));
+            return deferred.promise;
         }
 
         if (!params.path) {
-            throw new Error('No request path.');
+            deferred.reject(new Error('No request path.'));
+            return deferred.promise;
         }
 
         params.httpMethod = (params.httpMethod || 'get').toLowerCase();
@@ -638,47 +667,24 @@ webrtc.SignalingChannel = function (params) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
         }
 
-        if (params.responseHandler === undefined) { // allow null to indicate no handler
-            params.responseHandler = function (response, data, error) {
-                log.debug('default responseHandler', response, data, error);
-            };
-        }
-
-        log.debug('kicking off socket.' + params.httpMethod + "()",
-            params.path, params.parameters);
+        log.debug('socket request', params.httpMethod, params.path, params.parameters);
 
         if (!socket || !socket[params.httpMethod]) {
-            if (typeof params.responseHandler === 'function') {
-                params.responseHandler(null, {
-                    'uri' : params.path,
-                    'params' : params.parameters
-                }, new Error("Can't make websocket request: no connection."));
-                return;
-            }
+            deferred.reject(new Error("Can't make websocket request: no connection."));
+            return deferred.promise;
         }
 
-        socket[params.httpMethod](params.path, params.parameters,
-            function handleResponse(response) {
-                var e = null;
-                var errString = null;
-
-                if (response !== null) {
-                    errString = response.message || response.error;
-                    if (errString) {
-                        e = new Error(errString);
-                    }
-                }
-
-                if (params.responseHandler) {
-                    params.responseHandler(response, {
-                        'uri' : params.path,
-                        'params' : params.parameters
-                    }, e);
-                } else if (e) {
-                    throw new Error(e);
-                }
+        socket[params.httpMethod](params.path, params.parameters, function handleResponse(response) {
+            log.debug('socket response', params.httpMethod, params.path, response);
+            if (response && response.error) {
+                console.log('reject', new Error(response.error));
+                deferred.reject(new Error(response.error));
+            } else {
+                console.log('resolve', response || {statusCode: 200});
+                deferred.resolve(response || {statusCode: 200});
             }
-        );
+        });
+        return deferred.promise;
     };
 
     /**
