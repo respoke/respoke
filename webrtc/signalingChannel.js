@@ -22,6 +22,7 @@ webrtc.SignalingChannel = function (params) {
     var clientSettings = null; // client is not set up yet
     var baseURL = null;
     var xhr = new XMLHttpRequest();
+    var appId;
     xhr.withCredentials = true;
 
     var handlerQueue = {
@@ -50,7 +51,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var open = that.publicize('open', function (params) {
         params = params || {};
-        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
         clientSettings = webrtc.getClient(client).getClientSettings();
         baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337/v1';
 
@@ -83,7 +84,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var close = that.publicize('close', function (params) {
         params = params || {};
-        var deferred = webrtc.makePromise(params.onSuccess, params.onError);
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
         call({
             path: '/v1/appauthsessions',
@@ -492,6 +493,7 @@ webrtc.SignalingChannel = function (params) {
     var authenticate = that.publicize('authenticate', function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        appId = params.appId;
 
         call({
             httpMethod: "POST",

@@ -123,7 +123,7 @@ webrtc.Client = function (params) {
         params.appId = app.appId;
 
         if (connected !== true) {
-            deferred = webrtc.makePromise(function fakeHandler() {
+            deferred = webrtc.makeDeferred(function fakeHandler() {
                 // This will never happen.
             }, function errorHandler(error) {
                 throw error;
