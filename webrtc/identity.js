@@ -200,52 +200,6 @@ webrtc.Contacts = function (params) {
     });
 
     /**
-     * Get a list of contacts.
-     * @memberof! webrtc.Contacts
-     * @method webrtc.Contacts.getContacts
-     * @param {string} sortField An optional contact attribute to sort on.
-     * @return {webrtc.Contact[]}
-     */
-    var getContacts = that.publicize('getContacts', function (params) {
-        var values = [];
-        params = params || {};
-        var sortField = params.sortField || 'id';
-
-        // Make an array of the values of the contacts dict
-        Object.keys(contacts).forEach(function addValue(key) {
-            values.push(contacts[key]);
-        });
-        that.length = values.length;
-
-        values = values.sort(function fieldSorter(a, b) {
-            if (!(sortField in a) || !(sortField in b)) {
-                log.warn("sortField doesn't exist in both objects.");
-                return 0;
-            } else if (webrtc.isNumber(a[sortField]) && webrtc.isNumber(b[sortField])) {
-                return a[sortField] - b[sortField];
-            } else if (a.toLowerCase && b.toLowerCase) {
-                if (a[sortField].toLowerCase() < b[sortField].toLowerCase()) {
-                    return -1;
-                } else if (a[sortField].toLowerCase() > b[sortField].toLowerCase()) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            } else {
-                if (a[sortField] < b[sortField]) {
-                    return -1;
-                } else if (a[sortField] > b[sortField]) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            }
-        });
-
-        return values;
-    });
-
-    /**
      * Add a presence message to the presence queue for processing after the contact list has been
      * processed.
      * @memberof! webrtc.Contacts

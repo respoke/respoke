@@ -49,11 +49,8 @@ describe("A webrtc.User ", function () {
         expect(typeof user.addCall).to.equal('function');
         expect(typeof user.removeCall).to.equal('function');
         expect(typeof user.setOnline).to.equal('function');
-        expect(typeof user.getCallByContact).to.equal('function');
         expect(typeof user.getActiveCall).to.equal('function');
         expect(typeof user.getUserSession).to.equal('function');
-        expect(typeof user.getContactList).to.equal('function');
-        expect(typeof user.getContacts).to.equal('function');
         expect(typeof user.setOnline).to.equal('function');
     });
 

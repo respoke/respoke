@@ -50,7 +50,6 @@ describe('System Events', function () {
          * @type {string}
          */
         it("should receive event for webrtc.Presentable#presence on login", function (done) {
-            client1.getContacts();
             client1.listenOnContactEvent(username2, 'presence', 'contactsPresence').then(function () {
                 client2.login(username2, password2).then(function (user) {
                     setTimeout(function () {

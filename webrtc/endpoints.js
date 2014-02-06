@@ -348,7 +348,6 @@ webrtc.User = function (params) {
 
     var remoteUserSessions = {};
     var calls = [];
-    var contactList = webrtc.Contacts({'client': client});
     var presenceQueue = [];
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     var userSession = webrtc.UserSession({
@@ -356,35 +355,6 @@ webrtc.User = function (params) {
         'token': params.token,
         'timeLoggedIn': params.timeLoggedIn,
         'loggedIn': params.loggedIn
-    });
-
-    // listen to webrtc.Contacts#presence -- the contacts's presences
-    contactList.listen('new', function newContactListener(contact) {
-        that.fire('contact', contact);
-    });
-
-    // listen to webrtc.Contacts#presence -- the contacts's presences
-    contactList.listen('presence', function presenceListener(presenceMessage) {
-        var presPayload = presenceMessage.getPayload();
-        var from = presenceMessage.getSender();
-        var sessionId = presenceMessage.getSessionID();
-        var contact = contactList.get({contactID: from});
-        /*
-         * Parse the message, add the session to contact sessions or usersessions if it's us,
-         * modify the contact's presence using contact.setPresence, which will fire the event
-         */
-        if (contact) {
-            contact.setPresence({
-                presence: presPayload.type,
-                sessionId: sessionId
-            });
-        } else if (from === webrtc.getClient(client).user.getID()) {
-            // logged in user TODO: save userSession
-            log.debug("got own presence");
-        } else {
-            log.debug("Got unrecognized presence");
-            log.debug(presPayload);
-        }
     });
 
     /**
@@ -410,136 +380,6 @@ webrtc.User = function (params) {
             onError: params.onError
         });
         return promise;
-    });
-
-    /**
-     * Return the user's cached contact list.
-     * @memberof! webrtc.User
-     * @method webrtc.User.getContactList
-     * @returns {webrtc.Contacts}
-     */
-    var getContactList = that.publicize('getContactList', function () {
-        return contactList;
-    });
-
-    /**
-     * Get user's Contacts from server.
-     * @memberof! webrtc.User
-     * @method webrtc.User.getContacts
-     * @returns {Promise<webrtc.Contacts>}
-     * @param {function} onSuccess optional
-     * @param {function} onError optional
-     */
-    var getContacts = that.publicize('getContacts', function (params) {
-        params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        var itemElements = [];
-        log.trace('User.getContacts');
-
-        if (!userSession.isLoggedIn()) {
-            deferred.reject(new Error("Can't request contacts unless logged in."));
-            return deferred.promise;
-        }
-
-        if (!contactList.isEmpty()) {
-            console.log('resolving early');
-            deferred.resolve(contactList);
-            return deferred.promise;
-        }
-
-        deferred.promise.done(function successHandler(contactList) {
-            log.debug("got contact list", contactList);
-            setTimeout(contactList.processPresenceQueue, 1000);
-        }, function errorHandler(err) {
-            throw err;
-        });
-
-        // TODO: Can we move this into the constructor?
-        var presenceHandler = function (message) {
-            var contact;
-            var message = webrtc.PresenceMessage({'rawMessage': message});
-            if (contactList.length === 0) {
-                contactList.queuePresence(message);
-                return;
-            }
-
-            try {
-                contact = contactList.get({contactID: message.getSender()});
-            } catch (e) {
-                throw new Error("Couldn't get presence sender.");
-            }
-
-            if (!contact) {
-                log.warn("Can't set presence");
-                log.debug(message.getSender());
-                log.debug(message.getText());
-            } else {
-                log.debug('presence ' + message.getText() + " set on contact " + contact.getName());
-                contact.setPresence({
-                    presence: message.getText(),
-                    sessionId: message.getSessionID()
-                });
-            }
-        };
-
-        signalingChannel.getContacts({
-            onPresence: function presenceHandler(presenceList) {
-                if (presenceList && presenceList.length > 0) {
-                    presenceList.forEach(function fireEachPresence(presence) {
-                        contactList.fire('presence', webrtc.PresenceMessage({'rawMessage': presence}));
-                    });
-                }
-            }
-        }).done(function contactsHandler(list) {
-            list.forEach(function addEachContact(contactInfo) {
-                var contact = webrtc.Contact({
-                    'client': client,
-                    'id': contactInfo.endpointId,
-                    'username': contactInfo.endpointId,
-                    'email': contactInfo.endpointId,
-                    'name': contactInfo.endpointId
-                });
-                contactList.add({contact: contact});
-            });
-            deferred.resolve(contactList);
-        }, function (err) {
-            deferred.reject(err);
-        });
-
-        signalingChannel.addHandler({
-            type: 'presence',
-            handler: presenceHandler
-        });
-
-        signalingChannel.addHandler({
-            type: 'chat',
-            handler: function (message) {
-                var contact;
-                var source = message.header.from;
-                if (message.header.fromSession) {
-                    source += '@' + message.header.fromSession;
-                }
-
-                try {
-                    contact = contactList.get({contactID: source});
-                } catch (e) {
-                    throw new Error("Couldn't parse chat message.");
-                }
-                if (!contact) {
-                    log.warn("No such contact " + source);
-                    return;
-                }
-
-                contact.fire('message', webrtc.TextMessage({
-                    'client': client,
-                    'rawMessage': message.text,
-                    'recipient': that,
-                    'sender': contact.getID()
-                }));
-            }
-        });
-
-        return deferred.promise;
     });
 
     /**
@@ -593,7 +433,6 @@ webrtc.User = function (params) {
 
         if (call === null && params.create === true) {
             try {
-                contact = contactList.get({contactID: params.contactId});
                 callSettings = webrtc.getClient(client).getCallSettings();
                 call = contact.call({
                     callSettings: callSettings,

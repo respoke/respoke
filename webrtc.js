@@ -43,7 +43,10 @@ webrtc.connect = function (params) {
 webrtc.getClient = function (id) {
     "use strict";
     if (id === undefined) {
-        log.debug(new Error().stack);
+        log.debug("Can't call getClient with no client ID.", new Error().stack);
+    }
+    if (!webrtc.instances[id]) {
+        log.debug("No client instance with id", id);
     }
     return webrtc.instances[id];
 };
@@ -117,9 +120,11 @@ Object.defineProperty(Object.prototype, 'publicize', {
  */
 webrtc.Class = function (params) {
     "use strict";
-    var that = { 'className': 'webrtc.Class' };
+    var that = params.that || {};
+    that.className = 'webrtc.Class';
     params = params || {};
     var client = params.client;
+    delete params.that;
     delete that.client;
     Object.keys(params).forEach(function copyParam(name) {
         that[name] = params[name];

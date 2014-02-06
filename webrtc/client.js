@@ -266,5 +266,28 @@ webrtc.Client = function (params) {
         return signalingChannel;
     });
 
+    /**
+     * Get a Group
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.join
+     * @params {string} The name of the group.
+     * @returns {webrtc.Group} The instance of the webrtc.Group which the user joined.
+     */
+    var join = that.publicize('join', function (params) {
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        if (!params.name) {
+            deferred.reject(new Error("Can't join a group with no group name."));
+            return deferred.promise;
+        }
+
+        signalingChannel.getGroup(params).done(function (group) {
+            group.client = client;
+            deferred.resolve(webrtc.Group(group));
+        }, function (err) {
+            deferred.reject(err);
+        });
+        return deferred.promise;
+    });
+
     return that;
 }; // End webrtc.Client

@@ -69,32 +69,11 @@ module.exports = {
         this.getSignalingChannel = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].getSignalingChannel();");
         };
-        this.getContacts = function () {
-            return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    window['" + this.clientName + "']['contacts'] = contactList;" +
-                    "    callback(contactList); " +
-                    " });");
-        };
         this.listen = function (method, event, varName) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
                     "window['" + this.clientName + "']." + method + ".listen('" + event + "', function (message) {" +
                     "    window['" + this.clientName + "']['" + varName +"'] = message; " +
                     " }); callback();");
-        };
-        this.listenOnContactEvent = function (username, event, varName) {
-            return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    var contacts = contactList.getContacts(); " +
-                    "    for(var i = 0; i < contacts.length; i += 1) { " +
-                    "         if (contacts[i].username == '" + username + "') { " +
-                    "               contacts[i].listen('" + event + "', function (message) {" +
-                    "                   window['" + this.clientName + "']['" + varName + "'] = message; " +
-                    "               }); " +
-                    "         } " +
-                    "    } " +
-                    "    callback();" +
-                    " }); ");
         };
         this.getValue = function (varName) {
             return this.driver.executeScript("return window['" + this.clientName + "']." + varName +";");

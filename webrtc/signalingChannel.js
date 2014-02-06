@@ -182,91 +182,83 @@ webrtc.SignalingChannel = function (params) {
         });
     });
 
-    var getContactChannelId = function (name) {
+    /**
+     * Get or create a group in the infrastructure.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.getGroup
+     * @returns {Promise<webrtc.Group>}
+     */
+    var getGroup = that.publicize('getGroup', function (params) {
         var deferred = webrtc.makeDeferred();
-        log.trace('signalingChannel.getContactChannelId');
+        log.trace('signalingChannel.getGroup');
         wsCall({
             httpMethod: 'POST',
             path: '/v1/channels/',
             parameters: {
-                name: name
+                name: params.name
             }
-        }).then(function (channel) {
-            deferred.resolve(channel.id);
+        }).then(function (group) {
+            deferred.resolve(group);
         }, function (err) {
             wsCall({
                 httpMethod: 'GET',
                 path: '/v1/channels/',
                 parameters: {
-                    name: name
+                    name: params.name
                 }
-            }).then(function (channels) {
-                for (var i = 0; i < channels.length; i += 1) {
-                    if (channels[i].name === name) {
-                        deferred.resolve(channels[i].id);
+            }).then(function (groups) {
+                for (var i = 0; i < groups.length; i += 1) {
+                    if (groups[i].name === params.name) {
+                        deferred.resolve(groups[i]);
                         return;
                     }
-                    deferred.reject(new Error("Couldn't create or find channel", name));
+                    deferred.reject(new Error("Couldn't create or find group", params.name));
                 }
             }, function (err) {
-                deferred.reject(new Error("Couldn't create or find channel", name));
+                deferred.reject(new Error("Couldn't create or find group", params.name));
             });
         });
         return deferred.promise;
-    };
-
-    /**
-     * Call the API to get a list of the user's contacts. Call the API to register interest
-     * in presence notifications for all users on the contact list.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getContacts
-     */
-    var subscribeChannel = that.publicize('getContacts', function (params) {
-        params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
     });
 
     /**
-     * Call the API to get a list of the user's contacts. Call the API to register interest
-     * in presence notifications for all users on the contact list.
+     * Join a group.
      * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getContacts
+     * @method webrtc.SignalingChannel.joinGroup
+     * @returns {Promise<string>}
      */
-    var getContacts = that.publicize('getContacts', function (params) {
-        params = params || {};
+    var joinGroup = that.publicize('joinGroup', function (params) {
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        var finalContactList;
-        var channelId;
-        log.trace('signalingChannel.getContacts');
+        if (!params.id) {
+            deferred.reject(new Error("Can't join a group without group ID."));
+            return deferred.promise;
+        }
 
-        getContactChannelId('contactlist').then(function (id) {
-            channelId = id;
-            return wsCall({
-                path: '/v1/channels/%s/subscribers/',
-                objectId: channelId,
-                httpMethod: 'POST'
-            });
-        }, function (err) {
-            console.log("Couldn't get channel id.", err);
-            deferred.reject(err);
-        }).then(function (res) {
-            console.log('subscriber add', res);
-            return wsCall({
-                path: '/v1/channels/%s/subscribers/',
-                objectId: channelId,
-                httpMethod: 'GET'
-            });
-        }, function (err) {
-            console.log("Couldn't subscribe to presence channel.", err);
-            deferred.reject(err);
-        }).done(function (list) {
-            console.log('subscriber list', list);
-            deferred.resolve(list);
-        }, function (err) {
-            console.log("Couldn't get presence subscribers.", err);
-            deferred.reject(err);
+        return wsCall({
+            path: '/v1/channels/%s/subscribers/',
+            objectId: params.id,
+            httpMethod: 'POST'
         });
-        return deferred.promise;
+    });
+
+    /**
+     * Join a group.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.getGroupMembers
+     * @returns {Promise<Array>}
+     */
+    var getGroupMembers = that.publicize('getGroupMembers', function (params) {
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        if (!params.id) {
+            deferred.reject(new Error("Can't get group's endpoints without group ID."));
+            return deferred.promise;
+        }
+
+        return wsCall({
+            path: '/v1/channels/%s/subscribers/',
+            objectId: params.id,
+            httpMethod: 'GET'
+        });
     });
 
     /**
@@ -526,7 +518,6 @@ webrtc.SignalingChannel = function (params) {
                 host = pieces[0];
                 port = pieces[1];
 
-                console.log('socket URL', baseURL, protocol + '://' + host + ':' + port);
                 socket = io.connect(baseURL, {
                     'host': host,
                     'port': port,
@@ -563,13 +554,14 @@ webrtc.SignalingChannel = function (params) {
                         }
                     }).then(function (res) {
                         log.debug('endpointconnections result', res);
-                        deferred.resolve(webrtc.User({
+                        var user = webrtc.User({
                             loggedIn: true,
                             timeLoggedIn: new Date(),
                             client: client,
                             id: res.endpointId,
-                            username: params.username
-                        }));
+                            name: params.username
+                        });
+                        deferred.resolve(user);
                     }, function (err) {
                         log.debug("Couldn't register endpoint.", err);
                         deferred.reject(err);
@@ -677,10 +669,8 @@ webrtc.SignalingChannel = function (params) {
         socket[params.httpMethod](params.path, params.parameters, function handleResponse(response) {
             log.debug('socket response', params.httpMethod, params.path, response);
             if (response && response.error) {
-                console.log('reject', new Error(response.error));
                 deferred.reject(new Error(response.error));
             } else {
-                console.log('resolve', response || {statusCode: 200});
                 deferred.resolve(response || {statusCode: 200});
             }
         });
@@ -1083,3 +1073,94 @@ webrtc.PresenceMessage = function (params) {
 
     return that;
 }; // End webrtc.PresenceMessage
+
+/**
+ * Create a new Group.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class webrtc.Group
+ * @constructor
+ * @classdesc A group, representing a collection of users and the method by which to communicate
+ * with them.
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.Group}
+ */
+webrtc.Group = function (params) {
+    "use strict";
+    params = params || {};
+    params.that = [];
+
+    var group = webrtc.EventEmitter(params);
+    var client = params.client;
+    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+    group.className = 'webrtc.Group';
+    delete group.client;
+
+    if (!group.id) {
+        throw new Error("Can't create a group without an ID.");
+    }
+
+    if (!group.name) {
+        throw new Error("Can't create a group without a name.");
+    }
+
+    /**
+     * Remove an endpoint from a group
+     * @memberof! webrtc.Group
+     * @method webrtc.Group.remove
+     * @params {string} [name] Endpoint name
+     * @params {string} [id] Endpoint id
+     */
+    var remove = group.publicize('remove', function (params) {
+        if (!params.id || !params.name) {
+            throw new Error("Can't remove endpoint from a group without a name or id.");
+        }
+        for (var i = (group.length - 1); i >= 0; i += 1) {
+            var endpoint = group[i];
+            if (endpoint.id === params.id || endpoint.name === params.name) {
+                group.splice(i, 1);
+            }
+        }
+    });
+
+    var add = group.publicize('add', group.push);
+
+    /**
+     * Send a message to each member of a group
+     * @memberof! webrtc.Group
+     * @method webrtc.Group.remove
+     * @params {object} The message
+     */
+    var send = group.publicize('send', function (message) {
+        console.log('group.send not implemented');
+    });
+
+    /**
+     * Get an array of subscribers of the group
+     * @memberof! webrtc.Group
+     * @method webrtc.Group.getEndpoints
+     * @returns {Promise<Array>} A promise to an array of endpoints.
+     */
+    var getEndpoints = group.publicize('getEndpoints', function (params) {
+        params = params || {};
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        signalingChannel.getGroupMembers({
+            id: group.id,
+            onSuccess: params.onSuccess,
+            onError: params.onError
+        }).done(function (endpoints) {
+            endpoints = endpoints.map(function (endpoint) {
+                endpoint.client = client;
+                endpoint.name = endpoint.id = endpoint.endpointId;
+                delete endpoint.endpointId;
+                return webrtc.Contact(endpoint);
+            });
+            deferred.resolve(endpoints);
+        }, function (err) {
+            deferred.reject(err);
+        });
+        return deferred.promise;
+    });
+
+    return group;
+}; // End webrtc.Group
