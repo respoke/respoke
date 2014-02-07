@@ -275,14 +275,20 @@ webrtc.Client = function (params) {
      */
     var join = that.publicize('join', function (params) {
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        if (!params.name) {
-            deferred.reject(new Error("Can't join a group with no group name."));
+        if (!params.id) {
+            deferred.reject(new Error("Can't join a group with no group id."));
             return deferred.promise;
         }
 
-        signalingChannel.getGroup(params).done(function (group) {
-            group.client = client;
-            deferred.resolve(webrtc.Group(group));
+        signalingChannel.joinGroup({
+            id: params.id
+        }).done(function () {
+            deferred.resolve(webrtc.Group({
+                client: client,
+                id: params.id,
+                onMessage: params.onMessage,
+                onPresence: params.onPresence
+            }));
         }, function (err) {
             deferred.reject(err);
         });

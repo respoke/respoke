@@ -229,16 +229,39 @@ webrtc.SignalingChannel = function (params) {
      * @returns {Promise<string>}
      */
     var joinGroup = that.publicize('joinGroup', function (params) {
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        if (!params.id) {
-            deferred.reject(new Error("Can't join a group without group ID."));
-            return deferred.promise;
-        }
-
         return wsCall({
             path: '/v1/channels/%s/subscribers/',
             objectId: params.id,
             httpMethod: 'POST'
+        });
+    });
+
+    /**
+     * Publish a message to a group.
+     * @memberof! webrtc.SignalingChannel
+     * @method webrtc.SignalingChannel.publish
+     * @returns {Promise<string>}
+     */
+    var publish = that.publicize('publish', function (params) {
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        if (!params.id) {
+            deferred.reject(new Error("Can't publish to a group without group ID."));
+            return deferred.promise;
+        }
+
+        if (!params.message) {
+            deferred.reject(new Error("Can't publish to a group without message."));
+            return deferred.promise;
+        }
+
+        return wsCall({
+            path: '/v1/channels/%s/publish/',
+            objectId: params.id,
+            httpMethod: 'POST',
+            parameters: {
+                id: params.id,
+                message: params.message
+            }
         });
     });
 
@@ -527,6 +550,28 @@ webrtc.SignalingChannel = function (params) {
                     'secure': (protocol === 'https')
                 });
 
+                /**
+                 * Begin development override of socket.on and socket.emit.
+                 */
+                (function () {
+                    var emit = socket.emit;
+                    socket.emit = function () {
+                        console.log('***', 'emit', Array.prototype.slice.call(arguments));
+                        emit.apply(socket, arguments);
+                    };
+                    var $emit = socket.$emit;
+                    socket.$emit = function () {
+                        console.log('***', 'on', Array.prototype.slice.call(arguments));
+                        $emit.apply(socket, arguments);
+                    };
+                })();
+                /**
+                 * End override
+                 */
+
+                socket.on('pubsub', function handleMessage(message) {
+                    console.log("pubsub websocket message", message);
+                });
                 socket.on('enter', function handleMessage(message) {
                     console.log("enter websocket message", message);
                 });
@@ -560,8 +605,9 @@ webrtc.SignalingChannel = function (params) {
                             loggedIn: true,
                             timeLoggedIn: new Date(),
                             client: client,
-                            id: res.endpointId,
-                            name: params.username
+                            id: res.id,
+                            name: res.endpointId,
+                            username: res.endpointId
                         });
                         deferred.resolve(user);
                     }, function (err) {
@@ -671,7 +717,7 @@ webrtc.SignalingChannel = function (params) {
         socket[params.httpMethod](params.path, params.parameters, function handleResponse(response) {
             log.debug('socket response', params.httpMethod, params.path, response);
             if (response && response.error) {
-                deferred.reject(new Error(response.error));
+                deferred.reject(new Error(response.error + '(' + params.httpMethod + ' ' + params.path + ')'));
             } else {
                 deferred.resolve(response || {statusCode: 200});
             }
@@ -1092,18 +1138,16 @@ webrtc.Group = function (params) {
     params = params || {};
     params.that = [];
 
+    console.log("new group params are", params);
     var group = webrtc.EventEmitter(params);
     var client = params.client;
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     group.className = 'webrtc.Group';
     delete group.client;
+    console.log("new group is", group);
 
     if (!group.id) {
         throw new Error("Can't create a group without an ID.");
-    }
-
-    if (!group.name) {
-        throw new Error("Can't create a group without a name.");
     }
 
     /**
@@ -1133,8 +1177,9 @@ webrtc.Group = function (params) {
      * @method webrtc.Group.remove
      * @params {object} The message
      */
-    var send = group.publicize('send', function (message) {
-        console.log('group.send not implemented');
+    var send = group.publicize('send', function (params) {
+        params.id = group.id;
+        return signalingChannel.publish(params);
     });
 
     /**
@@ -1147,13 +1192,11 @@ webrtc.Group = function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
         signalingChannel.getGroupMembers({
-            id: group.id,
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            id: group.id
         }).done(function (endpoints) {
             endpoints = endpoints.map(function (endpoint) {
                 endpoint.client = client;
-                endpoint.name = endpoint.id = endpoint.endpointId;
+                endpoint.name = endpoint.endpointId;
                 delete endpoint.endpointId;
                 return webrtc.Contact(endpoint);
             });
