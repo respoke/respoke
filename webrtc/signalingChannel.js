@@ -17,6 +17,7 @@ webrtc.SignalingChannel = function (params) {
     delete that.client;
     that.className = 'webrtc.SignalingChannel';
 
+    var clientObj = webrtc.getClient(client);
     var state = 'new';
     var socket = null;
     var clientSettings = null; // client is not set up yet
@@ -201,7 +202,8 @@ webrtc.SignalingChannel = function (params) {
         }).then(function (group) {
             deferred.resolve(group);
         }, function (err) {
-            wsCall({
+            deferred.resolve({id: params.name});
+            /*wsCall({
                 httpMethod: 'GET',
                 path: '/v1/channels/',
                 parameters: {
@@ -217,7 +219,7 @@ webrtc.SignalingChannel = function (params) {
                 }
             }, function (err) {
                 deferred.reject(new Error("Couldn't create or find group", params.name));
-            });
+            });*/
         });
         return deferred.promise;
     });
@@ -441,7 +443,6 @@ webrtc.SignalingChannel = function (params) {
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.getPayload();
-        var clientObj = webrtc.getClient(client);
         var call = null;
         var toCreate = false;
 
@@ -553,7 +554,7 @@ webrtc.SignalingChannel = function (params) {
                 /**
                  * Begin development override of socket.on and socket.emit.
                  */
-                (function () {
+                /*(function () {
                     var emit = socket.emit;
                     socket.emit = function () {
                         console.log('***', 'emit', Array.prototype.slice.call(arguments));
@@ -564,23 +565,69 @@ webrtc.SignalingChannel = function (params) {
                         console.log('***', 'on', Array.prototype.slice.call(arguments));
                         $emit.apply(socket, arguments);
                     };
-                })();
+                })();*/
                 /**
                  * End override
                  */
 
                 socket.on('pubsub', function handleMessage(message) {
+                    var group;
+                    var groupMessage;
                     console.log("pubsub websocket message", message);
+                    groupMessage = webrtc.GroupMessage({
+                        sender: message.header.from,
+                        senderSession: message.header.fromConnection,
+                        recipient: message.header.channelName,
+                        rawMessage: message.message
+                    });
+                    group = clientObj.getGroup({id: message.header.channelName});
+                    if (group) {
+                        group.fire('message', groupMessage);
+                    } else if (clientObj.onMessage) {
+                        clientObj.onMessage(groupMessage);
+                    }
                 });
+
                 socket.on('enter', function handleMessage(message) {
+                    var group;
+                    var groupMessage;
                     console.log("enter websocket message", message);
+                    groupMessage = webrtc.PresenceMessage({
+                        from: message.header.from,
+                        fromSession: message.header.fromConnection,
+                        recipient: message.header.channelName,
+                        rawMessage: message.message
+                    });
+                    group = clientObj.getGroup({id: message.header.channelName});
+                    if (group) {
+                        group.fire('presence', groupMessage);
+                    } else if (clientObj.onPresence) {
+                        clientObj.onPresence(groupMessage);
+                    }
                 });
+
                 socket.on('leave', function handleMessage(message) {
+                    var group;
+                    var groupMessage;
                     console.log("leave websocket message", message);
+                    groupMessage = webrtc.PresenceMessage({
+                        from: message.header.from,
+                        fromSession: message.header.fromConnection,
+                        recipient: message.header.channelName,
+                        rawMessage: message.message
+                    });
+                    group = clientObj.getGroup({id: message.header.channelName});
+                    if (group) {
+                        group.fire('presence', groupMessage);
+                    } else if (clientObj.onPresence) {
+                        clientObj.onPresence(groupMessage);
+                    }
                 });
+
                 socket.on('message', function handleMessage(message) {
                     console.log("Unrecognized websocket message", message);
                 });
+
                 socket.on('connect', function handleConnect() {
                     Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
                         if (!handlerQueue[category]) {
@@ -605,9 +652,9 @@ webrtc.SignalingChannel = function (params) {
                             loggedIn: true,
                             timeLoggedIn: new Date(),
                             client: client,
-                            id: res.id,
-                            name: res.endpointId,
-                            username: res.endpointId
+                            id: res.endpointId,
+                            name: params.username,
+                            username: params.uername
                         });
                         deferred.resolve(user);
                     }, function (err) {
@@ -933,6 +980,77 @@ webrtc.TextMessage = function (params) {
 }; // End webrtc.TextMessage
 
 /**
+ * Create a new GroupMessage.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class webrtc.GroupMessage
+ * @constructor
+ * @classdesc A message.
+ * @param {object} params Object whose properties will be used to initialize this object and set
+ * properties on the class.
+ * @returns {webrtc.GroupMessage}
+ */
+webrtc.GroupMessage = function (params) {
+    "use strict";
+    params = params || {};
+    var that = params;
+
+    that.className = 'webrtc.GroupMessage';
+    var rawMessage = params.rawMessage; // Only set on incoming message.
+    var payload = params.payload; // Only set on outgoing message.
+    var sender = params.sender;
+    var recipient = params.recipient;
+
+    /**
+     * Parse rawMessage and save information in payload. In this base class, assume text.
+     * @memberof! webrtc.GroupMessage
+     * @method webrtc.GroupMessage.parse
+     * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
+     */
+    var parse = that.publicize('parse', function (params) {
+        if (params && params.message) {
+            rawMessage = params.message;
+        }
+        payload = rawMessage;
+    });
+
+    /**
+     * Get the whole payload.
+     * @memberof! webrtc.GroupMessage
+     * @method webrtc.GroupMessage.getPayload
+     * @returns {string}
+     */
+    var getPayload = that.publicize('getPayload', function () {
+        return payload;
+    });
+
+    /**
+     * Get the whole chat message.
+     * @memberof! webrtc.GroupMessage
+     * @method webrtc.GroupMessage.getText
+     * @returns {string}
+     */
+    var getText = that.publicize('getText', function () {
+        return payload;
+    });
+
+    /**
+     * Get the recipient.
+     * @memberof! webrtc.GroupMessage
+     * @method webrtc.GroupMessage.getRecipient
+     * @returns {string}
+     */
+    var getRecipient = that.publicize('getRecipient', function () {
+        return recipient;
+    });
+
+    if (rawMessage) {
+        parse();
+    }
+
+    return that;
+}; // End webrtc.GroupMessage
+
+/**
  * Create a new SignalingMessage.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class webrtc.SignalingMessage
@@ -1064,8 +1182,13 @@ webrtc.PresenceMessage = function (params) {
             sessionId = rawMessage.header.fromSession;
         } catch (e) {
             // Wasn't a socket message.
-            sender = rawMessage.userId;
-            sessionId = rawMessage.sessionId;
+            try {
+                sender = rawMessage.userId;
+                sessionId = rawMessage.sessionId;
+            } catch (f) {
+                sender = rawMessage.header.from;
+                sessionId = rawMessage.header.fromConnection;
+            }
         }
 
         delete rawMessage.header;
@@ -1142,9 +1265,9 @@ webrtc.Group = function (params) {
     var group = webrtc.EventEmitter(params);
     var client = params.client;
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+    var endpoints = [];
     group.className = 'webrtc.Group';
     delete group.client;
-    console.log("new group is", group);
 
     if (!group.id) {
         throw new Error("Can't create a group without an ID.");
@@ -1191,6 +1314,11 @@ webrtc.Group = function (params) {
     var getEndpoints = group.publicize('getEndpoints', function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        if (endpoints.length > 0) {
+            deferred.resolve(endpoints);
+            return deferred.promise;
+        }
+
         signalingChannel.getGroupMembers({
             id: group.id
         }).done(function (endpoints) {

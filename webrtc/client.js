@@ -33,6 +33,8 @@ webrtc.Client = function (params) {
     var signalingChannel = null;
     var turnRefresher = null;
     var clientSettings = params.clientSettings || {};
+    var groups = [];
+    var endpoints = [];
 
     ['appId', 'token'].forEach(function (name) {
         if (!clientSettings[name]) {
@@ -283,16 +285,154 @@ webrtc.Client = function (params) {
         signalingChannel.joinGroup({
             id: params.id
         }).done(function () {
-            deferred.resolve(webrtc.Group({
+            var group = webrtc.Group({
                 client: client,
                 id: params.id,
                 onMessage: params.onMessage,
                 onPresence: params.onPresence
-            }));
+            });
+            addGroup(group);
+            deferred.resolve(group);
         }, function (err) {
             deferred.reject(err);
         });
         return deferred.promise;
+    });
+
+    /**
+     * Add a Group
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.addGroup
+     * @params {id} the Group id
+     * @private
+     */
+    var addGroup = function (params) {
+        var group;
+        if (!params || !params.id) {
+            throw new Error("Can't add group to internal tracking without group id.");
+        }
+        group = groups.find(function (grp) {
+            return grp.id === params.id;
+        });
+
+        if (!group) {
+            groups.push(params);
+        }
+    };
+
+    /**
+     * Remove a Group
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.removeGroup
+     * @params {id} the Group id
+     * @private
+     */
+    var removeGroup = function (params) {
+        var index;
+        var endpoints;
+        if (!params || !params.id) {
+            throw new Error("Can't remove group from internal tracking without group id.");
+        }
+
+        index = groups.findIndex(function (grp) {
+            return grp.id === params.id;
+        });
+        if (index > -1) {
+            groups[index].getEndpoints().done(function (list) {
+                endpoints = list;
+                groups.splice(index, 1);
+                endpoints.forEach(function (endpoint) {
+                    checkEndpointForRemoval(endpoint);
+                });
+            });
+        }
+    };
+
+    /**
+     * Find a group by id and return it.
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.getGroup
+     * @params {id} the Group id
+     * @returns {webrtc.Group}
+     */
+    var getGroup = that.publicize('getGroup', function (params) {
+        if (!params || !params.id) {
+            throw new Error("Can't get a group without group id.");
+        }
+
+        return groups.find(function (grp) {
+            return grp.id === params.id;
+        });
+    });
+
+    /**
+     * Add an Endpoint
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.addEndpoint
+     * @params {id} the Endpoint id
+     * @private
+     */
+    var addEndpoint = function (params) {
+        var endpoint;
+        if (!params || !params.id) {
+            throw new Error("Can't add endpoint to internal tracking without group id.");
+        }
+        endpoint = endpoints.find(function (ept) {
+            return ept.id === params.id;
+        });
+
+        if (!endpoint) {
+            endpoints.push(params);
+        }
+    };
+
+    /**
+     * Remove an Endpoint
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.removeEndpoint
+     * @params {id} the Endpoint id
+     * @private
+     */
+    var checkEndpointForRemoval = function (params) {
+        var inAGroup;
+        var index;
+        if (!params || !params.id) {
+            throw new Error("Can't remove endpoint from internal tracking without group id.");
+        }
+
+        inAGroup = groups.findIndex(function (grp) {
+            grp.getEndpoints().done(function (endpoints) {
+                return endpoints.findIndex(function (endpoint) {
+                    return endpoint.id === params.id;
+                });
+            });
+        });
+
+        if (inAGroup > -1) {
+            index = endpoints.findIndex(function (ept) {
+                return ept.id === params.id;
+            });
+            if (index > -1) {
+                endpoints.splice(index, 1);
+            }
+        }
+    };
+
+    /**
+     * Find an endpoint by id and return it.
+     * @memberof! webrtc.Client
+     * @method webrtc.Client.getEndpoint
+     * @params {id} the Endpoint id
+     * @returns {webrtc.Contact}
+     */
+    var getEndpoint = that.publicize('getEndpoint', function (params) {
+        if (!params || !params.id) {
+            throw new Error("Can't get an endpoint without group id.");
+        }
+
+        return endpoints.find(function (ept) {
+            return ept.id === params.id;
+        });
     });
 
     return that;
