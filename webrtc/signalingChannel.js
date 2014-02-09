@@ -574,12 +574,14 @@ webrtc.SignalingChannel = function (params) {
                     var group;
                     var groupMessage;
                     console.log("pubsub websocket message", message);
+
                     groupMessage = webrtc.GroupMessage({
                         sender: message.header.from,
                         senderSession: message.header.fromConnection,
                         recipient: message.header.channelName,
                         rawMessage: message.message
                     });
+
                     group = clientObj.getGroup({id: message.header.channelName});
                     if (group) {
                         group.fire('message', groupMessage);
@@ -590,37 +592,44 @@ webrtc.SignalingChannel = function (params) {
 
                 socket.on('enter', function handleMessage(message) {
                     var group;
-                    var groupMessage;
-                    console.log("enter websocket message", message);
-                    groupMessage = webrtc.PresenceMessage({
-                        from: message.header.from,
-                        fromSession: message.header.fromConnection,
-                        recipient: message.header.channelName,
-                        rawMessage: message.message
+                    var presenceMessage;
+                    var endpoint;
+
+                    if (message.endpoint === clientObj.user.getID()) {
+                        return;
+                    }
+
+                    endpoint = webrtc.Contact({
+                        client: client,
+                        id: message.endpoint,
+                        name: message.endpoint,
+                        connection: message.connectionId
                     });
+
+                    console.log("enter websocket message", message);
                     group = clientObj.getGroup({id: message.header.channelName});
                     if (group) {
-                        group.fire('presence', groupMessage);
-                    } else if (clientObj.onPresence) {
-                        clientObj.onPresence(groupMessage);
+                        group.fire('enter', endpoint);
                     }
                 });
 
                 socket.on('leave', function handleMessage(message) {
                     var group;
-                    var groupMessage;
-                    console.log("leave websocket message", message);
-                    groupMessage = webrtc.PresenceMessage({
-                        from: message.header.from,
-                        fromSession: message.header.fromConnection,
-                        recipient: message.header.channelName,
-                        rawMessage: message.message
+                    var presenceMessage;
+                    var endpoint;
+
+                    if (message.endpoint === clientObj.user.getID()) {
+                        return;
+                    }
+
+                    endpoint = clientObj.getEndpoint({
+                        id: message.endpoint
                     });
+
+                    console.log("leave websocket message", message);
                     group = clientObj.getGroup({id: message.header.channelName});
                     if (group) {
-                        group.fire('presence', groupMessage);
-                    } else if (clientObj.onPresence) {
-                        clientObj.onPresence(groupMessage);
+                        group.fire('leave', presenceMessage);
                     }
                 });
 
@@ -642,10 +651,7 @@ webrtc.SignalingChannel = function (params) {
 
                     wsCall({
                         path: '/v1/endpointconnections',
-                        httpMethod: 'POST',
-                        parameters: {
-                            'name': params.username
-                        }
+                        httpMethod: 'POST'
                     }).then(function (res) {
                         log.debug('endpointconnections result', res);
                         var user = webrtc.User({
@@ -1259,18 +1265,44 @@ webrtc.PresenceMessage = function (params) {
 webrtc.Group = function (params) {
     "use strict";
     params = params || {};
-    params.that = [];
 
     console.log("new group params are", params);
     var group = webrtc.EventEmitter(params);
     var client = params.client;
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     var endpoints = [];
+    var onMessage;
+    var onEnter;
+    var onLeave;
+    var onPresence;
     group.className = 'webrtc.Group';
     delete group.client;
 
     if (!group.id) {
         throw new Error("Can't create a group without an ID.");
+    }
+
+    if (group.onMessage) {
+        onMessage = group.onMessage;
+        delete group.onMessage;
+        group.listen('message', onMessage);
+    }
+
+    if (group.onPresence) {
+        onPresence = group.onPresence;
+        delete group.onPresence;
+    }
+
+    if (group.onEnter) {
+        onEnter = group.onEnter;
+        delete group.onEnter;
+        group.listen('enter', onEnter);
+    }
+
+    if (group.onLeave) {
+        onEnter = group.onLeave;
+        delete group.onLeave;
+        group.listen('leave', onLeave);
     }
 
     /**
@@ -1280,28 +1312,56 @@ webrtc.Group = function (params) {
      * @params {string} [name] Endpoint name
      * @params {string} [id] Endpoint id
      */
-    var remove = group.publicize('remove', function (params) {
-        if (!params.id || !params.name) {
+    var remove = function (newEndpoint) {
+        if (!newEndpoint.id || !newEndpoint.name) {
             throw new Error("Can't remove endpoint from a group without a name or id.");
         }
-        for (var i = (group.length - 1); i >= 0; i += 1) {
-            var endpoint = group[i];
-            if (endpoint.id === params.id || endpoint.name === params.name) {
-                group.splice(i, 1);
+        for (var i = (endpoints.length - 1); i >= 0; i += 1) {
+            var endpoint = endpoints[i];
+            if (endpoint.id === newEndpoint.id || endpoint.name === newEndpoint.name) {
+                console.log("removing", newEndpoint.name, 'from group', group.id);
+                endpoints.splice(i, 1);
             }
         }
-    });
-
-    var add = group.publicize('add', group.push);
+    };
+    group.listen('leave', remove);
 
     /**
-     * Send a message to each member of a group
+     * Add an endpoint to a group
      * @memberof! webrtc.Group
-     * @method webrtc.Group.remove
+     * @method webrtc.Group.add
+     * @params {string} [name] Endpoint name
+     * @params {string} [id] Endpoint id
+     */
+    var add = function (newEndpoint) {
+        var foundEndpoint;
+        var exists;
+        if (!newEndpoint.id || !newEndpoint.name) {
+            throw new Error("Can't add endpoint to a group without a name or id.");
+        }
+        for (var i = 0; i < endpoints.length; i += 1) {
+            var ept = endpoints[i];
+            if (ept.name === newEndpoint.name || ept.id === newEndpoint.id) {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            console.log("adding", newEndpoint.name, 'to group', group.id);
+            endpoints.push(newEndpoint);
+        }
+    };
+    group.listen('enter', add);
+
+    /**
+     * Send a message to the entire group
+     * @memberof! webrtc.Group
+     * @method webrtc.Group.send
      * @params {object} The message
      */
     var send = group.publicize('send', function (params) {
         params.id = group.id;
+        console.log("sending group message", params);
         return signalingChannel.publish(params);
     });
 
@@ -1314,6 +1374,8 @@ webrtc.Group = function (params) {
     var getEndpoints = group.publicize('getEndpoints', function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var clientObj = webrtc.getClient(client);
+
         if (endpoints.length > 0) {
             deferred.resolve(endpoints);
             return deferred.promise;
@@ -1321,8 +1383,12 @@ webrtc.Group = function (params) {
 
         signalingChannel.getGroupMembers({
             id: group.id
-        }).done(function (endpoints) {
-            endpoints = endpoints.map(function (endpoint) {
+        }).done(function (list) {
+            list.forEach(function (endpoint) {
+                if (endpoint.endpointId === clientObj.user.getName()) {
+                    return;
+                }
+
                 endpoint.client = client;
                 endpoint.name = endpoint.endpointId;
                 delete endpoint.endpointId;

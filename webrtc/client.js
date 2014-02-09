@@ -289,6 +289,8 @@ webrtc.Client = function (params) {
                 client: client,
                 id: params.id,
                 onMessage: params.onMessage,
+                onEnter: params.onEnter,
+                onLeave: params.onLeave,
                 onPresence: params.onPresence
             });
             addGroup(group);
@@ -306,17 +308,21 @@ webrtc.Client = function (params) {
      * @params {id} the Group id
      * @private
      */
-    var addGroup = function (params) {
+    var addGroup = function (newGroup) {
         var group;
-        if (!params || !params.id) {
-            throw new Error("Can't add group to internal tracking without group id.");
+        if (!newGroup || newGroup.className !== 'webrtc.Group') {
+            throw new Error("Can't add group to internal tracking without a group.");
         }
-        group = groups.find(function (grp) {
-            return grp.id === params.id;
+        groups.every(function (grp) {
+            if (grp.id === newGroup.id) {
+                group = grp;
+                return false;
+            }
+            return true;
         });
 
         if (!group) {
-            groups.push(params);
+            groups.push(newGroup);
         }
     };
 
@@ -327,16 +333,21 @@ webrtc.Client = function (params) {
      * @params {id} the Group id
      * @private
      */
-    var removeGroup = function (params) {
+    var removeGroup = function (newGroup) {
         var index;
         var endpoints;
-        if (!params || !params.id) {
-            throw new Error("Can't remove group from internal tracking without group id.");
+        if (!newGroup || !(newGroup instanceof webrtc.Group)) {
+            throw new Error("Can't remove group to internal tracking without a group.");
         }
 
-        index = groups.findIndex(function (grp) {
-            return grp.id === params.id;
+        groups.every(function (grp, i) {
+            if (grp.id === newGroup.id) {
+                index = i;
+                return false;
+            }
+            return true;
         });
+
         if (index > -1) {
             groups[index].getEndpoints().done(function (list) {
                 endpoints = list;
@@ -356,13 +367,19 @@ webrtc.Client = function (params) {
      * @returns {webrtc.Group}
      */
     var getGroup = that.publicize('getGroup', function (params) {
+        var group;
         if (!params || !params.id) {
             throw new Error("Can't get a group without group id.");
         }
 
-        return groups.find(function (grp) {
-            return grp.id === params.id;
+        groups.every(function (grp) {
+            if (grp.id === params.id) {
+                group = grp;
+                return false;
+            }
+            return true;
         });
+        return group;
     });
 
     /**
@@ -372,17 +389,21 @@ webrtc.Client = function (params) {
      * @params {id} the Endpoint id
      * @private
      */
-    var addEndpoint = function (params) {
+    var addEndpoint = function (newEndpoint) {
         var endpoint;
-        if (!params || !params.id) {
-            throw new Error("Can't add endpoint to internal tracking without group id.");
+        if (!newEndpoint || !newEndpoint.id) {
+            throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
         }
-        endpoint = endpoints.find(function (ept) {
-            return ept.id === params.id;
+        endpoints.every(function (ept) {
+            if (ept.id === newEndpoint.id) {
+                endpoint = ept;
+                return false;
+            }
+            return true;
         });
 
         if (!endpoint) {
-            endpoints.push(params);
+            endpoints.push(newEndpoint);
         }
     };
 
@@ -400,22 +421,29 @@ webrtc.Client = function (params) {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
-        inAGroup = groups.findIndex(function (grp) {
-            grp.getEndpoints().done(function (endpoints) {
-                return endpoints.findIndex(function (endpoint) {
-                    return endpoint.id === params.id;
+        Q.all(groups.map(function (group) {
+            return group.getEndpoints();
+        })).done(function (groupEndpoints) {
+            groupEndpoints.forEach(function (endpoints) {
+                endpoints.forEach(function (endpoint) {
+                    if (endpoint.id === params.id) {
+                        inAGroup = true;
+                    }
                 });
             });
-        });
-
-        if (inAGroup > -1) {
-            index = endpoints.findIndex(function (ept) {
-                return ept.id === params.id;
-            });
-            if (index > -1) {
-                endpoints.splice(index, 1);
+            if (inAGroup) {
+                endpoints.every(function (ept, i) {
+                    if (ept.id === params.id) {
+                        index = i;
+                        return false;
+                    }
+                    return true;
+                });
+                if (index > -1) {
+                    endpoints.splice(index, 1);
+                }
             }
-        }
+        });
     };
 
     /**
@@ -426,13 +454,19 @@ webrtc.Client = function (params) {
      * @returns {webrtc.Contact}
      */
     var getEndpoint = that.publicize('getEndpoint', function (params) {
+        var endpoint;
         if (!params || !params.id) {
             throw new Error("Can't get an endpoint without group id.");
         }
 
-        return endpoints.find(function (ept) {
-            return ept.id === params.id;
+        endpoints.every(function (ept) {
+            if (ept.id === params.id) {
+                endpoint = ept;
+                return false;
+            }
+            return true;
         });
+        return endpoint;
     });
 
     return that;
