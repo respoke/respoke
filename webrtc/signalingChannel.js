@@ -267,6 +267,16 @@ webrtc.SignalingChannel = function (params) {
         });
     });
 
+    var registerPresence = that.publicize('registerPresence', function (params) {
+        wsCall({
+            httpMethod: 'POST',
+            path: '/v1/presenceobservers',
+            parameters: {
+                endpointList: params.endpointList
+            }
+        });
+    });
+
     /**
      * Join a group.
      * @memberof! webrtc.SignalingChannel
@@ -500,6 +510,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var addHandler = that.publicize('addHandler', function (params) {
         if (socket.socket && socket.socket.open) {
+            console.log("handler added for", params.type);
             socket.on(params.type, params.handler);
         } else {
             handlerQueue[params.type].push(params.handler);
@@ -563,6 +574,7 @@ webrtc.SignalingChannel = function (params) {
             if (message.endpoint === clientObj.user.getID()) {
                 return;
             }
+            that.registerPresence({endpointList: [message.endpoint]});
 
             endpoint = webrtc.Contact({
                 client: client,
@@ -573,8 +585,11 @@ webrtc.SignalingChannel = function (params) {
 
             console.log("enter websocket message", message);
             group = clientObj.getGroup({id: message.header.channel});
-            if (group) {
-                group.fire('enter', endpoint);
+            if (group && endpoint) {
+                group.add(endpoint);
+                clientObj.addEndpoint(endpoint);
+            } else {
+                log.error("Can't add endpoint to group:", group, endpoint);
             }
         });
 
@@ -593,13 +608,24 @@ webrtc.SignalingChannel = function (params) {
 
             console.log("leave websocket message", message);
             group = clientObj.getGroup({id: message.header.channel});
-            if (group) {
-                group.fire('leave', presenceMessage);
+            if (group && endpoint) {
+                group.remove(endpoint);
+                clientObj.checkEndpointForRemoval(endpoint);
+            } else {
+                log.error("Can't remove endpoint from group:", group, endpoint);
             }
         });
 
         socket.on('message', function handleMessage(message) {
-            console.log("Unrecognized websocket message", message);
+            var endpoint;
+            message = webrtc.TextMessage({rawMessage: message});
+            endpoint = clientObj.getEndpoint({id: message.getSender()});
+            if (endpoint) {
+                endpoint.fire('message', message);
+            } else if (clientObj.onMessage) {
+                clientObj.onMessage(message);
+            }
+            console.log("Unrecognized websocket message", message.getSender(), message.getText());
         });
 
         socket.on('connect', function handleConnect() {
@@ -905,10 +931,13 @@ webrtc.TextMessage = function (params) {
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (params) {
-        if (params && params.message) {
-            rawMessage = params.message;
+        if (params) {
+            rawMessage = params;
         }
-        payload = rawMessage;
+        payload = rawMessage.message || rawMessage.body;
+        if (rawMessage.header) {
+            sender = rawMessage.header.from;
+        }
     });
 
     /**
@@ -939,6 +968,16 @@ webrtc.TextMessage = function (params) {
      */
     var getRecipient = that.publicize('getRecipient', function () {
         return recipient;
+    });
+
+    /**
+     * Get the sender.
+     * @memberof! webrtc.TextMessage
+     * @method webrtc.TextMessage.getSender
+     * @returns {string}
+     */
+    var getSender = that.publicize('getSender', function () {
+        return sender;
     });
 
     if (rawMessage) {
@@ -1235,38 +1274,23 @@ webrtc.Group = function (params) {
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     var endpoints = [];
     group.endpoints = endpoints;
-    var onMessage;
-    var onEnter;
-    var onLeave;
-    var onPresence;
+    var onMessage = params.onMessage;
+    var onJoin = params.onJoin;
+    var onLeave = params.onLeave;
+    var onPresence = params.onPresence;
     group.className = 'webrtc.Group';
     delete group.client;
+    delete group.onMessage;
+    delete group.onPresence;
+    delete group.onJoin;
+    delete group.onLeave;
+    group.listen('join', onJoin);
+    group.listen('message', onMessage);
+    group.listen('leave', onLeave);
+    group.listen('presence', onPresence);
 
     if (!group.id) {
         throw new Error("Can't create a group without an ID.");
-    }
-
-    if (group.onMessage) {
-        onMessage = group.onMessage;
-        delete group.onMessage;
-        group.listen('message', onMessage);
-    }
-
-    if (group.onPresence) {
-        onPresence = group.onPresence;
-        delete group.onPresence;
-    }
-
-    if (group.onEnter) {
-        onEnter = group.onEnter;
-        delete group.onEnter;
-        group.listen('enter', onEnter);
-    }
-
-    if (group.onLeave) {
-        onEnter = group.onLeave;
-        delete group.onLeave;
-        group.listen('leave', onLeave);
     }
 
     /**
@@ -1276,7 +1300,7 @@ webrtc.Group = function (params) {
      * @params {string} [name] Endpoint name
      * @params {string} [id] Endpoint id
      */
-    var remove = function (newEndpoint) {
+    var remove = group.publicize('remove', function (newEndpoint) {
         if (!newEndpoint.id || !newEndpoint.name) {
             throw new Error("Can't remove endpoint from a group without a name or id.");
         }
@@ -1285,10 +1309,10 @@ webrtc.Group = function (params) {
             if (endpoint.id === newEndpoint.id || endpoint.name === newEndpoint.name) {
                 console.log("removing", newEndpoint.name, 'from group', group.id);
                 endpoints.splice(i, 1);
+                group.fire('leave', endpoint);
             }
         }
-    };
-    group.listen('leave', remove);
+    });
 
     /**
      * Add an endpoint to a group
@@ -1297,7 +1321,7 @@ webrtc.Group = function (params) {
      * @params {string} [name] Endpoint name
      * @params {string} [id] Endpoint id
      */
-    var add = function (newEndpoint) {
+    var add = group.publicize('add', function (newEndpoint) {
         var foundEndpoint;
         var exists;
         if (!newEndpoint.id || !newEndpoint.name) {
@@ -1313,9 +1337,9 @@ webrtc.Group = function (params) {
         if (!exists) {
             console.log("adding", newEndpoint.name, 'to group', group.id);
             endpoints.push(newEndpoint);
+            group.fire('join', newEndpoint);
         }
-    };
-    group.listen('enter', add);
+    });
 
     /**
      * Send a message to the entire group
@@ -1348,13 +1372,25 @@ webrtc.Group = function (params) {
         signalingChannel.getGroupMembers({
             id: group.id
         }).done(function (list) {
+            var endpointList = [];
             list.forEach(function (endpoint) {
                 endpoint.client = client;
                 endpoint.name = endpoint.endpointId;
                 endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
-                add(webrtc.Contact(endpoint));
+                endpoint = webrtc.Contact(endpoint);
+                if (endpointList.indexOf(endpoint.getID()) === -1) {
+                    endpointList.push(endpoint.getID());
+                    add(endpoint);
+                    clientObj.addEndpoint(endpoint);
+                }
             });
+
+            if (endpointList.length > 0) {
+                signalingChannel.registerPresence({
+                    endpointList: endpointList
+                });
+            }
             deferred.resolve(endpoints);
         }, function (err) {
             deferred.reject(err);

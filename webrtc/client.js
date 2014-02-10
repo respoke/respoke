@@ -35,6 +35,13 @@ webrtc.Client = function (params) {
     var clientSettings = params.clientSettings || {};
     var groups = [];
     var endpoints = [];
+    var onMessage = function () {};
+    var onCall = function () {};
+    var onGroupJoin = function () {};
+    var onGroupLeave = function () {};
+    var onConnect = function () {};
+    var onDisconnect = function () {};
+    var onReconnect = function () {};
 
     if (!clientSettings.appId) {
         throw new Error("appId is a required parameter to Client.");
@@ -73,7 +80,6 @@ webrtc.Client = function (params) {
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
         app.authToken = params.authToken;
-        delete params.authToken;
         signalingChannel.open({
             appId: app.appId,
             token: app.authToken
@@ -85,20 +91,30 @@ webrtc.Client = function (params) {
             deferred.reject("Couldn't connect to brightstream.");
             log.error(err.message);
         }).done(function (user) {
-            if (!params.onIncomingCall) {
-                log.warn("No onIncomingCall passed to Client.connect.");
-            } else {
-                user.listen('call', params.onIncomingCall);
-            }
+            connected = true;
+
+            onMessage = params.onMessage || onMessage;
+            onCall = params.onCall || onCall;
+            onGroupJoin = params.onGroupJoin || onGroupJoin;
+            onGroupLeave = params.onGroupLeave || onGroupLeave;
+            onConnect = params.onConnect || onConnect;
+            onDisconnect = params.onDisconnect || onDisconnect;
+            onReconnect = params.onReconnect || onReconnect;
 
             user.setOnline(); // Initiates presence.
+            user.listen('call', onCall);
+            user.listen('join', onGroupJoin);
+            user.listen('leave', onGroupLeave);
+            that.listen('connect', onConnect);
+            that.listen('disconnect', onDisconnect);
+            that.listen('reconnect', onReconnect);
             that.user = user;
             log.info('logged in as user ' + user.getName());
             log.debug(user);
             //updateTurnCredentials(); // TODO fix TURN credentials with Endpoints instead of Users.
 
+            that.fire('connect', user);
             deferred.resolve(user);
-            connected = true;
         }, function (err) {
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message);
@@ -150,35 +166,6 @@ webrtc.Client = function (params) {
     });
 
     /**
-     * Log out specified UserSession or all UserSessions if no usernames are passed. Sets
-     * Client.user to null.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.logout
-     * @param {function} onSuccess
-     * @param {function} onError
-     * @fires webrtc.User#loggedout
-     * @fires webrtc.Client#loggedout
-     */
-    var logout = that.publicize('logout', function (params) {
-        if (that.user === null) {
-            return;
-        }
-
-        var logoutPromise = that.identityProvider.logout(params);
-
-        logoutPromise.done(function successHandler() {
-            that.user.fire('loggedout');
-            that.user = null;
-            that.fire('loggedout');
-            clearInterval(turnRefresher);
-        }, function errorHandler(err) {
-            throw err;
-        });
-
-        return logoutPromise;
-    });
-
-    /**
      * Determine whether the Client has authenticated with its appKey against Digium services
      * by checking the validity of the apiToken.
      * @memberof! webrtc.Client
@@ -187,19 +174,6 @@ webrtc.Client = function (params) {
      */
     var isConnected = that.publicize('isConnected', function () {
         return !!connected;
-    });
-
-    /**
-     * Determine whether any Users have logged in by checking the existence of logged-in Endpoints.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.isLoggedIn
-     * @returns {boolean}
-     */
-    var isLoggedIn = that.publicize('isLoggedIn', function () {
-        if (that.user) {
-            return !!that.user.getUserSession().isLoggedIn();
-        }
-        return false;
     });
 
     /**
@@ -370,23 +344,27 @@ webrtc.Client = function (params) {
      * @params {id} the Endpoint id
      * @private
      */
-    var addEndpoint = function (newEndpoint) {
-        var endpoint;
+    var addEndpoint = that.publicize('addEndpoint', function (newEndpoint) {
+        var absent = false;
         if (!newEndpoint || !newEndpoint.id) {
             throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
         }
-        endpoints.every(function (ept) {
+        console.log('addEndpoints before', endpoints);
+        absent = endpoints.every(function (ept) {
             if (ept.id === newEndpoint.id) {
-                endpoint = ept;
+                console.log('addEndpoints false');
                 return false;
             }
+            console.log('addEndpoints true');
             return true;
         });
 
-        if (!endpoint) {
+        console.log('addEndpoints checking absent', absent);
+        if (absent) {
             endpoints.push(newEndpoint);
         }
-    };
+        console.log('addEndpoints after', endpoints);
+    });
 
     /**
      * Remove an Endpoint
@@ -395,13 +373,14 @@ webrtc.Client = function (params) {
      * @params {id} the Endpoint id
      * @private
      */
-    var checkEndpointForRemoval = function (params) {
+    var checkEndpointForRemoval = that.publicize('checkEndpointForRemoval', function (params) {
         var inAGroup;
         var index;
         if (!params || !params.id) {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
+        console.log('checkEndpointForRemoval before', endpoints);
         Q.all(groups.map(function (group) {
             return group.getEndpoints();
         })).done(function (groupEndpoints) {
@@ -424,8 +403,9 @@ webrtc.Client = function (params) {
                     endpoints.splice(index, 1);
                 }
             }
+            console.log('checkEndpointForRemoval after', endpoints);
         });
-    };
+    });
 
     /**
      * Find an endpoint by id and return it.
@@ -440,7 +420,9 @@ webrtc.Client = function (params) {
             throw new Error("Can't get an endpoint without group id.");
         }
 
+        console.log("looking for", params.id, 'in', endpoints);
         endpoints.every(function (ept) {
+            console.log('comparing', ept.id, params.id);
             if (ept.id === params.id) {
                 endpoint = ept;
                 return false;
