@@ -27,7 +27,7 @@ webrtc.SignalingChannel = function (params) {
     xhr.withCredentials = true;
 
     var handlerQueue = {
-        'chat': [],
+        'message': [],
         'signal': [],
         'presence': []
     };
@@ -143,7 +143,7 @@ webrtc.SignalingChannel = function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
         call({
-            path: '/v1/authsessions',
+            path: '/v1/endpointconnections',
             httpMethod: 'DELETE',
             responseHandler: function (response) {
                 if (!response.error) {
@@ -317,11 +317,11 @@ webrtc.SignalingChannel = function (params) {
         }
 
         return wsCall({
-            path: '/v1/chat',
+            path: '/v1/messages',
             httpMethod: 'POST',
             parameters: {
                 'to': recipient,
-                'text': msgText
+                'message': msgText
             },
             onSuccess: params.onSuccess,
             onError: params.onError
@@ -517,167 +517,130 @@ webrtc.SignalingChannel = function (params) {
     var authenticate = that.publicize('authenticate', function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        appId = params.appId;
+        var pieces = [];
+        var protocol = null;
+        var host = null;
+        var port = null;
 
-        call({
-            httpMethod: "POST",
-            path: '/v1/authsessions',
-            parameters: {
-                'username': params.username,
-                'password': params.password,
-                'appId': params.appId
-            },
-            responseHandler: function (response) {
-                var pieces = [];
-                var protocol = null;
-                var host = null;
-                var port = null;
+        pieces = baseURL.split(/:\/\//);
+        protocol = pieces[0];
+        pieces = pieces[1].split(/:/);
+        host = pieces[0];
+        port = pieces[1];
 
-                if (response.code !== 200) {
-                    deferred.reject(new Error(response.message));
+        socket = io.connect(baseURL, {
+            'host': host,
+            'port': port,
+            'protocol': protocol,
+            'secure': (protocol === 'https')
+        });
+
+        socket.on('pubsub', function handleMessage(message) {
+            var group;
+            var groupMessage;
+            console.log("pubsub websocket message", message);
+
+            groupMessage = webrtc.GroupMessage({
+                sender: message.header.from,
+                senderSession: message.header.fromConnection,
+                recipient: message.header.channel,
+                rawMessage: message.message
+            });
+
+            group = clientObj.getGroup({id: message.header.channel});
+            if (group) {
+                group.fire('message', groupMessage);
+            } else if (clientObj.onMessage) {
+                clientObj.onMessage(groupMessage);
+            }
+        });
+
+        socket.on('enter', function handleMessage(message) {
+            var group;
+            var presenceMessage;
+            var endpoint;
+
+            if (message.endpoint === clientObj.user.getID()) {
+                return;
+            }
+
+            endpoint = webrtc.Contact({
+                client: client,
+                id: message.endpoint,
+                name: message.endpoint,
+                connection: message.connectionId
+            });
+
+            console.log("enter websocket message", message);
+            group = clientObj.getGroup({id: message.header.channel});
+            if (group) {
+                group.fire('enter', endpoint);
+            }
+        });
+
+        socket.on('leave', function handleMessage(message) {
+            var group;
+            var presenceMessage;
+            var endpoint;
+
+            if (message.endpoint === clientObj.user.getID()) {
+                return;
+            }
+
+            endpoint = clientObj.getEndpoint({
+                id: message.endpoint
+            });
+
+            console.log("leave websocket message", message);
+            group = clientObj.getGroup({id: message.header.channel});
+            if (group) {
+                group.fire('leave', presenceMessage);
+            }
+        });
+
+        socket.on('message', function handleMessage(message) {
+            console.log("Unrecognized websocket message", message);
+        });
+
+        socket.on('connect', function handleConnect() {
+            Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
+                if (!handlerQueue[category]) {
                     return;
                 }
 
-                pieces = baseURL.split(/:\/\//);
-                protocol = pieces[0];
-                pieces = pieces[1].split(/:/);
-                host = pieces[0];
-                port = pieces[1];
-
-                socket = io.connect(baseURL, {
-                    'host': host,
-                    'port': port,
-                    'protocol': protocol,
-                    'secure': (protocol === 'https')
+                handlerQueue[category].forEach(function addEachHandler(handler) {
+                    socket.on(category, handler);
                 });
+                handlerQueue[category] = [];
+            });
 
-                /**
-                 * Begin development override of socket.on and socket.emit.
-                 */
-                /*(function () {
-                    var emit = socket.emit;
-                    socket.emit = function () {
-                        console.log('***', 'emit', Array.prototype.slice.call(arguments));
-                        emit.apply(socket, arguments);
-                    };
-                    var $emit = socket.$emit;
-                    socket.$emit = function () {
-                        console.log('***', 'on', Array.prototype.slice.call(arguments));
-                        $emit.apply(socket, arguments);
-                    };
-                })();*/
-                /**
-                 * End override
-                 */
-
-                socket.on('pubsub', function handleMessage(message) {
-                    var group;
-                    var groupMessage;
-                    console.log("pubsub websocket message", message);
-
-                    groupMessage = webrtc.GroupMessage({
-                        sender: message.header.from,
-                        senderSession: message.header.fromConnection,
-                        recipient: message.header.channelName,
-                        rawMessage: message.message
-                    });
-
-                    group = clientObj.getGroup({id: message.header.channelName});
-                    if (group) {
-                        group.fire('message', groupMessage);
-                    } else if (clientObj.onMessage) {
-                        clientObj.onMessage(groupMessage);
-                    }
+            wsCall({
+                path: '/v1/endpointconnections',
+                httpMethod: 'POST'
+            }).then(function (res) {
+                log.debug('endpointconnections result', res);
+                var user = webrtc.User({
+                    loggedIn: true,
+                    timeLoggedIn: new Date(),
+                    client: client,
+                    id: res.id,
+                    name: res.endpointId,
+                    username: res.endpointId
                 });
+                deferred.resolve(user);
+            }, function (err) {
+                log.debug("Couldn't register endpoint.", err);
+                deferred.reject(err);
+            });
+        });
 
-                socket.on('enter', function handleMessage(message) {
-                    var group;
-                    var presenceMessage;
-                    var endpoint;
-
-                    if (message.endpoint === clientObj.user.getID()) {
-                        return;
-                    }
-
-                    endpoint = webrtc.Contact({
-                        client: client,
-                        id: message.endpoint,
-                        name: message.endpoint,
-                        connection: message.connectionId
-                    });
-
-                    console.log("enter websocket message", message);
-                    group = clientObj.getGroup({id: message.header.channelName});
-                    if (group) {
-                        group.fire('enter', endpoint);
-                    }
+        that.addHandler({
+            type: 'signal',
+            handler: function signalHandler(message) {
+                var message = webrtc.SignalingMessage({
+                    'rawMessage': message
                 });
-
-                socket.on('leave', function handleMessage(message) {
-                    var group;
-                    var presenceMessage;
-                    var endpoint;
-
-                    if (message.endpoint === clientObj.user.getID()) {
-                        return;
-                    }
-
-                    endpoint = clientObj.getEndpoint({
-                        id: message.endpoint
-                    });
-
-                    console.log("leave websocket message", message);
-                    group = clientObj.getGroup({id: message.header.channelName});
-                    if (group) {
-                        group.fire('leave', presenceMessage);
-                    }
-                });
-
-                socket.on('message', function handleMessage(message) {
-                    console.log("Unrecognized websocket message", message);
-                });
-
-                socket.on('connect', function handleConnect() {
-                    Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
-                        if (!handlerQueue[category]) {
-                            return;
-                        }
-
-                        handlerQueue[category].forEach(function addEachHandler(handler) {
-                            socket.on(category, handler);
-                        });
-                        handlerQueue[category] = [];
-                    });
-
-                    wsCall({
-                        path: '/v1/endpointconnections',
-                        httpMethod: 'POST'
-                    }).then(function (res) {
-                        log.debug('endpointconnections result', res);
-                        var user = webrtc.User({
-                            loggedIn: true,
-                            timeLoggedIn: new Date(),
-                            client: client,
-                            id: res.endpointId,
-                            name: params.username,
-                            username: params.uername
-                        });
-                        deferred.resolve(user);
-                    }, function (err) {
-                        log.debug("Couldn't register endpoint.", err);
-                        deferred.reject(err);
-                    });
-                });
-
-                that.addHandler({
-                    type: 'signal',
-                    handler: function signalHandler(message) {
-                        var message = webrtc.SignalingMessage({
-                            'rawMessage': message
-                        });
-                        that.routeSignal(message);
-                    }
-                });
+                that.routeSignal(message);
             }
         });
         return deferred.promise;
@@ -1271,6 +1234,7 @@ webrtc.Group = function (params) {
     var client = params.client;
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     var endpoints = [];
+    group.endpoints = endpoints;
     var onMessage;
     var onEnter;
     var onLeave;
@@ -1385,14 +1349,11 @@ webrtc.Group = function (params) {
             id: group.id
         }).done(function (list) {
             list.forEach(function (endpoint) {
-                if (endpoint.endpointId === clientObj.user.getName()) {
-                    return;
-                }
-
                 endpoint.client = client;
                 endpoint.name = endpoint.endpointId;
+                endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
-                return webrtc.Contact(endpoint);
+                add(webrtc.Contact(endpoint));
             });
             deferred.resolve(endpoints);
         }, function (err) {

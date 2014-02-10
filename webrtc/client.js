@@ -36,13 +36,11 @@ webrtc.Client = function (params) {
     var groups = [];
     var endpoints = [];
 
-    ['appId', 'token'].forEach(function (name) {
-        if (!clientSettings[name]) {
-            throw new Error(name + " is a required parameter to Client.");
-        }
-        app[name] = clientSettings[name];
-        delete clientSettings[name];
-    });
+    if (!clientSettings.appId) {
+        throw new Error("appId is a required parameter to Client.");
+    }
+    app.appId = clientSettings.appId;
+    delete clientSettings.appId;
 
     log.debug("Client ID is ", client);
 
@@ -68,17 +66,44 @@ webrtc.Client = function (params) {
      * a token to be used in API requests.
      * @memberof! webrtc.Client
      * @method webrtc.Client.connect
+     * @param {string} authToken
      */
-    var connect = that.publicize('connect', function () {
-        var connectPromise = signalingChannel.open({
-            appId: app.appId,
-            token: app.token
-        });
+    var connect = that.publicize('connect', function (params) {
+        params = params || {};
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
-        connectPromise.then(function () {
+        app.authToken = params.authToken;
+        delete params.authToken;
+        signalingChannel.open({
+            appId: app.appId,
+            token: app.authToken
+        }).then(function () {
+            return signalingChannel.authenticate({
+                appId: app.appId
+            });
+        }, function (err) {
+            deferred.reject("Couldn't connect to brightstream.");
+            log.error(err.message);
+        }).done(function (user) {
+            if (!params.onIncomingCall) {
+                log.warn("No onIncomingCall passed to Client.connect.");
+            } else {
+                user.listen('call', params.onIncomingCall);
+            }
+
+            user.setOnline(); // Initiates presence.
+            that.user = user;
+            log.info('logged in as user ' + user.getName());
+            log.debug(user);
+            //updateTurnCredentials(); // TODO fix TURN credentials with Endpoints instead of Users.
+
+            deferred.resolve(user);
             connected = true;
+        }, function (err) {
+            deferred.reject("Couldn't create an endpoint.");
+            log.error(err.message);
         });
-        return connectPromise;
+        return deferred.promise;
     });
 
     /**
@@ -103,50 +128,6 @@ webrtc.Client = function (params) {
      */
     var getID = that.publicize('getID', function () {
         return client;
-    });
-
-    /**
-     * Log in a User using the identity provider specified in the application settings. Adds
-     * the UserSession to Client.userSessions.
-     * Sends presence "available."
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.login
-     * @returns {Promise<webrtc.User>}
-     * @param {object} username Optional user account to log in with.
-     * @param {string} password Optional password or oAuth token.
-     * @param {function} onSuccess
-     * @param {function} onError
-     * @returns {Promise<webrtc.User>}
-     */
-    var login = that.publicize('login', function (params) {
-        var userPromise;
-        var deferred;
-        params = params || {};
-        params.appId = app.appId;
-
-        if (connected !== true) {
-            deferred = webrtc.makeDeferred(function fakeHandler() {
-                // This will never happen.
-            }, function errorHandler(error) {
-                throw error;
-            });
-            deferred.reject(new Error("Can't log in, signaling channel is not open."));
-            return deferred.promise;
-        }
-
-        userPromise = that.identityProvider.login(params);
-        userPromise.done(function successHandler(user) {
-            user.setOnline(); // Initiates presence.
-            that.user = user;
-            log.info('logged in as user ' + user.getName());
-            log.debug(user);
-
-            updateTurnCredentials();
-        }, function errorHandler(error) {
-            throw error;
-        });
-
-        return userPromise;
     });
 
     /**
