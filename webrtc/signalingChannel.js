@@ -510,7 +510,7 @@ webrtc.SignalingChannel = function (params) {
      */
     var addHandler = that.publicize('addHandler', function (params) {
         if (socket.socket && socket.socket.open) {
-            console.log("handler added for", params.type);
+            console.log('socket.on', params.type);
             socket.on(params.type, params.handler);
         } else {
             handlerQueue[params.type].push(params.handler);
@@ -562,14 +562,19 @@ webrtc.SignalingChannel = function (params) {
             if (group) {
                 group.fire('message', groupMessage);
             } else if (clientObj.onMessage) {
-                clientObj.onMessage(groupMessage);
+                clientObj.fire('message', groupMessage);
             }
+        });
+
+        socket.on('presence', function handleMessage(message) {
+            console.log('socket.on presence empty');
         });
 
         socket.on('enter', function handleMessage(message) {
             var group;
             var presenceMessage;
             var endpoint;
+            console.log('ENTER');
 
             if (message.endpoint === clientObj.user.getID()) {
                 return;
@@ -623,7 +628,7 @@ webrtc.SignalingChannel = function (params) {
             if (endpoint) {
                 endpoint.fire('message', message);
             } else if (clientObj.onMessage) {
-                clientObj.onMessage(message);
+                clientObj.fire('message', message);
             }
             console.log("Unrecognized websocket message", message.getSender(), message.getText());
         });
@@ -635,6 +640,7 @@ webrtc.SignalingChannel = function (params) {
                 }
 
                 handlerQueue[category].forEach(function addEachHandler(handler) {
+                    console.log('socket.on', category);
                     socket.on(category, handler);
                 });
                 handlerQueue[category] = [];
@@ -1273,25 +1279,45 @@ webrtc.Group = function (params) {
     var client = params.client;
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
     var endpoints = [];
+
+    if (!group.id) {
+        throw new Error("Can't create a group without an ID.");
+    }
+
     group.endpoints = endpoints;
-    var onMessage = params.onMessage;
-    var onJoin = params.onJoin;
-    var onLeave = params.onLeave;
-    var onPresence = params.onPresence;
     group.className = 'webrtc.Group';
+    group.listen('join', params.onJoin);
+    group.listen('message', params.onMessage);
+    group.listen('leave', params.onLeave);
+    group.listen('presence', params.onPresence);
+
     delete group.client;
     delete group.onMessage;
     delete group.onPresence;
     delete group.onJoin;
     delete group.onLeave;
-    group.listen('join', onJoin);
-    group.listen('message', onMessage);
-    group.listen('leave', onLeave);
-    group.listen('presence', onPresence);
 
-    if (!group.id) {
-        throw new Error("Can't create a group without an ID.");
-    }
+    /**
+     * Leave a group
+     * @memberof! webrtc.Group
+     * @method webrtc.Group.leave
+     * @param {function} onSuccess
+     * @param {function} onError
+     * @return {Promise}
+     */
+    var leave = group.publicize('leave', function (params) {
+        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var clientObj = webrtc.getClient(client);
+        signalingChannel.leaveGroup({
+            id: group.id
+        }).done(function () {
+            clientObj.user.fire('leave', group);
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject();
+        });
+        return deferred.promise;
+    });
 
     /**
      * Remove an endpoint from a group
@@ -1335,9 +1361,8 @@ webrtc.Group = function (params) {
             }
         }
         if (!exists) {
-            console.log("adding", newEndpoint.name, 'to group', group.id);
             endpoints.push(newEndpoint);
-            group.fire('join', newEndpoint);
+            group.fire('join', group, newEndpoint);
         }
     });
 

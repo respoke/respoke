@@ -35,13 +35,6 @@ webrtc.Client = function (params) {
     var clientSettings = params.clientSettings || {};
     var groups = [];
     var endpoints = [];
-    var onMessage = function () {};
-    var onCall = function () {};
-    var onGroupJoin = function () {};
-    var onGroupLeave = function () {};
-    var onConnect = function () {};
-    var onDisconnect = function () {};
-    var onReconnect = function () {};
 
     if (!clientSettings.appId) {
         throw new Error("appId is a required parameter to Client.");
@@ -93,22 +86,17 @@ webrtc.Client = function (params) {
         }).done(function (user) {
             connected = true;
 
-            onMessage = params.onMessage || onMessage;
-            onCall = params.onCall || onCall;
-            onGroupJoin = params.onGroupJoin || onGroupJoin;
-            onGroupLeave = params.onGroupLeave || onGroupLeave;
-            onConnect = params.onConnect || onConnect;
-            onDisconnect = params.onDisconnect || onDisconnect;
-            onReconnect = params.onReconnect || onReconnect;
-
             user.setOnline(); // Initiates presence.
-            user.listen('call', onCall);
-            user.listen('join', onGroupJoin);
-            user.listen('leave', onGroupLeave);
-            that.listen('connect', onConnect);
-            that.listen('disconnect', onDisconnect);
-            that.listen('reconnect', onReconnect);
+            user.listen('call', params.onCall);
+            user.listen('join', params.onGroupJoin);
+            user.listen('leave', params.onGroupLeave);
             that.user = user;
+
+            that.listen('message', params.onMessage);
+            that.listen('connect', params.onConnect);
+            that.listen('disconnect', params.onDisconnect);
+            that.listen('reconnect', params.onReconnect);
+
             log.info('logged in as user ' + user.getName());
             log.debug(user);
             //updateTurnCredentials(); // TODO fix TURN credentials with Endpoints instead of Users.
@@ -249,6 +237,7 @@ webrtc.Client = function (params) {
                 onPresence: params.onPresence
             });
             addGroup(group);
+            that.user.fire('join', group);
             deferred.resolve(group);
         }, function (err) {
             deferred.reject(err);
@@ -349,21 +338,16 @@ webrtc.Client = function (params) {
         if (!newEndpoint || !newEndpoint.id) {
             throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
         }
-        console.log('addEndpoints before', endpoints);
         absent = endpoints.every(function (ept) {
             if (ept.id === newEndpoint.id) {
-                console.log('addEndpoints false');
                 return false;
             }
-            console.log('addEndpoints true');
             return true;
         });
 
-        console.log('addEndpoints checking absent', absent);
         if (absent) {
             endpoints.push(newEndpoint);
         }
-        console.log('addEndpoints after', endpoints);
     });
 
     /**
