@@ -244,7 +244,7 @@ webrtc.Client = function (params) {
                 client: client,
                 id: params.id,
                 onMessage: params.onMessage,
-                onEnter: params.onEnter,
+                onJoin: params.onJoin,
                 onLeave: params.onLeave,
                 onPresence: params.onPresence
             });
