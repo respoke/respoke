@@ -11,7 +11,6 @@
  * @returns {webrtc.Client}
  * @property {object} clientSettings Client settings.
  * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
- * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
  * @property {function} chatMessage Class to use for chat messages.
  * @property {function} signalingMessage Class to use for signaling.
  * @property {function} presenceMessage Class to use for presence messages.
@@ -57,7 +56,6 @@ webrtc.Client = function (params) {
     };
 
     signalingChannel = webrtc.SignalingChannel({'client': client});
-    that.identityProvider = webrtc.IdentityProvider({'client': client});
     that.user = null;
     log.debug(signalingChannel);
 

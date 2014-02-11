@@ -77,6 +77,17 @@ webrtc.SignalingChannel = function (params) {
         return deferred.promise;
     });
 
+    var deleteAppAuthSession = function () {
+        call({
+            path: '/v1/appauthsessions',
+            httpMethod: 'DELETE',
+            responseHandler: function (response) {
+                socket.disconnect();
+                state = 'closed';
+            }
+        });
+    };
+
     /**
      * Close a connection to the REST API. Invalidate the appauthsession.
      * @memberof! webrtc.SignalingChannel
@@ -87,19 +98,11 @@ webrtc.SignalingChannel = function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
 
-        call({
-            path: '/v1/appauthsessions',
+        wsCall({
+            path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
-            responseHandler: function (response) {
-                if (!response.error) {
-                    socket.disconnect();
-                    deferred.resolve("App session ended.");
-                    state = 'open';
-                } else {
-                    deferred.reject(new Error("Couldn't end app session."));
-                }
-            }
-        });
+            objectId: clientObj.user.getID()
+        }).done(deleteAppAuthSession, deleteAppAuthSession);
 
         return deferred.promise;
     });
@@ -131,30 +134,6 @@ webrtc.SignalingChannel = function (params) {
      */
     var isOpen = that.publicize('isOpen', function () {
         return state === 'open';
-    });
-
-    /**
-     * Signal to log the user out.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.logout
-     * @returns Promise<String>
-     */
-    var logout = that.publicize('logout', function (params) {
-        params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        call({
-            path: '/v1/endpointconnections',
-            httpMethod: 'DELETE',
-            responseHandler: function (response) {
-                if (!response.error) {
-                    socket.disconnect();
-                    deferred.resolve("Logged out.");
-                } else {
-                    deferred.reject(new Error("Couldn't log out."));
-                }
-            }
-        });
-        return deferred.promise;
     });
 
     /**
@@ -256,7 +235,8 @@ webrtc.SignalingChannel = function (params) {
             return deferred.promise;
         }
 
-        return wsCall({
+        console.log("pubsub publishing", params.id, params.message);
+        wsCall({
             path: '/v1/channels/%s/publish/',
             objectId: params.id,
             httpMethod: 'POST',
@@ -264,7 +244,12 @@ webrtc.SignalingChannel = function (params) {
                 id: params.id,
                 message: params.message
             }
+        }).done(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+        return deferred.promise;
     });
 
     var registerPresence = that.publicize('registerPresence', function (params) {
@@ -549,14 +534,21 @@ webrtc.SignalingChannel = function (params) {
         socket.on('pubsub', function handleMessage(message) {
             var group;
             var groupMessage;
+
+            if (message.header.from === clientObj.user.getName()) {
+                return;
+            }
+
             console.log("pubsub websocket message", message);
 
-            groupMessage = webrtc.GroupMessage({
+            groupMessage = webrtc.TextMessage({
                 sender: message.header.from,
                 senderSession: message.header.fromConnection,
                 recipient: message.header.channel,
-                rawMessage: message.message
+                rawMessage: message
             });
+            console.log('sender', groupMessage.getSender());
+            console.log('text', groupMessage.getText());
 
             group = clientObj.getGroup({id: message.header.channel});
             if (group) {
@@ -1298,6 +1290,17 @@ webrtc.Group = function (params) {
     delete group.onLeave;
 
     /**
+     * Get the ID of the group
+     * @memberof! webrtc.Group
+     * @method webrtc.Group.getID
+     * @return {string}
+     */
+    var getID = group.publicize('getID', function () {
+        return group.id;
+    });
+    group.publicize('getName', getID);
+
+    /**
      * Leave a group
      * @memberof! webrtc.Group
      * @method webrtc.Group.leave
@@ -1369,10 +1372,10 @@ webrtc.Group = function (params) {
     /**
      * Send a message to the entire group
      * @memberof! webrtc.Group
-     * @method webrtc.Group.send
+     * @method webrtc.Group.sendMessage
      * @params {object} The message
      */
-    var send = group.publicize('send', function (params) {
+    var sendMessage = group.publicize('sendMessage', function (params) {
         params.id = group.id;
         console.log("sending group message", params);
         return signalingChannel.publish(params);
