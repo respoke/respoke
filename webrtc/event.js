@@ -29,7 +29,7 @@ webrtc.EventEmitter = function (params) {
      */
     var listen = that.publicize('listen', function (eventType, listener) {
         eventList[eventType] = eventList[eventType] || [];
-        if (typeof listener === 'function') {
+        if (typeof listener === 'function' && eventList[eventType].indexOf(listener) === -1) {
             eventList[eventType].push(listener);
         }
     });
