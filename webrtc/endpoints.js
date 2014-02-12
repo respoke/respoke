@@ -421,6 +421,8 @@ webrtc.User = function (params) {
         var call = null;
         var contact = null;
         var callSettings = null;
+        var clientObj = webrtc.getClient(client);
+        console.log('getCallByContact', params);
 
         calls.forEach(function findCall(one) {
             if (one.remoteEndpoint === params.contactId) {
@@ -432,8 +434,9 @@ webrtc.User = function (params) {
         });
 
         if (call === null && params.create === true) {
+            contact = clientObj.getEndpoint({id: params.contactId});
             try {
-                callSettings = webrtc.getClient(client).getCallSettings();
+                callSettings = clientObj.getCallSettings();
                 call = contact.call({
                     callSettings: callSettings,
                     initiator: false
