@@ -52,7 +52,7 @@ brightstream.EventEmitter = function (params) {
         }
 
         // Remove all listeners from this event.
-        if (listener === undefined) {
+        if (listener === undefined || !eventList[eventType]) {
             eventList[eventType] = [];
             return;
         }
