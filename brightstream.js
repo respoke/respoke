@@ -54,6 +54,17 @@ brightstream.getClient = function (id) {
 /**
  * @static
  * @member brightstream
+ * @returns {brightstream.Client}
+ * @params {object} Parameters to the Client constructor
+ */
+brightstream.createClient = function (params) {
+    "use strict";
+    return brightstream.Client(params);
+};
+
+/**
+ * @static
+ * @member brightstream
  * @returns {number}
  */
 brightstream.makeUniqueID = function () {
