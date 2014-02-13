@@ -1,23 +1,23 @@
 /**
  * Create a new SignalingChannel.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.SignalingChannel
+ * @class brightstream.SignalingChannel
  * @constructor
  * @classdesc REST API Signaling class.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.SignalingChannel}
+ * @returns {brightstream.SignalingChannel}
  */
- /*global webrtc: false */
-webrtc.SignalingChannel = function (params) {
+ /*global brightstream: false */
+brightstream.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventEmitter(params);
+    var that = brightstream.EventEmitter(params);
     delete that.client;
-    that.className = 'webrtc.SignalingChannel';
+    that.className = 'brightstream.SignalingChannel';
 
-    var clientObj = webrtc.getClient(client);
+    var clientObj = brightstream.getClient(client);
     var state = 'new';
     var socket = null;
     var clientSettings = null; // client is not set up yet
@@ -44,16 +44,16 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Open a connection to the REST API and validate the app, creating an appauthsession.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.open
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.open
      * @param token The App's auth token
      * @param appId The App's id
      * @return {Promise<statusString>}
      */
     var open = that.publicize('open', function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        clientSettings = webrtc.getClient(client).getClientSettings();
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        clientSettings = brightstream.getClient(client).getClientSettings();
         baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337';
 
         call({
@@ -90,13 +90,13 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Close a connection to the REST API. Invalidate the appauthsession.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.close
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.close
      * @return {Promise<statusString>}
      */
     var close = that.publicize('close', function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         wsCall({
             path: '/v1/endpointconnections/%s/',
@@ -109,17 +109,17 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Generate a unique ID to identify the call.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.generateCallID
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.generateCallID
      * @private
      * @returns {string}
      */
-    var generateCallID = webrtc.makeUniqueID;
+    var generateCallID = brightstream.makeUniqueID;
 
     /**
      * Return the state of the signaling channel
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getState
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.getState
      * @return {string} The state of the signaling channel.
     */
     var getState = that.publicize('getState', function () {
@@ -128,8 +128,8 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Whether signaling channel is open.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.isOpen
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.isOpen
      * @return {boolean}
      */
     var isOpen = that.publicize('isOpen', function () {
@@ -139,8 +139,8 @@ webrtc.SignalingChannel = function (params) {
     /**
      * Generate and send a presence message representing the user's current status. This triggers
      * the server to send the user's contact's presence.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.sendPresence
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendPresence
      * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
      */
     var sendPresence = that.publicize('sendPresence', function (params) {
@@ -165,12 +165,12 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Get or create a group in the infrastructure.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getGroup
-     * @returns {Promise<webrtc.Group>}
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.getGroup
+     * @returns {Promise<brightstream.Group>}
      */
     var getGroup = that.publicize('getGroup', function (params) {
-        var deferred = webrtc.makeDeferred();
+        var deferred = brightstream.makeDeferred();
         log.trace('signalingChannel.getGroup');
         wsCall({
             httpMethod: 'POST',
@@ -188,8 +188,8 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Join a group.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.joinGroup
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.joinGroup
      * @returns {Promise<string>}
      */
     var joinGroup = that.publicize('joinGroup', function (params) {
@@ -202,12 +202,12 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Publish a message to a group.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.publish
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.publish
      * @returns {Promise<string>}
      */
     var publish = that.publicize('publish', function (params) {
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         if (!params.id) {
             deferred.reject(new Error("Can't publish to a group without group ID."));
             return deferred.promise;
@@ -246,12 +246,12 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Join a group.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getGroupMembers
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.getGroupMembers
      * @returns {Promise<Array>}
      */
     var getGroupMembers = that.publicize('getGroupMembers', function (params) {
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         if (!params.id) {
             deferred.reject(new Error("Can't get group's endpoints without group ID."));
             return deferred.promise;
@@ -266,15 +266,15 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Send a chat message.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.sendMessage
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendMessage
      * @param {string} message The string text message to send.
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         var msgText = params.message.getPayload();
         var recipient = null;
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         try {
             recipient = params.message.getRecipient().getID();
@@ -307,15 +307,15 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Send a signaling message.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.sendSignal
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendSignal
      * @param {string} message The string The signal to send.
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         var signalText = params.signal.getPayload();
         var recipient = null;
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         try {
             recipient = params.signal.getRecipient().getID();
@@ -348,17 +348,17 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Send an ICE candidate.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.sendCandidate
-     * @param {webrtc.Contact} recipient The recipient.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendCandidate
+     * @param {brightstream.Contact} recipient The recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      */
     var sendCandidate = that.publicize('sendCandidate', function (params) {
         params = params || {};
         return that.sendSignal({
-            signal: webrtc.SignalingMessage({
+            signal: brightstream.SignalingMessage({
                 recipient: params.recipient,
-                sender: webrtc.getClient(client).user.getID(),
+                sender: brightstream.getClient(client).user.getID(),
                 payload: JSON.stringify(params.candObj)
             }),
             onSuccess: function () {},
@@ -370,17 +370,17 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Send an SDP.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.sendSDP
-     * @param {webrtc.Contact} recipient The recipient.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendSDP
+     * @param {brightstream.Contact} recipient The recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      */
     var sendSDP = that.publicize('sendSDP', function (params) {
         params = params || {};
         return that.sendSignal({
-            signal: webrtc.SignalingMessage({
+            signal: brightstream.SignalingMessage({
                 'recipient': params.recipient,
-                'sender': webrtc.getClient(client).user.getID(),
+                'sender': brightstream.getClient(client).user.getID(),
                 'payload': JSON.stringify(params.sdpObj)
             }),
             onSuccess: function () {},
@@ -392,17 +392,17 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Send a message terminating the WebRTC session.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.sendBye
-     * @param {webrtc.Contact} recipient The recipient.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendBye
+     * @param {brightstream.Contact} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
      */
     var sendBye = that.publicize('sendBye', function (params) {
         params = params || {};
         return that.sendSignal({
-            signal: webrtc.SignalingMessage({
+            signal: brightstream.SignalingMessage({
                 'recipient': params.recipient,
-                'sender': webrtc.getClient(client).user.getID(),
+                'sender': brightstream.getClient(client).user.getID(),
                 'payload': JSON.stringify({'type': 'bye', 'reason': params.reason})
             }),
             onSuccess: function () {},
@@ -414,9 +414,9 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Route different types of signaling messages via events.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.routeSignal
-     * @param {webrtc.SignalingMessage} message A message to route
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.routeSignal
+     * @param {brightstream.SignalingMessage} message A message to route
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.getPayload();
@@ -469,8 +469,8 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Add a handler to the connection for messages of different types.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.addHandler
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.addHandler
      * @param {string} type The type of message, e. g., 'iq', 'pres'
      * @param {function} handler A function to which to pass the message
      * @deprecated Not sure how we will route messages yet.
@@ -485,15 +485,15 @@ webrtc.SignalingChannel = function (params) {
 
     /**
      * Authenticate to the cloud and call the handler on state change.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.authenticate
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.authenticate
      * @param {string} username The user's username.
      * @param {string} password The user's password.
      * @param {function} onStatusChange A function to which to call on every state change.
      */
     var authenticate = that.publicize('authenticate', function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var pieces = [];
         var protocol = null;
         var host = null;
@@ -521,7 +521,7 @@ webrtc.SignalingChannel = function (params) {
             }
 
 
-            groupMessage = webrtc.TextMessage({
+            groupMessage = brightstream.TextMessage({
                 sender: message.header.from,
                 senderSession: message.header.fromConnection,
                 recipient: message.header.channel,
@@ -550,7 +550,7 @@ webrtc.SignalingChannel = function (params) {
             }
             that.registerPresence({endpointList: [message.endpoint]});
 
-            endpoint = webrtc.Contact({
+            endpoint = brightstream.Contact({
                 client: client,
                 id: message.endpoint,
                 name: message.endpoint,
@@ -590,7 +590,7 @@ webrtc.SignalingChannel = function (params) {
 
         socket.on('message', function handleMessage(message) {
             var endpoint;
-            message = webrtc.TextMessage({rawMessage: message});
+            message = brightstream.TextMessage({rawMessage: message});
             endpoint = clientObj.getEndpoint({id: message.getSender()});
             if (endpoint) {
                 endpoint.fire('message', message);
@@ -616,7 +616,7 @@ webrtc.SignalingChannel = function (params) {
                 httpMethod: 'POST'
             }).then(function (res) {
                 log.debug('endpointconnections result', res);
-                var user = webrtc.User({
+                var user = brightstream.User({
                     loggedIn: true,
                     timeLoggedIn: new Date(),
                     client: client,
@@ -634,7 +634,7 @@ webrtc.SignalingChannel = function (params) {
         that.addHandler({
             type: 'signal',
             handler: function signalHandler(message) {
-                var message = webrtc.SignalingMessage({
+                var message = brightstream.SignalingMessage({
                     'rawMessage': message
                 });
                 that.routeSignal(message);
@@ -648,12 +648,12 @@ webrtc.SignalingChannel = function (params) {
      * in the Client so that credentials are ready to use quickly when a call begins. We
      * don't want to have to wait on a REST request to finish between the user clicking the
      * call button and the call beginning.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.getTurnCredentials
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.getTurnCredentials
      */
     var getTurnCredentials = that.publicize('getTurnCredentials', function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         wsCall({
             httpMethod: 'GET',
@@ -695,14 +695,14 @@ webrtc.SignalingChannel = function (params) {
      * is an associative array constructed by json.decode. The 'error' attriute is a message.
      * If the API call is successful but the server returns invalid JSON, error will be
      * "Invalid JSON." and response will be the unchanged content of the response body.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.wsCall
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.wsCall
      * @private
      * @param {object} params Object containing httpMethod, objectId, path, and parameters.
      */
     var wsCall = function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         if (!params) {
             deferred.reject(new Error('No params.'));
@@ -744,8 +744,8 @@ webrtc.SignalingChannel = function (params) {
      * is an associative array constructed by json.decode. The 'error' attriute is a message.
      * If the API call is successful but the server returns invalid JSON, error will be
      * "Invalid JSON." and response will be the unchanged content of the response body.
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.call
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.call
      * @private
      * @param {object} params Object containing httpMethod, objectId, path, and parameters.
      */
@@ -842,8 +842,8 @@ webrtc.SignalingChannel = function (params) {
     /**
      * Turn key/value and key/list pairs into an HTTP URL parameter string.
      * var1=value1&var2=value2,value3,value4
-     * @memberof! webrtc.SignalingChannel
-     * @method webrtc.SignalingChannel.makeParamString
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.makeParamString
      * @private
      * @param {object} params Collection of strings and arrays to serialize.
      * @returns {string}
@@ -872,24 +872,24 @@ webrtc.SignalingChannel = function (params) {
     };
 
     return that;
-}; // End webrtc.SignalingChannel
+}; // End brightstream.SignalingChannel
 
 /**
  * Create a new TextMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.TextMessage
+ * @class brightstream.TextMessage
  * @constructor
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.TextMessage}
+ * @returns {brightstream.TextMessage}
  */
-webrtc.TextMessage = function (params) {
+brightstream.TextMessage = function (params) {
     "use strict";
     params = params || {};
     var that = params;
 
-    that.className = 'webrtc.TextMessage';
+    that.className = 'brightstream.TextMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
     var payload = params.payload; // Only set on outgoing message.
     var sender = params.sender;
@@ -897,8 +897,8 @@ webrtc.TextMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload. In this base class, assume text.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.parse
+     * @memberof! brightstream.TextMessage
+     * @method brightstream.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (params) {
@@ -913,8 +913,8 @@ webrtc.TextMessage = function (params) {
 
     /**
      * Get the whole payload.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.getPayload
+     * @memberof! brightstream.TextMessage
+     * @method brightstream.TextMessage.getPayload
      * @returns {string}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -923,8 +923,8 @@ webrtc.TextMessage = function (params) {
 
     /**
      * Get the whole chat message.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.getText
+     * @memberof! brightstream.TextMessage
+     * @method brightstream.TextMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', function () {
@@ -933,8 +933,8 @@ webrtc.TextMessage = function (params) {
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.getRecipient
+     * @memberof! brightstream.TextMessage
+     * @method brightstream.TextMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -943,8 +943,8 @@ webrtc.TextMessage = function (params) {
 
     /**
      * Get the sender.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.getSender
+     * @memberof! brightstream.TextMessage
+     * @method brightstream.TextMessage.getSender
      * @returns {string}
      */
     var getSender = that.publicize('getSender', function () {
@@ -956,24 +956,24 @@ webrtc.TextMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.TextMessage
+}; // End brightstream.TextMessage
 
 /**
  * Create a new GroupMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.GroupMessage
+ * @class brightstream.GroupMessage
  * @constructor
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.GroupMessage}
+ * @returns {brightstream.GroupMessage}
  */
-webrtc.GroupMessage = function (params) {
+brightstream.GroupMessage = function (params) {
     "use strict";
     params = params || {};
     var that = params;
 
-    that.className = 'webrtc.GroupMessage';
+    that.className = 'brightstream.GroupMessage';
     var rawMessage = params.rawMessage; // Only set on incoming message.
     var payload = params.payload; // Only set on outgoing message.
     var sender = params.sender;
@@ -981,8 +981,8 @@ webrtc.GroupMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload. In this base class, assume text.
-     * @memberof! webrtc.GroupMessage
-     * @method webrtc.GroupMessage.parse
+     * @memberof! brightstream.GroupMessage
+     * @method brightstream.GroupMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (params) {
@@ -994,8 +994,8 @@ webrtc.GroupMessage = function (params) {
 
     /**
      * Get the whole payload.
-     * @memberof! webrtc.GroupMessage
-     * @method webrtc.GroupMessage.getPayload
+     * @memberof! brightstream.GroupMessage
+     * @method brightstream.GroupMessage.getPayload
      * @returns {string}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1004,8 +1004,8 @@ webrtc.GroupMessage = function (params) {
 
     /**
      * Get the whole chat message.
-     * @memberof! webrtc.GroupMessage
-     * @method webrtc.GroupMessage.getText
+     * @memberof! brightstream.GroupMessage
+     * @method brightstream.GroupMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', function () {
@@ -1014,8 +1014,8 @@ webrtc.GroupMessage = function (params) {
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.GroupMessage
-     * @method webrtc.GroupMessage.getRecipient
+     * @memberof! brightstream.GroupMessage
+     * @method brightstream.GroupMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -1027,23 +1027,23 @@ webrtc.GroupMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.GroupMessage
+}; // End brightstream.GroupMessage
 
 /**
  * Create a new SignalingMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.SignalingMessage
+ * @class brightstream.SignalingMessage
  * @constructor
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.SignalingMessage}
+ * @returns {brightstream.SignalingMessage}
  */
-webrtc.SignalingMessage = function (params) {
+brightstream.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
     var that = params;
-    that.className = 'webrtc.SignalingMessage';
+    that.className = 'brightstream.SignalingMessage';
 
     var rawMessage = params.rawMessage; // Only set on incoming message.
     var payload = params.payload; // Only set on outgoing message.
@@ -1052,8 +1052,8 @@ webrtc.SignalingMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.SignalingMessage
-     * @method webrtc.SignalingMessage.parse
+     * @memberof! brightstream.SignalingMessage
+     * @method brightstream.SignalingMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (params) {
@@ -1078,8 +1078,8 @@ webrtc.SignalingMessage = function (params) {
 
     /**
      * Attempt to construct a string from the payload.
-     * @memberof! webrtc.SignalingMessage
-     * @method webrtc.SignalingMessage.getText
+     * @memberof! brightstream.SignalingMessage
+     * @method brightstream.SignalingMessage.getText
      * @returns {string} A string that may represent the value of the payload.
      */
     var getText = that.publicize('getText', function () {
@@ -1088,8 +1088,8 @@ webrtc.SignalingMessage = function (params) {
 
     /**
      * Get the whole payload
-     * @memberof! webrtc.SignalingMessage
-     * @method webrtc.SignalingMessage.getPayload
+     * @memberof! brightstream.SignalingMessage
+     * @method brightstream.SignalingMessage.getPayload
      * @returns {object}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1098,8 +1098,8 @@ webrtc.SignalingMessage = function (params) {
 
     /**
      * Get the recipient.
-     * @memberof! webrtc.SignalingMessage
-     * @method webrtc.SignalingMessage.getRecipient
+     * @memberof! brightstream.SignalingMessage
+     * @method brightstream.SignalingMessage.getRecipient
      * @returns {string}
      */
     var getRecipient = that.publicize('getRecipient', function () {
@@ -1108,8 +1108,8 @@ webrtc.SignalingMessage = function (params) {
 
     /**
      * Get the sender.
-     * @memberof! webrtc.SignalingMessage
-     * @method webrtc.SignalingMessage.getSender
+     * @memberof! brightstream.SignalingMessage
+     * @method brightstream.SignalingMessage.getSender
      * @returns {string}
      */
     var getSender = that.publicize('getSender', function () {
@@ -1121,23 +1121,23 @@ webrtc.SignalingMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.SignalingMessage
+}; // End brightstream.SignalingMessage
 
 /**
  * Create a new PresenceMessage.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.PresenceMessage
+ * @class brightstream.PresenceMessage
  * @constructor
  * @classdesc A message.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.PresenceMessage}
+ * @returns {brightstream.PresenceMessage}
  */
-webrtc.PresenceMessage = function (params) {
+brightstream.PresenceMessage = function (params) {
     "use strict";
     params = params || {};
     var that = params;
-    that.className = 'webrtc.PresenceMessage';
+    that.className = 'brightstream.PresenceMessage';
 
     var rawMessage = params.rawMessage;
     delete params.rawMessage;
@@ -1147,8 +1147,8 @@ webrtc.PresenceMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! webrtc.TextMessage
-     * @method webrtc.TextMessage.parse
+     * @memberof! brightstream.TextMessage
+     * @method brightstream.TextMessage.parse
      * @param {object|string} thisMsg Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (params) {
@@ -1176,8 +1176,8 @@ webrtc.PresenceMessage = function (params) {
 
     /**
      * Get the presence string.
-     * @memberof! webrtc.PresenceMessage
-     * @method webrtc.PresenceMessage.getText
+     * @memberof! brightstream.PresenceMessage
+     * @method brightstream.PresenceMessage.getText
      * @returns {string}
      */
     var getText = that.publicize('getText', function () {
@@ -1189,8 +1189,8 @@ webrtc.PresenceMessage = function (params) {
 
     /**
      * Get the whole payload
-     * @memberof! webrtc.PreseceMessage
-     * @method webrtc.PresenceMessage.getPayload
+     * @memberof! brightstream.PreseceMessage
+     * @method brightstream.PresenceMessage.getPayload
      * @returns {object}
      */
     var getPayload = that.publicize('getPayload', function () {
@@ -1199,8 +1199,8 @@ webrtc.PresenceMessage = function (params) {
 
     /**
      * Get the sender.
-     * @memberof! webrtc.PresenceMessage
-     * @method webrtc.PresenceMessage.getSender
+     * @memberof! brightstream.PresenceMessage
+     * @method brightstream.PresenceMessage.getSender
      * @returns {string}
      */
     var getSender = that.publicize('getSender', function () {
@@ -1209,8 +1209,8 @@ webrtc.PresenceMessage = function (params) {
 
     /**
      * Get the session ID of the sender.
-     * @memberof! webrtc.PresenceMessage
-     * @method webrtc.PresenceMessage.getSessionID
+     * @memberof! brightstream.PresenceMessage
+     * @method brightstream.PresenceMessage.getSessionID
      * @returns {string}
      */
     var getSessionID = that.publicize('getSessionID', function () {
@@ -1222,26 +1222,26 @@ webrtc.PresenceMessage = function (params) {
     }
 
     return that;
-}; // End webrtc.PresenceMessage
+}; // End brightstream.PresenceMessage
 
 /**
  * Create a new Group.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.Group
+ * @class brightstream.Group
  * @constructor
  * @classdesc A group, representing a collection of users and the method by which to communicate
  * with them.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.Group}
+ * @returns {brightstream.Group}
  */
-webrtc.Group = function (params) {
+brightstream.Group = function (params) {
     "use strict";
     params = params || {};
 
-    var group = webrtc.EventEmitter(params);
+    var group = brightstream.EventEmitter(params);
     var client = params.client;
-    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+    var signalingChannel = brightstream.getClient(client).getSignalingChannel();
     var endpoints = [];
 
     if (!group.id) {
@@ -1249,7 +1249,7 @@ webrtc.Group = function (params) {
     }
 
     group.endpoints = endpoints;
-    group.className = 'webrtc.Group';
+    group.className = 'brightstream.Group';
     group.listen('join', params.onJoin);
     group.listen('message', params.onMessage);
     group.listen('leave', params.onLeave);
@@ -1263,8 +1263,8 @@ webrtc.Group = function (params) {
 
     /**
      * Get the ID of the group
-     * @memberof! webrtc.Group
-     * @method webrtc.Group.getID
+     * @memberof! brightstream.Group
+     * @method brightstream.Group.getID
      * @return {string}
      */
     var getID = group.publicize('getID', function () {
@@ -1274,15 +1274,15 @@ webrtc.Group = function (params) {
 
     /**
      * Leave a group
-     * @memberof! webrtc.Group
-     * @method webrtc.Group.leave
+     * @memberof! brightstream.Group
+     * @method brightstream.Group.leave
      * @param {function} onSuccess
      * @param {function} onError
      * @return {Promise}
      */
     var leave = group.publicize('leave', function (params) {
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        var clientObj = webrtc.getClient(client);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var clientObj = brightstream.getClient(client);
         signalingChannel.leaveGroup({
             id: group.id
         }).done(function () {
@@ -1296,8 +1296,8 @@ webrtc.Group = function (params) {
 
     /**
      * Remove an endpoint from a group
-     * @memberof! webrtc.Group
-     * @method webrtc.Group.remove
+     * @memberof! brightstream.Group
+     * @method brightstream.Group.remove
      * @params {string} [name] Endpoint name
      * @params {string} [id] Endpoint id
      */
@@ -1316,8 +1316,8 @@ webrtc.Group = function (params) {
 
     /**
      * Add an endpoint to a group
-     * @memberof! webrtc.Group
-     * @method webrtc.Group.add
+     * @memberof! brightstream.Group
+     * @method brightstream.Group.add
      * @params {string} [name] Endpoint name
      * @params {string} [id] Endpoint id
      */
@@ -1342,8 +1342,8 @@ webrtc.Group = function (params) {
 
     /**
      * Send a message to the entire group
-     * @memberof! webrtc.Group
-     * @method webrtc.Group.sendMessage
+     * @memberof! brightstream.Group
+     * @method brightstream.Group.sendMessage
      * @params {object} The message
      */
     var sendMessage = group.publicize('sendMessage', function (params) {
@@ -1353,14 +1353,14 @@ webrtc.Group = function (params) {
 
     /**
      * Get an array of subscribers of the group
-     * @memberof! webrtc.Group
-     * @method webrtc.Group.getEndpoints
+     * @memberof! brightstream.Group
+     * @method brightstream.Group.getEndpoints
      * @returns {Promise<Array>} A promise to an array of endpoints.
      */
     var getEndpoints = group.publicize('getEndpoints', function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
-        var clientObj = webrtc.getClient(client);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var clientObj = brightstream.getClient(client);
 
         if (endpoints.length > 0) {
             deferred.resolve(endpoints);
@@ -1376,7 +1376,7 @@ webrtc.Group = function (params) {
                 endpoint.name = endpoint.endpointId;
                 endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
-                endpoint = webrtc.Contact(endpoint);
+                endpoint = brightstream.Contact(endpoint);
                 if (endpointList.indexOf(endpoint.getID()) === -1) {
                     endpointList.push(endpoint.getID());
                     add(endpoint);
@@ -1397,4 +1397,4 @@ webrtc.Group = function (params) {
     });
 
     return group;
-}; // End webrtc.Group
+}; // End brightstream.Group

@@ -1,23 +1,23 @@
 
 var expect = chai.expect;
 
-describe("The webrtc namespace", function() {
+describe("The brightstream namespace", function() {
     it("contains all the library's classes.", function() {
-        expect(typeof webrtc).to.equal('object');
-        expect(typeof webrtc.Class).to.equal('function');
-        expect(typeof webrtc.Contacts).to.equal('function');
-        expect(typeof webrtc.EventEmitter).to.equal('function');
-        expect(typeof webrtc.Call).to.equal('function');
-        expect(typeof webrtc.MediaStream).to.equal('function');
-        expect(typeof webrtc.Client).to.equal('function');
-        expect(typeof webrtc.UserSession).to.equal('function');
-        expect(typeof webrtc.TextMessage).to.equal('function');
-        expect(typeof webrtc.Contact).to.equal('function');
-        expect(typeof webrtc.IdentityProvider).to.equal('function');
-        expect(typeof webrtc.PresenceMessage).to.equal('function');
-        expect(typeof webrtc.Presentable).to.equal('function');
-        expect(typeof webrtc.SignalingChannel).to.equal('function');
-        expect(typeof webrtc.SignalingMessage).to.equal('function');
-        expect(typeof webrtc.User).to.equal('function');
+        expect(typeof brightstream).to.equal('object');
+        expect(typeof brightstream.Class).to.equal('function');
+        expect(typeof brightstream.Contacts).to.equal('function');
+        expect(typeof brightstream.EventEmitter).to.equal('function');
+        expect(typeof brightstream.Call).to.equal('function');
+        expect(typeof brightstream.MediaStream).to.equal('function');
+        expect(typeof brightstream.Client).to.equal('function');
+        expect(typeof brightstream.UserSession).to.equal('function');
+        expect(typeof brightstream.TextMessage).to.equal('function');
+        expect(typeof brightstream.Contact).to.equal('function');
+        expect(typeof brightstream.IdentityProvider).to.equal('function');
+        expect(typeof brightstream.PresenceMessage).to.equal('function');
+        expect(typeof brightstream.Presentable).to.equal('function');
+        expect(typeof brightstream.SignalingChannel).to.equal('function');
+        expect(typeof brightstream.SignalingMessage).to.equal('function');
+        expect(typeof brightstream.User).to.equal('function');
     });
 });

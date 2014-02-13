@@ -1,29 +1,29 @@
 /**
  * Create a new WebRTC Client object.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class webrtc.Client
+ * @class brightstream.Client
  * @constructor
- * @augments webrtc.EventEmitter
+ * @augments brightstream.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.Client}
+ * @returns {brightstream.Client}
  * @property {object} clientSettings Client settings.
- * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
+ * @property {brightstream.SignalingChannel} signalingChannel A reference to the signaling channel.
  * @property {function} chatMessage Class to use for chat messages.
  * @property {function} signalingMessage Class to use for signaling.
  * @property {function} presenceMessage Class to use for presence messages.
- * @property {webrtc.User} user Logged-in user's User object.
+ * @property {brightstream.User} user Logged-in user's User object.
  */
-/*global webrtc: false */
-webrtc.Client = function (params) {
+/*global brightstream: false */
+brightstream.Client = function (params) {
     "use strict";
     params = params || {};
-    var client = webrtc.makeUniqueID().toString();
-    var that = webrtc.EventEmitter(params);
-    webrtc.instances[client] = that;
-    that.className = 'webrtc.Client';
+    var client = brightstream.makeUniqueID().toString();
+    var that = brightstream.EventEmitter(params);
+    brightstream.instances[client] = that;
+    that.className = 'brightstream.Client';
 
     var host = window.location.hostname;
     var port = window.location.port;
@@ -55,20 +55,20 @@ webrtc.Client = function (params) {
         }
     };
 
-    signalingChannel = webrtc.SignalingChannel({'client': client});
+    signalingChannel = brightstream.SignalingChannel({'client': client});
     that.user = null;
     log.debug(signalingChannel);
 
     /**
      * Connect to the Digium infrastructure and authenticate using the appkey.  Store
      * a token to be used in API requests.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.connect
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.connect
      * @param {string} authToken
      */
     var connect = that.publicize('connect', function (params) {
         params = params || {};
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         app.authToken = params.authToken;
         signalingChannel.open({
@@ -110,8 +110,8 @@ webrtc.Client = function (params) {
 
     /**
      * Disconnect from the Digium infrastructure. Invalidates the API token.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.disconnect
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.disconnect
      */
     var disconnect = that.publicize('disconnect', function () {
         // TODO: also call this on socket disconnect
@@ -124,8 +124,8 @@ webrtc.Client = function (params) {
 
     /**
      * Get the client ID
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.getID
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getID
      * @return {string}
      */
     var getID = that.publicize('getID', function () {
@@ -134,8 +134,8 @@ webrtc.Client = function (params) {
 
     /**
      * Update TURN credentials and set a timeout to do it again in 20 hours.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.updateTurnCredentials
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.updateTurnCredentials
      */
     var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
         if (callSettings.disableTurn === true) {
@@ -154,8 +154,8 @@ webrtc.Client = function (params) {
     /**
      * Determine whether the Client has authenticated with its appKey against Digium services
      * by checking the validity of the apiToken.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.isConnected
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.isConnected
      * @returns {boolean}
      */
     var isConnected = that.publicize('isConnected', function () {
@@ -164,8 +164,8 @@ webrtc.Client = function (params) {
 
     /**
      * Get an object containing the client settings.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.getClientSettings
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getClientSettings
      * @returns {object} An object containing the client settings.
      */
     var getClientSettings = that.publicize('getClientSettings', function () {
@@ -174,10 +174,10 @@ webrtc.Client = function (params) {
 
     /**
      * Get an object containing the default media constraints and other media settings.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.getCallSettings
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getCallSettings
      * @returns {object} An object containing the media settings which will be used in
-     * webrtc calls.
+     * brightstream calls.
      */
     var getCallSettings = that.publicize('getCallSettings', function () {
         return callSettings;
@@ -185,8 +185,8 @@ webrtc.Client = function (params) {
 
     /**
      * Set the default media constraints and other media settings.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.setDefaultCallSettings
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.setDefaultCallSettings
      * @param {object} Object containing settings to modify.
      */
     var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (params) {
@@ -201,9 +201,9 @@ webrtc.Client = function (params) {
 
     /**
      * Get the SignalingChannel.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.getSignalingChannel
-     * @returns {webrtc.SignalingChannel} The instance of the webrtc.SignalingChannel.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getSignalingChannel
+     * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
      */
     var getSignalingChannel = that.publicize('getSignalingChannel', function () {
         return signalingChannel;
@@ -211,13 +211,13 @@ webrtc.Client = function (params) {
 
     /**
      * Get a Group
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.join
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.join
      * @params {string} The name of the group.
-     * @returns {webrtc.Group} The instance of the webrtc.Group which the user joined.
+     * @returns {brightstream.Group} The instance of the brightstream.Group which the user joined.
      */
     var join = that.publicize('join', function (params) {
-        var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         if (!params.id) {
             deferred.reject(new Error("Can't join a group with no group id."));
             return deferred.promise;
@@ -226,7 +226,7 @@ webrtc.Client = function (params) {
         signalingChannel.joinGroup({
             id: params.id
         }).done(function () {
-            var group = webrtc.Group({
+            var group = brightstream.Group({
                 client: client,
                 id: params.id,
                 onMessage: params.onMessage,
@@ -245,14 +245,14 @@ webrtc.Client = function (params) {
 
     /**
      * Add a Group
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.addGroup
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.addGroup
      * @params {id} the Group id
      * @private
      */
     var addGroup = function (newGroup) {
         var group;
-        if (!newGroup || newGroup.className !== 'webrtc.Group') {
+        if (!newGroup || newGroup.className !== 'brightstream.Group') {
             throw new Error("Can't add group to internal tracking without a group.");
         }
         groups.every(function (grp) {
@@ -270,15 +270,15 @@ webrtc.Client = function (params) {
 
     /**
      * Remove a Group
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.removeGroup
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.removeGroup
      * @params {id} the Group id
      * @private
      */
     var removeGroup = function (newGroup) {
         var index;
         var endpoints;
-        if (!newGroup || !(newGroup instanceof webrtc.Group)) {
+        if (!newGroup || !(newGroup instanceof brightstream.Group)) {
             throw new Error("Can't remove group to internal tracking without a group.");
         }
 
@@ -303,10 +303,10 @@ webrtc.Client = function (params) {
 
     /**
      * Find a group by id and return it.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.getGroup
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getGroup
      * @params {id} the Group id
-     * @returns {webrtc.Group}
+     * @returns {brightstream.Group}
      */
     var getGroup = that.publicize('getGroup', function (params) {
         var group;
@@ -326,8 +326,8 @@ webrtc.Client = function (params) {
 
     /**
      * Add an Endpoint
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.addEndpoint
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.addEndpoint
      * @params {id} the Endpoint id
      * @private
      */
@@ -350,8 +350,8 @@ webrtc.Client = function (params) {
 
     /**
      * Remove an Endpoint
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.removeEndpoint
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.removeEndpoint
      * @params {id} the Endpoint id
      * @private
      */
@@ -389,10 +389,10 @@ webrtc.Client = function (params) {
 
     /**
      * Find an endpoint by id and return it.
-     * @memberof! webrtc.Client
-     * @method webrtc.Client.getEndpoint
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getEndpoint
      * @params {id} the Endpoint id
-     * @returns {webrtc.Contact}
+     * @returns {brightstream.Contact}
      */
     var getEndpoint = that.publicize('getEndpoint', function (params) {
         var endpoint;
@@ -411,4 +411,4 @@ webrtc.Client = function (params) {
     });
 
     return that;
-}; // End webrtc.Client
+}; // End brightstream.Client

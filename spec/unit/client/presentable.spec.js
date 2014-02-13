@@ -1,7 +1,7 @@
 var expect = chai.expect;
 
-describe("A webrtc.Presentable ", function () {
-    var presentable = webrtc.Presentable({
+describe("A brightstream.Presentable ", function () {
+    var presentable = brightstream.Presentable({
         "name": "Mickey Mouse",
         "id": "JH5K34J5K34J3453K4J53K45",
         "gloveColor": "white"
@@ -10,11 +10,11 @@ describe("A webrtc.Presentable ", function () {
     /*
     * Inheritance
     */
-    it("extends webrtc.Class.", function () {
+    it("extends brightstream.Class.", function () {
         expect(typeof presentable.getClass).to.equal('function');
     });
 
-    it("extends webrtc.EventEmitter.", function () {
+    it("extends brightstream.EventEmitter.", function () {
         expect(typeof presentable.listen).to.equal('function');
         expect(typeof presentable.ignore).to.equal('function');
         expect(typeof presentable.fire).to.equal('function');
@@ -25,7 +25,7 @@ describe("A webrtc.Presentable ", function () {
     */
     it("has the correct class name.", function () {
         expect(presentable.className).to.be.ok;
-        expect(presentable.getClass()).to.equal('webrtc.Presentable');
+        expect(presentable.getClass()).to.equal('brightstream.Presentable');
     });
 
     /*

@@ -1,26 +1,26 @@
-/*global webrtc: false */
+/*global brightstream: false */
 /**
  * Create a new UserSession.
- * @class webrtc.UserSession
+ * @class brightstream.UserSession
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @classdesc UserSession including logged-in status about a user account. There may be more than
  * one of these per User.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.UserSession}
+ * @returns {brightstream.UserSession}
  * @property {string} username
  * @property {string} token
  * @property {datetime} timeLoggedIn
  * @property {boolean} loggedIn
  */
-webrtc.UserSession = function (params) {
+brightstream.UserSession = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventEmitter(params);
+    var that = brightstream.EventEmitter(params);
     delete that.client;
-    that.className = 'webrtc.UserSession';
+    that.className = 'brightstream.UserSession';
 
     var token = params.token || '';
     var timeLoggedIn = params.timeLoggedIn || null;
@@ -31,8 +31,8 @@ webrtc.UserSession = function (params) {
 
     /**
      * Get User's OAuth token
-     * @memberof! webrtc.UserSession
-     * @method webrtc.UserSession.getAuthToken
+     * @memberof! brightstream.UserSession
+     * @method brightstream.UserSession.getAuthToken
      * @returns {string} The auth token for this session.
      */
     var getAuthToken = that.publicize('getAuthToken', function () {
@@ -41,8 +41,8 @@ webrtc.UserSession = function (params) {
 
     /**
      * Determine whether this is a valid logged-in UserSession
-     * @memberof! webrtc.UserSession
-     * @method webrtc.UserSession.isLoggedIn
+     * @memberof! brightstream.UserSession
+     * @method brightstream.UserSession.isLoggedIn
      * @returns {boolean}
      */
     var isLoggedIn = that.publicize('isLoggedIn', function () {
@@ -50,35 +50,35 @@ webrtc.UserSession = function (params) {
     });
 
     return that;
-}; // End webrtc.UserSession
+}; // End brightstream.UserSession
 
 /**
  * Create a new Presentable.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments webrtc.EventEmitter
+ * @augments brightstream.EventEmitter
  * @classdesc Presentable class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @property {string} username
- * @returns {webrtc.Presentable}
+ * @returns {brightstream.Presentable}
  */
-webrtc.Presentable = function (params) {
+brightstream.Presentable = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.EventEmitter(params);
+    var that = brightstream.EventEmitter(params);
     delete that.client;
-    that.className = 'webrtc.Presentable';
+    that.className = 'brightstream.Presentable';
 
     var sessions = [];
     var presence = 'unavailable';
 
     /**
      * Return the user ID
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getID
+     * @memberof! brightstream.Presentable
+     * @method brightstream.Presentable.getID
      * @return {string} id
      */
     var getID = that.publicize('getID', function () {
@@ -87,8 +87,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Get the name.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getName
+     * @memberof! brightstream.Presentable
+     * @method brightstream.Presentable.getName
      * @return {string} name
      */
     var getName = that.publicize('getName', function () {
@@ -99,8 +99,8 @@ webrtc.Presentable = function (params) {
      * Indicate whether the entity has an active Call. Should we only return true if
      * media is flowing, or anytime a WebRTC call is active? Should it return true if the
      * engaged in a Call on another device?
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.callInProgress
+     * @memberof! brightstream.Presentable
+     * @method brightstream.Presentable.callInProgress
      * @returns {boolean}
      */
     var callInProgress = that.publicize('callInProgress', function () {
@@ -109,11 +109,11 @@ webrtc.Presentable = function (params) {
 
     /**
      * Set the presence on the object and the session
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.setPresence
+     * @memberof! brightstream.Presentable
+     * @method brightstream.Presentable.setPresence
      * @param {string} presence
      * @param {string} sessionId
-     * @fires webrtc.Presentable#presence
+     * @fires brightstream.Presentable#presence
      */
     var setPresence = that.publicize('setPresence', function (params) {
         params = params || {};
@@ -136,8 +136,8 @@ webrtc.Presentable = function (params) {
 
     /**
      * Get the presence.
-     * @memberof! webrtc.Presentable
-     * @method webrtc.Presentable.getPresence
+     * @memberof! brightstream.Presentable
+     * @method brightstream.Presentable.getPresence
      * @returns {string}
      */
     var getPresence = that.publicize('getPresence', function () {
@@ -145,41 +145,41 @@ webrtc.Presentable = function (params) {
     });
 
     return that;
-}; // End webrtc.Presentable
+}; // End brightstream.Presentable
 
 /**
  * Create a new Contact.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments webrtc.Presentable
+ * @augments brightstream.Presentable
  * @classdesc Contact class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.Contact}
+ * @returns {brightstream.Contact}
  */
-webrtc.Contact = function (params) {
+brightstream.Contact = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Presentable(params);
+    var that = brightstream.Presentable(params);
     delete that.client;
-    that.className = 'webrtc.Contact';
+    that.className = 'brightstream.Contact';
     var sessions = {};
 
-    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
+    var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to the endpoint.
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.sendMessage
+     * @memberof! brightstream.Contact
+     * @method brightstream.Contact.sendMessage
      * @params {object} message The message to send
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
         return signalingChannel.sendMessage({
-            message: webrtc.TextMessage({
+            message: brightstream.TextMessage({
                 'recipient': that,
-                'sender': webrtc.getClient(client).user.getID(),
+                'sender': brightstream.getClient(client).user.getID(),
                 'payload': params.message
             }),
             onSuccess: params.onSuccess,
@@ -189,17 +189,17 @@ webrtc.Contact = function (params) {
 
     /**
      * Send a signal to the endpoint.
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.sendSignal
+     * @memberof! brightstream.Contact
+     * @method brightstream.Contact.sendSignal
      * @params {object} message The signal to send
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.debug('Contact.sendSignal, no support for custom signaling profiles.');
         params = params || {};
         return signalingChannel.sendSignal({
-            signal: webrtc.SignalingMessage({
+            signal: brightstream.SignalingMessage({
                 'recipient': that,
-                'sender': webrtc.getClient(client).user.getID(),
+                'sender': brightstream.getClient(client).user.getID(),
                 'payload': params.signal // JSON in string form
             }),
             onSuccess: params.onSuccess,
@@ -210,16 +210,16 @@ webrtc.Contact = function (params) {
     /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.call
+     * @memberof! brightstream.Contact
+     * @method brightstream.Contact.call
      * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
      * @param {boolean} Optional Whether the logged-in user initiated the call.
-     * @returns {webrtc.Call}
+     * @returns {brightstream.Call}
      */
     var call = that.publicize('call', function (params) {
         var id = that.getID();
         var call = null;
-        var clientObj = webrtc.getClient(client);
+        var clientObj = brightstream.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
 
@@ -275,7 +275,7 @@ webrtc.Contact = function (params) {
             log.debug("Not sending report");
             log.debug(oReport);
         };
-        call = webrtc.Call(params);
+        call = brightstream.Call(params);
 
         if (params.initiator === true) {
             call.answer();
@@ -292,8 +292,8 @@ webrtc.Contact = function (params) {
     /**
      * Find the presence out of all known sessions with the highest priority (most availability)
      * and set it as the contact's resolved presence.
-     * @memberof! webrtc.Contact
-     * @method webrtc.Contact.setPresence
+     * @memberof! brightstream.Contact
+     * @method brightstream.Contact.setPresence
      * @private
      */
     var resolvePresence = that.publicize('resolvePresence', function (params) {
@@ -323,34 +323,34 @@ webrtc.Contact = function (params) {
     });
 
     return that;
-}; // End webrtc.Contact
+}; // End brightstream.Contact
 
 /**
  * Create a new User.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments webrtc.Presentable
+ * @augments brightstream.Presentable
  * @classdesc User class
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
- * @returns {webrtc.User}
+ * @returns {brightstream.User}
  */
-webrtc.User = function (params) {
+brightstream.User = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
-    var that = webrtc.Presentable(params);
+    var that = brightstream.Presentable(params);
     var superClass = {
         setPresence: that.setPresence
     };
     delete that.client;
-    that.className = 'webrtc.User';
+    that.className = 'brightstream.User';
 
     var remoteUserSessions = {};
     var calls = [];
     var presenceQueue = [];
-    var signalingChannel = webrtc.getClient(client).getSignalingChannel();
-    var userSession = webrtc.UserSession({
+    var signalingChannel = brightstream.getClient(client).getSignalingChannel();
+    var userSession = brightstream.UserSession({
         'client': client,
         'token': params.token,
         'timeLoggedIn': params.timeLoggedIn,
@@ -359,9 +359,9 @@ webrtc.User = function (params) {
 
     /**
      * Override Presentable.setPresence to send presence to the server before updating the object.
-     * @memberof! webrtc.User
-     * @method webrtc.User.setPresence
-     * @returns {webrtc.Contacts}
+     * @memberof! brightstream.User
+     * @method brightstream.User.setPresence
+     * @returns {brightstream.Contacts}
      */
     var setPresence = that.publicize('setPresence', function (params) {
         var promise;
@@ -384,9 +384,9 @@ webrtc.User = function (params) {
 
     /**
      * Get the User's locally logged-in UserSession
-     * @memberof! webrtc.User
-     * @method webrtc.User.getUserSession
-     * @returns {webrtc.UserSession}
+     * @memberof! brightstream.User
+     * @method brightstream.User.getUserSession
+     * @returns {brightstream.UserSession}
      */
     var getUserSession = that.publicize('getUserSession', function () {
         return userSession;
@@ -395,9 +395,9 @@ webrtc.User = function (params) {
     /**
      * Get the active Call.  Can there be multiple active Calls? Should we timestamp
      * them and return the most recently used? Should we create a Call if none exist?
-     * @memberof! webrtc.User
-     * @method webrtc.User.getActiveCall
-     * @returns {webrtc.Call}
+     * @memberof! brightstream.User
+     * @method brightstream.User.getActiveCall
+     * @returns {brightstream.Call}
      */
     var getActiveCall = that.publicize('getActiveCall', function () {
         // TODO search by user, create if doesn't exist?
@@ -412,16 +412,16 @@ webrtc.User = function (params) {
 
     /**
      * Get the Call with the contact specified.
-     * @memberof! webrtc.User
-     * @method webrtc.User.getCallByContact
+     * @memberof! brightstream.User
+     * @method brightstream.User.getCallByContact
      * @param {string} Contact ID
-     * @returns {webrtc.Call}
+     * @returns {brightstream.Call}
      */
     var getCallByContact = that.publicize('getCallByContact', function (params) {
         var call = null;
         var contact = null;
         var callSettings = null;
-        var clientObj = webrtc.getClient(client);
+        var clientObj = brightstream.getClient(client);
 
         calls.forEach(function findCall(one) {
             if (one.remoteEndpoint === params.contactId) {
@@ -449,10 +449,10 @@ webrtc.User = function (params) {
 
     /**
      * Associate the call with this user.
-     * @memberof! webrtc.User
-     * @method webrtc.User.addCall
-     * @param {webrtc.Call} call
-     * @fires webrtc.User#call
+     * @memberof! brightstream.User
+     * @method brightstream.User.addCall
+     * @param {brightstream.Call} call
+     * @fires brightstream.User#call
      */
     var addCall = that.publicize('addCall', function (params) {
         if (calls.indexOf(params.call) === -1) {
@@ -463,8 +463,8 @@ webrtc.User = function (params) {
 
     /**
      * Remove the call.
-     * @memberof! webrtc.User
-     * @method webrtc.User.removeCall
+     * @memberof! brightstream.User
+     * @method brightstream.User.removeCall
      * @param {string} Optional Contact ID
      */
     var removeCall = that.publicize('removeCall', function (params) {
@@ -490,8 +490,8 @@ webrtc.User = function (params) {
 
     /**
      * Set presence to available.
-     * @memberof! webrtc.User
-     * @method webrtc.User.setOnline
+     * @memberof! brightstream.User
+     * @method brightstream.User.setOnline
      */
     var setOnline = that.publicize('setOnline', function (params) {
         params = params || {};
@@ -500,5 +500,5 @@ webrtc.User = function (params) {
     });
 
     return that;
-}; // End webrtc.User
+}; // End brightstream.User
 

@@ -28,7 +28,7 @@ module.exports = {
         this.baseURL = baseURL || 'https://testing.digiumlabs.com:1337'
 
         this.init = function (appId) {
-            return this.driver.executeScript("window['" + this.clientName + "'] = webrtc.Client({clientSettings: {appId: '" + appId + "', baseURL: '" + this.baseURL + "'}});");
+            return this.driver.executeScript("window['" + this.clientName + "'] = brightstream.Client({clientSettings: {appId: '" + appId + "', baseURL: '" + this.baseURL + "'}});");
         };
         this.connect = function () {
             return this.driver.executeScript("window['" + this.clientName + "'].connect();");
@@ -113,7 +113,7 @@ module.exports = {
             return this.driver.executeScript("window['" + this.clientName + "']." + varName + ".sendMessage({message: '" + message + "'});");
         };
         this.getID = function () {
-            return this.driver.executeScript("return webrtc.getClient(window['" + this.clientName + "'].getID()).user.getID();")
+            return this.driver.executeScript("return brightstream.getClient(window['" + this.clientName + "'].getID()).user.getID();")
         };
 
     },

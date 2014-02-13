@@ -3,29 +3,29 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class DocumentationTest
  * @constructor
- * @augments webrtc.EventEmitter
+ * @augments brightstream.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
  * @param {object} params Object whose properties will be used to initialize this object and set
  * properties on the class.
  * @returns {DocumentationTest}
  * @property {object} appSettings Application-wide settings.
- * @property {webrtc.SignalingChannel} signalingChannel A reference to the signaling channel.
- * @property {webrtc.IdentityProvider} identityProvider A reference to the identity provider.
- * @property {function} chatMessage Class extending webrtc.Message to use for chat messages.
- * @property {function} signalingMessage Class extending webrtc.Message to use for signaling.
- * @property {function} presenceMessage Class extending webrtc.Message to use for presence
+ * @property {brightstream.SignalingChannel} signalingChannel A reference to the signaling channel.
+ * @property {brightstream.IdentityProvider} identityProvider A reference to the identity provider.
+ * @property {function} chatMessage Class extending brightstream.Message to use for chat messages.
+ * @property {function} signalingMessage Class extending brightstream.Message to use for signaling.
+ * @property {function} presenceMessage Class extending brightstream.Message to use for presence
  * messages.
- * @property {webrtc.User} user Logged-in user's User object.
+ * @property {brightstream.User} user Logged-in user's User object.
  * @copyright Digium 2013
  * @license Proprietary
- * {@link webrtc.XMPPTextMessage}
- * {@linkcode webrtc.XMPPTextMessage}
- * {@linkplain webrtc.XMPPTextMessage}
+ * {@link brightstream.XMPPTextMessage}
+ * {@linkcode brightstream.XMPPTextMessage}
+ * {@linkplain brightstream.XMPPTextMessage}
  * {@link http://digium.com}
  * [Some caption]{@link http://digium.com}
- * {@link webrtc.XMPPTextMessage some caption}
- * @mixes webrtc.EventEmitter
+ * {@link brightstream.XMPPTextMessage some caption}
+ * @mixes brightstream.EventEmitter
  * @requires jQuery.js
  * @see DocumentationTest
  * @see http://google.com
@@ -36,7 +36,7 @@
  */
 DocumentationTest = function(params) {
 	params = params || {};
-	var that = webrtc.EventEmitter(params);
+	var that = brightstream.EventEmitter(params);
 	/**
 	 * @public
 	 * @constant
@@ -81,7 +81,7 @@ DocumentationTest = function(params) {
 	 */
 	that.appSettings = {
 		/* These are the names of classes which can be configured by the developer.
-		 * The constructor will search for them in the 'webrtc' and 'window' namespaces
+		 * The constructor will search for them in the 'brightstream' and 'window' namespaces
 		 * and use them to do the job of some of the default classes.
 		 */
 		signalingChannel: 'XMPPSignalingChannel',
@@ -92,7 +92,7 @@ DocumentationTest = function(params) {
 	};
 
 	/**
-	 * Find a configurable class in the webrtc or window scopes and instantiate with the
+	 * Find a configurable class in the brightstream or window scopes and instantiate with the
 	 * given params.
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.findClass
@@ -101,8 +101,8 @@ DocumentationTest = function(params) {
 	 * @returns {function} The class.
 	 */
 	var findClass = function(className) {
-		if (webrtc[className]) {
-			return webrtc[className];
+		if (brightstream[className]) {
+			return brightstream[className];
 		}
 		if (window[className]) {
 			return window[className];
@@ -122,7 +122,7 @@ DocumentationTest = function(params) {
 	/**
 	 * @access public
 	 * @desc The call in progress
-	 * @typedef webrtc.Call
+	 * @typedef brightstream.Call
 	 */
 	that.call = findClass(that.appSettings.call);
 	/**
@@ -162,7 +162,7 @@ DocumentationTest = function(params) {
 	 * @param {object} userAccount Optional user account to log in with.
 	 * @param {string} token Optional OAuth token to use, if the user has logged in before,
 	 * or password if not using oAuth or OpenSocial.
-	 * @returns {Promise<webrtc.User>}
+	 * @returns {Promise<brightstream.User>}
 	 * @example userPromise = mercury.login(username, password);
 	 * @example userPromise = mercury.login('blahuser@facebook.com');
 	 */
@@ -186,12 +186,12 @@ DocumentationTest = function(params) {
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.logout
 	 * @param {string[]} username Optional array of usernames of UserSessions to log out.
-	 * @listens webrtc.UserSession#disconnected
-	 * @listens webrtc.UserSession#disconnected2
+	 * @listens brightstream.UserSession#disconnected
+	 * @listens brightstream.UserSession#disconnected2
 	 * @throws no such attribute
 	 * @throws divide by zero
-	 * @fires webrtc.User#logout
-	 * @fires webrtc.User#logout2
+	 * @fires brightstream.User#logout
+	 * @fires brightstream.User#logout2
 	 */
 	var logout = that.publicize('logout', function(usernames) {
 		var removedIndexes = [];
@@ -244,7 +244,7 @@ DocumentationTest = function(params) {
 	 * Get a list of valid UserSessions.
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.getUserSessions
-	 * @returns {webrtc.UserSession[]}
+	 * @returns {brightstream.UserSession[]}
 	 */
 	var getUserSessions = that.publicize('getUserSessions', function() {
 		return userSessions;
@@ -255,7 +255,7 @@ DocumentationTest = function(params) {
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.getDefaultMediaSettings
 	 * @returns {object} An object containing the default media settings which will be used in
-	 * webrtc calls.
+	 * brightstream calls.
 	 */
 	var getDefaultMediaSettings = that.publicize('getDefaultMediaSettings', function() {
 		return that.mediaSettings;
@@ -281,7 +281,7 @@ DocumentationTest = function(params) {
 	 * Get the SignalingChannel.
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.getSignalingChannel
-	 * @returns {webrtc.SignalingChannel} The instance of the webrtc.SignalingChannel.
+	 * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
 	 */
 	var getSignalingChannel = that.publicize('getSignalingChannel', function() {
 		return that.signalingChannel;
@@ -291,7 +291,7 @@ DocumentationTest = function(params) {
 	 * A test for some tags that we don't use normally
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.test
-	 * @returns {webrtc.SignalingChannel} The instance of the webrtc.SignalingChannel.
+	 * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
 	 * @returns {object} A second return value
 	 * @returns {string} A third return value
 	 * @alias aTestFunction

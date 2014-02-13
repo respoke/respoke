@@ -1,9 +1,9 @@
 var expect = chai.expect;
 
-var client = webrtc.Client();
+var client = brightstream.Client();
 
-describe("A webrtc.Contact", function () {
-    var contact = webrtc.Contact({
+describe("A brightstream.Contact", function () {
+    var contact = brightstream.Contact({
         "client": client.getID(),
         "name": "Mickey Mouse",
         "id": "JH5K34J5K34J3453K4J53K45",
@@ -13,17 +13,17 @@ describe("A webrtc.Contact", function () {
     /*
     * Inheritance
     */
-    it("extends webrtc.Class.", function () {
+    it("extends brightstream.Class.", function () {
         expect(typeof contact.getClass).to.equal('function');
     });
 
-    it("extends webrtc.EventEmitter.", function () {
+    it("extends brightstream.EventEmitter.", function () {
         expect(typeof contact.listen).to.equal('function');
         expect(typeof contact.ignore).to.equal('function');
         expect(typeof contact.fire).to.equal('function');
     });
 
-    it("extends webrtc.Presentable.", function () {
+    it("extends brightstream.Presentable.", function () {
         expect(typeof contact.getID).to.equal('function');
         expect(typeof contact.getName).to.equal('function');
         expect(typeof contact.callInProgress).to.equal('function');
@@ -36,7 +36,7 @@ describe("A webrtc.Contact", function () {
     */
     it("has the correct class name.", function () {
         expect(contact.className).to.be.ok;
-        expect(contact.getClass()).to.equal('webrtc.Contact');
+        expect(contact.getClass()).to.equal('brightstream.Contact');
     });
 
     /*

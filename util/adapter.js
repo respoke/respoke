@@ -2,8 +2,8 @@ var RTCPeerConnection = null;
 var getUserMedia = null;
 var attachMediaStream = null;
 var reattachMediaStream = null;
-var webrtcDetectedBrowser = null;
-var webrtcDetectedVersion = null;
+var brightstreamDetectedBrowser = null;
+var brightstreamDetectedVersion = null;
 
 function trace(text) {
   // This function is used for logging.
@@ -16,9 +16,9 @@ function trace(text) {
 if (navigator.mozGetUserMedia) {
   console.log("This appears to be Firefox");
 
-  webrtcDetectedBrowser = "firefox";
+  brightstreamDetectedBrowser = "firefox";
 
-  webrtcDetectedVersion =
+  brightstreamDetectedVersion =
                   parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1]);
 
   // The RTCPeerConnection object.
@@ -78,8 +78,8 @@ if (navigator.mozGetUserMedia) {
 } else if (navigator.webkitGetUserMedia) {
   console.log("This appears to be Chrome");
 
-  webrtcDetectedBrowser = "chrome";
-  webrtcDetectedVersion =
+  brightstreamDetectedBrowser = "chrome";
+  brightstreamDetectedVersion =
              parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2]);
 
   // Creates iceServer from the url for Chrome.
@@ -90,7 +90,7 @@ if (navigator.mozGetUserMedia) {
       // Create iceServer with stun url.
       iceServer = { 'url': url };
     } else if (url_parts[0].indexOf('turn') === 0) {
-      if (webrtcDetectedVersion < 28) {
+      if (brightstreamDetectedVersion < 28) {
         // For pre-M28 chrome versions use old TURN format.
         var url_turn_parts = url.split("turn:");
         iceServer = { 'url': 'turn:' + username + '@' + url_turn_parts[1],
