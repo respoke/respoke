@@ -422,7 +422,6 @@ webrtc.User = function (params) {
         var contact = null;
         var callSettings = null;
         var clientObj = webrtc.getClient(client);
-        console.log('getCallByContact', params);
 
         calls.forEach(function findCall(one) {
             if (one.remoteEndpoint === params.contactId) {

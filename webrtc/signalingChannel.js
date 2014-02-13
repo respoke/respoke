@@ -54,7 +54,7 @@ webrtc.SignalingChannel = function (params) {
         params = params || {};
         var deferred = webrtc.makeDeferred(params.onSuccess, params.onError);
         clientSettings = webrtc.getClient(client).getClientSettings();
-        baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337/v1';
+        baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337';
 
         call({
             path: '/v1/appauthsessions',
@@ -182,23 +182,6 @@ webrtc.SignalingChannel = function (params) {
             deferred.resolve(group);
         }, function (err) {
             deferred.resolve({id: params.name});
-            /*wsCall({
-                httpMethod: 'GET',
-                path: '/v1/channels/',
-                parameters: {
-                    name: params.name
-                }
-            }).then(function (groups) {
-                for (var i = 0; i < groups.length; i += 1) {
-                    if (groups[i].name === params.name) {
-                        deferred.resolve(groups[i]);
-                        return;
-                    }
-                    deferred.reject(new Error("Couldn't create or find group", params.name));
-                }
-            }, function (err) {
-                deferred.reject(new Error("Couldn't create or find group", params.name));
-            });*/
         });
         return deferred.promise;
     });
@@ -235,7 +218,6 @@ webrtc.SignalingChannel = function (params) {
             return deferred.promise;
         }
 
-        console.log("pubsub publishing", params.id, params.message);
         wsCall({
             path: '/v1/channels/%s/publish/',
             objectId: params.id,
@@ -495,7 +477,6 @@ webrtc.SignalingChannel = function (params) {
      */
     var addHandler = that.publicize('addHandler', function (params) {
         if (socket.socket && socket.socket.open) {
-            console.log('socket.on', params.type);
             socket.on(params.type, params.handler);
         } else {
             handlerQueue[params.type].push(params.handler);
@@ -539,7 +520,6 @@ webrtc.SignalingChannel = function (params) {
                 return;
             }
 
-            console.log("pubsub websocket message", message);
 
             groupMessage = webrtc.TextMessage({
                 sender: message.header.from,
@@ -547,8 +527,6 @@ webrtc.SignalingChannel = function (params) {
                 recipient: message.header.channel,
                 rawMessage: message
             });
-            console.log('sender', groupMessage.getSender());
-            console.log('text', groupMessage.getText());
 
             group = clientObj.getGroup({id: message.header.channel});
             if (group) {
@@ -559,14 +537,13 @@ webrtc.SignalingChannel = function (params) {
         });
 
         socket.on('presence', function handleMessage(message) {
-            console.log('socket.on presence empty');
+            log.debug('socket.on presence empty');
         });
 
         socket.on('enter', function handleMessage(message) {
             var group;
             var presenceMessage;
             var endpoint;
-            console.log('ENTER');
 
             if (message.endpoint === clientObj.user.getID()) {
                 return;
@@ -580,7 +557,6 @@ webrtc.SignalingChannel = function (params) {
                 connection: message.connectionId
             });
 
-            console.log("enter websocket message", message);
             group = clientObj.getGroup({id: message.header.channel});
             if (group && endpoint) {
                 group.add(endpoint);
@@ -603,7 +579,6 @@ webrtc.SignalingChannel = function (params) {
                 id: message.endpoint
             });
 
-            console.log("leave websocket message", message);
             group = clientObj.getGroup({id: message.header.channel});
             if (group && endpoint) {
                 group.remove(endpoint);
@@ -622,7 +597,6 @@ webrtc.SignalingChannel = function (params) {
             } else if (clientObj.onMessage) {
                 clientObj.fire('message', message);
             }
-            console.log("Unrecognized websocket message", message.getSender(), message.getText());
         });
 
         socket.on('connect', function handleConnect() {
@@ -632,7 +606,6 @@ webrtc.SignalingChannel = function (params) {
                 }
 
                 handlerQueue[category].forEach(function addEachHandler(handler) {
-                    console.log('socket.on', category);
                     socket.on(category, handler);
                 });
                 handlerQueue[category] = [];
@@ -1266,7 +1239,6 @@ webrtc.Group = function (params) {
     "use strict";
     params = params || {};
 
-    console.log("new group params are", params);
     var group = webrtc.EventEmitter(params);
     var client = params.client;
     var signalingChannel = webrtc.getClient(client).getSignalingChannel();
@@ -1336,7 +1308,6 @@ webrtc.Group = function (params) {
         for (var i = (endpoints.length - 1); i >= 0; i += 1) {
             var endpoint = endpoints[i];
             if (endpoint.id === newEndpoint.id || endpoint.name === newEndpoint.name) {
-                console.log("removing", newEndpoint.name, 'from group', group.id);
                 endpoints.splice(i, 1);
                 group.fire('leave', endpoint);
             }
@@ -1377,7 +1348,6 @@ webrtc.Group = function (params) {
      */
     var sendMessage = group.publicize('sendMessage', function (params) {
         params.id = group.id;
-        console.log("sending group message", params);
         return signalingChannel.publish(params);
     });
 

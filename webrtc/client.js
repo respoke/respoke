@@ -362,7 +362,6 @@ webrtc.Client = function (params) {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
-        console.log('checkEndpointForRemoval before', endpoints);
         Q.all(groups.map(function (group) {
             return group.getEndpoints();
         })).done(function (groupEndpoints) {
@@ -385,7 +384,6 @@ webrtc.Client = function (params) {
                     endpoints.splice(index, 1);
                 }
             }
-            console.log('checkEndpointForRemoval after', endpoints);
         });
     });
 
@@ -402,9 +400,7 @@ webrtc.Client = function (params) {
             throw new Error("Can't get an endpoint without group id.");
         }
 
-        console.log("looking for", params.id, 'in', endpoints);
         endpoints.every(function (ept) {
-            console.log('comparing', ept.id, params.id);
             if (ept.id === params.id) {
                 endpoint = ept;
                 return false;
