@@ -1,3 +1,11 @@
+/**************************************************************************************************
+ *
+ * Copyright (c) 2014 Digium, Inc.
+ * All Rights Reserved. Licensed Software.
+ *
+ * @authors : Erin Spiceland <espiceland@digium.com>
+ */
+
 /**
  * Create a new WebRTC Client object.
  * @author Erin Spiceland <espiceland@digium.com>

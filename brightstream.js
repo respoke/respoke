@@ -1,10 +1,9 @@
 /**************************************************************************************************
  *
- * Copyright (c) 2013 Digium, Inc.
+ * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
  *
  * @authors : Erin Spiceland <espiceland@digium.com>
- * @test
  */
 
 /**
