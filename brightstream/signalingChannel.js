@@ -35,6 +35,7 @@ brightstream.SignalingChannel = function (params) {
     var baseURL = null;
     var xhr = new XMLHttpRequest();
     var appId;
+    var endpointId;
     xhr.withCredentials = true;
 
     var handlerQueue = {
@@ -560,7 +561,6 @@ brightstream.SignalingChannel = function (params) {
                 return;
             }
 
-
             groupMessage = brightstream.TextMessage({
                 sender: message.header.from,
                 senderSession: message.header.fromConnection,
@@ -577,7 +577,26 @@ brightstream.SignalingChannel = function (params) {
         });
 
         socket.on('presence', function handleMessage(message) {
-            log.debug('socket.on presence empty');
+            var endpoint;
+            log.debug('socket.on presence', message);
+            if (message.header.from === endpointId) {
+                return;
+            }
+
+            endpoint = clientObj.getEndpoint({
+                id: message.header.from,
+                createData: {
+                    client: client,
+                    id: message.header.from,
+                    name: message.header.from,
+                    connection: message.header.fromConnection
+                }
+            });
+
+            endpoint.setPresence({
+                sessionId: message.header.fromConnection,
+                presence: message.type
+            });
         });
 
         socket.on('enter', function handleMessage(message) {
@@ -585,28 +604,40 @@ brightstream.SignalingChannel = function (params) {
             var presenceMessage;
             var endpoint;
 
-            if (message.endpoint === clientObj.user.getID()) {
+            if (message.endpoint === endpointId) {
                 return;
             }
-            that.registerPresence({endpointList: [message.endpoint]});
 
-            endpoint = brightstream.Contact({
-                client: client,
+            endpoint = clientObj.getEndpoint({
                 id: message.endpoint,
-                name: message.endpoint,
-                connection: message.connectionId
+                createData: {
+                    client: client,
+                    id: message.endpoint,
+                    name: message.endpoint,
+                    connection: message.connectionId
+                }
             });
 
+            // Handle presence not associated with a channel
+            if (message.header.channel.indexOf('system') > -1) {
+                endpoint.setPresence({
+                    sessionId: message.connectionId,
+                    presence: 'available'
+                });
+                return;
+            }
+
+            that.registerPresence({endpointList: [message.endpoint]});
             group = clientObj.getGroup({id: message.header.channel});
+
             if (group && endpoint) {
                 group.add(endpoint);
-                clientObj.addEndpoint(endpoint);
             } else {
-                log.error("Can't add endpoint to group:", group, endpoint);
+                log.error("Can't add endpoint to group:", message, group, endpoint);
             }
         });
 
-        socket.on('leave', function handleMessage(message) {
+        socket.on('exit', function handleMessage(message) {
             var group;
             var presenceMessage;
             var endpoint;
@@ -656,6 +687,7 @@ brightstream.SignalingChannel = function (params) {
                 httpMethod: 'POST'
             }).then(function (res) {
                 log.debug('endpointconnections result', res);
+                endpointId = res.endpointId;
                 var user = brightstream.User({
                     loggedIn: true,
                     timeLoggedIn: new Date(),
@@ -1451,11 +1483,13 @@ brightstream.Group = function (params) {
                 endpoint.name = endpoint.endpointId;
                 endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
-                endpoint = brightstream.Contact(endpoint);
+                endpoint = clientObj.getEndpoint({
+                    id: endpoint.id,
+                    createData: endpoint
+                });
                 if (endpointList.indexOf(endpoint.getID()) === -1) {
                     endpointList.push(endpoint.getID());
                     add(endpoint);
-                    clientObj.addEndpoint(endpoint);
                 }
             });
 

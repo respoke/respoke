@@ -36,8 +36,12 @@ brightstream.EventEmitter = function (params) {
      */
     var listen = that.publicize('listen', function (eventType, listener) {
         eventList[eventType] = eventList[eventType] || [];
-        if (typeof listener === 'function' && eventList[eventType].indexOf(listener) === -1) {
+        if (typeof listener === 'function' && eventList[eventType].map(function (a) {
+            return a.toString();
+        }).indexOf(listener.toString()) === -1) {
             eventList[eventType].push(listener);
+        } else if (eventList[eventType].indexOf(listener) !== -1) {
+            log.warn("not adding duplicate listener.");
         }
     });
 

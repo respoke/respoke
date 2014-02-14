@@ -348,7 +348,6 @@ brightstream.Contact = function (params) {
 
         presence = sessionIds[0] ? params.sessions[sessionIds[0]].presence : 'unavailable';
 
-        log.debug("presences resolved to " + presence);
         return presence;
     });
 

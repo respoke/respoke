@@ -38,16 +38,18 @@ brightstream.Client = function (params) {
     var host = window.location.hostname;
     var port = window.location.port;
     var connected = false;
-    var app = {};
+    var app = {
+        baseURL: params.baseURL,
+        appId: params.appId
+    };
     var signalingChannel = null;
     var turnRefresher = null;
     var groups = [];
     var endpoints = [];
 
-    if (!params.appId) {
+    if (!app.appId) {
         throw new Error("appId is a required parameter to Client.");
     }
-    app.appId = params.appId;
     delete params.appId;
 
     log.debug("Client ID is ", client);
@@ -178,6 +180,16 @@ brightstream.Client = function (params) {
      */
     var isConnected = that.publicize('isConnected', function () {
         return !!connected;
+    });
+
+     /**
+     * Get an object containing the client settings.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getClientSettings
+     * @returns {object} An object containing the client settings.
+     */
+    var getClientSettings = that.publicize('getClientSettings', function () {
+        return app;
     });
 
     /**
@@ -423,7 +435,23 @@ brightstream.Client = function (params) {
             }
             return true;
         });
+
+        if (!endpoint && params.createData) {
+            endpoint = brightstream.Contact(params.createData);
+            addEndpoint(endpoint);
+        }
+
         return endpoint;
+    });
+
+    /**
+     * Get the list of all endpoints we know about.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getEndpoints
+     * @returns {Array<brightstream.Contact>}
+     */
+    var getEndpoints = that.publicize('getEndpoints', function () {
+        return endpoints;
     });
 
     return that;
