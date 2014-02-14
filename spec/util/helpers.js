@@ -2,6 +2,9 @@ var fs = require('fs');
 var webdriver = require('selenium-webdriver');
 webdriver.promise.controlFlow().on('uncaughtException', function(e) {
     console.error('Unhandled error: ' + e);
+    if (/ECONNREFUSED/.test(e.message)) {
+        console.log('HINT: do you have the driver running? (chromedriver)');
+    }
 });
 
 function getWebDriver(options) {
