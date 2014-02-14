@@ -153,6 +153,29 @@ brightstream.Client = function (params) {
     });
 
     /**
+     * Call an endpoint.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.call
+     * @param {string} endpoint
+     * @param {string} connection
+     * @param {function} [onSuccess]
+     * @param {function} [onError]
+     * @return {brightstream.Call}
+     */
+    var call = that.publicize('call', function (params) {
+        var endpoint = that.getEndpoint({id: params.id});
+
+        if (!endpoint) {
+            throw new Error("Can't find an endpoint with id", params.id);
+        }
+
+        return endpoint.call({
+            constraints: params.constraints,
+            servers: params.servers
+        });
+    });
+
+    /**
      * Update TURN credentials and set a timeout to do it again in 20 hours.
      * @memberof! brightstream.Client
      * @method brightstream.Client.updateTurnCredentials
