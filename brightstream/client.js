@@ -14,8 +14,10 @@
  * @augments brightstream.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server and receiving server-side app-specific information.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {object} clientSettings
+ * @param {string} appId
+ * @param {RTCConstraints} [constraints]
+ * @param {RTCICEServers} [servers]
  * @returns {brightstream.Client}
  * @property {object} clientSettings Client settings.
  * @property {brightstream.SignalingChannel} signalingChannel A reference to the signaling channel.
@@ -39,15 +41,14 @@ brightstream.Client = function (params) {
     var app = {};
     var signalingChannel = null;
     var turnRefresher = null;
-    var clientSettings = params.clientSettings || {};
     var groups = [];
     var endpoints = [];
 
-    if (!clientSettings.appId) {
+    if (!params.appId) {
         throw new Error("appId is a required parameter to Client.");
     }
-    app.appId = clientSettings.appId;
-    delete clientSettings.appId;
+    app.appId = params.appId;
+    delete params.appId;
 
     log.debug("Client ID is ", client);
 
@@ -73,6 +74,15 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {string} authToken
+     * @param {function} [onSuccess]
+     * @param {function} [onError]
+     * @param {function} [onGroupJoin]
+     * @param {function} [onGroupLeave]
+     * @param {function} [onMessage]
+     * @param {function} [onConnect]
+     * @param {function} [onDisconnect]
+     * @param {function} [onReconnect]
+     * @param {function} [onCall]
      */
     var connect = that.publicize('connect', function (params) {
         params = params || {};
@@ -171,16 +181,6 @@ brightstream.Client = function (params) {
     });
 
     /**
-     * Get an object containing the client settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getClientSettings
-     * @returns {object} An object containing the client settings.
-     */
-    var getClientSettings = that.publicize('getClientSettings', function () {
-        return clientSettings;
-    });
-
-    /**
      * Get an object containing the default media constraints and other media settings.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getCallSettings
@@ -195,7 +195,8 @@ brightstream.Client = function (params) {
      * Set the default media constraints and other media settings.
      * @memberof! brightstream.Client
      * @method brightstream.Client.setDefaultCallSettings
-     * @param {object} Object containing settings to modify.
+     * @param {object} [constraints]
+     * @param {object} [servers]
      */
     var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (params) {
         params = params || {};
@@ -221,7 +222,14 @@ brightstream.Client = function (params) {
      * Get a Group
      * @memberof! brightstream.Client
      * @method brightstream.Client.join
-     * @params {string} The name of the group.
+     * @param {string} The name of the group.
+     * @param {string} id
+     * @param {function} [onSuccess]
+     * @param {function} [onError]
+     * @param {function} [onMessage]
+     * @param {function} [onJoin]
+     * @param {function} [onLeave]
+     * @param {function} [onPresence]
      * @returns {brightstream.Group} The instance of the brightstream.Group which the user joined.
      */
     var join = that.publicize('join', function (params) {
@@ -255,7 +263,7 @@ brightstream.Client = function (params) {
      * Add a Group
      * @memberof! brightstream.Client
      * @method brightstream.Client.addGroup
-     * @params {id} the Group id
+     * @param {brightstream.Group}
      * @private
      */
     var addGroup = function (newGroup) {
@@ -280,7 +288,7 @@ brightstream.Client = function (params) {
      * Remove a Group
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeGroup
-     * @params {id} the Group id
+     * @param {brightstream.Group}
      * @private
      */
     var removeGroup = function (newGroup) {
@@ -313,7 +321,7 @@ brightstream.Client = function (params) {
      * Find a group by id and return it.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getGroup
-     * @params {id} the Group id
+     * @param {string} id
      * @returns {brightstream.Group}
      */
     var getGroup = that.publicize('getGroup', function (params) {
@@ -336,12 +344,12 @@ brightstream.Client = function (params) {
      * Add an Endpoint
      * @memberof! brightstream.Client
      * @method brightstream.Client.addEndpoint
-     * @params {id} the Endpoint id
+     * @param {brightstream.Contact}
      * @private
      */
     var addEndpoint = that.publicize('addEndpoint', function (newEndpoint) {
         var absent = false;
-        if (!newEndpoint || !newEndpoint.id) {
+        if (!newEndpoint || newEndpoint.className !== 'brightstream.Contact') {
             throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
         }
         absent = endpoints.every(function (ept) {
@@ -360,13 +368,13 @@ brightstream.Client = function (params) {
      * Remove an Endpoint
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeEndpoint
-     * @params {id} the Endpoint id
+     * @param {brightstream.Contact}
      * @private
      */
-    var checkEndpointForRemoval = that.publicize('checkEndpointForRemoval', function (params) {
+    var checkEndpointForRemoval = that.publicize('checkEndpointForRemoval', function (theEndpoint) {
         var inAGroup;
         var index;
-        if (!params || !params.id) {
+        if (!theEndpoint || theEndpoint.className !== 'brightstream.Contact') {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
@@ -375,14 +383,14 @@ brightstream.Client = function (params) {
         })).done(function (groupEndpoints) {
             groupEndpoints.forEach(function (endpoints) {
                 endpoints.forEach(function (endpoint) {
-                    if (endpoint.id === params.id) {
+                    if (endpoint.id === theEndpoint.id) {
                         inAGroup = true;
                     }
                 });
             });
             if (inAGroup) {
                 endpoints.every(function (ept, i) {
-                    if (ept.id === params.id) {
+                    if (ept.id === theEndpoint.id) {
                         index = i;
                         return false;
                     }
@@ -399,7 +407,7 @@ brightstream.Client = function (params) {
      * Find an endpoint by id and return it.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getEndpoint
-     * @params {id} the Endpoint id
+     * @param {string} id
      * @returns {brightstream.Contact}
      */
     var getEndpoint = that.publicize('getEndpoint', function (params) {

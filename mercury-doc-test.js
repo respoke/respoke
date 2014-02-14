@@ -97,7 +97,7 @@ DocumentationTest = function(params) {
 	 * @memberof! DocumentationTest
 	 * @method DocumentationTest.findClass
 	 * @private
-	 * @params {string} className The name of the class for which to look.
+	 * @param {string} className The name of the class for which to look.
 	 * @returns {function} The class.
 	 */
 	var findClass = function(className) {

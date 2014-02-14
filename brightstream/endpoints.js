@@ -14,8 +14,10 @@
  * @constructor
  * @classdesc UserSession including logged-in status about a user account. There may be more than
  * one of these per User.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {Date} timeLoggedIn
+ * @param {boolean} loggedIn
+ * @param {string} client
+ * @param {string} token
  * @returns {brightstream.UserSession}
  * @property {string} username
  * @property {string} token
@@ -67,8 +69,8 @@ brightstream.UserSession = function (params) {
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc Presentable class
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {string} client
+ * @param {string} id
  * @property {string} username
  * @returns {brightstream.Presentable}
  */
@@ -161,8 +163,8 @@ brightstream.Presentable = function (params) {
  * @constructor
  * @augments brightstream.Presentable
  * @classdesc Contact class
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {string} client
+ * @param {string} id
  * @returns {brightstream.Contact}
  */
 brightstream.Contact = function (params) {
@@ -180,7 +182,9 @@ brightstream.Contact = function (params) {
      * Send a message to the endpoint.
      * @memberof! brightstream.Contact
      * @method brightstream.Contact.sendMessage
-     * @params {object} message The message to send
+     * @param {string} message
+     * @param {function} [onSuccess]
+     * @param {function} [onError]
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
@@ -199,20 +203,34 @@ brightstream.Contact = function (params) {
      * Send a signal to the endpoint.
      * @memberof! brightstream.Contact
      * @method brightstream.Contact.sendSignal
-     * @params {object} message The signal to send
+     * @param {object|string} signal
+     * @param {function} [onSuccess]
+     * @param {function} [onError]
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.debug('Contact.sendSignal, no support for custom signaling profiles.');
         params = params || {};
-        return signalingChannel.sendSignal({
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        if (!params.signal) {
+            deferred.reject(new Error("Can't send a signal without a 'signal' paramter."));
+        }
+
+        signalingChannel.sendSignal({
             signal: brightstream.SignalingMessage({
                 'recipient': that,
                 'sender': brightstream.getClient(client).user.getID(),
-                'payload': params.signal // JSON in string form
+                'payload': params.signal
             }),
             onSuccess: params.onSuccess,
             onError: params.onError
+        }).done(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+
+        return deferred.promise;
     });
 
     /**
@@ -220,8 +238,9 @@ brightstream.Contact = function (params) {
      * the Call will start the call.
      * @memberof! brightstream.Contact
      * @method brightstream.Contact.call
-     * @param {object} Optional CallSettings which will be used as constraints in getUserMedia.
-     * @param {boolean} Optional Whether the logged-in user initiated the call.
+     * @param {RTCServers} [servers]
+     * @param {RTCConstraints} [constraints]
+     * @param {boolean} [initiator] Whether the logged-in user initiated the call.
      * @returns {brightstream.Call}
      */
     var call = that.publicize('call', function (params) {
@@ -302,6 +321,7 @@ brightstream.Contact = function (params) {
      * and set it as the contact's resolved presence.
      * @memberof! brightstream.Contact
      * @method brightstream.Contact.setPresence
+     * @param {array} sessions - Contact's sessions
      * @private
      */
     var resolvePresence = that.publicize('resolvePresence', function (params) {
@@ -313,7 +333,9 @@ brightstream.Contact = function (params) {
         /**
          * Sort the sessionIds array by the priority of the value of the presence of that
          * sessionId. This will cause the first element in the sessionsId to be the id of the
-         * session with the highest priority presence. Then we can access it by the 0 index.
+         * session with the highest priority presence so we can access it by the 0 index.
+         * TODO: If we don't really care about the sorting and only about the highest priority
+         * we could use Array.prototype.every to improve this algorithm.
          */
         sessionIds = sessionIds.sort(function sorter(a, b) {
             var indexA = options.indexOf(params.sessions[a].presence);
@@ -339,8 +361,10 @@ brightstream.Contact = function (params) {
  * @constructor
  * @augments brightstream.Presentable
  * @classdesc User class
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {string} client
+ * @param {Date} timeLoggedIn
+ * @param {boolean} loggedIn
+ * @param {string} token
  * @returns {brightstream.User}
  */
 brightstream.User = function (params) {
@@ -370,6 +394,9 @@ brightstream.User = function (params) {
      * @memberof! brightstream.User
      * @method brightstream.User.setPresence
      * @returns {brightstream.Contacts}
+     * @param {string} presence
+     * @param {function} onSuccess
+     * @param {function} onError
      */
     var setPresence = that.publicize('setPresence', function (params) {
         var promise;
@@ -422,7 +449,8 @@ brightstream.User = function (params) {
      * Get the Call with the contact specified.
      * @memberof! brightstream.User
      * @method brightstream.User.getCallByContact
-     * @param {string} Contact ID
+     * @param {string} contactId - Contact ID
+     * @param {boolean} create - whether or not to create a new call if the specified contactId isn't found
      * @returns {brightstream.Call}
      */
     var getCallByContact = that.publicize('getCallByContact', function (params) {
@@ -473,7 +501,8 @@ brightstream.User = function (params) {
      * Remove the call.
      * @memberof! brightstream.User
      * @method brightstream.User.removeCall
-     * @param {string} Optional Contact ID
+     * @param {string} [contactId]
+     * @param {brightstream.Call} [call]
      */
     var removeCall = that.publicize('removeCall', function (params) {
         var match = false;
@@ -500,6 +529,7 @@ brightstream.User = function (params) {
      * Set presence to available.
      * @memberof! brightstream.User
      * @method brightstream.User.setOnline
+     * @param {string} presence
      */
     var setOnline = that.publicize('setOnline', function (params) {
         params = params || {};

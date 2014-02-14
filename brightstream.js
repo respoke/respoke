@@ -26,7 +26,7 @@ Q.stopUnhandledRejectionTracking();
  * @static
  * @member brightstream
  * @returns {brightstream.Client}
- * @params {object} Parameters to the brightstream.Client constructor.
+ * @param {object} Parameters to the brightstream.Client constructor.
  */
 brightstream.connect = function (params) {
     "use strict";
@@ -37,7 +37,7 @@ brightstream.connect = function (params) {
  * @static
  * @member brightstream
  * @returns {brightstream.Client}
- * @params {number} The Client ID.
+ * @param {number} The Client ID.
  */
 brightstream.getClient = function (id) {
     "use strict";
@@ -54,7 +54,7 @@ brightstream.getClient = function (id) {
  * @static
  * @member brightstream
  * @returns {brightstream.Client}
- * @params {object} Parameters to the Client constructor
+ * @param {object} Parameters to the Client constructor
  */
 brightstream.createClient = function (params) {
     "use strict";

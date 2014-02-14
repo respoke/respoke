@@ -13,8 +13,7 @@
  * @augments brightstream.Class
  * @constructor
  * @classdesc EventEmitter class.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {string} client
  * @returns {brightstream.EventEmitter}
  */
 /*global brightstream: false */
@@ -32,8 +31,8 @@ brightstream.EventEmitter = function (params) {
      * Add a listener to an object.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.listen
-     * @param {string} eventType A developer-specified string identifying the event.
-     * @param {function} listener A function to call when the event is fire.
+     * @param {string} eventType - A developer-specified string identifying the event.
+     * @param {function} listener - A function to call when the event is fire.
      */
     var listen = that.publicize('listen', function (eventType, listener) {
         eventList[eventType] = eventList[eventType] || [];
@@ -49,8 +48,8 @@ brightstream.EventEmitter = function (params) {
      * will be removed.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.ignore
-     * @param {string} eventType An optional developer-specified string identifying the event.
-     * @param {function} listener An optional function to remove from the specified event.
+     * @param {string} eventType - An optional developer-specified string identifying the event.
+     * @param {function} listener - An optional function to remove from the specified event.
      */
     var ignore = that.publicize('ignore', function (eventType, listener) {
         // Remove all events from this object
@@ -80,8 +79,8 @@ brightstream.EventEmitter = function (params) {
      * arguments to fire() will be passed into each listener.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.fire
-     * @param {string} eventType A developer-specified string identifying the event to fire.
-     * @param {string|number|object|array} any Any number of optional parameters to be passed to
+     * @param {string} eventType - A developer-specified string identifying the event to fire.
+     * @param {string|number|object|array} any - Any number of optional parameters to be passed to
      * the listener
      */
     var fire = that.publicize('fire', function (eventType) {

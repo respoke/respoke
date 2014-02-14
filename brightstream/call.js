@@ -13,8 +13,23 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and call state.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
+ * @param {string} client - client id
+ * @param {boolean} initiator - whether or not we initiated the call
+ * @param {boolean} receiveOnly - whether or not we accept media
+ * @param {boolean} sendOnly - whether or not we send media
+ * @param {string} remoteEndpoint
+ * @param {function} [previewLocalMedia]
+ * @param {function} signalOffer
+ * @param {function} signalAnswer
+ * @param {function} signalTerminate
+ * @param {function} signalReport
+ * @param {function} signalCandidate
+ * @param {function} [onLocalVideo]
+ * @param {function} [onRemoteVideo]
+ * @param {function} [onHangup]
+ * @param {object} callSettings
+ * @param {object} [localVideoElements]
+ * @param {object} [remoteVideoElements]
  * @returns {brightstream.Call}
  * @property {boolean} initiator Indicate whether this Call belongs to the Endpoint
  * that initiated the WebRTC session.
@@ -101,6 +116,9 @@ brightstream.Call = function (params) {
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.Call
      * @method brightstream.Call.registerListeners
+     * @param {function} [onLocalVideo]
+     * @param {function} [onRemoteVideo]
+     * @param {function} [onHangup]
      * @private
      */
     var registerListeners = function (params) {
@@ -129,6 +147,11 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.answer
      * @fires brightstream.Call#answer
+     * @param {function} [previewLocalMedia]
+     * @param {function} [onLocalVideo]
+     * @param {function} [onRemoteVideo]
+     * @param {function} [onHangup]
+     * @param {boolean} [receiveOnly]
      */
     var answer = that.publicize('answer', function (params) {
         that.state = ST_STARTED;
@@ -179,6 +202,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.processOffer
      * @private
+     * @param {RTCSessionDescriptor}
      */
     var processOffer = function (oOffer) {
         log.trace('processOffer');
@@ -209,6 +233,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.onReceiveUserMedia
      * @private
+     * @param {MediaStream}
      */
     var onReceiveUserMedia = function (stream) {
         log.debug('User gave permission to use media.');
@@ -289,6 +314,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.requestMedia
      * @todo Find out when we can stop deleting TURN servers
      * @private
+     * @param {object} callSettings
      */
     var requestMedia = function (finalCallSettings) {
         var now = new Date();
@@ -332,8 +358,6 @@ brightstream.Call = function (params) {
         pc.onremovestream = onRemoteStreamRemoved;
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
-        pc.onstatechange = onStateChange;
-        pc.onicechange = onIceChange;
 
         if (brightstream.streams[callSettings.constraints]) {
             log.debug('using old stream');
@@ -357,6 +381,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.onUserMediaError
      * @private
+     * @param {object}
      */
     var onUserMediaError = function (p) {
         log.trace('onUserMediaError');
@@ -376,6 +401,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.onRemoteStreamRemoved
      * @private
+     * @param {object}
      */
     var onRemoteStreamRemoved = function (evt) {
         log.trace('pc event: remote stream removed');
@@ -386,6 +412,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.onRemoteStreamAdded
      * @private
+     * @param {object}
      */
     var onRemoteStreamAdded = function (evt) {
         that.state = ST_FLOWING;
@@ -414,28 +441,11 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Listen for RTCPeerConnection state change.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onStateChange
-     * @private
-     */
-    var onStateChange = function (p, a) {
-    };
-
-    /**
-     * Listen for ICE change.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onIceChange
-     * @private
-     */
-    var onIceChange = function (p) {
-    };
-
-    /**
      * Process a local ICE Candidate
      * @memberof! brightstream.Call
      * @method brightstream.Call.onIceCandidate
      * @private
+     * @param {RTCICECandidate}
      */
     var onIceCandidate = function (oCan) {
         if (!oCan.candidate || !oCan.candidate.candidate) {
@@ -461,7 +471,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onNegotiationNeeded
      * @private
      */
-    var onNegotiationNeeded = function (oCan) {
+    var onNegotiationNeeded = function () {
         log.warn("Negotiation needed.");
     };
 
@@ -493,7 +503,7 @@ brightstream.Call = function (params) {
      * side.
      * @memberof! brightstream.Call
      * @method brightstream.Call.saveOfferAndSend
-     * @param {RTCSessionDescription} oSession
+     * @param {RTCSessionDescription}
      * @private
      */
     var saveOfferAndSend = function (oSession) {
@@ -515,7 +525,7 @@ brightstream.Call = function (params) {
      * other side.
      * @memberof! brightstream.Call
      * @method brightstream.Call.saveAnswerAndSend
-     * @param {RTCSessionDescription} oSession
+     * @param {RTCSessionDescription}
      * @private
      */
     var saveAnswerAndSend = function (oSession) {
@@ -894,10 +904,9 @@ brightstream.Call = function (params) {
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc Manage native MediaStreams.
- * @param {object} params Object whose properties will be used to initialize this object and set
- * properties on the class.
  * @returns {brightstream.MediaStream}
- * @property {object} stream The native MediaStream we are managing.
+ * @property {object} stream - The native MediaStream we are managing.
+ * @property {boolean} islocal - whether the stream is local or remote.
  * @property {brightstream.Endpoint} stream The Endpoint to whom this stream belongs.
  */
 brightstream.MediaStream = function (params) {
