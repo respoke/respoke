@@ -13,10 +13,6 @@
  * @constructor
  * @classdesc REST API Signaling class.
  * @param {string} client
- * @param {}
- * @param {}
- * @param {}
- * @param {}
  * @returns {brightstream.SignalingChannel}
  */
  /*global brightstream: false */
@@ -58,8 +54,8 @@ brightstream.SignalingChannel = function (params) {
      * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.open
-     * @param {string} token The App's auth token
-     * @param {string} appId The App's id
+     * @param {string} token - The App's auth token
+     * @param {string} appId - The App's id
      * @return {Promise<statusString>}
      */
     var open = that.publicize('open', function (params) {
@@ -89,6 +85,12 @@ brightstream.SignalingChannel = function (params) {
         return deferred.promise;
     });
 
+    /**
+     * End an AppAuthSession
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.deleteAppAuthSession
+     * @private
+     */
     var deleteAppAuthSession = function () {
         call({
             path: '/v1/appauthsessions',
@@ -155,7 +157,7 @@ brightstream.SignalingChannel = function (params) {
      * the server to send the user's contact's presence.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendPresence
-     * @param {string} presence description, "unavailable", "available", "away", "xa", "dnd"
+     * @param {string} presence - description, "unavailable", "available", "away", "xa", "dnd"
      * @param {function} [onSuccess]
      * @param {function} [onError]
      */
@@ -175,7 +177,7 @@ brightstream.SignalingChannel = function (params) {
                 }
             },
             onSuccess: params.onSuccess,
-            onError: params.onSuccess // TODO params.onError
+            onError: params.onError
         });
     });
 
@@ -268,6 +270,12 @@ brightstream.SignalingChannel = function (params) {
         return deferred.promise;
     });
 
+    /**
+     * Register as an observer of presence for the specified endpoint ids.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.registerPresence
+     * @param {array} endpointList
+     */
     var registerPresence = that.publicize('registerPresence', function (params) {
         wsCall({
             httpMethod: 'POST',
@@ -305,7 +313,7 @@ brightstream.SignalingChannel = function (params) {
      * Send a chat message.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendMessage
-     * @param {brightstream.SignalingMessage} message The string text message to send.
+     * @param {brightstream.SignalingMessage} message - The string text message to send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
      */
@@ -351,6 +359,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.SignalingMessage} signal
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @return {Promise}
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         var signalText = params.signal.getPayload();
@@ -395,6 +404,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @return {Promise}
      */
     var sendCandidate = that.publicize('sendCandidate', function (params) {
         params = params || {};
@@ -417,6 +427,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @return {Promise}
      */
     var sendSDP = that.publicize('sendSDP', function (params) {
         params = params || {};
@@ -439,6 +450,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} reason The reason the session is being terminated.
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @return {Promise}
      */
     var sendBye = that.publicize('sendBye', function (params) {
         params = params || {};
@@ -531,6 +543,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} onStatusChange - A function to which to call on every state change.
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @return {Promise}
      */
     var authenticate = that.publicize('authenticate', function (params) {
         params = params || {};
@@ -724,6 +737,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getTurnCredentials
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @return {Promise}
      */
     var getTurnCredentials = that.publicize('getTurnCredentials', function (params) {
         params = params || {};
@@ -778,6 +792,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} path
      * @param {string} objectId
      * @param {object} parameters
+     * @return {Promise}
      */
     var wsCall = function (params) {
         params = params || {};
@@ -831,7 +846,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} path
      * @param {object} parameters
      * @param {function} responseHandler
-     * @todo TODO changee this to return a promise
+     * @todo TODO change this to return a promise
      */
     var call = function (params) {
         /* Params go in the URI for GET, DELETE, same format for
@@ -1045,79 +1060,6 @@ brightstream.TextMessage = function (params) {
 }; // End brightstream.TextMessage
 
 /**
- * Create a new GroupMessage.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.GroupMessage
- * @constructor
- * @classdesc A message.
- * @param {string} sender - ID of the sender
- * @param {string} recipient - ID of the recipient
- * @param {object} [rawMessage] - the parsed JSON we got from the server
- * @param {string|object} [payload] - the message we intend to send to the server
- * @returns {brightstream.GroupMessage}
- */
-brightstream.GroupMessage = function (params) {
-    "use strict";
-    params = params || {};
-    var that = params;
-
-    that.className = 'brightstream.GroupMessage';
-    var rawMessage = params.rawMessage; // Only set on incoming message.
-    var payload = params.payload; // Only set on outgoing message.
-    var sender = params.sender;
-    var recipient = params.recipient;
-
-    /**
-     * Parse rawMessage and save information in payload. In this base class, assume text.
-     * @memberof! brightstream.GroupMessage
-     * @method brightstream.GroupMessage.parse
-     * @param {object} Optional message to parse and replace rawMessage with.
-     */
-    var parse = that.publicize('parse', function (params) {
-        if (params && params.message) {
-            rawMessage = params.message;
-        }
-        payload = rawMessage;
-    });
-
-    /**
-     * Get the whole payload.
-     * @memberof! brightstream.GroupMessage
-     * @method brightstream.GroupMessage.getPayload
-     * @returns {string}
-     */
-    var getPayload = that.publicize('getPayload', function () {
-        return payload;
-    });
-
-    /**
-     * Get the whole chat message.
-     * @memberof! brightstream.GroupMessage
-     * @method brightstream.GroupMessage.getText
-     * @returns {string}
-     */
-    var getText = that.publicize('getText', function () {
-        return payload;
-    });
-
-    /**
-     * Get the recipient.
-     * @memberof! brightstream.GroupMessage
-     * @method brightstream.GroupMessage.getRecipient
-     * @returns {string}
-     */
-    var getRecipient = that.publicize('getRecipient', function () {
-        return recipient;
-    });
-
-    if (rawMessage) {
-        parse();
-    }
-
-    return that;
-}; // End brightstream.GroupMessage
-
-/**
  * Create a new SignalingMessage.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.SignalingMessage
@@ -1239,8 +1181,8 @@ brightstream.PresenceMessage = function (params) {
 
     /**
      * Parse rawMessage and save information in payload.
-     * @memberof! brightstream.TextMessage
-     * @method brightstream.TextMessage.parse
+     * @memberof! brightstream.PresenceMessage
+     * @method brightstream.PresenceMessage.parse
      * @param {object} Optional message to parse and replace rawMessage with.
      */
     var parse = that.publicize('parse', function (params) {
@@ -1281,7 +1223,7 @@ brightstream.PresenceMessage = function (params) {
 
     /**
      * Get the whole payload
-     * @memberof! brightstream.PreseceMessage
+     * @memberof! brightstream.PresenceMessage
      * @method brightstream.PresenceMessage.getPayload
      * @returns {object}
      */
