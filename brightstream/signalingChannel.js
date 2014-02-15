@@ -124,15 +124,6 @@ brightstream.SignalingChannel = function (params) {
     });
 
     /**
-     * Generate a unique ID to identify the call.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.generateCallID
-     * @private
-     * @returns {string}
-     */
-    var generateCallID = brightstream.makeUniqueID;
-
-    /**
      * Return the state of the signaling channel
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getState
