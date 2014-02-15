@@ -169,10 +169,8 @@ brightstream.Client = function (params) {
             throw new Error("Can't find an endpoint with id", params.id);
         }
 
-        return endpoint.call({
-            constraints: params.constraints,
-            servers: params.servers
-        });
+        delete params.id;
+        return endpoint.call(params);
     });
 
     /**
