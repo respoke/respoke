@@ -34,7 +34,7 @@ class PushDocs:
             "--debug " \
             "-v" \
             # the debug flag obviates any need for user, password, or server
-            # and will make no attempt to contact the server even if provided
+            # and will make no attempt to endpoint the server even if provided
 
         self.s = ''
         self.token = ''
@@ -48,19 +48,17 @@ class PushDocs:
                 "confluence/endpoints.js",
                 #"confluence/DocumentationTest",
                 "confluence/event.js",
-                "confluence/identity.js",
                 "confluence/call.js",
                 "confluence/signalingChannel.js",
                 #"confluence/brightstream",
                 "confluence/brightstream.TextMessage",
                 "confluence/brightstream.Class",
                 "confluence/brightstream.Client",
-                "confluence/brightstream.Contact",
-                "confluence/brightstream.Contacts",
+                "confluence/brightstream.Endpoint",
                 "confluence/brightstream.EventEmitter",
-                "confluence/brightstream.IdentityProvider",
                 "confluence/brightstream.js",
                 "confluence/brightstream.Call",
+                "confluence/brightstream.Group",
                 "confluence/brightstream.MediaStream",
                 "confluence/brightstream.PresenceMessage",
                 "confluence/brightstream.Presentable",

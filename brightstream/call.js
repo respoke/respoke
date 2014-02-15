@@ -748,10 +748,10 @@ brightstream.Call = function (params) {
     /**
      * Return the ID of the remote endpoint.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.getContactID
+     * @method brightstream.Call.getEndpointID
      * @returns {string}
      */
-    var getContactID = that.publicize('getContactID', function () {
+    var getEndpointID = that.publicize('getEndpointID', function () {
         return remoteEndpoint;
     });
 
@@ -982,7 +982,7 @@ brightstream.MediaStream = function (params) {
     });
 
     /**
-     * Indicate whether the MediaStream is a Contact's stream. Do we need this if we
+     * Indicate whether the MediaStream is a Endpoint's stream. Do we need this if we
      * have MediaStream.isLocal()?
      * @memberof! brightstream.MediaStream
      * @method brightstream.MediaStream.isRemote

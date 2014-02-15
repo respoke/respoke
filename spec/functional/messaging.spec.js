@@ -26,7 +26,7 @@ describe('Messaging', function () {
     var client3Name = 'client3';
 
     before(function (done) {
-        helpers.testFixtureBeforeTest({randomUserNames: 3, createContacts: true}, function (d, environment) {
+        helpers.testFixtureBeforeTest({randomUserNames: 3, createEndpoints: true}, function (d, environment) {
             driver = d;
             env = environment;
             username1 = env.users[0].username;
@@ -60,15 +60,15 @@ describe('Messaging', function () {
 
     describe("send and receive messages", function () {
 
-        xit("should send message to contact", function (done) {
+        xit("should send message to endpoint", function (done) {
             client1.sendMessage(username2, 'test1').then(function () {
                 done();
             });
         });
 
-        it("can send messages to multiple contacts", function (done) {
-            client2.listenOnContactEvent(username1, 'message', 'messageReceived').then(function () {
-                client3.listenOnContactEvent(username1, 'message', 'messageReceived').then(function () {
+        it("can send messages to multiple endpoints", function (done) {
+            client2.listenOnEndpointEvent(username1, 'message', 'messageReceived').then(function () {
+                client3.listenOnEndpointEvent(username1, 'message', 'messageReceived').then(function () {
                     client1.sendMessage(username2, 'testMessage-username1');
                     client1.sendMessage(username3, 'testMessage-username1');
                 });

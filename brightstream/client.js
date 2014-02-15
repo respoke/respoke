@@ -377,12 +377,12 @@ brightstream.Client = function (params) {
      * Add an Endpoint
      * @memberof! brightstream.Client
      * @method brightstream.Client.addEndpoint
-     * @param {brightstream.Contact}
+     * @param {brightstream.Endpoint}
      * @private
      */
     var addEndpoint = that.publicize('addEndpoint', function (newEndpoint) {
         var absent = false;
-        if (!newEndpoint || newEndpoint.className !== 'brightstream.Contact') {
+        if (!newEndpoint || newEndpoint.className !== 'brightstream.Endpoint') {
             throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
         }
         absent = endpoints.every(function (ept) {
@@ -401,13 +401,13 @@ brightstream.Client = function (params) {
      * Remove an Endpoint
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeEndpoint
-     * @param {brightstream.Contact}
+     * @param {brightstream.Endpoint}
      * @private
      */
     var checkEndpointForRemoval = that.publicize('checkEndpointForRemoval', function (theEndpoint) {
         var inAGroup;
         var index;
-        if (!theEndpoint || theEndpoint.className !== 'brightstream.Contact') {
+        if (!theEndpoint || theEndpoint.className !== 'brightstream.Endpoint') {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
@@ -441,7 +441,7 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.getEndpoint
      * @param {string} id
-     * @returns {brightstream.Contact}
+     * @returns {brightstream.Endpoint}
      */
     var getEndpoint = that.publicize('getEndpoint', function (params) {
         var endpoint;
@@ -458,7 +458,7 @@ brightstream.Client = function (params) {
         });
 
         if (!endpoint && params.createData) {
-            endpoint = brightstream.Contact(params.createData);
+            endpoint = brightstream.Endpoint(params.createData);
             addEndpoint(endpoint);
         }
 
@@ -469,7 +469,7 @@ brightstream.Client = function (params) {
      * Get the list of all endpoints we know about.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getEndpoints
-     * @returns {Array<brightstream.Contact>}
+     * @returns {Array<brightstream.Endpoint>}
      */
     var getEndpoints = that.publicize('getEndpoints', function () {
         return endpoints;

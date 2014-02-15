@@ -80,7 +80,7 @@ module.exports = {
         };
         this.setPresence = function (params) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.setPresence({presence: '" + params.presence + "'}).then(function (contactList) { " +
+                    "window['" + this.clientName + "'].user.setPresence({presence: '" + params.presence + "'}).then(function (endpointList) { " +
                     "    callback();" +
                     " }); ");
         };
@@ -98,11 +98,11 @@ module.exports = {
         };
         this.sendMessage = function (username, message) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    var contacts = contactList.getContacts(); " +
-                    "    for(var i = 0; i < contacts.length; i ++) { " +
-                    "         if (contacts[i].username == '" + username + "') { " +
-                    "               contacts[i].sendMessage({message: '" + message + "'}).then(function () {" +
+                    "window['" + this.clientName + "'].user.getEndpoints().then(function (endpointList) { " +
+                    "    var endpoints = endpointList.getEndpoints(); " +
+                    "    for(var i = 0; i < endpoints.length; i ++) { " +
+                    "         if (endpoints[i].username == '" + username + "') { " +
+                    "               endpoints[i].sendMessage({message: '" + message + "'}).then(function () {" +
                     "                   callback(); " +
                     "               }); " +
                     "         } " +

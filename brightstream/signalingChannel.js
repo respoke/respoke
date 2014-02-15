@@ -154,7 +154,7 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Generate and send a presence message representing the user's current status. This triggers
-     * the server to send the user's contact's presence.
+     * the server to send the user's endpoint's presence.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendPresence
      * @param {string} presence - description, "unavailable", "available", "away", "xa", "dnd"
@@ -400,7 +400,7 @@ brightstream.SignalingChannel = function (params) {
      * Send an ICE candidate.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendCandidate
-     * @param {brightstream.Contact} recipient The recipient.
+     * @param {brightstream.Endpoint} recipient The recipient.
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
@@ -423,7 +423,7 @@ brightstream.SignalingChannel = function (params) {
      * Send an SDP.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendSDP
-     * @param {brightstream.Contact} recipient The recipient.
+     * @param {brightstream.Endpoint} recipient The recipient.
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
@@ -446,7 +446,7 @@ brightstream.SignalingChannel = function (params) {
      * Send a message terminating the WebRTC session.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendBye
-     * @param {brightstream.Contact} recipient The recipient.
+     * @param {brightstream.Endpoint} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
      * @param {function} [onSuccess]
      * @param {function} [onError]
@@ -482,8 +482,8 @@ brightstream.SignalingChannel = function (params) {
         if (signal.type === 'offer') {
             toCreate = true;
         }
-        call = clientObj.user.getCallByContact({
-            contactId: message.getSender(),
+        call = clientObj.user.getCallByEndpoint({
+            endpointId: message.getSender(),
             create: toCreate
         });
 

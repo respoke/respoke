@@ -2,8 +2,8 @@ var expect = chai.expect;
 
 var client = brightstream.Client();
 
-describe("A brightstream.Contact", function () {
-    var contact = brightstream.Contact({
+describe("A brightstream.Endpoint", function () {
+    var endpoint = brightstream.Endpoint({
         "client": client.getID(),
         "name": "Mickey Mouse",
         "id": "JH5K34J5K34J3453K4J53K45",
@@ -14,39 +14,39 @@ describe("A brightstream.Contact", function () {
     * Inheritance
     */
     it("extends brightstream.Class.", function () {
-        expect(typeof contact.getClass).to.equal('function');
+        expect(typeof endpoint.getClass).to.equal('function');
     });
 
     it("extends brightstream.EventEmitter.", function () {
-        expect(typeof contact.listen).to.equal('function');
-        expect(typeof contact.ignore).to.equal('function');
-        expect(typeof contact.fire).to.equal('function');
+        expect(typeof endpoint.listen).to.equal('function');
+        expect(typeof endpoint.ignore).to.equal('function');
+        expect(typeof endpoint.fire).to.equal('function');
     });
 
     it("extends brightstream.Presentable.", function () {
-        expect(typeof contact.getID).to.equal('function');
-        expect(typeof contact.getName).to.equal('function');
-        expect(typeof contact.callInProgress).to.equal('function');
-        expect(typeof contact.getPresence).to.equal('function');
-        expect(typeof contact.setPresence).to.equal('function');
+        expect(typeof endpoint.getID).to.equal('function');
+        expect(typeof endpoint.getName).to.equal('function');
+        expect(typeof endpoint.callInProgress).to.equal('function');
+        expect(typeof endpoint.getPresence).to.equal('function');
+        expect(typeof endpoint.setPresence).to.equal('function');
     });
 
     /*
     * Make sure there is a className attribute and getClass method on every instance.
     */
     it("has the correct class name.", function () {
-        expect(contact.className).to.be.ok;
-        expect(contact.getClass()).to.equal('brightstream.Contact');
+        expect(endpoint.className).to.be.ok;
+        expect(endpoint.getClass()).to.equal('brightstream.Endpoint');
     });
 
     /*
     * Native methods
     */
     it("contains some important methods.", function () {
-        expect(typeof contact.sendMessage).to.equal('function');
-        expect(typeof contact.sendSignal).to.equal('function');
-        expect(typeof contact.resolvePresence).to.equal('function');
-        expect(typeof contact.call).to.equal('function');
+        expect(typeof endpoint.sendMessage).to.equal('function');
+        expect(typeof endpoint.sendSignal).to.equal('function');
+        expect(typeof endpoint.resolvePresence).to.equal('function');
+        expect(typeof endpoint.call).to.equal('function');
     });
 
     /*
@@ -55,14 +55,14 @@ describe("A brightstream.Contact", function () {
     it("can set and get presence and fires the correct event.", function () {
         var newPresence = 'xa';
 
-        sinon.spy(contact, "fire");
+        sinon.spy(endpoint, "fire");
         try {
-            contact.setPresence({presence: newPresence});
+            endpoint.setPresence({presence: newPresence});
 
-            expect(contact.getPresence()).to.equal(newPresence);
-            expect(contact.fire.calledWith('presence')).to.equal(true);
+            expect(endpoint.getPresence()).to.equal(newPresence);
+            expect(endpoint.fire.calledWith('presence')).to.equal(true);
         } finally {
-            contact.fire.restore();
+            endpoint.fire.restore();
         }
 
     });
@@ -71,11 +71,11 @@ describe("A brightstream.Contact", function () {
     * Constructor
     */
     it("saves unexpected developer-specified parameters.", function () {
-        expect(contact.gloveColor).to.equal('white');
+        expect(endpoint.gloveColor).to.equal('white');
     });
 
     it("doesn't expose the signaling channel", function () {
-        expect(contact.signalingChannel).to.not.exist;
-        expect(contact.getSignalingChannel).to.not.exist;
+        expect(endpoint.signalingChannel).to.not.exist;
+        expect(endpoint.getSignalingChannel).to.not.exist;
     });
 });

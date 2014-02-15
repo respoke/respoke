@@ -158,30 +158,30 @@ brightstream.Presentable = function (params) {
 }; // End brightstream.Presentable
 
 /**
- * Create a new Contact.
+ * Create a new Endpoint.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments brightstream.Presentable
- * @classdesc Contact class
+ * @classdesc Endpoint class
  * @param {string} client
  * @param {string} id
- * @returns {brightstream.Contact}
+ * @returns {brightstream.Endpoint}
  */
-brightstream.Contact = function (params) {
+brightstream.Endpoint = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
     var that = brightstream.Presentable(params);
     delete that.client;
-    that.className = 'brightstream.Contact';
+    that.className = 'brightstream.Endpoint';
     var sessions = {};
 
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to the endpoint.
-     * @memberof! brightstream.Contact
-     * @method brightstream.Contact.sendMessage
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.sendMessage
      * @param {string} message
      * @param {function} [onSuccess]
      * @param {function} [onError]
@@ -201,14 +201,14 @@ brightstream.Contact = function (params) {
 
     /**
      * Send a signal to the endpoint.
-     * @memberof! brightstream.Contact
-     * @method brightstream.Contact.sendSignal
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.sendSignal
      * @param {object|string} signal
      * @param {function} [onSuccess]
      * @param {function} [onError]
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
-        log.debug('Contact.sendSignal, no support for custom signaling profiles.');
+        log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -236,8 +236,8 @@ brightstream.Contact = function (params) {
     /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
      * the Call will start the call.
-     * @memberof! brightstream.Contact
-     * @method brightstream.Contact.call
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.call
      * @param {RTCServers} [servers]
      * @param {RTCConstraints} [constraints]
      * @param {boolean} [initiator] Whether the logged-in user initiated the call.
@@ -250,14 +250,14 @@ brightstream.Contact = function (params) {
         var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
 
-        log.trace('Contact.call');
+        log.trace('Endpoint.call');
         log.debug('Default callSettings is', combinedCallSettings);
         if (params.initiator === undefined) {
             params.initiator = true;
         }
 
         if (!id) {
-            log.error("Can't start a call without contact ID!");
+            log.error("Can't start a call without endpoint ID!");
             return;
         }
 
@@ -311,17 +311,17 @@ brightstream.Contact = function (params) {
 
         // Don't use params.onHangup here. Will overwrite the developer's callback.
         call.listen('hangup', function hangupListener(locallySignaled) {
-            user.removeCall({contactId: id});
+            user.removeCall({endpointId: id});
         });
         return call;
     });
 
     /**
      * Find the presence out of all known sessions with the highest priority (most availability)
-     * and set it as the contact's resolved presence.
-     * @memberof! brightstream.Contact
-     * @method brightstream.Contact.setPresence
-     * @param {array} sessions - Contact's sessions
+     * and set it as the endpoint's resolved presence.
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.setPresence
+     * @param {array} sessions - Endpoint's sessions
      * @private
      */
     var resolvePresence = that.publicize('resolvePresence', function (params) {
@@ -352,7 +352,7 @@ brightstream.Contact = function (params) {
     });
 
     return that;
-}; // End brightstream.Contact
+}; // End brightstream.Endpoint
 
 /**
  * Create a new User.
@@ -392,7 +392,6 @@ brightstream.User = function (params) {
      * Override Presentable.setPresence to send presence to the server before updating the object.
      * @memberof! brightstream.User
      * @method brightstream.User.setPresence
-     * @returns {brightstream.Contacts}
      * @param {string} presence
      * @param {function} onSuccess
      * @param {function} onError
@@ -445,21 +444,21 @@ brightstream.User = function (params) {
     });
 
     /**
-     * Get the Call with the contact specified.
+     * Get the Call with the endpoint specified.
      * @memberof! brightstream.User
-     * @method brightstream.User.getCallByContact
-     * @param {string} contactId - Contact ID
-     * @param {boolean} create - whether or not to create a new call if the specified contactId isn't found
+     * @method brightstream.User.getCallByEndpoint
+     * @param {string} endpointId - Endpoint ID
+     * @param {boolean} create - whether or not to create a new call if the specified endpointId isn't found
      * @returns {brightstream.Call}
      */
-    var getCallByContact = that.publicize('getCallByContact', function (params) {
+    var getCallByEndpoint = that.publicize('getCallByEndpoint', function (params) {
         var call = null;
-        var contact = null;
+        var endpoint = null;
         var callSettings = null;
         var clientObj = brightstream.getClient(client);
 
         calls.forEach(function findCall(one) {
-            if (one.remoteEndpoint === params.contactId) {
+            if (one.remoteEndpoint === params.endpointId) {
                 if (one.getState() >= 6) { // ended or media error
                     return;
                 }
@@ -468,10 +467,10 @@ brightstream.User = function (params) {
         });
 
         if (call === null && params.create === true) {
-            contact = clientObj.getEndpoint({id: params.contactId});
+            endpoint = clientObj.getEndpoint({id: params.endpointId});
             try {
                 callSettings = clientObj.getCallSettings();
-                call = contact.call({
+                call = endpoint.call({
                     callSettings: callSettings,
                     initiator: false
                 });
@@ -492,7 +491,7 @@ brightstream.User = function (params) {
     var addCall = that.publicize('addCall', function (params) {
         if (calls.indexOf(params.call) === -1) {
             calls.push(params.call);
-            that.fire('call', params.call, params.call.getContactID());
+            that.fire('call', params.call, params.call.getEndpointID());
         }
     });
 
@@ -500,18 +499,18 @@ brightstream.User = function (params) {
      * Remove the call.
      * @memberof! brightstream.User
      * @method brightstream.User.removeCall
-     * @param {string} [contactId]
+     * @param {string} [endpointId]
      * @param {brightstream.Call} [call]
      */
     var removeCall = that.publicize('removeCall', function (params) {
         var match = false;
-        if (!params.contactId && !params.call) {
-            throw new Error("Must specify contactId of Call to remove or the call itself.");
+        if (!params.endpointId && !params.call) {
+            throw new Error("Must specify endpointId of Call to remove or the call itself.");
         }
 
         // Loop backward since we're modifying the array in place.
         for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if ((params.contactId && calls[i].getContactID() === params.contactId) ||
+            if ((params.endpointId && calls[i].getEndpointID() === params.endpointId) ||
                     (params.call && calls[i] === params.call)) {
                 calls.splice(i);
                 match = true;

@@ -23,7 +23,7 @@ describe('System Events', function () {
     var client2Name = 'client2';
 
     before(function (done) {
-        helpers.testFixtureBeforeTest({randomUserNames: 2, createContacts: true}, function (d, environment) {
+        helpers.testFixtureBeforeTest({randomUserNames: 2, createEndpoints: true}, function (d, environment) {
             driver = d;
             env = environment;
             username1 = env.users[0].username;
@@ -50,10 +50,10 @@ describe('System Events', function () {
          * @type {string}
          */
         it("should receive event for brightstream.Presentable#presence on login", function (done) {
-            client1.listenOnContactEvent(username2, 'presence', 'contactsPresence').then(function () {
+            client1.listenOnEndpointEvent(username2, 'presence', 'endpointsPresence').then(function () {
                 client2.login(username2, password2).then(function (user) {
                     setTimeout(function () {
-                        client1.getValue('contactsPresence').then(function (value) {
+                        client1.getValue('endpointsPresence').then(function (value) {
                             expect(value).to.equal('available');
                             done();
                         });
@@ -65,7 +65,7 @@ describe('System Events', function () {
         it("should receive event for brightstream.Presentable#presence when sendPresence is called", function (done) {
             client2.setPresence({presence: 'unavailable'}).then(function () {
                 setTimeout(function () {
-                    client1.getValue('contactsPresence').then(function (value) {
+                    client1.getValue('endpointsPresence').then(function (value) {
                         expect(value).to.equal('unavailable');
                         done();
                     });
@@ -82,7 +82,7 @@ describe('System Events', function () {
          */
 
         it("should receive event for brightstream.Endpoint#message", function (done) {
-            client2.listenOnContactEvent(username1, 'message', 'messageReceived').then(function () {
+            client2.listenOnEndpointEvent(username1, 'message', 'messageReceived').then(function () {
                 client1.sendMessage(username2, 'Howdy!').then(function () {
                     setTimeout(function () {
                         client2.getValue('messageReceived.getText()').then(function (value) {

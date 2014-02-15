@@ -166,17 +166,17 @@ brightstream.Class = function (params) {
  */
 
 /**
- * @event brightstream.Contacts#new
- * @type {brightstream.Contact}
+ * @event brightstream.Endpoints#new
+ * @type {brightstream.Endpoint}
  */
 
 /**
- * @event brightstream.Contacts#remove
- * @type {brightstream.Contact}
+ * @event brightstream.Endpoints#remove
+ * @type {brightstream.Endpoint}
  */
 
 /**
- * @event brightstream.Contacts#presence
+ * @event brightstream.Endpoints#presence
  * @type {object}
  */
 
