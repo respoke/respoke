@@ -603,6 +603,14 @@ brightstream.SignalingChannel = function (params) {
             });
         });
 
+        socket.on('leave', function handleMessage(message) {
+            console.log('********* exit works');
+        });
+
+        socket.on('join', function handleMessage(message) {
+            console.log('********* join works');
+        });
+
         socket.on('enter', function handleMessage(message) {
             var group;
             var presenceMessage;
