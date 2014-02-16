@@ -85,6 +85,7 @@ brightstream.Client = function (params) {
      * @param {function} [onDisconnect]
      * @param {function} [onReconnect]
      * @param {function} [onCall]
+     * @returns {Promise<brightstream.User>}
      */
     var connect = that.publicize('connect', function (params) {
         params = params || {};
@@ -132,6 +133,7 @@ brightstream.Client = function (params) {
      * Disconnect from the Digium infrastructure. Invalidates the API token.
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
+     * @returns {Promise}
      */
     var disconnect = that.publicize('disconnect', function () {
         // TODO: also call this on socket disconnect
@@ -263,7 +265,7 @@ brightstream.Client = function (params) {
      * @param {function} [onJoin]
      * @param {function} [onLeave]
      * @param {function} [onPresence]
-     * @returns {brightstream.Group} The instance of the brightstream.Group which the user joined.
+     * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
      */
     var join = that.publicize('join', function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);

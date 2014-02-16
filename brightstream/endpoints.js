@@ -89,7 +89,7 @@ brightstream.Presentable = function (params) {
      * Return the user ID
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.getID
-     * @return {string} id
+     * @return {string}
      */
     var getID = that.publicize('getID', function () {
         return that.id;
@@ -99,7 +99,7 @@ brightstream.Presentable = function (params) {
      * Get the name.
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.getName
-     * @return {string} name
+     * @return {string}
      */
     var getName = that.publicize('getName', function () {
         return that.name;
@@ -185,6 +185,7 @@ brightstream.Endpoint = function (params) {
      * @param {string} message
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @returns {Promise}
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
@@ -206,6 +207,7 @@ brightstream.Endpoint = function (params) {
      * @param {object|string} signal
      * @param {function} [onSuccess]
      * @param {function} [onError]
+     * @returns {Promise}
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
@@ -323,6 +325,7 @@ brightstream.Endpoint = function (params) {
      * @method brightstream.Endpoint.setPresence
      * @param {array} sessions - Endpoint's sessions
      * @private
+     * @returns {string}
      */
     var resolvePresence = that.publicize('resolvePresence', function (params) {
         var presence;
@@ -395,14 +398,14 @@ brightstream.User = function (params) {
      * @param {string} presence
      * @param {function} onSuccess
      * @param {function} onError
+     * @return {Promise}
      */
     var setPresence = that.publicize('setPresence', function (params) {
-        var promise;
         params = params || {};
         params.presence = params.presence || "available";
         log.info('sending my presence update ' + params.presence);
 
-        promise = signalingChannel.sendPresence({
+        return signalingChannel.sendPresence({
             presence: params.presence,
             onSuccess: function (p) {
                 superClass.setPresence(params);
@@ -412,7 +415,6 @@ brightstream.User = function (params) {
             },
             onError: params.onError
         });
-        return promise;
     });
 
     /**
@@ -527,7 +529,7 @@ brightstream.User = function (params) {
      * Set presence to available.
      * @memberof! brightstream.User
      * @method brightstream.User.setOnline
-     * @param {string} presence
+     * @param {string}
      */
     var setOnline = that.publicize('setOnline', function (params) {
         params = params || {};
