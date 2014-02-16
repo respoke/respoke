@@ -603,14 +603,6 @@ brightstream.SignalingChannel = function (params) {
             });
         });
 
-        socket.on('leave', function handleMessage(message) {
-            console.log('********* exit works');
-        });
-
-        socket.on('join', function handleMessage(message) {
-            console.log('********* join works');
-        });
-
         socket.on('enter', function handleMessage(message) {
             var group;
             var presenceMessage;
@@ -665,6 +657,7 @@ brightstream.SignalingChannel = function (params) {
             group = clientObj.getGroup({id: message.header.channel});
             if (group && endpoint) {
                 group.remove(endpoint);
+                console.log('attempting to remove from group', group.id, endpoint);
                 clientObj.checkEndpointForRemoval(endpoint);
             } else {
                 log.error("Can't remove endpoint from group:", group, endpoint);
