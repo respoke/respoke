@@ -701,18 +701,17 @@ brightstream.SignalingChannel = function (params) {
             var presenceMessage;
             var endpoint;
 
-            if (message.endpoint === clientObj.user.getID()) {
+            if (message.endpointId === clientObj.user.getID()) {
                 return;
             }
 
             endpoint = clientObj.getEndpoint({
-                id: message.endpoint
+                id: message.endpointId
             });
 
             group = clientObj.getGroup({id: message.header.channel});
             if (group && endpoint) {
                 group.remove(endpoint);
-                console.log('attempting to remove from group', group.id, endpoint);
                 clientObj.checkEndpointForRemoval(endpoint);
             } else {
                 log.error("Can't remove endpoint from group:", group, endpoint);
@@ -1415,9 +1414,10 @@ brightstream.Group = function (params) {
         if (!newEndpoint.id || !newEndpoint.name) {
             throw new Error("Can't remove endpoint from a group without a name or id.");
         }
-        for (var i = (endpoints.length - 1); i >= 0; i += 1) {
+        for (var i = (endpoints.length - 1); i >= 0; i -= 1) {
             var endpoint = endpoints[i];
-            if (endpoint.id === newEndpoint.id || endpoint.name === newEndpoint.name) {
+            if ((newEndpoint.id && endpoint.getID() === newEndpoint.id) ||
+                    (newEndpoint.name && endpoint.getName() === newEndpoint.name)) {
                 endpoints.splice(i, 1);
                 /**
                  * @event brightstream.Group#leave
@@ -1510,8 +1510,6 @@ brightstream.Group = function (params) {
                         endpointList.push(endpoint.getID());
                         add(endpoint);
                     }
-                } else {
-                    console.log('in Group.getEndpoints endpoint is', endpoint);
                 }
             });
 
