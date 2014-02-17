@@ -582,6 +582,8 @@ brightstream.SignalingChannel = function (params) {
 
         socket.on('presence', function handleMessage(message) {
             var endpoint;
+            var groups;
+
             log.debug('socket.on presence', message);
             if (message.header.from === endpointId) {
                 return;
@@ -597,6 +599,19 @@ brightstream.SignalingChannel = function (params) {
                 }
             });
 
+            if (message.type === 'unavailable') {
+                var groups = clientObj.getGroups();
+                if (groups) {
+                    groups.forEach(function (group) {
+                        group.getEndpoints().done(function (endpoint) {
+                            if (endpoint.getName() === message.header.from) {
+                                group.fire('leave', endpoint);
+                            }
+                        });
+                    });
+                }
+            }
+
             endpoint.setPresence({
                 sessionId: message.header.fromConnection,
                 presence: message.type
@@ -608,6 +623,7 @@ brightstream.SignalingChannel = function (params) {
             var presenceMessage;
             var endpoint;
 
+            console.log('enter', message);
             if (message.endpoint === endpointId) {
                 return;
             }
@@ -641,11 +657,20 @@ brightstream.SignalingChannel = function (params) {
             }
         });
 
+        socket.on('join', function handleMessage(message) {
+            console.log('join', message);
+        });
+
+        socket.on('leave', function handleMessage(message) {
+            console.log('leave', message);
+        });
+
         socket.on('exit', function handleMessage(message) {
             var group;
             var presenceMessage;
             var endpoint;
 
+            console.log('exit', message);
             if (message.endpoint === clientObj.user.getID()) {
                 return;
             }
@@ -1421,9 +1446,14 @@ brightstream.Group = function (params) {
                     id: endpoint.id,
                     createData: endpoint
                 });
-                if (endpointList.indexOf(endpoint.getID()) === -1) {
-                    endpointList.push(endpoint.getID());
-                    add(endpoint);
+                if (endpoint) {
+                    group.fire('join', group, endpoint);
+                    if (endpointList.indexOf(endpoint.getID()) === -1) {
+                        endpointList.push(endpoint.getID());
+                        add(endpoint);
+                    }
+                } else {
+                    console.log('in Group.getEndpoints endpoint is', endpoint);
                 }
             });
 
