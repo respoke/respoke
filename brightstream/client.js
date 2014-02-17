@@ -365,6 +365,17 @@ brightstream.Client = function (params) {
     /**
      * Find a group by id and return it.
      * @memberof! brightstream.Client
+     * @method brightstream.Client.getGroups
+     * @param {string} id
+     * @returns {brightstream.Group}
+     */
+    var getGroups = that.publicize('getGroups', function (params) {
+        return groups;
+    });
+
+    /**
+     * Find a group by id and return it.
+     * @memberof! brightstream.Client
      * @method brightstream.Client.getGroup
      * @param {string} id
      * @returns {brightstream.Group}
