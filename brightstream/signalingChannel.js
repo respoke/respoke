@@ -658,12 +658,11 @@ brightstream.SignalingChannel = function (params) {
             });
         });
 
-        socket.on('enter', function handleMessage(message) {
+        socket.on('join', function handleMessage(message) {
             var group;
             var presenceMessage;
             var endpoint;
 
-            console.log('enter', message);
             if (message.endpoint === endpointId) {
                 return;
             }
@@ -697,20 +696,11 @@ brightstream.SignalingChannel = function (params) {
             }
         });
 
-        socket.on('join', function handleMessage(message) {
-            console.log('join', message);
-        });
-
         socket.on('leave', function handleMessage(message) {
-            console.log('leave', message);
-        });
-
-        socket.on('exit', function handleMessage(message) {
             var group;
             var presenceMessage;
             var endpoint;
 
-            console.log('exit', message);
             if (message.endpoint === clientObj.user.getID()) {
                 return;
             }
