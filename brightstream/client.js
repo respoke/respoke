@@ -138,7 +138,7 @@ brightstream.Client = function (params) {
      * Disconnect from the Digium infrastructure. Invalidates the API token.
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
-     * @returns {Promise}
+     * @returns {Promise<undefined>}
      */
     var disconnect = that.publicize('disconnect', function () {
         // TODO: also call this on socket disconnect

@@ -627,7 +627,7 @@ brightstream.Call = function (params) {
 
         /**
          * @event brightstream.Call#hangup
-         * @type {boolean} whether or not we sent a 'bye' signal.
+         * @type {boolean}
          */
         that.fire('hangup', params.signal);
         that.ignore();

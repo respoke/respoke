@@ -189,7 +189,7 @@ brightstream.Endpoint = function (params) {
      * @param {string} message
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @returns {Promise}
+     * @returns {Promise<undefined>}
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
@@ -211,7 +211,7 @@ brightstream.Endpoint = function (params) {
      * @param {object|string} signal
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @returns {Promise}
+     * @returns {Promise<undefined>}
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
@@ -402,7 +402,7 @@ brightstream.User = function (params) {
      * @param {string} presence
      * @param {function} onSuccess
      * @param {function} onError
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var setPresence = that.publicize('setPresence', function (params) {
         params = params || {};

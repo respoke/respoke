@@ -350,7 +350,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.SignalingMessage} signal
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
         var signalText = params.signal.getPayload();
@@ -395,7 +395,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var sendCandidate = that.publicize('sendCandidate', function (params) {
         params = params || {};
@@ -418,7 +418,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var sendSDP = that.publicize('sendSDP', function (params) {
         params = params || {};
@@ -441,7 +441,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} reason The reason the session is being terminated.
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var sendBye = that.publicize('sendBye', function (params) {
         params = params || {};
@@ -559,7 +559,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} onStatusChange - A function to which to call on every state change.
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var authenticate = that.publicize('authenticate', function (params) {
         params = params || {};
@@ -778,7 +778,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getTurnCredentials
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var getTurnCredentials = that.publicize('getTurnCredentials', function (params) {
         params = params || {};
@@ -833,7 +833,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} path
      * @param {string} objectId
      * @param {object} parameters
-     * @return {Promise}
+     * @return {Promise<undefined>}
      */
     var wsCall = function (params) {
         params = params || {};
@@ -1364,7 +1364,7 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.leave
      * @param {function} [onSuccess]
      * @param {function} [onError]
-     * @return {Promise}
+     * @return {Promise<undefined>}
      * @fires {brightstream.User#leave}
      */
     var leave = group.publicize('leave', function (params) {
