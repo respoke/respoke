@@ -31,10 +31,10 @@ grunt uglify
 This project uses jshint
 
 ```
-jshint webrtc.js webrtc/*.js
+jshint brightstream.js brightstream/*.js
 ```
 
-There is a pre commit hook in `githooks` which will run `jshint` global binary against `webrtc.js` and `webrtc/*.js`
+There is a pre commit hook in `githooks` which will run `jshint` global binary against `brightstream.js` and `brightstream/*.js`
 
 This will stop you commiting bad code which is against the coding standards - **Where is the coding guidelines document?**
 

@@ -1,64 +1,82 @@
 /**************************************************************************************************
  *
- * Copyright (c) 2013 Digium, Inc.
+ * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
  *
  * @authors : Erin Spiceland <espiceland@digium.com>
- * @test
  */
 
 /**
  * @author Erin Spiceland <espiceland@digium.com>
- * @namespace webrtc
+ * @namespace brightstream
  * @global
  */
-var webrtc = {
+var brightstream = {
     streams: {},
     instances: {}
 };
 log.setLevel('debug');
 
+Q.longStackSupport = true;
+Q.stackJumpLimit = 5;
+Q.longStackJumpLimit = 20;
+Q.stopUnhandledRejectionTracking();
+
 /**
  * @static
- * @member webrtc
- * @returns {webrtc.Client}
- * @params {object} Parameters to the webrtc.Client constructor.
+ * @member brightstream
+ * @returns {brightstream.Client}
+ * @param {object} Parameters to the brightstream.Client constructor.
  */
-webrtc.connect = function (params) {
+brightstream.connect = function (params) {
     "use strict";
-    return webrtc.Client(params);
+    return brightstream.Client(params);
 };
 
 /**
  * @static
- * @member webrtc
- * @returns {webrtc.Client}
- * @params {number} The Client ID.
+ * @member brightstream
+ * @returns {brightstream.Client}
+ * @param {number} The Client ID.
  */
-webrtc.getClient = function (id) {
+brightstream.getClient = function (id) {
     "use strict";
     if (id === undefined) {
-        log.debug(new Error().stack);
+        log.debug("Can't call getClient with no client ID.", new Error().stack);
     }
-    return webrtc.instances[id];
+    if (!brightstream.instances[id]) {
+        log.debug("No client instance with id", id);
+    }
+    return brightstream.instances[id];
 };
 
 /**
  * @static
- * @member webrtc
+ * @member brightstream
+ * @returns {brightstream.Client}
+ * @param {object} Parameters to the Client constructor
+ */
+brightstream.createClient = function (params) {
+    "use strict";
+    return brightstream.Client(params);
+};
+
+/**
+ * @static
+ * @member brightstream
  * @returns {number}
  */
-webrtc.makeUniqueID = function () {
+brightstream.makeUniqueID = function () {
     "use strict";
     return Math.floor(Math.random() * 100000000);
 };
 
 /**
  * @static
- * @member webrtc
+ * @member brightstream
  * @returns {number}
  */
-webrtc.makePromise = function (onSuccess, onError) {
+brightstream.makeDeferred = function (onSuccess, onError) {
     "use strict";
     var deferred = Q.defer();
     if (onSuccess || onError) {
@@ -105,16 +123,18 @@ Object.defineProperty(Object.prototype, 'publicize', {
 
 /**
  * Empty base class.
- * @class webrtc.Class
+ * @class brightstream.Class
  * @classdesc Empty base class.
  * @constructor
  * @author Erin Spiceland <espiceland@digium.com>
  */
-webrtc.Class = function (params) {
+brightstream.Class = function (params) {
     "use strict";
-    var that = { 'className': 'webrtc.Class' };
+    var that = params.that || {};
+    that.className = 'brightstream.Class';
     params = params || {};
     var client = params.client;
+    delete params.that;
     delete that.client;
     Object.keys(params).forEach(function copyParam(name) {
         that[name] = params[name];
@@ -122,8 +142,8 @@ webrtc.Class = function (params) {
 
     /**
      * Get the name of the class.
-     * @memberof! webrtc.Class
-     * @method webrtc.Class.getClass
+     * @memberof! brightstream.Class
+     * @method brightstream.Class.getClass
      * @returns {string} Class name
      */
     var getClass = that.publicize('getClass', function () {
@@ -131,121 +151,4 @@ webrtc.Class = function (params) {
     });
 
     return that;
-}; // End webrtc.Class
-
-
-/**
- * @callback successCallback
- * @param {number|string|object} result
- */
-
-/**
- * @callback failureCallback
- * @param {string} err
- * @param {number|string|object} result
- */
-
-/**
- * @event webrtc.Contacts#new
- * @type {webrtc.Contact}
- */
-
-/**
- * @event webrtc.Contacts#remove
- * @type {webrtc.Contact}
- */
-
-/**
- * @event webrtc.Contacts#presence
- * @type {object}
- */
-
-/**
- * @event webrtc.Presentable#presence
- * @type {string}
- */
-
-/**
- * @event webrtc.Endpoint#message
- * @type {object}
- */
-
-/**
- * @event webrtc.Endpoint#signaling
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#local-stream-received
- * @type {DOM}
- */
-
-/**
- * @event webrtc.Call#remote-stream-received
- * @type {DOM}
- */
-
-/**
- * @event webrtc.Call#remote-stream-removed
- * @type {object}
- */
-
-/**
- * @event webrtc.Call#hangup
- * @type {boolean}
- */
-
-/**
- * @event webrtc.Call#video-muted
- */
-
-/**
- * @event webrtc.Call#video-unmuted
- */
-
-/**
- * @event webrtc.Call#audio-muted
- */
-
-/**
- * @event webrtc.Call#audio-unmuted
- */
-
-/**
- * @event webrtc.MediaStream#video-muted
- */
-
-/**
- * @event webrtc.MediaStream#video-unmuted
- */
-
-/**
- * @event webrtc.MediaStream#audio-muted
- */
-
-/**
- * @event webrtc.MediaStream#audio-unmuted
- */
-
-/**
- * @event webrtc.SignalingChannel#offer
- * @type {RTCSessionDescription}
- */
-
-/**
- * @event webrtc.SignalingChannel#answer
- * @type {RTCSessionDescription}
- */
-
-/**
- * @event webrtc.SignalingChannel#candidate
- * @type {RTCIceCandidate}
- */
-
-/**
- * @event webrtc.SignalingChannel#bye
- */
-
-Q.longStackSupport = true;
-Q.stackJumpLimit = 5;
-Q.longStackJumpLimit = 20;
+}; // End brightstream.Class

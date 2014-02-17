@@ -1,1 +1,1 @@
-jsdoc -p -d confluence -t /usr/local/bin/jsdoc/templates/confluence-jsdoc-template mercury-doc-test.js webrtc.js webrtc/event.js webrtc/client.js webrtc/identity.js webrtc/endpoints.js webrtc/signalingChannel.js webrtc/call.js
+jsdoc -p -d confluence -t /usr/local/bin/jsdoc/templates/confluence-jsdoc-template brightstream.js brightstream/event.js brightstream/client.js brightstream/endpoints.js brightstream/signalingChannel.js brightstream/call.js

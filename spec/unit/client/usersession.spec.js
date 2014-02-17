@@ -1,14 +1,14 @@
 
 var expect = chai.expect;
 
-var client = webrtc.Client();
+var client = brightstream.Client();
 
-describe("A webrtc.UserSession ", function () {
+describe("A brightstream.UserSession ", function () {
     var token = "0IJASDF09ASDF98SA9D8FHSF";
     /*
     * UserSession doesn't use the client id, but this is not true of most classes!
     */
-    var userSession = webrtc.UserSession({
+    var userSession = brightstream.UserSession({
         "timeLoggedIn": new Date(),
         "loggedIn": true,
         "token": token,
@@ -18,11 +18,11 @@ describe("A webrtc.UserSession ", function () {
     /*
     * Inheritance
     */
-    it("extends webrtc.Class.", function () {
+    it("extends brightstream.Class.", function () {
         expect(typeof userSession.getClass).to.equal('function');
     });
 
-    it("extends webrtc.EventEmitter.", function () {
+    it("extends brightstream.EventEmitter.", function () {
         expect(typeof userSession.listen).to.equal('function');
         expect(typeof userSession.ignore).to.equal('function');
         expect(typeof userSession.fire).to.equal('function');
@@ -33,7 +33,7 @@ describe("A webrtc.UserSession ", function () {
     */
     it("has the correct class name.", function () {
         expect(userSession.className).to.be.ok;
-        expect(userSession.getClass()).to.equal('webrtc.UserSession');
+        expect(userSession.getClass()).to.equal('brightstream.UserSession');
     });
 
     /*

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-JSHINT_OUTPUT=`jshint webrtc.js webrtc/*.js`
+JSHINT_OUTPUT=`jshint brightstream.js brightstream/*.js`
 if [ "$JSHINT_OUTPUT" != "" ]; then
 	echo JSHINT_OUTPUT is $JSHINT_OUTPUT
 	exit 1

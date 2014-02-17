@@ -31,7 +31,7 @@ module.exports = {
         this.baseURL = baseURL || 'https://testing.digiumlabs.com:1337'
 
         this.init = function (appId) {
-            return this.driver.executeScript("window['" + this.clientName + "'] = webrtc.Client({clientSettings: {appId: '" + appId + "', baseURL: '" + this.baseURL + "'}});");
+            return this.driver.executeScript("window['" + this.clientName + "'] = brightstream.Client({clientSettings: {appId: '" + appId + "', baseURL: '" + this.baseURL + "'}});");
         };
         this.connect = function () {
             return this.driver.executeScript("window['" + this.clientName + "'].connect();");
@@ -72,50 +72,23 @@ module.exports = {
         this.getSignalingChannel = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].getSignalingChannel();");
         };
-        this.getContacts = function () {
-            return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    window['" + this.clientName + "']['contacts'] = contactList;" +
-                    "    callback(contactList); " +
-                    " });");
-        };
         this.listen = function (method, event, varName) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
                     "window['" + this.clientName + "']." + method + ".listen('" + event + "', function (message) {" +
                     "    window['" + this.clientName + "']['" + varName +"'] = message; " +
                     " }); callback();");
         };
-        this.listenOnContactEvent = function (username, event, varName) {
-            return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    var contacts = contactList.getContacts(); " +
-                    "    for(var i = 0; i < contacts.length; i += 1) { " +
-                    "         if (contacts[i].username == '" + username + "') { " +
-                    "               contacts[i].listen('" + event + "', function (message) {" +
-                    "                   window['" + this.clientName + "']['" + varName + "'] = message; " +
-                    "               }); " +
-                    "         } " +
-                    "    } " +
-                    "    callback();" +
-                    " }); ");
-        };
         this.getValue = function (varName) {
             return this.driver.executeScript("return window['" + this.clientName + "']." + varName +";");
         };
         this.setPresence = function (params) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.setPresence({presence: '" + params.presence + "'}).then(function (contactList) { " +
+                    "window['" + this.clientName + "'].user.setPresence({presence: '" + params.presence + "'}).then(function (endpointList) { " +
                     "    callback();" +
                     " }); ");
         };
         this.getPresence = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getPresence();");
-        };
-        this.getDisplayName = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.getDisplayName();");
-        };
-        this.getUsername = function () {
-            return this.driver.executeScript("return window['" + this.clientName + "'].user.getUsername();");
         };
         this.getName = function () {
             return this.driver.executeScript("return window['" + this.clientName + "'].user.getName();");
@@ -128,11 +101,11 @@ module.exports = {
         };
         this.sendMessage = function (username, message) {
             return this.driver.executeAsyncScript("var callback = arguments[arguments.length - 1]; " +
-                    "window['" + this.clientName + "'].user.getContacts().then(function (contactList) { " +
-                    "    var contacts = contactList.getContacts(); " +
-                    "    for(var i = 0; i < contacts.length; i ++) { " +
-                    "         if (contacts[i].username == '" + username + "') { " +
-                    "               contacts[i].sendMessage({message: '" + message + "'}).then(function () {" +
+                    "window['" + this.clientName + "'].user.getEndpoints().then(function (endpointList) { " +
+                    "    var endpoints = endpointList.getEndpoints(); " +
+                    "    for(var i = 0; i < endpoints.length; i ++) { " +
+                    "         if (endpoints[i].username == '" + username + "') { " +
+                    "               endpoints[i].sendMessage({message: '" + message + "'}).then(function () {" +
                     "                   callback(); " +
                     "               }); " +
                     "         } " +
@@ -143,7 +116,7 @@ module.exports = {
             return this.driver.executeScript("window['" + this.clientName + "']." + varName + ".sendMessage({message: '" + message + "'});");
         };
         this.getID = function () {
-            return this.driver.executeScript("return webrtc.getClient(window['" + this.clientName + "'].getID()).user.getID();")
+            return this.driver.executeScript("return brightstream.getClient(window['" + this.clientName + "'].getID()).user.getID();")
         };
 
     },

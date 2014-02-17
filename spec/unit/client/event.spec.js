@@ -1,15 +1,15 @@
 
 var expect = chai.expect;
 
-describe("A webrtc.EventEmitter ", function () {
-    var eventThrower = webrtc.EventEmitter({
+describe("A brightstream.EventEmitter ", function () {
+    var eventThrower = brightstream.EventEmitter({
         "gloveColor": "white"
     });
 
     /*
     * Inheritance
     */
-    it("extends webrtc.Class.", function () {
+    it("extends brightstream.Class.", function () {
         expect(typeof eventThrower.getClass).to.equal('function');
     });
 
@@ -18,7 +18,7 @@ describe("A webrtc.EventEmitter ", function () {
     */
     it("has the correct class name.", function () {
         expect(eventThrower.className).to.be.ok;
-        expect(eventThrower.getClass()).to.equal('webrtc.EventEmitter');
+        expect(eventThrower.getClass()).to.equal('brightstream.EventEmitter');
     });
 
     /*

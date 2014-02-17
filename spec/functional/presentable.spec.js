@@ -21,7 +21,7 @@ describe('Presence setup', function () {
     var client2Name = 'client2';
 
     before(function (done) {
-        helpers.testFixtureBeforeTest({randomUserNames: 2, createContacts: true}, function (d, environment) {
+        helpers.testFixtureBeforeTest({randomUserNames: 2, createEndpoints: true}, function (d, environment) {
             driver = d;
             env = environment;
             username1 = env.users[0].username;
@@ -50,20 +50,6 @@ describe('Presence setup', function () {
         it("#getPresence", function (done) {
             client1.getPresence().then(function (presence) {
                 expect(presence).to.equal('available');
-                done();
-            });
-        });
-
-        it("#getDisplayName", function (done) {
-            client1.getDisplayName().then(function (name) {
-                expect(name).to.equal(env.users[0].username);
-                done();
-            });
-        });
-
-        it("#getUsername", function (done) {
-            client1.getUsername().then(function (name) {
-                expect(name).to.equal(env.users[0].username);
                 done();
             });
         });

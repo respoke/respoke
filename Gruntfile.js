@@ -11,7 +11,7 @@ module.exports = function(grunt) {
           beautify: true
         },
         files: {
-          'webrtc.min.js': ['util/socket.io.js', 'util/sails.io.js', 'util/q.js', 'util/loglevel.js', 'util/adapter.js', 'webrtc.js', 'webrtc/event.js', 'webrtc/client.js', 'webrtc/identity.js', 'webrtc/endpoints.js', 'webrtc/signalingChannel.js', 'webrtc/call.js']
+          'brightstream.min.js': ['util/socket.io.js', 'util/sails.io.js', 'util/q.js', 'util/loglevel.js', 'util/adapter.js', 'brightstream.js', 'brightstream/event.js', 'brightstream/client.js', 'brightstream/identity.js', 'brightstream/endpoints.js', 'brightstream/signalingChannel.js', 'brightstream/call.js']
         }
       }
     }

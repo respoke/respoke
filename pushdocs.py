@@ -34,7 +34,7 @@ class PushDocs:
             "--debug " \
             "-v" \
             # the debug flag obviates any need for user, password, or server
-            # and will make no attempt to contact the server even if provided
+            # and will make no attempt to endpoint the server even if provided
 
         self.s = ''
         self.token = ''
@@ -44,30 +44,26 @@ class PushDocs:
             'server': 'http://wiki.digium.internal/wiki/rpc/xmlrpc',
             'space': 'Mercury',
             'files': [
+                "confluence/call.js",
                 "confluence/client.js",
                 "confluence/endpoints.js",
-                #"confluence/DocumentationTest",
                 "confluence/event.js",
-                "confluence/identity.js",
-                "confluence/call.js",
                 "confluence/signalingChannel.js",
-                #"confluence/webrtc",
-                "confluence/webrtc.TextMessage",
-                "confluence/webrtc.Class",
-                "confluence/webrtc.Client",
-                "confluence/webrtc.Contact",
-                "confluence/webrtc.Contacts",
-                "confluence/webrtc.EventEmitter",
-                "confluence/webrtc.IdentityProvider",
-                "confluence/webrtc.js",
-                "confluence/webrtc.Call",
-                "confluence/webrtc.MediaStream",
-                "confluence/webrtc.PresenceMessage",
-                "confluence/webrtc.Presentable",
-                "confluence/webrtc.SignalingChannel",
-                "confluence/webrtc.SignalingMessage",
-                "confluence/webrtc.User",
-                "confluence/webrtc.UserSession"
+                "confluence/brightstream.Call",
+                "confluence/brightstream.Class",
+                "confluence/brightstream.Client",
+                "confluence/brightstream.Endpoint",
+                "confluence/brightstream.EventEmitter",
+                "confluence/brightstream.Group",
+                "confluence/brightstream.js",
+                "confluence/brightstream.MediaStream",
+                "confluence/brightstream.PresenceMessage",
+                "confluence/brightstream.Presentable",
+                "confluence/brightstream.TextMessage",
+                "confluence/brightstream.SignalingChannel",
+                "confluence/brightstream.SignalingMessage",
+                "confluence/brightstream.User",
+                "confluence/brightstream.UserSession"
             ],
             'username': 'espiceland',
             'password': '',
