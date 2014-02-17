@@ -461,11 +461,11 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.routeSignal
      * @param {brightstream.SignalingMessage} message - A message to route
-     * @fires {brightstream.Call#offer}
-     * @fires {brightstream.Call#accept}
-     * @fires {brightstream.Call#answer}
-     * @fires {brightstream.Call#candidate}
-     * @fires {brightstream.Call#bye}
+     * @fires brightstream.Call#offer
+     * @fires brightstream.Call#accept
+     * @fires brightstream.Call#answer
+     * @fires brightstream.Call#candidate
+     * @fires brightstream.Call#bye
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.getPayload();
@@ -584,8 +584,8 @@ brightstream.SignalingChannel = function (params) {
 
 
         /**
-         * @fires {brightstream.Group#message}
-         * @fires {brightstream.Client#message}
+         * @fires brightstream.Group#message
+         * @fires brightstream.Client#message
          */
         socket.on('pubsub', function handleMessage(message) {
             var group;
@@ -702,8 +702,8 @@ brightstream.SignalingChannel = function (params) {
         });
 
         /**
-         * @fires {brightstream.Endpoint#message}
-         * @fires {brightstream.Client#message}
+         * @fires brightstream.Endpoint#message
+         * @fires brightstream.Client#message
          */
         socket.on('message', function handleMessage(message) {
             var endpoint;
@@ -833,7 +833,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} path
      * @param {string} objectId
      * @param {object} parameters
-     * @return {Promise<undefined>}
+     * @return {Promise<object>}
      */
     var wsCall = function (params) {
         params = params || {};
@@ -1365,7 +1365,7 @@ brightstream.Group = function (params) {
      * @param {function} [onSuccess]
      * @param {function} [onError]
      * @return {Promise<undefined>}
-     * @fires {brightstream.User#leave}
+     * @fires brightstream.User#leave
      */
     var leave = group.publicize('leave', function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -1391,7 +1391,7 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.remove
      * @param {string} [name] Endpoint name
      * @param {string} [id] Endpoint id
-     * @fires {brightstream.Group#leave}
+     * @fires brightstream.Group#leave
      */
     var remove = group.publicize('remove', function (newEndpoint) {
         if (!newEndpoint.id || !newEndpoint.name) {
@@ -1416,7 +1416,7 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.add
      * @param {string} [name] Endpoint name
      * @param {string} [id] Endpoint id
-     * @fires {brightstream.Group#join}
+     * @fires brightstream.Group#join
      */
     var add = group.publicize('add', function (newEndpoint) {
         var foundEndpoint;

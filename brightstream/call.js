@@ -184,7 +184,7 @@ brightstream.Call = function (params) {
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! brightstream.Call
      * @method brightstream.Call.approve.
-     * @fires {brightstream.Call#approve}
+     * @fires brightstream.Call#approve
      */
     var approve = that.publicize('approve', function () {
         that.state = ST_APPROVED;
@@ -242,7 +242,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onReceiveUserMedia
      * @private
      * @param {MediaStream}
-     * @fires {brightstream.Call#local-stream-received}
+     * @fires brightstream.Call#local-stream-received
      */
     var onReceiveUserMedia = function (stream) {
         log.debug('User gave permission to use media.');
@@ -432,7 +432,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onRemoteStreamAdded
      * @private
      * @param {object}
-     * @fires {brightstream.Call#remote-stream-received}
+     * @fires brightstream.Call#remote-stream-received
      */
     var onRemoteStreamAdded = function (evt) {
         that.state = ST_FLOWING;
@@ -589,7 +589,7 @@ brightstream.Call = function (params) {
      * signal is not false and we have not received a bye signal from the remote party.
      * @memberof! brightstream.Call
      * @method brightstream.Call.hangup
-     * @fires {brightstream.Call#hangup}
+     * @fires brightstream.Call#hangup
      * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */

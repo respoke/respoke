@@ -86,7 +86,7 @@ brightstream.Client = function (params) {
      * @param {function} [onReconnect]
      * @param {function} [onCall]
      * @returns {Promise<brightstream.User>}
-     * @fires {brightstream.Client#connect}
+     * @fires brightstream.Client#connect
      */
     var connect = that.publicize('connect', function (params) {
         params = params || {};
@@ -271,7 +271,7 @@ brightstream.Client = function (params) {
      * @param {function} [onLeave]
      * @param {function} [onPresence]
      * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
-     * @fires {brightstream.User#join}
+     * @fires brightstream.User#join
      */
     var join = that.publicize('join', function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
