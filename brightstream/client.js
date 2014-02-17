@@ -86,6 +86,7 @@ brightstream.Client = function (params) {
      * @param {function} [onReconnect]
      * @param {function} [onCall]
      * @returns {Promise<brightstream.User>}
+     * @fires {brightstream.Client#connect}
      */
     var connect = that.publicize('connect', function (params) {
         params = params || {};
@@ -120,6 +121,10 @@ brightstream.Client = function (params) {
             log.debug(user);
             //updateTurnCredentials(); // TODO fix TURN credentials with Endpoints instead of Users.
 
+            /**
+             * @event brightstream.Client#connect
+             * @type {brightstream.User}
+             */
             that.fire('connect', user);
             deferred.resolve(user);
         }, function (err) {
@@ -266,6 +271,7 @@ brightstream.Client = function (params) {
      * @param {function} [onLeave]
      * @param {function} [onPresence]
      * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
+     * @fires {brightstream.User#join}
      */
     var join = that.publicize('join', function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -286,6 +292,10 @@ brightstream.Client = function (params) {
                 onPresence: params.onPresence
             });
             addGroup(group);
+            /**
+             * @event brightstream.User#join
+             * @type {brightstream.Group}
+             */
             that.user.fire('join', group);
             deferred.resolve(group);
         }, function (err) {

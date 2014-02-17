@@ -141,6 +141,10 @@ brightstream.Presentable = function (params) {
             presence = params.presence;
         }
 
+        /**
+         * @event brightstream.Presentable#presence
+         * @type {string}
+         */
         that.fire('presence', presence);
     });
 
@@ -493,6 +497,11 @@ brightstream.User = function (params) {
     var addCall = that.publicize('addCall', function (params) {
         if (calls.indexOf(params.call) === -1) {
             calls.push(params.call);
+            /**
+             * @event brightstream.User#call
+             * @type {brightstream.Call}
+             * @type {string}
+             */
             that.fire('call', params.call, params.call.getEndpointID());
         }
     });

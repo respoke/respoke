@@ -461,6 +461,11 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.routeSignal
      * @param {brightstream.SignalingMessage} message - A message to route
+     * @fires {brightstream.Call#offer}
+     * @fires {brightstream.Call#accept}
+     * @fires {brightstream.Call#answer}
+     * @fires {brightstream.Call#candidate}
+     * @fires {brightstream.Call#bye}
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.getPayload();
@@ -485,21 +490,41 @@ brightstream.SignalingChannel = function (params) {
         switch (signal.type) {
         case 'offer':
             call.setOffer(signal);
+            /**
+             * @event brightstream.Call#offer
+             * @type {object}
+             */
             call.fire('offer', signal);
             break;
         case 'accept':
+            /**
+             * @event brightstream.Call#accept
+             * @type {object}
+             */
             call.fire('accept', signal);
             break;
         case 'answer':
             call.setAnswer(signal);
+            /**
+             * @event brightstream.Call#answer
+             * @type {object}
+             */
             call.fire('answer', signal);
             break;
         case 'candidate':
             call.addRemoteCandidate(signal);
+            /**
+             * @event brightstream.Call#candidate
+             * @type {object}
+             */
             call.fire('candidate', signal);
             break;
         case 'bye':
             call.setBye(signal);
+            /**
+             * @event brightstream.Call#bye
+             * @type {object}
+             */
             call.fire('bye', signal);
             break;
         case 'error':
@@ -557,6 +582,11 @@ brightstream.SignalingChannel = function (params) {
             'secure': (protocol === 'https')
         });
 
+
+        /**
+         * @fires {brightstream.Group#message}
+         * @fires {brightstream.Client#message}
+         */
         socket.on('pubsub', function handleMessage(message) {
             var group;
             var groupMessage;
@@ -574,8 +604,16 @@ brightstream.SignalingChannel = function (params) {
 
             group = clientObj.getGroup({id: message.header.channel});
             if (group) {
+                /**
+                 * @event brightstream.Group#message
+                 * @type {brightstream.TextMessage}
+                 */
                 group.fire('message', groupMessage);
             } else if (clientObj.onMessage) {
+                /**
+                 * @event brightstream.Client#message
+                 * @type {brightstream.TextMessage}
+                 */
                 clientObj.fire('message', groupMessage);
             }
         });
@@ -663,13 +701,25 @@ brightstream.SignalingChannel = function (params) {
             }
         });
 
+        /**
+         * @fires {brightstream.Endpoint#message}
+         * @fires {brightstream.Client#message}
+         */
         socket.on('message', function handleMessage(message) {
             var endpoint;
             message = brightstream.TextMessage({rawMessage: message});
             endpoint = clientObj.getEndpoint({id: message.getSender()});
             if (endpoint) {
+                /**
+                 * @event brightstream.Endpoint#message
+                 * @type {brightstream.TextMessage}
+                 */
                 endpoint.fire('message', message);
             } else if (clientObj.onMessage) {
+                /**
+                 * @event brightstream.Client#message
+                 * @type {brightstream.TextMessage}
+                 */
                 clientObj.fire('message', message);
             }
         });
@@ -1315,6 +1365,7 @@ brightstream.Group = function (params) {
      * @param {function} [onSuccess]
      * @param {function} [onError]
      * @return {Promise}
+     * @fires {brightstream.User#leave}
      */
     var leave = group.publicize('leave', function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -1322,6 +1373,10 @@ brightstream.Group = function (params) {
         signalingChannel.leaveGroup({
             id: group.id
         }).done(function () {
+            /**
+             * @event brightstream.User#leave
+             * @type {brightstream.Group}
+             */
             clientObj.user.fire('leave', group);
             deferred.resolve();
         }, function (err) {
@@ -1336,6 +1391,7 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.remove
      * @param {string} [name] Endpoint name
      * @param {string} [id] Endpoint id
+     * @fires {brightstream.Group#leave}
      */
     var remove = group.publicize('remove', function (newEndpoint) {
         if (!newEndpoint.id || !newEndpoint.name) {
@@ -1345,6 +1401,10 @@ brightstream.Group = function (params) {
             var endpoint = endpoints[i];
             if (endpoint.id === newEndpoint.id || endpoint.name === newEndpoint.name) {
                 endpoints.splice(i, 1);
+                /**
+                 * @event brightstream.Group#leave
+                 * @type {brightstream.Endpoint}
+                 */
                 group.fire('leave', endpoint);
             }
         }
@@ -1356,6 +1416,7 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.add
      * @param {string} [name] Endpoint name
      * @param {string} [id] Endpoint id
+     * @fires {brightstream.Group#join}
      */
     var add = group.publicize('add', function (newEndpoint) {
         var foundEndpoint;
@@ -1372,6 +1433,11 @@ brightstream.Group = function (params) {
         }
         if (!exists) {
             endpoints.push(newEndpoint);
+            /**
+             * @event brightstream.Group#join
+             * @type {brightstream.Group}
+             * @type {brightstream.Endpoint}
+             */
             group.fire('join', group, newEndpoint);
         }
     });

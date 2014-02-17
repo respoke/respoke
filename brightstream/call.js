@@ -167,6 +167,10 @@ brightstream.Call = function (params) {
             throw new Error("Can't use a Call without username.");
         }
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
+
+        /**
+         * @event brightstream.Call#answer
+         */
         that.fire('answer');
 
         if (receiveOnly !== true) {
@@ -180,10 +184,14 @@ brightstream.Call = function (params) {
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! brightstream.Call
      * @method brightstream.Call.approve.
+     * @fires {brightstream.Call#approve}
      */
     var approve = that.publicize('approve', function () {
         that.state = ST_APPROVED;
         log.trace('Call.approve');
+        /**
+         * @event brightstream.Call#approve
+         */
         that.fire('approve');
 
         if (that.initiator === true) {
@@ -234,6 +242,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onReceiveUserMedia
      * @private
      * @param {MediaStream}
+     * @fires {brightstream.Call#local-stream-received}
      */
     var onReceiveUserMedia = function (stream) {
         log.debug('User gave permission to use media.');
@@ -263,6 +272,11 @@ brightstream.Call = function (params) {
         // and the implications of passing back a video element with no media attached.
         if (brightstream.streams[callSettings.constraints]) {
             brightstream.streams[callSettings.constraints].numPc += 1;
+            /**
+             * @event brightstream.Call#local-stream-received
+             * @type {Element}
+             * @type {brightstream.Call}
+             */
             that.fire('local-stream-received', videoLocalElement, that);
         } else {
             stream.numPc = 1;
@@ -279,6 +293,11 @@ brightstream.Call = function (params) {
             videoLocalElement.autoplay = true;
             videoLocalElement.used = true;
 
+            /**
+             * @event brightstream.Call#local-stream-received
+             * @type {Element}
+             * @type {brightstream.Call}
+             */
             that.fire('local-stream-received', videoLocalElement, that);
         }
 
@@ -413,6 +432,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onRemoteStreamAdded
      * @private
      * @param {object}
+     * @fires {brightstream.Call#remote-stream-received}
      */
     var onRemoteStreamAdded = function (evt) {
         that.state = ST_FLOWING;
@@ -432,6 +452,11 @@ brightstream.Call = function (params) {
         videoRemoteElement.used = true;
         videoRemoteElement.play();
         attachMediaStream(videoRemoteElement, evt.stream);
+        /**
+         * @event brightstream.Call#remote-stream-received
+         * @type {Element}
+         * @type {brightstream.Call}
+         */
         that.fire('remote-stream-received', videoRemoteElement, that);
 
         mediaStreams.push(brightstream.MediaStream({
@@ -564,6 +589,7 @@ brightstream.Call = function (params) {
      * signal is not false and we have not received a bye signal from the remote party.
      * @memberof! brightstream.Call
      * @method brightstream.Call.hangup
+     * @fires {brightstream.Call#hangup}
      * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
@@ -599,6 +625,10 @@ brightstream.Call = function (params) {
         report.callStopped = new Date().getTime();
         signalReport(report);
 
+        /**
+         * @event brightstream.Call#hangup
+         * @type {boolean} whether or not we sent a 'bye' signal.
+         */
         that.fire('hangup', params.signal);
         that.ignore();
 
@@ -841,6 +871,9 @@ brightstream.Call = function (params) {
         mediaStreams.forEach(function muteEach(stream) {
             stream.muteVideo();
         });
+        /**
+         * @event brightstream.Call#video-muted
+         */
         that.fire('video-muted');
     });
 
@@ -854,6 +887,9 @@ brightstream.Call = function (params) {
         mediaStreams.forEach(function unmuteEach(stream) {
             stream.unmuteVideo();
         });
+        /**
+         * @event brightstream.Call#video-unmuted
+         */
         that.fire('video-unmuted');
     });
 
@@ -867,6 +903,9 @@ brightstream.Call = function (params) {
         mediaStreams.forEach(function muteEach(stream) {
             stream.muteAudio();
         });
+        /**
+         * @event brightstream.Call#audio-muted
+         */
         that.fire('audio-muted');
     });
 
@@ -880,6 +919,9 @@ brightstream.Call = function (params) {
         mediaStreams.forEach(function unmuteEach(stream) {
             stream.unmuteAudio();
         });
+        /**
+         * @event brightstream.Call#audio-unmuted
+         */
         that.fire('audio-unmuted');
     });
 
@@ -935,6 +977,9 @@ brightstream.MediaStream = function (params) {
      */
     var muteAudio = that.publicize('muteAudio', function () {
         stream.audioTracks[0].enabled = false;
+        /**
+         * @event brightstream.MediaStream#audio-muted
+         */
         that.fire('audio-muted');
     });
 
@@ -946,6 +991,9 @@ brightstream.MediaStream = function (params) {
      */
     var muteVideo = that.publicize('muteVideo', function () {
         stream.videoTracks[0].enabled = false;
+        /**
+         * @event brightstream.MediaStream#video-muted
+         */
         that.fire('video-muted');
     });
 
@@ -957,6 +1005,9 @@ brightstream.MediaStream = function (params) {
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
         stream.audioTracks[0].enabled = true;
+        /**
+         * @event brightstream.MediaStream#audio-unmuted
+         */
         that.fire('audio-unmuted');
     });
 
@@ -968,6 +1019,9 @@ brightstream.MediaStream = function (params) {
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
         stream.videoTracks[0].enabled = true;
+        /**
+         * @event brightstream.MediaStream#video-unmuted
+         */
         that.fire('video-unmuted');
     });
 
@@ -1000,16 +1054,6 @@ brightstream.MediaStream = function (params) {
      */
     var getID = that.publicize('getID', function () {
         return stream.id;
-    });
-
-    /**
-     * Get the media stream's object URL for adding to a video element.
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.getURL
-     * @return {string}
-     */
-    var getURL = that.publicize('getURL', function () {
-        //return webkitURL.createObjectURL(stream);
     });
 
     /**
