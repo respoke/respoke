@@ -27,6 +27,7 @@ webrtc.IdentityProvider = function (params) {
      * @method webrtc.IdentityProvider.login
      * @param {string} username The user's username.
      * @param {string} password The user's password.
+     * @param {string} appId The App id.
      * @param {function} onSuccess
      * @param {function} onError
      * @param {function} onIncomingCall
@@ -41,7 +42,7 @@ webrtc.IdentityProvider = function (params) {
             signalingChannel = webrtc.getClient(client).getSignalingChannel();
         }
         if (!signalingChannel.isOpen()) {
-            signalingChannel.open();
+            throw new Error("Can't log in when client is not connected.");
         }
 
         var promise = signalingChannel.authenticate(params);

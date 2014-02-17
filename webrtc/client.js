@@ -29,12 +29,20 @@ webrtc.Client = function (params) {
     var host = window.location.hostname;
     var port = window.location.port;
     var connected = false;
-    var appKey = null;
-    var apiToken = null;
+    var app = {};
     var signalingChannel = null;
     var turnRefresher = null;
     var clientSettings = params.clientSettings || {};
-    log.debug("Client ID is " + client);
+
+    ['appId', 'token'].forEach(function (name) {
+        if (!clientSettings[name]) {
+            throw new Error(name + " is a required parameter to Client.");
+        }
+        app[name] = clientSettings[name];
+        delete clientSettings[name];
+    });
+
+    log.debug("Client ID is ", client);
 
     var callSettings = {
         constraints: params.constraints || {
@@ -60,8 +68,15 @@ webrtc.Client = function (params) {
      * @method webrtc.Client.connect
      */
     var connect = that.publicize('connect', function () {
-        signalingChannel.open();
-        connected = true;
+        var connectPromise = signalingChannel.open({
+            appId: app.appId,
+            token: app.token
+        });
+
+        connectPromise.then(function () {
+            connected = true;
+        });
+        return connectPromise;
     });
 
     /**
@@ -71,8 +86,11 @@ webrtc.Client = function (params) {
      */
     var disconnect = that.publicize('disconnect', function () {
         // TODO: also call this on socket disconnect
-        signalingChannel.close();
-        connected = false;
+        var disconnectPromise = signalingChannel.close();
+        disconnectPromise.then(function () {
+            connected = false;
+        });
+        return disconnectPromise;
     });
 
     /**
@@ -99,7 +117,22 @@ webrtc.Client = function (params) {
      * @returns {Promise<webrtc.User>}
      */
     var login = that.publicize('login', function (params) {
-        var userPromise = that.identityProvider.login(params);
+        var userPromise;
+        var deferred;
+        params = params || {};
+        params.appId = app.appId;
+
+        if (connected !== true) {
+            deferred = webrtc.makePromise(function fakeHandler() {
+                // This will never happen.
+            }, function errorHandler(error) {
+                throw error;
+            });
+            deferred.reject(new Error("Can't log in, signaling channel is not open."));
+            return deferred.promise;
+        }
+
+        userPromise = that.identityProvider.login(params);
         userPromise.done(function successHandler(user) {
             user.setOnline(); // Initiates presence.
             that.user = user;
