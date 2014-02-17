@@ -603,10 +603,12 @@ brightstream.SignalingChannel = function (params) {
                 var groups = clientObj.getGroups();
                 if (groups) {
                     groups.forEach(function (group) {
-                        group.getEndpoints().done(function (endpoint) {
-                            if (endpoint.getName() === message.header.from) {
-                                group.fire('leave', endpoint);
-                            }
+                        group.getEndpoints().done(function (endpoints) {
+                            endpoints.forEach(function (endpoint) {
+                                if (endpoint.getName() === message.header.from) {
+                                    group.fire('leave', endpoint);
+                                }
+                            });
                         });
                     });
                 }
