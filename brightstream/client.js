@@ -123,9 +123,12 @@ brightstream.Client = function (params) {
 
             /**
              * @event brightstream.Client#connect
-             * @type {brightstream.User}
+             * @type {brightstream.Event}
+             * @property {brightstream.User}
              */
-            that.fire('connect', user);
+            that.fire('connect', {
+                user: user
+            });
             deferred.resolve(user);
         }, function (err) {
             deferred.reject("Couldn't create an endpoint.");
@@ -164,6 +167,9 @@ brightstream.Client = function (params) {
             connected = false;
             endpoints = [];
             groups = [];
+            /**
+             * @event brightstream.Client#disconnect
+             */
             that.fire('disconnect');
         }, function (err) {
             throw err;
@@ -317,9 +323,12 @@ brightstream.Client = function (params) {
             addGroup(group);
             /**
              * @event brightstream.User#join
-             * @type {brightstream.Group}
+             * @type {brightstream.Event}
+             * @property {brightstream.Group}
              */
-            that.user.fire('join', group);
+            that.user.fire('join', {
+                group: group
+            });
             deferred.resolve(group);
         }, function (err) {
             deferred.reject(err);

@@ -123,15 +123,21 @@ brightstream.Call = function (params) {
      */
     var registerListeners = function (params) {
         if (typeof params.onLocalVideo === 'function') {
-            that.listen('local-stream-received', params.onLocalVideo);
+            that.listen('local-stream-received', function (evt) {
+                params.onLocalVideo(evt.element);
+            });
         }
 
         if (typeof params.onRemoteVideo === 'function') {
-            that.listen('remote-stream-received', params.onRemoteVideo);
+            that.listen('remote-stream-received', function (evt) {
+                params.onRemoteVideo(evt.element);
+            });
         }
 
         if (typeof params.onHangup === 'function') {
-            that.listen('hangup', params.onHangup);
+            that.listen('hangup', function (evt) {
+                params.onHangup(evt.sentSignal);
+            });
         }
     };
 
@@ -274,10 +280,12 @@ brightstream.Call = function (params) {
             brightstream.streams[callSettings.constraints].numPc += 1;
             /**
              * @event brightstream.Call#local-stream-received
-             * @type {Element}
-             * @type {brightstream.Call}
+             * @type {brightstream.Event}
+             * @property {Element} element - the HTML5 Video element with the new stream attached.
              */
-            that.fire('local-stream-received', videoLocalElement, that);
+            that.fire('local-stream-received', {
+                element: videoLocalElement
+            });
         } else {
             stream.numPc = 1;
             brightstream.streams[callSettings.constraints] = stream;
@@ -295,10 +303,12 @@ brightstream.Call = function (params) {
 
             /**
              * @event brightstream.Call#local-stream-received
-             * @type {Element}
-             * @type {brightstream.Call}
+             * @type {brightstream.Event}
+             * @property {Element} element - the HTML5 Video element with the new stream attached.
              */
-            that.fire('local-stream-received', videoLocalElement, that);
+            that.fire('local-stream-received', {
+                element: videoLocalElement
+            });
         }
 
         if (typeof previewLocalMedia === 'function') {
@@ -454,10 +464,12 @@ brightstream.Call = function (params) {
         attachMediaStream(videoRemoteElement, evt.stream);
         /**
          * @event brightstream.Call#remote-stream-received
-         * @type {Element}
-         * @type {brightstream.Call}
+         * @type {brightstream.Event}
+         * @property {Element} element - the HTML5 Video element with the new stream attached.
          */
-        that.fire('remote-stream-received', videoRemoteElement, that);
+        that.fire('remote-stream-received', {
+            element: videoRemoteElement
+        });
 
         mediaStreams.push(brightstream.MediaStream({
             'stream': evt.stream,
@@ -627,9 +639,12 @@ brightstream.Call = function (params) {
 
         /**
          * @event brightstream.Call#hangup
-         * @type {boolean}
+         * @type {brightstream.Event}
+         * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
          */
-        that.fire('hangup', params.signal);
+        that.fire('hangup', {
+            sentSignal: params.signal
+        });
         that.ignore();
 
         mediaStreams.forEach(function stopEach(mediaStream) {
