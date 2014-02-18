@@ -201,8 +201,33 @@ brightstream.SignalingChannel = function (params) {
     /**
      * Join a group.
      * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.leaveGroup
+     * @returns {Promise<undefined>}
+     * @param {string} id
+     * @param {function} [onSuccess]
+     * @param {function} [onError]
+     */
+    var leaveGroup = that.publicize('leaveGroup', function (params) {
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        wsCall({
+            path: '/v1/channels/%s/subscribers/',
+            objectId: params.id,
+            httpMethod: 'DELETE'
+        }).done(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    });
+
+    /**
+     * Join a group.
+     * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.joinGroup
-     * @returns {Promise<string>}
+     * @returns {Promise<undefined>}
      * @param {string} id
      * @param {function} [onSuccess]
      * @param {function} [onError]
@@ -1385,6 +1410,7 @@ brightstream.Group = function (params) {
      * @fires brightstream.User#leave
      */
     var leave = group.publicize('leave', function (params) {
+        params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var clientObj = brightstream.getClient(client);
         signalingChannel.leaveGroup({
