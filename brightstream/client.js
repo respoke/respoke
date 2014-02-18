@@ -357,6 +357,9 @@ brightstream.Client = function (params) {
         });
 
         if (!group) {
+            newGroup.listen('leave', function (evt) {
+                that.checkEndpointForRemoval(evt.endpoint);
+            });
             groups.push(newGroup);
         }
     };

@@ -690,14 +690,7 @@ brightstream.SignalingChannel = function (params) {
                         group.getEndpoints().done(function (endpoints) {
                             endpoints.forEach(function (endpoint) {
                                 if (endpoint.getName() === message.header.from) {
-                                    /**
-                                     * @event brightstream.Group#leave
-                                     * @type {brightstream.Event}
-                                     * @property {brightstream.Endpoint} endpoint
-                                     */
-                                    group.fire('leave', {
-                                        endpoint: endpoint
-                                    });
+                                    group.remove(endpoint);
                                 }
                             });
                         });
