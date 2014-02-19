@@ -87,7 +87,7 @@ brightstream.EventEmitter = function (params) {
      * @param {string|number|object|array} any - Any number of optional parameters to be passed to
      * the listener
      */
-    var fire = that.publicize('fire', function (eventType) {
+    var fire = that.publicize('fire', function (eventType, evt) {
         var args = null;
         var count = 0;
 
@@ -95,11 +95,14 @@ brightstream.EventEmitter = function (params) {
             return;
         }
 
-        args = Array.prototype.slice.call(arguments, 1);
+        evt = evt || {};
+        evt.name = eventType;
+        evt.target = that;
+        evt = brightstream.Event(evt);
         eventList[eventType].forEach(function fireListener(listener) {
             if (typeof listener === 'function') {
                 try {
-                    listener.apply(that, args);
+                    listener.call(that, evt);
                     count += 1;
                 } catch (e) {
                     log.error('Error in ' + that.className + "#" + eventType + ": " + e.message);
@@ -107,8 +110,30 @@ brightstream.EventEmitter = function (params) {
                 }
             }
         });
-        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called.");
+        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     });
 
     return that;
 }; // End brightstream.EventEmitter
+
+/**
+ * Create a generic Event object for EventEmitters to pass to event listeners.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @class brightstream.Event
+ * @constructor
+ * @classdesc Event object.
+ * @returns {brightstream.Event}
+ */
+brightstream.Event = function (that) {
+    "use strict";
+
+    if (!that.name) {
+        throw new Error("Can't create an Event without an event name.");
+    }
+
+    if (!that.target) {
+        throw new Error("Can't create an Event without a target.");
+    }
+
+    return that;
+}; // End brighstream.Event
