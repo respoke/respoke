@@ -120,6 +120,11 @@ brightstream.EventEmitter = function (params) {
  * Create a generic Event object for EventEmitters to pass to event listeners.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Event
+ * @property {string} name
+ * @property {brightstream.Class} target
+ * @property {brightstream.Group} [group]
+ * @property {brightsetream.Endpoint} [endpoint]
+ * @property {brightsetream.Call} [call]
  * @constructor
  * @classdesc Event object.
  * @returns {brightstream.Event}

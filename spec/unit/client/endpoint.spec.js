@@ -13,10 +13,6 @@ describe("A brightstream.Endpoint", function () {
     /*
     * Inheritance
     */
-    it("extends brightstream.Class.", function () {
-        expect(typeof endpoint.getClass).to.equal('function');
-    });
-
     it("extends brightstream.EventEmitter.", function () {
         expect(typeof endpoint.listen).to.equal('function');
         expect(typeof endpoint.ignore).to.equal('function');
@@ -26,17 +22,15 @@ describe("A brightstream.Endpoint", function () {
     it("extends brightstream.Presentable.", function () {
         expect(typeof endpoint.getID).to.equal('function');
         expect(typeof endpoint.getName).to.equal('function');
-        expect(typeof endpoint.callInProgress).to.equal('function');
         expect(typeof endpoint.getPresence).to.equal('function');
         expect(typeof endpoint.setPresence).to.equal('function');
     });
 
     /*
-    * Make sure there is a className attribute and getClass method on every instance.
+    * Make sure there is a className attribute on every instance.
     */
     it("has the correct class name.", function () {
-        expect(endpoint.className).to.be.ok;
-        expect(endpoint.getClass()).to.equal('brightstream.Endpoint');
+        expect(endpoint.className).to.equal('brightstream.Endpoint');
     });
 
     /*

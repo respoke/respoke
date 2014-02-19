@@ -10,10 +10,6 @@ describe("A brightstream.Presentable ", function () {
     /*
     * Inheritance
     */
-    it("extends brightstream.Class.", function () {
-        expect(typeof presentable.getClass).to.equal('function');
-    });
-
     it("extends brightstream.EventEmitter.", function () {
         expect(typeof presentable.listen).to.equal('function');
         expect(typeof presentable.ignore).to.equal('function');
@@ -21,11 +17,10 @@ describe("A brightstream.Presentable ", function () {
     });
 
     /*
-    * Make sure there is a className attribute and getClass method on every instance.
+    * Make sure there is a className attribute on every instance.
     */
     it("has the correct class name.", function () {
-        expect(presentable.className).to.be.ok;
-        expect(presentable.getClass()).to.equal('brightstream.Presentable');
+        expect(presentable.className).to.equal('brightstream.Presentable');
     });
 
     /*
@@ -34,7 +29,6 @@ describe("A brightstream.Presentable ", function () {
     it("contains some important methods.", function () {
         expect(typeof presentable.getID).to.equal('function');
         expect(typeof presentable.getName).to.equal('function');
-        expect(typeof presentable.callInProgress).to.equal('function');
         expect(typeof presentable.getPresence).to.equal('function');
         expect(typeof presentable.setPresence).to.equal('function');
     });

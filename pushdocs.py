@@ -63,8 +63,7 @@ class PushDocs:
                 "confluence/brightstream.TextMessage",
                 "confluence/brightstream.SignalingChannel",
                 "confluence/brightstream.SignalingMessage",
-                "confluence/brightstream.User",
-                "confluence/brightstream.UserSession"
+                "confluence/brightstream.User"
             ],
             'username': 'espiceland',
             'password': '',
