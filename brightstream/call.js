@@ -625,7 +625,7 @@ brightstream.Call = function (params) {
             }
         }
 
-        clientObj.updateTurnCredentials();
+        //clientObj.updateTurnCredentials(); // TODO fix TURN with dynamic endpoints
         log.debug('hanging up');
 
         params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
