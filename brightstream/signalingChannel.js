@@ -517,40 +517,55 @@ brightstream.SignalingChannel = function (params) {
             call.setOffer(signal);
             /**
              * @event brightstream.Call#offer
-             * @type {object}
+             * @type {brightstream.Event}
+             * @property {object} signal
              */
-            call.fire('offer', signal);
+            call.fire('offer', {
+                signal: signal
+            });
             break;
         case 'accept':
             /**
              * @event brightstream.Call#accept
-             * @type {object}
+             * @type {brightstream.Event}
+             * @property {object} signal
              */
-            call.fire('accept', signal);
+            call.fire('accept', {
+                signal: signal
+            });
             break;
         case 'answer':
             call.setAnswer(signal);
             /**
              * @event brightstream.Call#answer
-             * @type {object}
+             * @type {brightstream.Event}
+             * @property {object} signal
              */
-            call.fire('answer', signal);
+            call.fire('answer', {
+                signal: signal
+            });
             break;
         case 'candidate':
             call.addRemoteCandidate(signal);
             /**
              * @event brightstream.Call#candidate
-             * @type {object}
+             * @type {brightstream.Event}
+             * @property {object} signal
              */
-            call.fire('candidate', signal);
+            call.fire('candidate', {
+                signal: signal
+            });
             break;
         case 'bye':
             call.setBye(signal);
             /**
              * @event brightstream.Call#bye
-             * @type {object}
+             * @type {brightstream.Event}
+             * @property {object} signal
              */
-            call.fire('bye', signal);
+            call.fire('bye', {
+                signal: signal
+            });
             break;
         case 'error':
             log.warn("Received an error", signal);
@@ -631,15 +646,21 @@ brightstream.SignalingChannel = function (params) {
             if (group) {
                 /**
                  * @event brightstream.Group#message
-                 * @type {brightstream.TextMessage}
+                 * @type {brightstream.Event}
+                 * @property {brightstream.TextMessage} message
                  */
-                group.fire('message', groupMessage);
+                group.fire('message', {
+                    message: groupMessage
+                });
             } else if (clientObj.onMessage) {
                 /**
                  * @event brightstream.Client#message
-                 * @type {brightstream.TextMessage}
+                 * @type {brightstream.Event}
+                 * @property {brightstream.TextMessage} message
                  */
-                clientObj.fire('message', groupMessage);
+                clientObj.fire('message', {
+                    message: groupMessage
+                });
             }
         });
 
@@ -669,7 +690,7 @@ brightstream.SignalingChannel = function (params) {
                         group.getEndpoints().done(function (endpoints) {
                             endpoints.forEach(function (endpoint) {
                                 if (endpoint.getName() === message.header.from) {
-                                    group.fire('leave', endpoint);
+                                    group.remove(endpoint);
                                 }
                             });
                         });
@@ -754,15 +775,21 @@ brightstream.SignalingChannel = function (params) {
             if (endpoint) {
                 /**
                  * @event brightstream.Endpoint#message
-                 * @type {brightstream.TextMessage}
+                 * @type {brightstream.Event}
+                 * @property {brightstream.TextMessage} message
                  */
-                endpoint.fire('message', message);
+                endpoint.fire('message', {
+                    message: message
+                });
             } else if (clientObj.onMessage) {
                 /**
                  * @event brightstream.Client#message
-                 * @type {brightstream.TextMessage}
+                 * @type {brightstream.Event}
+                 * @property {brightstream.TextMessage} message
                  */
-                clientObj.fire('message', message);
+                clientObj.fire('message', {
+                    message: message
+                });
             }
         });
 
@@ -1418,9 +1445,12 @@ brightstream.Group = function (params) {
         }).done(function () {
             /**
              * @event brightstream.User#leave
-             * @type {brightstream.Group}
+             * @type {brightstream.Event}
+             * @property {brightstream.Group} group
              */
-            clientObj.user.fire('leave', group);
+            clientObj.user.fire('leave', {
+                group: group
+            });
             deferred.resolve();
         }, function (err) {
             deferred.reject();
@@ -1447,9 +1477,12 @@ brightstream.Group = function (params) {
                 endpoints.splice(i, 1);
                 /**
                  * @event brightstream.Group#leave
-                 * @type {brightstream.Endpoint}
+                 * @type {brightstream.Event}
+                 * @property {brightstream.Endpoint} endpoint
                  */
-                group.fire('leave', endpoint);
+                group.fire('leave', {
+                    endpoint: endpoint
+                });
             }
         }
     });
@@ -1479,10 +1512,14 @@ brightstream.Group = function (params) {
             endpoints.push(newEndpoint);
             /**
              * @event brightstream.Group#join
-             * @type {brightstream.Group}
-             * @type {brightstream.Endpoint}
+             * @type {brightstream.Event}
+             * @property {brightstream.Group} group
+             * @property {brightstream.Endpoint} endpoint
              */
-            group.fire('join', group, newEndpoint);
+            group.fire('join', {
+                group: group,
+                endpoint: newEndpoint
+            });
         }
     });
 
@@ -1531,7 +1568,16 @@ brightstream.Group = function (params) {
                     createData: endpoint
                 });
                 if (endpoint) {
-                    group.fire('join', group, endpoint);
+                    /**
+                     * @event brightstream.Group#join
+                     * @type {brightstream.Event}
+                     * @property {brightstream.Group} group
+                     * @property {brightstream.Endpoint} endpoint
+                     */
+                    group.fire('join', {
+                        group: group,
+                        endpoint: endpoint
+                    });
                     if (endpointList.indexOf(endpoint.getID()) === -1) {
                         endpointList.push(endpoint.getID());
                         add(endpoint);

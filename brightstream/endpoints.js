@@ -143,9 +143,12 @@ brightstream.Presentable = function (params) {
 
         /**
          * @event brightstream.Presentable#presence
-         * @type {string}
+         * @type {brightstream.Event}
+         * @property {string} presence
          */
-        that.fire('presence', presence);
+        that.fire('presence', {
+            presence: presence
+        });
     });
 
     /**
@@ -313,10 +316,13 @@ brightstream.Endpoint = function (params) {
         if (params.initiator === true) {
             call.answer();
         }
-        user.addCall({call: call});
+        user.addCall({
+            call: call,
+            endpoint: that
+        });
 
         // Don't use params.onHangup here. Will overwrite the developer's callback.
-        call.listen('hangup', function hangupListener(locallySignaled) {
+        call.listen('hangup', function hangupListener(evt) {
             user.removeCall({endpointId: id});
         });
         return call;
@@ -499,10 +505,14 @@ brightstream.User = function (params) {
             calls.push(params.call);
             /**
              * @event brightstream.User#call
-             * @type {brightstream.Call}
-             * @type {string}
+             * @type {brightstream.Event}
+             * @property {brightstream.Call} call
+             * @property {brightstream.Endpoint} endpoint
              */
-            that.fire('call', params.call, params.call.getEndpointID());
+            that.fire('call', {
+                endpoint: params.endpoint,
+                call: params.call
+            });
         }
     });
 

@@ -123,9 +123,12 @@ brightstream.Client = function (params) {
 
             /**
              * @event brightstream.Client#connect
-             * @type {brightstream.User}
+             * @type {brightstream.Event}
+             * @property {brightstream.User}
              */
-            that.fire('connect', user);
+            that.fire('connect', {
+                user: user
+            });
             deferred.resolve(user);
         }, function (err) {
             deferred.reject("Couldn't create an endpoint.");
@@ -164,6 +167,9 @@ brightstream.Client = function (params) {
             connected = false;
             endpoints = [];
             groups = [];
+            /**
+             * @event brightstream.Client#disconnect
+             */
             that.fire('disconnect');
         }, function (err) {
             throw err;
@@ -315,11 +321,6 @@ brightstream.Client = function (params) {
                 onPresence: params.onPresence
             });
             addGroup(group);
-            /**
-             * @event brightstream.User#join
-             * @type {brightstream.Group}
-             */
-            that.user.fire('join', group);
             deferred.resolve(group);
         }, function (err) {
             deferred.reject(err);
@@ -348,6 +349,9 @@ brightstream.Client = function (params) {
         });
 
         if (!group) {
+            newGroup.listen('leave', function (evt) {
+                that.checkEndpointForRemoval(evt.endpoint);
+            });
             groups.push(newGroup);
         }
     };
