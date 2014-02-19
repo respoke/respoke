@@ -321,14 +321,6 @@ brightstream.Client = function (params) {
                 onPresence: params.onPresence
             });
             addGroup(group);
-            /**
-             * @event brightstream.User#join
-             * @type {brightstream.Event}
-             * @property {brightstream.Group}
-             */
-            that.user.fire('join', {
-                group: group
-            });
             deferred.resolve(group);
         }, function (err) {
             deferred.reject(err);
