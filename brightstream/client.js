@@ -332,6 +332,9 @@ brightstream.Client = function (params) {
                 onJoin: params.onJoin,
                 onLeave: params.onLeave
             });
+            that.user.fire('join', {
+                group: group
+            });
             addGroup(group);
             deferred.resolve(group);
         }, function (err) {
@@ -508,7 +511,7 @@ brightstream.Client = function (params) {
     var getEndpoint = that.publicize('getEndpoint', function (params) {
         var endpoint;
         if (!params || !params.id) {
-            throw new Error("Can't get an endpoint without group id.");
+            throw new Error("Can't get an endpoint without endpoint id.");
         }
 
         endpoints.every(function (ept) {

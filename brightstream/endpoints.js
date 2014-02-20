@@ -129,11 +129,8 @@ brightstream.Endpoint = function (params) {
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
         return signalingChannel.sendMessage({
-            message: brightstream.TextMessage({
-                'recipient': that,
-                'sender': brightstream.getClient(client).user.getID(),
-                'payload': params.message
-            }),
+            message: params.message,
+            recipient: that,
             onSuccess: params.onSuccess,
             onError: params.onError
         });
@@ -158,11 +155,8 @@ brightstream.Endpoint = function (params) {
         }
 
         signalingChannel.sendSignal({
-            signal: brightstream.SignalingMessage({
-                'recipient': that,
-                'sender': brightstream.getClient(client).user.getID(),
-                'payload': params.signal
-            }),
+            signal: params.signal,
+            recipient: that,
             onSuccess: params.onSuccess,
             onError: params.onError
         }).done(function () {
