@@ -109,6 +109,8 @@ brightstream.Call = function (params) {
         if (approved === true && oOffer && oOffer.sdp) {
             processOffer(oOffer);
         }
+    }, function (err) {
+        log.warn("Call rejected.");
     }).done();
 
     /**
@@ -122,21 +124,15 @@ brightstream.Call = function (params) {
      */
     var registerListeners = function (params) {
         if (typeof params.onLocalVideo === 'function') {
-            that.listen('local-stream-received', function (evt) {
-                params.onLocalVideo(evt.element);
-            });
+            that.listen('local-stream-received', params.onLocalVideo);
         }
 
         if (typeof params.onRemoteVideo === 'function') {
-            that.listen('remote-stream-received', function (evt) {
-                params.onRemoteVideo(evt.element);
-            });
+            that.listen('remote-stream-received', params.onRemoteVideo);
         }
 
         if (typeof params.onHangup === 'function') {
-            that.listen('hangup', function (evt) {
-                params.onHangup(evt.sentSignal);
-            });
+            that.listen('hangup', params.onHangup);
         }
     };
 
@@ -314,6 +310,15 @@ brightstream.Call = function (params) {
             approve();
         }
     };
+
+    /**
+     * Return peerConnection
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.getPeerConnection
+     */
+    var getPeerConnection = that.publicize('getPeerConnection', function () {
+        return pc;
+    });
 
     /**
      * Return local video element.
