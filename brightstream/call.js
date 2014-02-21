@@ -333,15 +333,24 @@ brightstream.Call = function (params) {
 
         if (!pc) {
             deferred.reject(new Error("Can't get stats, pc is null."));
+            return deferred.promise;
         }
 
         if (brightstream.MediaStats) {
+            that.listen('stats', params.onStats);
             Q.all([defOffer.promise, defAnswer.promise]).done(function () {
                 var stats = brightstream.MediaStats({
                     peerConnection: pc,
                     interval: params.interval,
                     onStats: function (stats) {
-                        params.onStats(stats);
+                        /**
+                         * @event brightstream.Call#stats
+                         * @type {brightstream.Event}
+                         * @property {object} stats - an object with stats in it.
+                         */
+                        that.fire('stats', {
+                            stats: stats
+                        });
                         report.stats.push(stats);
                     }
                 });
