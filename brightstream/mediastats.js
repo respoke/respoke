@@ -21,9 +21,10 @@ brightstream.MediaStats = function (params) {
     params = params || {};
     var that = brightstream.EventEmitter(params);
     that.className = 'brightstream.MediaStats';
-    var inited = false;
     var oldStats = false;
-    var statsPC = params.peerConnection;
+    var pc = params.peerConnection;
+    var timer = 0;
+    var statsInterval = params.interval || 5000;
 
     /*
      * The data you get out of getStats needs some pruning and a tidy up
@@ -104,15 +105,10 @@ brightstream.MediaStats = function (params) {
      * @private
      */
     var initStats = function () {
-        var pc = statsPC;
         var sdp = {};
-
-        if (inited) {
-            return;
-        }
-
         if (!pc || !pc.remoteDescription || !pc.remoteDescription.sdp ||
                 !pc.localDescription || !pc.localDescription.sdp) {
+            log.warn("missing info.");
             return;
         }
 
@@ -126,7 +122,6 @@ brightstream.MediaStats = function (params) {
          * we will use them to map results to audio/video etc
          */
         Object.keys(sdp).forEach(function (wh) {
-            inited = true;
             var rsdp = sdp[wh];
             // filet the sdp
             var rlines = rsdp.split("\r\n");
@@ -151,78 +146,109 @@ brightstream.MediaStats = function (params) {
                 }
             });
         });
+
+        if (params.onStats) {
+            timer = setInterval(function () {
+                that.getStats().done(function (report) {
+                    params.onStats(report);
+                }, function () {
+                    log.error("error in getstats");
+                });
+            }, statsInterval);
+        } else {
+            log.warn("Not starting stats, no onStats callback provided.");
+        }
     };
 
     /**
      * Get stats via the WebRTC stats API.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getStats
-     * @todo TODO convert to Promises
+     * @memberof! brightstream.MediaStats
+     * @method brightstream.MediaStats.getStats
      */
-    var getStats = that.publicize('getStats', function (onSuccess, onError) {
-        if (!statsPC.getStats) {
-            onError("no peer connection getStats()");
+    var getStats = that.publicize('getStats', function (params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var args = [];
+
+        if (!pc.getStats) {
+            deferred.reject(new Error("no peer connection getStats()"));
             return;
         }
+
         if (navigator.mozGetUserMedia) {
-            statsPC.getStats(null, onSuccess, onError);
-        } else {
-            statsPC.getStats(onSuccess, onError);
+            args.push(null);
         }
+
+        args.push(function (stats) {
+            deferred.resolve(buildStats(stats));
+        });
+        args.push(function (err) {
+            log.error(err);
+            deferred.reject(new Error("Can't get stats."));
+        });
+        pc.getStats.apply(pc, args);
+        return deferred.promise;
+    });
+
+    /**
+     * Stop fetching and processing of call stats.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.stopStats
+     */
+    var stopStats = that.publicize('stopStats', function () {
+        clearInterval(timer);
     });
 
     /**
      * Receive raw stats and parse them.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.rcvStats
+     * @method brightstream.Call.buildStats
      * @param {object} rawStats
+     * @private
      */
-    var rcvStats = that.publicize('rcvStats', function rcvStats(rawStats) {
+    var buildStats = function buildStats(rawStats) {
         // extract and repackage 'interesting' stats using the rules above
         var tstats = {};
-        if (statsPC) {
-            initStats(statsPC);
-            var stats = rawStats; // might need to re-instate some sort of wrapper here
-            var results = stats.result();
+        var stats = rawStats; // might need to re-instate some sort of wrapper here
+        var results = stats.result();
 
-            tstats = {
-                state: {
-                    signalingState: statsPC.signalingState,
-                    iceGatheringState: statsPC.icegatheringState,
-                    iceConnectionState: statsPC.iceConnectionState
-                }
-            };
+        tstats = {
+            state: {
+                signalingState: pc.signalingState,
+                iceGatheringState: pc.icegatheringState,
+                iceConnectionState: pc.iceConnectionState
+            }
+        };
 
-            Object.keys(interestingStats).forEach(function (s) {
-                var sout = {};
-                var rule = interestingStats[s];
-                var report = results.filter(function (r) {
-                    var tt = (r.type === rule.type);
-                    var kt = (r.stat(rule.match.k) === rule.match.v);
-                    return (tt && kt);
-                });
-
-                if (report.length > 0) {
-                    sout.timestamp = report[0].timestamp;
-                    if (oldStats) {
-                        sout.deltaT = sout.timestamp - oldStats[s].timestamp;
-                    }
-
-                    for (var nkey = 0; nkey < rule.keys.length; nkey += 1) {
-                        var key = rule.keys[nkey];
-                        sout[key] = report[0].stat(key);
-
-                        if (deltas[key] && oldStats) {
-                            sout["delta" + key] = (sout[key] - oldStats[s][key]);
-                        }
-                    }
-                }
-                tstats[s] = sout;
+        Object.keys(interestingStats).forEach(function (s) {
+            var sout = {};
+            var rule = interestingStats[s];
+            var report = results.filter(function (r) {
+                var tt = (r.type === rule.type);
+                var kt = (r.stat(rule.match.k) === rule.match.v);
+                return (tt && kt);
             });
-        }
+
+            if (report.length > 0) {
+                sout.timestamp = report[0].timestamp;
+                if (oldStats) {
+                    sout.deltaT = sout.timestamp - oldStats[s].timestamp;
+                }
+
+                for (var nkey = 0; nkey < rule.keys.length; nkey += 1) {
+                    var key = rule.keys[nkey];
+                    sout[key] = report[0].stat(key);
+
+                    if (deltas[key] && oldStats) {
+                        sout["delta" + key] = (sout[key] - oldStats[s][key]);
+                    }
+                }
+            }
+            tstats[s] = sout;
+        });
         oldStats = tstats;
         return tstats;
-    });
+    };
 
     initStats();
 
