@@ -18,15 +18,18 @@
  * @param {boolean} receiveOnly - whether or not we accept media
  * @param {boolean} sendOnly - whether or not we send media
  * @param {brightstream.Endpoint} remoteEndpoint
- * @param {function} [previewLocalMedia]
- * @param {function} signalOffer
- * @param {function} signalAnswer
- * @param {function} signalTerminate
- * @param {function} signalReport
- * @param {function} signalCandidate
- * @param {function} [onLocalVideo]
- * @param {function} [onRemoteVideo]
- * @param {function} [onHangup]
+ * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
+ * local media becoming available and calling approve().
+ * @param {function} signalOffer - Signaling action from SignalingChannel.
+ * @param {function} signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} signalReport - Signaling action from SignalingChannel.
+ * @param {function} signalCandidate - Signaling action from SignalingChannel.
+ * @param {function} [onLocalVideo] - Callback for the developer to receive the local video element.
+ * @param {function} [onRemoteVideo] - Callback for the developer to receive the remote video element.
+ * @param {function} [onHangup] - Callback for the developer to be notified about hangup.
+ * @param {function} [onStats] - Callback for the developer to receive statistics about the call. This is only used
+ * if call.getStats() is called and the stats module is loaded.
  * @param {object} callSettings
  * @param {object} [localVideoElements]
  * @param {object} [remoteVideoElements]
@@ -312,13 +315,25 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Return peerConnection
+     * Return media stats.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.getPeerConnection
+     * @method brightstream.Call.getStats
+     * @returns {brightstream.MediaStats}
      */
-    var getPeerConnection = that.publicize('getPeerConnection', function () {
-        return pc;
-    });
+    var getStats = function () {
+        if (brightstream.MediaStats) {
+            return brightstream.MediaStats({
+                peerConnection: pc,
+                onStats: params.onStats
+            });
+        } else {
+            log.warn("Statistics module is not loaded.");
+        }
+    };
+
+    if (brightstream.MediaStats) {
+        that.publicize('getStats', getStats);
+    }
 
     /**
      * Return local video element.
