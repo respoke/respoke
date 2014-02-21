@@ -321,10 +321,12 @@ brightstream.Call = function (params) {
      * statistics, we'll return a promise for the stats object.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getStats
-     * @returns {Promise<brightstream.MediaStats>}
+     * @returns {Promise<object>}
      * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
      * @param {function} [onStats] - An optional callback to receive the stats. If no callback is provided,
      * the call's report will contain stats but the developer will not receive them on the client-side.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     var getStats = function (params) {
         var deferred = brightstream.makeDeferred(null, function (err) {

@@ -99,7 +99,7 @@ brightstream.MediaStats = function (params) {
     };
 
     /**
-     * Parse the SDPs.
+     * Parse the SDPs. Kick off continuous calling of getStats() every `interval` milliseconds.
      * @memberof! brightstream.Call
      * @method brightstream.Call.initStats
      * @private
@@ -161,9 +161,12 @@ brightstream.MediaStats = function (params) {
     };
 
     /**
-     * Get stats via the WebRTC stats API.
+     * Get one snapshot of stats from the call's PeerConnection.
      * @memberof! brightstream.MediaStats
      * @method brightstream.MediaStats.getStats
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<object>}
      */
     var getStats = that.publicize('getStats', function (params) {
         params = params || {};
@@ -208,11 +211,10 @@ brightstream.MediaStats = function (params) {
      */
     var buildStats = function buildStats(rawStats) {
         // extract and repackage 'interesting' stats using the rules above
-        var tstats = {};
         var stats = rawStats; // might need to re-instate some sort of wrapper here
         var results = stats.result();
 
-        tstats = {
+        var tstats = {
             state: {
                 signalingState: pc.signalingState,
                 iceGatheringState: pc.icegatheringState,
