@@ -684,7 +684,7 @@ brightstream.SignalingChannel = function (params) {
             }
 
             endpoint.setPresence({
-                sessionId: message.header.fromConnection,
+                connectionId: message.header.fromConnection,
                 presence: message.type
             });
         });
@@ -711,7 +711,7 @@ brightstream.SignalingChannel = function (params) {
             // Handle presence not associated with a channel
             if (message.header.channel.indexOf('system') > -1) {
                 endpoint.setPresence({
-                    sessionId: message.connectionId,
+                    connectionId: message.connectionId,
                     presence: 'available'
                 });
                 return;

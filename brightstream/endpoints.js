@@ -54,17 +54,17 @@ brightstream.Presentable = function (params) {
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.setPresence
      * @param {string} presence
-     * @param {string} sessionId
+     * @param {string} connectionId
      * @fires brightstream.Presentable#presence
      */
     var setPresence = that.publicize('setPresence', function (params) {
         params = params || {};
         params.presence = params.presence || 'available';
-        params.sessionId = params.sessionId || 'local';
+        params.connectionId = params.connectionId || 'local';
 
-        sessions[params.sessionId] = {
-            'sessionId': params.sessionId,
-            'presence': params.presence
+        sessions[params.connectionId] = {
+            connectionId: params.connectionId,
+            presence: params.presence
         };
 
         if (typeof that.resolvePresence === 'function') {
@@ -266,16 +266,16 @@ brightstream.Endpoint = function (params) {
         var presence;
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
         params = params || {};
-        var sessionIds = Object.keys(params.sessions);
+        var connectionIds = Object.keys(params.sessions);
 
         /**
-         * Sort the sessionIds array by the priority of the value of the presence of that
-         * sessionId. This will cause the first element in the sessionsId to be the id of the
+         * Sort the connectionIds array by the priority of the value of the presence of that
+         * connectionId. This will cause the first element in the sessionsId to be the id of the
          * session with the highest priority presence so we can access it by the 0 index.
          * TODO: If we don't really care about the sorting and only about the highest priority
          * we could use Array.prototype.every to improve this algorithm.
          */
-        sessionIds = sessionIds.sort(function sorter(a, b) {
+        connectionIds = connectionIds.sort(function sorter(a, b) {
             var indexA = options.indexOf(params.sessions[a].presence);
             var indexB = options.indexOf(params.sessions[b].presence);
             // Move it to the end of the list if it isn't one of our accepted presence values
@@ -284,7 +284,7 @@ brightstream.Endpoint = function (params) {
             return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
         });
 
-        presence = sessionIds[0] ? params.sessions[sessionIds[0]].presence : 'unavailable';
+        presence = connectionIds[0] ? params.sessions[connectionIds[0]].presence : 'unavailable';
 
         return presence;
     });
