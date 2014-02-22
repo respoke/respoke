@@ -8,18 +8,12 @@ describe("A brightstream.User ", function () {
         "client": client.getID(),
         "name": "Mickey Mouse",
         "id": "JH5K34J5K34J3453K4J53K45",
-        "timeLoggedIn": new Date(),
-        "loggedIn": true,
         "gloveColor": "white"
     });
 
     /*
     * Inheritance
     */
-    it("extends brightstream.Class.", function () {
-        expect(typeof user.getClass).to.equal('function');
-    });
-
     it("extends brightstream.EventEmitter.", function () {
         expect(typeof user.listen).to.equal('function');
         expect(typeof user.ignore).to.equal('function');
@@ -29,17 +23,15 @@ describe("A brightstream.User ", function () {
     it("extends brightstream.Presentable.", function () {
         expect(typeof user.getID).to.equal('function');
         expect(typeof user.getName).to.equal('function');
-        expect(typeof user.callInProgress).to.equal('function');
         expect(typeof user.getPresence).to.equal('function');
         expect(typeof user.setPresence).to.equal('function');
     });
 
     /*
-    * Make sure there is a className attribute and getClass method on every instance.
+    * Make sure there is a className attribute on every instance.
     */
     it("has the correct class name.", function () {
-        expect(user.className).to.be.ok;
-        expect(user.getClass()).to.equal('brightstream.User');
+        expect(user.className).to.equal('brightstream.User');
     });
 
     /*
@@ -48,9 +40,6 @@ describe("A brightstream.User ", function () {
     it("contains some important methods.", function () {
         expect(typeof user.addCall).to.equal('function');
         expect(typeof user.removeCall).to.equal('function');
-        expect(typeof user.setOnline).to.equal('function');
-        expect(typeof user.getActiveCall).to.equal('function');
-        expect(typeof user.getUserSession).to.equal('function');
         expect(typeof user.setOnline).to.equal('function');
     });
 

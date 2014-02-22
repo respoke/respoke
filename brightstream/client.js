@@ -40,17 +40,16 @@ brightstream.Client = function (params) {
     var connected = false;
     var app = {
         baseURL: params.baseURL,
+        authToken: params.authToken,
         appId: params.appId
     };
+    delete params.appId;
+    delete params.baseURL;
     var signalingChannel = null;
     var turnRefresher = null;
     var groups = [];
     var endpoints = [];
 
-    if (!app.appId) {
-        throw new Error("appId is a required parameter to Client.");
-    }
-    delete params.appId;
 
     log.debug("Client ID is ", client);
 
@@ -76,15 +75,18 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {string} authToken
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
-     * @param {function} [onGroupJoin]
-     * @param {function} [onGroupLeave]
-     * @param {function} [onMessage]
-     * @param {function} [onConnect]
-     * @param {function} [onDisconnect]
-     * @param {function} [onReconnect]
-     * @param {function} [onCall]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {function} [onJoin] - Callback for when this client's endpoint joins a group.
+     * @param {function} [onLeave] - Callback for when this client's endpoint leaves a group.
+     * @param {function} [onAutoJoin] - Callback for when this client's user automatically joins a group. Not
+     * Implemented.
+     * @param {function} [onAutoLeave] - Callback for when this client's user automatically leaves a group. Not
+     * Implemented.
+     * @param {function} [onMessage] - Callback for when an unknown Endpoint sends a message.
+     * @param {function} [onDisconnect] - Callback for Client disconnect.
+     * @param {function} [onReconnect] - Callback for Client reconnect. Not Implemented.
+     * @param {function} [onCall] - Callback for when this client's user receives a call.
      * @returns {Promise<brightstream.User>}
      * @fires brightstream.Client#connect
      */
@@ -93,6 +95,7 @@ brightstream.Client = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         app.authToken = params.authToken;
+        app.appId = params.appId || app.appId;
         signalingChannel.open({
             appId: app.appId,
             token: app.authToken
@@ -108,12 +111,13 @@ brightstream.Client = function (params) {
 
             user.setOnline(); // Initiates presence.
             user.listen('call', params.onCall);
-            user.listen('join', params.onGroupJoin);
-            user.listen('leave', params.onGroupLeave);
+            user.listen('join', params.onJoin);
+            user.listen('leave', params.onLeave);
             that.user = user;
 
+            that.listen('join', params.onAutoJoin);
+            that.listen('leave', params.onAutoLeave);
             that.listen('message', params.onMessage);
-            that.listen('connect', params.onConnect);
             that.listen('disconnect', params.onDisconnect);
             that.listen('reconnect', params.onReconnect);
 
@@ -142,8 +146,8 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
      * @returns {Promise<undefined>}
-     * @param {function} onSuccess
-     * @param {function} onError
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     var disconnect = that.publicize('disconnect', function (params) {
         // TODO: also call this on socket disconnect
@@ -189,13 +193,23 @@ brightstream.Client = function (params) {
     });
 
     /**
+     * Get all current calls.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getCalls
+     * @returns {Array<brightstream.Call>}
+     */
+    var getCalls = that.publicize('getCalls', function (params) {
+        return that.user ? that.user.getCalls() : null;
+    });
+
+    /**
      * Call an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.call
      * @param {string} endpoint
      * @param {string} connection
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {brightstream.Call}
      */
     var call = that.publicize('call', function (params) {
@@ -293,12 +307,11 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.join
      * @param {string} The name of the group.
      * @param {string} id
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
-     * @param {function} [onMessage]
-     * @param {function} [onJoin]
-     * @param {function} [onLeave]
-     * @param {function} [onPresence]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {function} [onMessage] - Message handler for messages from this group only.
+     * @param {function} [onJoin] - Join event listener for endpoints who join this group only.
+     * @param {function} [onLeave] - Leave event listener for endpoints who leave this group only.
      * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
      * @fires brightstream.User#join
      */
@@ -317,8 +330,10 @@ brightstream.Client = function (params) {
                 id: params.id,
                 onMessage: params.onMessage,
                 onJoin: params.onJoin,
-                onLeave: params.onLeave,
-                onPresence: params.onPresence
+                onLeave: params.onLeave
+            });
+            that.user.fire('join', {
+                group: group
             });
             addGroup(group);
             deferred.resolve(group);
@@ -496,7 +511,7 @@ brightstream.Client = function (params) {
     var getEndpoint = that.publicize('getEndpoint', function (params) {
         var endpoint;
         if (!params || !params.id) {
-            throw new Error("Can't get an endpoint without group id.");
+            throw new Error("Can't get an endpoint without endpoint id.");
         }
 
         endpoints.every(function (ept) {

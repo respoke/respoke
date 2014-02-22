@@ -8,61 +8,6 @@
 
 /*global brightstream: false */
 /**
- * Create a new UserSession.
- * @class brightstream.UserSession
- * @author Erin Spiceland <espiceland@digium.com>
- * @constructor
- * @classdesc UserSession including logged-in status about a user account. There may be more than
- * one of these per User.
- * @param {Date} timeLoggedIn
- * @param {boolean} loggedIn
- * @param {string} client
- * @param {string} token
- * @returns {brightstream.UserSession}
- * @property {string} username
- * @property {string} token
- * @property {datetime} timeLoggedIn
- * @property {boolean} loggedIn
- */
-brightstream.UserSession = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = brightstream.EventEmitter(params);
-    delete that.client;
-    that.className = 'brightstream.UserSession';
-
-    var token = params.token || '';
-    var timeLoggedIn = params.timeLoggedIn || null;
-    var loggedIn = params.loggedIn || false;
-    delete params.token;
-    delete params.timeLoggedIn;
-    delete params.loggedIn;
-
-    /**
-     * Get User's OAuth token
-     * @memberof! brightstream.UserSession
-     * @method brightstream.UserSession.getAuthToken
-     * @returns {string} The auth token for this session.
-     */
-    var getAuthToken = that.publicize('getAuthToken', function () {
-        return token;
-    });
-
-    /**
-     * Determine whether this is a valid logged-in UserSession
-     * @memberof! brightstream.UserSession
-     * @method brightstream.UserSession.isLoggedIn
-     * @returns {boolean}
-     */
-    var isLoggedIn = that.publicize('isLoggedIn', function () {
-        return !!loggedIn;
-    });
-
-    return that;
-}; // End brightstream.UserSession
-
-/**
  * Create a new Presentable.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
@@ -71,7 +16,6 @@ brightstream.UserSession = function (params) {
  * @classdesc Presentable class
  * @param {string} client
  * @param {string} id
- * @property {string} username
  * @returns {brightstream.Presentable}
  */
 brightstream.Presentable = function (params) {
@@ -103,18 +47,6 @@ brightstream.Presentable = function (params) {
      */
     var getName = that.publicize('getName', function () {
         return that.name;
-    });
-
-    /**
-     * Indicate whether the entity has an active Call. Should we only return true if
-     * media is flowing, or anytime a WebRTC call is active? Should it return true if the
-     * engaged in a Call on another device?
-     * @memberof! brightstream.Presentable
-     * @method brightstream.Presentable.callInProgress
-     * @returns {boolean}
-     */
-    var callInProgress = that.publicize('callInProgress', function () {
-        return false;
     });
 
     /**
@@ -190,18 +122,15 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendMessage
      * @param {string} message
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
         return signalingChannel.sendMessage({
-            message: brightstream.TextMessage({
-                'recipient': that,
-                'sender': brightstream.getClient(client).user.getID(),
-                'payload': params.message
-            }),
+            message: params.message,
+            recipient: that,
             onSuccess: params.onSuccess,
             onError: params.onError
         });
@@ -212,8 +141,8 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendSignal
      * @param {object|string} signal
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
@@ -226,11 +155,8 @@ brightstream.Endpoint = function (params) {
         }
 
         signalingChannel.sendSignal({
-            signal: brightstream.SignalingMessage({
-                'recipient': that,
-                'sender': brightstream.getClient(client).user.getID(),
-                'payload': params.signal
-            }),
+            signal: params.signal,
+            recipient: that,
             onSuccess: params.onSuccess,
             onError: params.onError
         }).done(function () {
@@ -277,8 +203,7 @@ brightstream.Endpoint = function (params) {
 
         params.callSettings = combinedCallSettings;
         params.client = client;
-        params.username = user.getName();
-        params.remoteEndpoint = id;
+        params.remoteEndpoint = that;
 
         params.signalOffer = function (sdp) {
             log.trace('signalOffer');
@@ -390,16 +315,9 @@ brightstream.User = function (params) {
     delete that.client;
     that.className = 'brightstream.User';
 
-    var remoteUserSessions = {};
     var calls = [];
     var presenceQueue = [];
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
-    var userSession = brightstream.UserSession({
-        'client': client,
-        'token': params.token,
-        'timeLoggedIn': params.timeLoggedIn,
-        'loggedIn': params.loggedIn
-    });
 
     /**
      * Override Presentable.setPresence to send presence to the server before updating the object.
@@ -428,49 +346,31 @@ brightstream.User = function (params) {
     });
 
     /**
-     * Get the User's locally logged-in UserSession
+     * Get all current calls.
      * @memberof! brightstream.User
-     * @method brightstream.User.getUserSession
-     * @returns {brightstream.UserSession}
+     * @method brightstream.User.getCalls
+     * @returns {Array<brightstream.Call>}
      */
-    var getUserSession = that.publicize('getUserSession', function () {
-        return userSession;
-    });
-
-    /**
-     * Get the active Call.  Can there be multiple active Calls? Should we timestamp
-     * them and return the most recently used? Should we create a Call if none exist?
-     * @memberof! brightstream.User
-     * @method brightstream.User.getActiveCall
-     * @returns {brightstream.Call}
-     */
-    var getActiveCall = that.publicize('getActiveCall', function () {
-        // TODO search by user, create if doesn't exist?
-        var call = null;
-        calls.forEach(function findCall(one) {
-            if (one.isActive()) {
-                call = one;
-            }
-        });
-        return call;
+    var getCalls = that.publicize('getCalls', function (params) {
+        return calls;
     });
 
     /**
      * Get the Call with the endpoint specified.
      * @memberof! brightstream.User
-     * @method brightstream.User.getCallByEndpoint
-     * @param {string} endpointId - Endpoint ID
+     * @method brightstream.User.getCall
+     * @param {string} id - Endpoint ID
      * @param {boolean} create - whether or not to create a new call if the specified endpointId isn't found
      * @returns {brightstream.Call}
      */
-    var getCallByEndpoint = that.publicize('getCallByEndpoint', function (params) {
+    var getCall = that.publicize('getCall', function (params) {
         var call = null;
         var endpoint = null;
         var callSettings = null;
         var clientObj = brightstream.getClient(client);
 
         calls.forEach(function findCall(one) {
-            if (one.remoteEndpoint === params.endpointId) {
+            if (one.remoteEndpoint.getID() === params.id) {
                 if (one.getState() >= 6) { // ended or media error
                     return;
                 }
@@ -479,7 +379,7 @@ brightstream.User = function (params) {
         });
 
         if (call === null && params.create === true) {
-            endpoint = clientObj.getEndpoint({id: params.endpointId});
+            endpoint = clientObj.getEndpoint({id: params.id});
             try {
                 callSettings = clientObj.getCallSettings();
                 call = endpoint.call({
@@ -531,7 +431,7 @@ brightstream.User = function (params) {
 
         // Loop backward since we're modifying the array in place.
         for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if ((params.endpointId && calls[i].getEndpointID() === params.endpointId) ||
+            if ((params.endpointId && calls[i].remoteEndpoint.getID() === params.endpointId) ||
                     (params.call && calls[i] === params.call)) {
                 calls.splice(i);
                 match = true;

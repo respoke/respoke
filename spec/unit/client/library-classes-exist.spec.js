@@ -13,7 +13,6 @@ describe("The brightstream namespace", function() {
         expect(typeof brightstream.TextMessage).to.equal('function');
         expect(typeof brightstream.Endpoint).to.equal('function');
         expect(typeof brightstream.Group).to.equal('function');
-        expect(typeof brightstream.PresenceMessage).to.equal('function');
         expect(typeof brightstream.Presentable).to.equal('function');
         expect(typeof brightstream.SignalingChannel).to.equal('function');
         expect(typeof brightstream.SignalingMessage).to.equal('function');

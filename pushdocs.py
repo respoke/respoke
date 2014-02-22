@@ -58,13 +58,11 @@ class PushDocs:
                 "confluence/brightstream.Group",
                 "confluence/brightstream.js",
                 "confluence/brightstream.MediaStream",
-                "confluence/brightstream.PresenceMessage",
                 "confluence/brightstream.Presentable",
                 "confluence/brightstream.TextMessage",
                 "confluence/brightstream.SignalingChannel",
                 "confluence/brightstream.SignalingMessage",
-                "confluence/brightstream.User",
-                "confluence/brightstream.UserSession"
+                "confluence/brightstream.User"
             ],
             'username': 'espiceland',
             'password': '',

@@ -56,7 +56,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.open
      * @param {string} token - The App's auth token
      * @param {string} appId - The App's id
-     * @return {Promise<statusString>}
+     * @return {Promise<undefined>}
      */
     var open = that.publicize('open', function (params) {
         params = params || {};
@@ -73,7 +73,7 @@ brightstream.SignalingChannel = function (params) {
             },
             responseHandler: function (response) {
                 if (!response.error) {
-                    deferred.resolve("App authenticated.");
+                    deferred.resolve();
                     log.trace("Signaling connection open to", baseURL);
                     state = 'open';
                 } else {
@@ -106,9 +106,9 @@ brightstream.SignalingChannel = function (params) {
      * Close a connection to the REST API. Invalidate the appauthsession.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.close
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
-     * @return {Promise<statusString>}
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @return {Promise<undefined>}
      */
     var close = that.publicize('close', function (params) {
         params = params || {};
@@ -149,27 +149,33 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendPresence
      * @param {string} presence - description, "unavailable", "available", "away", "xa", "dnd"
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {string} [status] - Non-enumeration human-readable status.
+     * @param {string} [show] - I can't remember what this is.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     var sendPresence = that.publicize('sendPresence', function (params) {
         params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         log.trace("Signaling sendPresence");
 
-        return wsCall({
+        wsCall({
             path: '/v1/presence',
             httpMethod: 'POST',
             parameters: {
                 'presence': {
-                    show: "no show",
-                    'status': "Hey, I'm having fun!",
+                    show: params.show,
+                    'status': params.status,
                     namespace: appId,
                     type: params.presence || "available"
                 }
-            },
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            }
+        }).done(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+        return deferred.promise;
     });
 
     /**
@@ -177,13 +183,15 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getGroup
      * @returns {Promise<brightstream.Group>}
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} name
      */
     var getGroup = that.publicize('getGroup', function (params) {
+        params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         log.trace('signalingChannel.getGroup');
+
         wsCall({
             httpMethod: 'POST',
             path: '/v1/channels/',
@@ -193,8 +201,10 @@ brightstream.SignalingChannel = function (params) {
         }).then(function (group) {
             deferred.resolve(group);
         }, function (err) {
+            // Group was already created, just return back the same params we were given.
             deferred.resolve({id: params.name});
         });
+
         return deferred.promise;
     });
 
@@ -204,10 +214,11 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.leaveGroup
      * @returns {Promise<undefined>}
      * @param {string} id
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     var leaveGroup = that.publicize('leaveGroup', function (params) {
+        params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         wsCall({
@@ -229,10 +240,11 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.joinGroup
      * @returns {Promise<undefined>}
      * @param {string} id
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     var joinGroup = that.publicize('joinGroup', function (params) {
+        params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         wsCall({
@@ -252,32 +264,25 @@ brightstream.SignalingChannel = function (params) {
      * Publish a message to a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.publish
-     * @returns {Promise<string>}
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @returns {Promise<undefined>}
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} id
      * @param {string} message
      */
     var publish = that.publicize('publish', function (params) {
+        params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        if (!params.id) {
-            deferred.reject(new Error("Can't publish to a group without group ID."));
-            return deferred.promise;
-        }
-
-        if (!params.message) {
-            deferred.reject(new Error("Can't publish to a group without message."));
-            return deferred.promise;
-        }
+        var message = brightstream.TextMessage({
+            endpointId: params.id,
+            message: params.message
+        });
 
         wsCall({
             path: '/v1/channels/%s/publish/',
             objectId: params.id,
             httpMethod: 'POST',
-            parameters: {
-                id: params.id,
-                message: params.message
-            }
+            parameters: message
         }).done(function () {
             deferred.resolve();
         }, function (err) {
@@ -290,7 +295,7 @@ brightstream.SignalingChannel = function (params) {
      * Register as an observer of presence for the specified endpoint ids.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.registerPresence
-     * @param {array} endpointList
+     * @param {Array<string>} endpointList
      */
     var registerPresence = that.publicize('registerPresence', function (params) {
         wsCall({
@@ -307,8 +312,8 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getGroupMembers
      * @returns {Promise<Array>}
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} id
      */
     var getGroupMembers = that.publicize('getGroupMembers', function (params) {
@@ -330,42 +335,28 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendMessage
      * @param {brightstream.SignalingMessage} message - The string text message to send.
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {brightstream.Endpoint} recipient
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<undefined>}
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
-        var msgText = params.message.getPayload();
-        var recipient = null;
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        try {
-            recipient = params.message.getRecipient().getID();
-        } catch (e) {
-            log.debug("Can't get message recipient.");
-            return deferred.promise;
-        }
-
-        if ([null, undefined, ""].indexOf(recipient) > -1) {
-            log.debug("Can't send message without recipient.");
-            return deferred.promise;
-        }
-
-        if ([null, undefined, ""].indexOf(msgText) > -1) {
-            log.debug("Can't send message without message text.");
-            return deferred.promise;
-        }
-
-        return wsCall({
+        wsCall({
             path: '/v1/messages',
             httpMethod: 'POST',
-            parameters: {
-                'to': recipient,
-                'message': msgText
-            },
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            parameters: brightstream.TextMessage({
+                endpointId: params.recipient.getID(),
+                message: params.message
+            })
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+        return deferred.promise;
     });
 
     /**
@@ -373,89 +364,82 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendSignal
      * @param {brightstream.SignalingMessage} signal
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {brightstream.Endpoint} recipient
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
     var sendSignal = that.publicize('sendSignal', function (params) {
-        var signalText = params.signal.getPayload();
-        var recipient = null;
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        try {
-            recipient = params.signal.getRecipient().getID();
-        } catch (e) {
-            deferred.resolve(new Error("Can't get signal recipient."));
-            return deferred.promise;
-        }
-
-        if ([null, undefined, ""].indexOf(recipient) > -1) {
-            deferred.resolve(new Error("Can't send signal without recipient."));
-            return deferred.promise;
-        }
-
-        if ([null, undefined, ""].indexOf(signalText) > -1) {
-            deferred.resolve(new Error("Can't send signal without signal text."));
-            return deferred.promise;
-        }
-
-        return wsCall({
+        wsCall({
             path: '/v1/signaling',
             httpMethod: 'POST',
-            parameters: {
-                'to': recipient,
-                'signal': signalText
-            },
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            parameters: params.signal
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+
+        return deferred.promise;
     });
 
     /**
      * Send an ICE candidate.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendCandidate
-     * @param {brightstream.Endpoint} recipient The recipient.
-     * @param {RTCIceCandidate} candObj An ICE candidate to JSONify and send.
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {RTCIceCandidate} candObj - An ICE candidate to JSONify and send.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
     var sendCandidate = that.publicize('sendCandidate', function (params) {
         params = params || {};
-        return that.sendSignal({
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        that.sendSignal({
             signal: brightstream.SignalingMessage({
-                recipient: params.recipient,
-                sender: brightstream.getClient(client).user.getID(),
-                payload: JSON.stringify(params.candObj)
-            }),
-            onSuccess: params.onSuccess,
-            onError: params.onError
+                endpointId: params.recipient.getID(),
+                signal: JSON.stringify(params.candObj)
+            })
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+
+        return deferred.promise;
     });
 
     /**
      * Send an SDP.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendSDP
-     * @param {brightstream.Endpoint} recipient The recipient.
-     * @param {RTCSessionDescription} sdpObj An SDP to JSONify and send.
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {RTCSessionDescription} sdpObj - An SDP to JSONify and send.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
     var sendSDP = that.publicize('sendSDP', function (params) {
         params = params || {};
-        return that.sendSignal({
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        that.sendSignal({
             signal: brightstream.SignalingMessage({
-                'recipient': params.recipient,
-                'sender': brightstream.getClient(client).user.getID(),
-                'payload': JSON.stringify(params.sdpObj)
-            }),
-            onSuccess: params.onSuccess,
-            onError: params.onError
+                endpointId: params.recipient.getID(),
+                signal: JSON.stringify(params.sdpObj)
+            })
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+
+        return deferred.promise;
     });
 
     /**
@@ -464,21 +448,26 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendBye
      * @param {brightstream.Endpoint} recipient The recipient.
      * @param {string} reason The reason the session is being terminated.
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
     var sendBye = that.publicize('sendBye', function (params) {
         params = params || {};
-        return that.sendSignal({
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        that.sendSignal({
             signal: brightstream.SignalingMessage({
-                'recipient': params.recipient,
-                'sender': brightstream.getClient(client).user.getID(),
-                'payload': JSON.stringify({'type': 'bye', 'reason': params.reason})
-            }),
-            onSuccess: params.onSuccess,
-            onError: params.onError
+                endpointId: params.recipient.getID(),
+                signal: JSON.stringify({'type': 'bye', 'reason': params.reason})
+            })
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
         });
+
+        return deferred.promise;
     });
 
     /**
@@ -493,7 +482,7 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Call#bye
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
-        var signal = message.getPayload();
+        var signal = message.signal;
         var call = null;
         var toCreate = false;
 
@@ -503,8 +492,8 @@ brightstream.SignalingChannel = function (params) {
         if (signal.type === 'offer') {
             toCreate = true;
         }
-        call = clientObj.user.getCallByEndpoint({
-            endpointId: message.getSender(),
+        call = clientObj.user.getCall({
+            id: message.endpointId,
             create: toCreate
         });
 
@@ -595,10 +584,9 @@ brightstream.SignalingChannel = function (params) {
      * Authenticate to the cloud and call the handler on state change.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.authenticate
-     * @param {string} username - The token ID
      * @param {function} onStatusChange - A function to which to call on every state change.
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
     var authenticate = that.publicize('authenticate', function (params) {
@@ -636,9 +624,6 @@ brightstream.SignalingChannel = function (params) {
             }
 
             groupMessage = brightstream.TextMessage({
-                sender: message.header.from,
-                senderSession: message.header.fromConnection,
-                recipient: message.header.channel,
                 rawMessage: message
             });
 
@@ -690,7 +675,7 @@ brightstream.SignalingChannel = function (params) {
                         group.getEndpoints().done(function (endpoints) {
                             endpoints.forEach(function (endpoint) {
                                 if (endpoint.getName() === message.header.from) {
-                                    group.remove(endpoint);
+                                    group.removeEndpoint(endpoint);
                                 }
                             });
                         });
@@ -736,7 +721,7 @@ brightstream.SignalingChannel = function (params) {
             group = clientObj.getGroup({id: message.header.channel});
 
             if (group && endpoint) {
-                group.add(endpoint);
+                group.addEndpoint(endpoint);
             } else {
                 log.error("Can't add endpoint to group:", message, group, endpoint);
             }
@@ -757,7 +742,7 @@ brightstream.SignalingChannel = function (params) {
 
             group = clientObj.getGroup({id: message.header.channel});
             if (group && endpoint) {
-                group.remove(endpoint);
+                group.removeEndpoint(endpoint);
                 clientObj.checkEndpointForRemoval(endpoint);
             } else {
                 log.error("Can't remove endpoint from group:", group, endpoint);
@@ -771,7 +756,7 @@ brightstream.SignalingChannel = function (params) {
         socket.on('message', function handleMessage(message) {
             var endpoint;
             message = brightstream.TextMessage({rawMessage: message});
-            endpoint = clientObj.getEndpoint({id: message.getSender()});
+            endpoint = clientObj.getEndpoint({id: message.endpointId});
             if (endpoint) {
                 /**
                  * @event brightstream.Endpoint#message
@@ -812,12 +797,9 @@ brightstream.SignalingChannel = function (params) {
                 log.debug('endpointconnections result', res);
                 endpointId = res.endpointId;
                 var user = brightstream.User({
-                    loggedIn: true,
-                    timeLoggedIn: new Date(),
                     client: client,
                     id: res.id,
-                    name: res.endpointId,
-                    username: res.endpointId
+                    name: res.endpointId
                 });
                 deferred.resolve(user);
             }, function (err) {
@@ -830,7 +812,7 @@ brightstream.SignalingChannel = function (params) {
             type: 'signal',
             handler: function signalHandler(message) {
                 var message = brightstream.SignalingMessage({
-                    'rawMessage': message
+                    rawMessage: message
                 });
                 that.routeSignal(message);
             }
@@ -845,9 +827,9 @@ brightstream.SignalingChannel = function (params) {
      * call button and the call beginning.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getTurnCredentials
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
-     * @return {Promise<undefined>}
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @return {Promise<Array>}
      */
     var getTurnCredentials = that.publicize('getTurnCredentials', function (params) {
         params = params || {};
@@ -896,8 +878,8 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.wsCall
      * @private
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} httpMethod
      * @param {string} path
      * @param {string} objectId
@@ -1089,83 +1071,48 @@ brightstream.SignalingChannel = function (params) {
  * @class brightstream.TextMessage
  * @constructor
  * @classdesc A message.
- * @param {string} sender - ID of the sender
- * @param {string} recipient - ID of the recipient
- * @param {object} [rawMessage] - the parsed JSON we got from the server
- * @param {string|object} [payload] - the message we intend to send to the server
+ * @param {string} [endpointId] - If sending, endpoint ID of the thing we're sending a message to.
+ * @param {string} [connectionId] - If sending, connection ID of the thing we're sending a message to.
+ * @param {string} [message] - If sending, a message to send
+ * @param {object} [rawMessage] - If receiving, the parsed JSON we got from the server
  * @returns {brightstream.TextMessage}
  */
 brightstream.TextMessage = function (params) {
     "use strict";
     params = params || {};
-    var that = params;
-
-    that.className = 'brightstream.TextMessage';
-    var rawMessage = params.rawMessage; // Only set on incoming message.
-    var payload = params.payload; // Only set on outgoing message.
-    var sender = params.sender;
-    var recipient = params.recipient;
+    var that = {};
 
     /**
-     * Parse rawMessage and save information in payload. In this base class, assume text.
+     * Parse rawMessage and set attributes required for message delivery
      * @memberof! brightstream.TextMessage
      * @method brightstream.TextMessage.parse
-     * @param {object} Optional message to parse and replace rawMessage with.
+     * @private
      */
-    var parse = that.publicize('parse', function (params) {
-        if (params) {
-            rawMessage = params;
+    var parse = function () {
+        if (params.rawMessage) {
+            try {
+                that.endpointId = params.rawMessage.header.from;
+                that.connectionId = params.rawMessage.header.fromConnection;
+            } catch (e) {
+                throw new Error(e);
+            }
+            that.message = params.rawMessage.message || params.rawMessage.body;
+            if (params.rawMessage.header.channel) {
+                that.recipient = params.rawMessage.header.channel;
+            }
+        } else {
+            try {
+                that.to = params.endpointId;
+                that.toConnection = params.connectionId;
+                that.requestConnectionReply = (params.requestConnectionReply === true);
+            } catch (e) {
+                throw new Error(e);
+            }
+            that.message = params.message;
         }
-        payload = rawMessage.message || rawMessage.body;
-        if (rawMessage.header) {
-            sender = rawMessage.header.from;
-        }
-    });
+    };
 
-    /**
-     * Get the whole payload.
-     * @memberof! brightstream.TextMessage
-     * @method brightstream.TextMessage.getPayload
-     * @returns {string}
-     */
-    var getPayload = that.publicize('getPayload', function () {
-        return payload;
-    });
-
-    /**
-     * Get the whole chat message.
-     * @memberof! brightstream.TextMessage
-     * @method brightstream.TextMessage.getText
-     * @returns {string}
-     */
-    var getText = that.publicize('getText', function () {
-        return payload;
-    });
-
-    /**
-     * Get the recipient.
-     * @memberof! brightstream.TextMessage
-     * @method brightstream.TextMessage.getRecipient
-     * @returns {string}
-     */
-    var getRecipient = that.publicize('getRecipient', function () {
-        return recipient;
-    });
-
-    /**
-     * Get the sender.
-     * @memberof! brightstream.TextMessage
-     * @method brightstream.TextMessage.getSender
-     * @returns {string}
-     */
-    var getSender = that.publicize('getSender', function () {
-        return sender;
-    });
-
-    if (rawMessage) {
-        parse();
-    }
-
+    parse();
     return that;
 }; // End brightstream.TextMessage
 
@@ -1175,198 +1122,46 @@ brightstream.TextMessage = function (params) {
  * @class brightstream.SignalingMessage
  * @constructor
  * @classdesc A message.
- * @param {string} sender - ID of the sender
- * @param {string} recipient - ID of the recipient
- * @param {object} [rawMessage] - the parsed JSON we got from the server
- * @param {string|object} [payload] - the message we intend to send to the server
+ * @param {string} [endpointId] - If sending, the endpoint ID of the recipient
+ * @param {string} [connectionId] - If sending, the connection ID of the recipient
+ * @param {string} [signal] - If sending, a message to send
+ * @param {object} [rawMessage] - If receiving, the parsed JSON we got from the server
  * @returns {brightstream.SignalingMessage}
  */
 brightstream.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
-    var that = params;
-    that.className = 'brightstream.SignalingMessage';
-
-    var rawMessage = params.rawMessage; // Only set on incoming message.
-    var payload = params.payload; // Only set on outgoing message.
-    var sender = params.sender;
-    var recipient = params.recipient;
+    var that = {};
 
     /**
-     * Parse rawMessage and save information in payload.
+     * Parse rawMessage and set attributes required for message delivery
      * @memberof! brightstream.SignalingMessage
      * @method brightstream.SignalingMessage.parse
-     * @param {object} Optional message to parse and replace rawMessage with.
+     * @private
      */
-    var parse = that.publicize('parse', function (params) {
-        var sessionId = null;
-
-        if (params && params.signal) {
-            rawMessage = params.signal;
+    var parse = function () {
+        if (params.rawMessage) {
+            try {
+                that.endpointId = params.rawMessage.header.from;
+                that.connectionId = params.rawMessage.header.fromConnection;
+            } catch (e) {
+                throw new Error(e);
+            }
+            that.signal = JSON.parse(params.rawMessage.signal); // Incoming message
+        } else {
+            try {
+                that.to = params.endpointId;
+                that.toConnection = params.connectionId;
+            } catch (e) {
+                throw new Error(e);
+            }
+            that.signal = params.signal; // Outgoing message
         }
+    };
 
-        try {
-            sender = rawMessage.header.from;
-            sessionId = rawMessage.header.fromSession;
-        } catch (e) {
-            // Wasn't a socket message.
-            sender = rawMessage.userId;
-            sessionId = rawMessage.sessionId;
-        }
-
-        delete rawMessage.header;
-        payload = JSON.parse(rawMessage.signal);
-    });
-
-    /**
-     * Attempt to construct a string from the payload.
-     * @memberof! brightstream.SignalingMessage
-     * @method brightstream.SignalingMessage.getText
-     * @returns {string} A string that may represent the value of the payload.
-     */
-    var getText = that.publicize('getText', function () {
-        return payload.type;
-    });
-
-    /**
-     * Get the whole payload
-     * @memberof! brightstream.SignalingMessage
-     * @method brightstream.SignalingMessage.getPayload
-     * @returns {object}
-     */
-    var getPayload = that.publicize('getPayload', function () {
-        return payload;
-    });
-
-    /**
-     * Get the recipient.
-     * @memberof! brightstream.SignalingMessage
-     * @method brightstream.SignalingMessage.getRecipient
-     * @returns {string}
-     */
-    var getRecipient = that.publicize('getRecipient', function () {
-        return recipient;
-    });
-
-    /**
-     * Get the sender.
-     * @memberof! brightstream.SignalingMessage
-     * @method brightstream.SignalingMessage.getSender
-     * @returns {string}
-     */
-    var getSender = that.publicize('getSender', function () {
-        return sender;
-    });
-
-    if (rawMessage) {
-        parse();
-    }
-
+    parse();
     return that;
 }; // End brightstream.SignalingMessage
-
-/**
- * Create a new PresenceMessage.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.PresenceMessage
- * @constructor
- * @classdesc A message.
- * @param {string} sender - ID of the sender
- * @param {string} recipient - ID of the recipient
- * @param {object} [rawMessage] - the parsed JSON we got from the server
- * @param {string|object} [payload] - the message we intend to send to the server
- * @returns {brightstream.PresenceMessage}
- */
-brightstream.PresenceMessage = function (params) {
-    "use strict";
-    params = params || {};
-    var that = params;
-    that.className = 'brightstream.PresenceMessage';
-
-    var rawMessage = params.rawMessage;
-    delete params.rawMessage;
-    var payload = {};
-    var sender = params.sender;
-    var sessionId = null;
-
-    /**
-     * Parse rawMessage and save information in payload.
-     * @memberof! brightstream.PresenceMessage
-     * @method brightstream.PresenceMessage.parse
-     * @param {object} Optional message to parse and replace rawMessage with.
-     */
-    var parse = that.publicize('parse', function (params) {
-        if (params && params.message) {
-            rawMessage = params.message;
-        }
-
-        try {
-            sender = rawMessage.header.from;
-            sessionId = rawMessage.header.fromSession;
-        } catch (e) {
-            // Wasn't a socket message.
-            try {
-                sender = rawMessage.userId;
-                sessionId = rawMessage.sessionId;
-            } catch (f) {
-                sender = rawMessage.header.from;
-                sessionId = rawMessage.header.fromConnection;
-            }
-        }
-
-        delete rawMessage.header;
-        payload = rawMessage;
-    });
-
-    /**
-     * Get the presence string.
-     * @memberof! brightstream.PresenceMessage
-     * @method brightstream.PresenceMessage.getText
-     * @returns {string}
-     */
-    var getText = that.publicize('getText', function () {
-        if (!payload) {
-            throw new Error("No message payload.");
-        }
-        return payload.type;
-    });
-
-    /**
-     * Get the whole payload
-     * @memberof! brightstream.PresenceMessage
-     * @method brightstream.PresenceMessage.getPayload
-     * @returns {object}
-     */
-    var getPayload = that.publicize('getPayload', function () {
-        return payload;
-    });
-
-    /**
-     * Get the sender.
-     * @memberof! brightstream.PresenceMessage
-     * @method brightstream.PresenceMessage.getSender
-     * @returns {string}
-     */
-    var getSender = that.publicize('getSender', function () {
-        return sender;
-    });
-
-    /**
-     * Get the session ID of the sender.
-     * @memberof! brightstream.PresenceMessage
-     * @method brightstream.PresenceMessage.getSessionID
-     * @returns {string}
-     */
-    var getSessionID = that.publicize('getSessionID', function () {
-        return sessionId;
-    });
-
-    if (rawMessage) {
-        parse();
-    }
-
-    return that;
-}; // End brightstream.PresenceMessage
 
 /**
  * Create a new Group.
@@ -1400,7 +1195,6 @@ brightstream.Group = function (params) {
     group.listen('join', params.onJoin);
     group.listen('message', params.onMessage);
     group.listen('leave', params.onLeave);
-    group.listen('presence', params.onPresence);
 
     delete group.client;
     delete group.onMessage;
@@ -1431,8 +1225,8 @@ brightstream.Group = function (params) {
      * Leave a group
      * @memberof! brightstream.Group
      * @method brightstream.Group.leave
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      * @fires brightstream.User#leave
      */
@@ -1461,12 +1255,12 @@ brightstream.Group = function (params) {
     /**
      * Remove an endpoint from a group
      * @memberof! brightstream.Group
-     * @method brightstream.Group.remove
+     * @method brightstream.Group.removeEndpoint
      * @param {string} [name] Endpoint name
      * @param {string} [id] Endpoint id
      * @fires brightstream.Group#leave
      */
-    var remove = group.publicize('remove', function (newEndpoint) {
+    var removeEndpoint = group.publicize('removeEndpoint', function (newEndpoint) {
         if (!newEndpoint.id || !newEndpoint.name) {
             throw new Error("Can't remove endpoint from a group without a name or id.");
         }
@@ -1490,12 +1284,12 @@ brightstream.Group = function (params) {
     /**
      * Add an endpoint to a group
      * @memberof! brightstream.Group
-     * @method brightstream.Group.add
+     * @method brightstream.Group.addEndpoint
      * @param {string} [name] Endpoint name
      * @param {string} [id] Endpoint id
      * @fires brightstream.Group#join
      */
-    var add = group.publicize('add', function (newEndpoint) {
+    var addEndpoint = group.publicize('addEndpoint', function (newEndpoint) {
         var foundEndpoint;
         var exists;
         if (!newEndpoint.id || !newEndpoint.name) {
@@ -1527,8 +1321,8 @@ brightstream.Group = function (params) {
      * Send a message to the entire group
      * @memberof! brightstream.Group
      * @method brightstream.Group.sendMessage
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} message
      */
     var sendMessage = group.publicize('sendMessage', function (params) {
@@ -1541,8 +1335,8 @@ brightstream.Group = function (params) {
      * @memberof! brightstream.Group
      * @method brightstream.Group.getEndpoints
      * @returns {Promise<Array>} A promise to an array of endpoints.
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     var getEndpoints = group.publicize('getEndpoints', function (params) {
         params = params || {};
@@ -1580,7 +1374,7 @@ brightstream.Group = function (params) {
                     });
                     if (endpointList.indexOf(endpoint.getID()) === -1) {
                         endpointList.push(endpoint.getID());
-                        add(endpoint);
+                        addEndpoint(endpoint);
                     }
                 }
             });

@@ -139,16 +139,5 @@ brightstream.Class = function (params) {
     Object.keys(params).forEach(function copyParam(name) {
         that[name] = params[name];
     });
-
-    /**
-     * Get the name of the class.
-     * @memberof! brightstream.Class
-     * @method brightstream.Class.getClass
-     * @returns {string} Class name
-     */
-    var getClass = that.publicize('getClass', function () {
-        return that.className;
-    });
-
     return that;
 }; // End brightstream.Class

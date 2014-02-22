@@ -9,16 +9,11 @@ describe("A brightstream.EventEmitter ", function () {
     /*
     * Inheritance
     */
-    it("extends brightstream.Class.", function () {
-        expect(typeof eventThrower.getClass).to.equal('function');
-    });
-
     /*
-    * Make sure there is a className attribute and getClass method on every instance.
+    * Make sure there is a className attribute on every instance.
     */
     it("has the correct class name.", function () {
-        expect(eventThrower.className).to.be.ok;
-        expect(eventThrower.getClass()).to.equal('brightstream.EventEmitter');
+        expect(eventThrower.className).to.equal('brightstream.EventEmitter');
     });
 
     /*

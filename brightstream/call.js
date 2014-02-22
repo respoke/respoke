@@ -17,7 +17,7 @@
  * @param {boolean} initiator - whether or not we initiated the call
  * @param {boolean} receiveOnly - whether or not we accept media
  * @param {boolean} sendOnly - whether or not we send media
- * @param {string} remoteEndpoint
+ * @param {brightstream.Endpoint} remoteEndpoint
  * @param {function} [previewLocalMedia]
  * @param {function} signalOffer
  * @param {function} signalAnswer
@@ -62,7 +62,6 @@ brightstream.Call = function (params) {
     var remoteVideoElements = params.remoteVideoElements || [];
     var videoLocalElement = null;
     var videoRemoteElement = null;
-    var remoteEndpoint = params.remoteEndpoint;
     var signalOffer = params.signalOffer;
     var signalAnswer = params.signalAnswer;
     var signalTerminate = params.signalTerminate;
@@ -169,9 +168,6 @@ brightstream.Call = function (params) {
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
 
-        if (!that.username) {
-            throw new Error("Can't use a Call without username.");
-        }
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
         /**
@@ -788,16 +784,6 @@ brightstream.Call = function (params) {
      */
     var isInitiator = that.publicize('isInitiator', function () {
         return that.initiator;
-    });
-
-    /**
-     * Return the ID of the remote endpoint.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getEndpointID
-     * @returns {string}
-     */
-    var getEndpointID = that.publicize('getEndpointID', function () {
-        return remoteEndpoint;
     });
 
     /**
