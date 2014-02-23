@@ -123,7 +123,7 @@ brightstream.Client = function (params) {
 
             log.info('logged in as user ' + user.getName());
             log.debug(user);
-            //updateTurnCredentials(); // TODO fix TURN credentials with Endpoints instead of Users.
+            updateTurnCredentials();
 
             /**
              * @event brightstream.Client#connect
