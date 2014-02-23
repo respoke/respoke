@@ -18,15 +18,18 @@
  * @param {boolean} receiveOnly - whether or not we accept media
  * @param {boolean} sendOnly - whether or not we send media
  * @param {brightstream.Endpoint} remoteEndpoint
- * @param {function} [previewLocalMedia]
- * @param {function} signalOffer
- * @param {function} signalAnswer
- * @param {function} signalTerminate
- * @param {function} signalReport
- * @param {function} signalCandidate
- * @param {function} [onLocalVideo]
- * @param {function} [onRemoteVideo]
- * @param {function} [onHangup]
+ * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
+ * local media becoming available and calling approve().
+ * @param {function} signalOffer - Signaling action from SignalingChannel.
+ * @param {function} signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} signalReport - Signaling action from SignalingChannel.
+ * @param {function} signalCandidate - Signaling action from SignalingChannel.
+ * @param {function} [onLocalVideo] - Callback for the developer to receive the local video element.
+ * @param {function} [onRemoteVideo] - Callback for the developer to receive the remote video element.
+ * @param {function} [onHangup] - Callback for the developer to be notified about hangup.
+ * @param {function} [onStats] - Callback for the developer to receive statistics about the call. This is only used
+ * if call.getStats() is called and the stats module is loaded.
  * @param {object} callSettings
  * @param {object} [localVideoElements]
  * @param {object} [remoteVideoElements]
@@ -50,6 +53,7 @@ brightstream.Call = function (params) {
 
     var pc = null;
     var defOffer = Q.defer();
+    var defAnswer = Q.defer();
     var defApproved = Q.defer();
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
     var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
@@ -79,17 +83,16 @@ brightstream.Call = function (params) {
     };
 
     var report = {
-        'callStarted' : 0,
-        'callStopped' : 0,
-        'roomkey' : null,
-        'sessionkey' : null,
-        'lastSDPString' : '',
-        'sdpsSent' : [],
-        'sdpsReceived' : [],
-        'candidatesSent' : [],
-        'candidatesReceived' : [],
-        'userAgent' : navigator.userAgent,
-        'os' : navigator.platform
+        callStarted: 0,
+        callStopped: 0,
+        lastSDPString: '',
+        sdpsSent: [],
+        sdpsReceived: [],
+        candidatesSent: [],
+        candidatesReceived: [],
+        stats: [],
+        userAgent: navigator.userAgent,
+        os: navigator.platform
     };
 
     var ST_STARTED = 0;
@@ -105,11 +108,15 @@ brightstream.Call = function (params) {
      * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
      * before we can act on the call.
      */
-    Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
-        if (approved === true && oOffer && oOffer.sdp) {
-            processOffer(oOffer);
-        }
-    }).done();
+    if (that.initiator !== true) {
+        Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
+            if (approved === true && oOffer && oOffer.sdp) {
+                processOffer(oOffer);
+            }
+        }, function (err) {
+            log.warn("Call rejected.");
+        }).done();
+    }
 
     /**
      * Register any event listeners passed in as callbacks
@@ -122,21 +129,15 @@ brightstream.Call = function (params) {
      */
     var registerListeners = function (params) {
         if (typeof params.onLocalVideo === 'function') {
-            that.listen('local-stream-received', function (evt) {
-                params.onLocalVideo(evt.element);
-            });
+            that.listen('local-stream-received', params.onLocalVideo);
         }
 
         if (typeof params.onRemoteVideo === 'function') {
-            that.listen('remote-stream-received', function (evt) {
-                params.onRemoteVideo(evt.element);
-            });
+            that.listen('remote-stream-received', params.onRemoteVideo);
         }
 
         if (typeof params.onHangup === 'function') {
-            that.listen('hangup', function (evt) {
-                params.onHangup(evt.sentSignal);
-            });
+            that.listen('hangup', params.onHangup);
         }
     };
 
@@ -314,6 +315,63 @@ brightstream.Call = function (params) {
             approve();
         }
     };
+
+    /**
+     * Return media stats. Since we have to wait for both the answer and offer to be available before starting
+     * statistics, we'll return a promise for the stats object.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.getStats
+     * @returns {Promise<object>}
+     * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {function} [onStats] - An optional callback to receive the stats. If no callback is provided,
+     * the call's report will contain stats but the developer will not receive them on the client-side.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     */
+    var getStats = function (params) {
+        var deferred = brightstream.makeDeferred(null, function (err) {
+            log.warn("Couldn't start stats:", err.message);
+        });
+
+        if (!pc) {
+            deferred.reject(new Error("Can't get stats, pc is null."));
+            return deferred.promise;
+        }
+
+        if (brightstream.MediaStats) {
+            that.listen('stats', params.onStats);
+            Q.all([defOffer.promise, defAnswer.promise]).done(function () {
+                var stats = brightstream.MediaStats({
+                    peerConnection: pc,
+                    interval: params.interval,
+                    onStats: function (stats) {
+                        /**
+                         * @event brightstream.Call#stats
+                         * @type {brightstream.Event}
+                         * @property {object} stats - an object with stats in it.
+                         */
+                        that.fire('stats', {
+                            stats: stats
+                        });
+                        report.stats.push(stats);
+                    }
+                });
+                that.listen('hangup', function (evt) {
+                    stats.stopStats();
+                });
+                deferred.resolve(stats);
+            }, function (err) {
+                log.warn("Call rejected.");
+            });
+        } else {
+            deferred.reject(new Error("Statistics module is not loaded."));
+        }
+        return deferred.promise;
+    };
+
+    if (brightstream.MediaStats) {
+        that.publicize('getStats', getStats);
+    }
 
     /**
      * Return local video element.
@@ -547,6 +605,7 @@ brightstream.Call = function (params) {
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
             signalOffer(oSession);
+            defOffer.resolve(oSession);
         }, function errorHandler(p) {
             log.error('setLocalDescription failed');
             log.error(p);
@@ -569,6 +628,7 @@ brightstream.Call = function (params) {
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
             signalAnswer(oSession);
+            defAnswer.resolve(oSession);
         }, function errorHandler(p) {
             log.error('setLocalDescription failed');
             log.error(p);
@@ -726,8 +786,10 @@ brightstream.Call = function (params) {
 
         pc.setRemoteDescription(
             new RTCSessionDescription(oSession),
-            processQueues,
-            function errorHandler(p) {
+            function successHandler() {
+                processQueues();
+                defAnswer.resolve(oSession);
+            }, function errorHandler(p) {
                 log.error('set remote desc of answer failed');
                 report.callStoppedReason = 'setRemoteDescription failed at answer.';
                 log.error(oSession);
