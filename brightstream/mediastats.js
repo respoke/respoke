@@ -58,22 +58,22 @@ brightstream.MediaStats = function (params) {
         // if you change them things won't work.
         localaudio: {
             type: "ssrc",
-            match: {k: "ssrc", v: ""},
+            match: {key: "ssrc", value: ""},
             keys: ["audioInputLevel", "packetsSent", "bytesSent", "transportId", "googCodecName"]
         },
         remoteaudio: {
             type: "ssrc",
-            match: {k: "ssrc", v: ""},
+            match: {key: "ssrc", value: ""},
             keys: ["audioOutputLevel", "packetsReceived", "packetsLost", "bytesReceived", "transportId"]
         },
         remotevideo: {
             type: "ssrc",
-            match: {k: "ssrc", v: ""},
+            match: {key: "ssrc", value: ""},
             keys: ["packetsReceived", "packetsLost", "bytesReceived", "transportId"]
         },
         localvideo: {
             type: "ssrc",
-            match: {k: "ssrc", v: ""},
+            match: {key: "ssrc", value: ""},
             keys: ["packetsSent", "bytesSent", "transportId", "googCodecName"]
         }
     };
@@ -121,27 +121,27 @@ brightstream.MediaStats = function (params) {
          * extract the ssrcs from the sdp, because it isn't anwhere else.
          * we will use them to map results to audio/video etc
          */
-        Object.keys(sdp).forEach(function (wh) {
-            var rsdp = sdp[wh];
+        Object.keys(sdp).forEach(function (side) {
+            var rsdp = sdp[side];
             // filet the sdp
-            var rlines = rsdp.split("\r\n");
-            var m = null;
+            var lines = rsdp.split("\r\n");
+            var mediaType = null;
 
-            Object.keys(rlines).forEach(function (ln) {
-                var line = rlines[ln];
+            Object.keys(lines).forEach(function (lineIndex) {
+                var line = lines[lineIndex];
                 var lbits = null;
                 var ssrc = null;
 
                 if (startsWith(line, "m=")) { // take a note of the sort of media we are looking at
-                    m = line.substring(2, 7); // should be either 'audio' or 'video'
+                    mediaType = line.substring(2, 7); // should be either 'audio' or 'video'
                 } else if (startsWith(line, "a=ssrc:")) {
                     lbits = line.split(" ");
                     ssrc = lbits[0].substring("a=ssrc:".length);
 
-                    if (interestingStats[wh + m]) {
+                    if (interestingStats[side + mediaType]) {
                         // fill in the value of the respective 'match'
                         // build the name of the stat from parts
-                        interestingStats[wh + m].match.v = ssrc;
+                        interestingStats[side + mediaType].match.value = ssrc;
                     }
                 }
             });
@@ -152,7 +152,7 @@ brightstream.MediaStats = function (params) {
                 that.getStats().done(function (report) {
                     params.onStats(report);
                 }, function () {
-                    log.error("error in getstats");
+                    log.error("error in getStats");
                 });
             }, statsInterval);
         } else {
@@ -214,7 +214,7 @@ brightstream.MediaStats = function (params) {
         var stats = rawStats; // might need to re-instate some sort of wrapper here
         var results = stats.result();
 
-        var tstats = {
+        var allStats = {
             state: {
                 signalingState: pc.signalingState,
                 iceGatheringState: pc.icegatheringState,
@@ -222,34 +222,33 @@ brightstream.MediaStats = function (params) {
             }
         };
 
-        Object.keys(interestingStats).forEach(function (s) {
-            var sout = {};
-            var rule = interestingStats[s];
-            var report = results.filter(function (r) {
-                var tt = (r.type === rule.type);
-                var kt = (r.stat(rule.match.k) === rule.match.v);
-                return (tt && kt);
+        Object.keys(interestingStats).forEach(function (statType) {
+            var eachStat = {};
+            var rule = interestingStats[statType];
+            var report = results.filter(function (result) {
+                var typeMatch = (result.type === rule.type);
+                var keyMatch = (result.stat(rule.match.key) === rule.match.value);
+                return (typeMatch && keyMatch);
             });
 
             if (report.length > 0) {
-                sout.timestamp = report[0].timestamp;
+                eachStat.timestamp = report[0].timestamp;
                 if (oldStats) {
-                    sout.deltaT = sout.timestamp - oldStats[s].timestamp;
+                    eachStat.deltaT = eachStat.timestamp - oldStats[statType].timestamp;
                 }
 
-                for (var nkey = 0; nkey < rule.keys.length; nkey += 1) {
-                    var key = rule.keys[nkey];
-                    sout[key] = report[0].stat(key);
+                rule.keys.forEach(function (key) {
+                    eachStat[key] = report[0].stat(key);
 
                     if (deltas[key] && oldStats) {
-                        sout["delta" + key] = (sout[key] - oldStats[s][key]);
+                        eachStat["delta" + key] = (eachStat[key] - oldStats[statType][key]);
                     }
-                }
+                });
             }
-            tstats[s] = sout;
+            allStats[statType] = eachStat;
         });
-        oldStats = tstats;
-        return tstats;
+        oldStats = allStats;
+        return allStats;
     };
 
     initStats();
