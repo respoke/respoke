@@ -105,7 +105,7 @@ brightstream.Client = function (params) {
             });
         }, function (err) {
             deferred.reject("Couldn't connect to brightstream.");
-            log.error(err.message);
+            throw new Error(err.message);
         }).done(function (user) {
             connected = true;
 
@@ -151,23 +151,26 @@ brightstream.Client = function (params) {
      */
     var disconnect = that.publicize('disconnect', function (params) {
         // TODO: also call this on socket disconnect
-        var disconnectPromise;
         params = params || {};
+        var disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         if (signalingChannel.isOpen()) {
             // do websocket stuff. If the websocket is already closed, we have to skip this stuff.
             var leaveGroups = groups.map(function (group) {
                 group.leave();
             });
-            leaveGroups.push(signalingChannel.close());
-            disconnectPromise = Q.all(leaveGroups);
+            Q.all(leaveGroups).done(function () {
+                signalingChannel.close().done(function () {
+                    disconnectPromise.resolve();
+                }, function (err) {
+                    throw new Error(err.message);
+                });
+            }, null);
         } else {
-            disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
             disconnectPromise.resolve();
-            disconnectPromise = disconnectPromise.promise;
         }
 
-        disconnectPromise.then(function () {
+        var afterDisconnect = function () {
             connected = false;
             endpoints = [];
             groups = [];
@@ -175,11 +178,11 @@ brightstream.Client = function (params) {
              * @event brightstream.Client#disconnect
              */
             that.fire('disconnect');
-        }, function (err) {
-            throw err;
-        });
+        };
 
-        return disconnectPromise;
+        disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
+
+        return disconnectPromise.promise;
     });
 
     /**

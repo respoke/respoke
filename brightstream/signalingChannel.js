@@ -99,6 +99,7 @@ brightstream.SignalingChannel = function (params) {
             path: '/v1/appauthsessions',
             httpMethod: 'DELETE',
             responseHandler: function (response) {
+                socket.removeAllListeners();
                 socket.disconnect();
                 state = 'closed';
             }
@@ -121,7 +122,29 @@ brightstream.SignalingChannel = function (params) {
             path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
             objectId: clientObj.user.getID()
-        }).done(deleteAppAuthSession, deleteAppAuthSession);
+        }).done(function () {
+            call({
+                path: '/v1/appauthsessions',
+                httpMethod: 'DELETE',
+                responseHandler: function (response) {
+                    socket.removeAllListeners();
+                    socket.disconnect();
+                    state = 'closed';
+                    deferred.resolve();
+                }
+            });
+        }, function () {
+            call({
+                path: '/v1/appauthsessions',
+                httpMethod: 'DELETE',
+                responseHandler: function (response) {
+                    socket.removeAllListeners();
+                    socket.disconnect();
+                    state = 'closed';
+                    deferred.resolve();
+                }
+            });
+        });
 
         return deferred.promise;
     });
@@ -624,6 +647,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.addHandler
      * @param {string} type - The type of message, e. g., 'iq', 'pres'
      * @param {function} handler - A function to which to pass the message
+     * @todo TODO See if this is necessary anymore
      */
     var addHandler = that.publicize('addHandler', function (params) {
         if (socket.socket && socket.socket.open) {
@@ -632,6 +656,244 @@ brightstream.SignalingChannel = function (params) {
             handlerQueue[params.type].push(params.handler);
         }
     });
+
+    /**
+     * Socket handler for pub-sub messages.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.onPubSub
+     * @private
+     * @fires brightstream.Group#message
+     * @fires brightstream.Client#message
+     */
+    var onPubSub = function onPubSub(message) {
+        var group;
+        var groupMessage;
+
+        if (message.header.from === clientObj.user.id) {
+            return;
+        }
+
+        groupMessage = brightstream.TextMessage({
+            rawMessage: message
+        });
+
+        group = clientObj.getGroup({id: message.header.channel});
+        if (group) {
+            /**
+             * @event brightstream.Group#message
+             * @type {brightstream.Event}
+             * @property {brightstream.TextMessage} message
+             */
+            group.fire('message', {
+                message: groupMessage
+            });
+        } else if (clientObj.onMessage) {
+            /**
+             * @event brightstream.Client#message
+             * @type {brightstream.Event}
+             * @property {brightstream.TextMessage} message
+             */
+            clientObj.fire('message', {
+                message: groupMessage
+            });
+        }
+    };
+
+    /**
+     * Socket handler for join messages.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.onJoin
+     * @private
+     */
+    var onJoin = function onJoin(message) {
+        var group;
+        var presenceMessage;
+        var endpoint;
+
+        if (message.endpoint === endpointId) {
+            return;
+        }
+
+        endpoint = clientObj.getEndpoint({
+            id: message.endpoint,
+            createData: {
+                client: client,
+                id: message.endpoint,
+                name: message.endpoint,
+                connection: message.connectionId
+            }
+        });
+
+        // Handle presence not associated with a channel
+        if (message.header.channel.indexOf('system') > -1) {
+            endpoint.setPresence({
+                connectionId: message.connectionId,
+                presence: 'available'
+            });
+            return;
+        }
+
+        that.registerPresence({endpointList: [message.endpoint]});
+        group = clientObj.getGroup({id: message.header.channel});
+
+        if (group && endpoint) {
+            group.addEndpoint(endpoint);
+        } else {
+            log.error("Can't add endpoint to group:", message, group, endpoint);
+        }
+    };
+
+    /**
+     * Socket handler for leave messages.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.onLeave
+     * @private
+     */
+    var onLeave = function onLeave(message) {
+        var group;
+        var presenceMessage;
+        var endpoint;
+
+        if (message.endpointId === clientObj.user.getID()) {
+            return;
+        }
+
+        endpoint = clientObj.getEndpoint({
+            id: message.endpointId
+        });
+
+        group = clientObj.getGroup({id: message.header.channel});
+        if (group && endpoint) {
+            group.removeEndpoint(endpoint);
+            clientObj.checkEndpointForRemoval(endpoint);
+        } else {
+            log.error("Can't remove endpoint from group:", group, endpoint);
+        }
+    };
+
+    /**
+     * Socket handler for presence messages.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.onPresence
+     * @private
+     * @fires brightstream.Endpoint#message
+     * @fires brightstream.Client#message
+     */
+    var onMessage = function onMessage(message) {
+        var endpoint;
+        message = brightstream.TextMessage({rawMessage: message});
+        endpoint = clientObj.getEndpoint({id: message.endpointId});
+        if (endpoint) {
+            /**
+             * @event brightstream.Endpoint#message
+             * @type {brightstream.Event}
+             * @property {brightstream.TextMessage} message
+             */
+            endpoint.fire('message', {
+                message: message
+            });
+        } else if (clientObj.onMessage) {
+            /**
+             * @event brightstream.Client#message
+             * @type {brightstream.Event}
+             * @property {brightstream.TextMessage} message
+             */
+            clientObj.fire('message', {
+                message: message
+            });
+        }
+    };
+
+    /**
+     * Create a socket handler for the onConnect event with all the right things in scope.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.generateConnectHandler
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @private
+     */
+    var generateConnectHandler = function generateConnectHandler(onSuccess, onError) {
+        return function onConnect() {
+            log.debug('socket connected');
+            Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
+                if (!handlerQueue[category]) {
+                    return;
+                }
+
+                handlerQueue[category].forEach(function addEachHandler(handler) {
+                    socket.on(category, handler);
+                });
+                handlerQueue[category] = [];
+            });
+
+            wsCall({
+                path: '/v1/endpointconnections',
+                httpMethod: 'POST'
+            }).then(function (res) {
+                log.debug('endpointconnections result', res);
+                endpointId = res.endpointId;
+                var user = brightstream.User({
+                    client: client,
+                    id: res.id,
+                    name: res.endpointId
+                });
+                if (onSuccess) {
+                    onSuccess(user);
+                }
+            }, function (err) {
+                log.debug("Couldn't register endpoint.", err);
+                if (onError) {
+                    onError(err);
+                }
+            });
+        };
+    };
+
+    /**
+     * Socket handler for presence messages.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.onPresence
+     * @private
+     */
+    var onPresence = function onPresence(message) {
+        var endpoint;
+        var groups;
+
+        log.debug('socket.on presence', message);
+        if (message.header.from === endpointId) {
+            return;
+        }
+
+        endpoint = clientObj.getEndpoint({
+            id: message.header.from,
+            createData: {
+                client: client,
+                id: message.header.from,
+                name: message.header.from,
+                connection: message.header.fromConnection
+            }
+        });
+
+        if (message.type === 'unavailable') {
+            var groups = clientObj.getGroups();
+            if (groups) {
+                groups.forEach(function (group) {
+                    group.getEndpoints().done(function (endpoints) {
+                        endpoints.forEach(function (endpoint) {
+                            if (endpoint.getName() === message.header.from) {
+                                group.removeEndpoint(endpoint);
+                            }
+                        });
+                    });
+                });
+            }
+        }
+
+        endpoint.setPresence({
+            connectionId: message.header.fromConnection,
+            presence: message.type
+        });
+    };
 
     /**
      * Authenticate to the cloud and call the handler on state change.
@@ -661,208 +923,30 @@ brightstream.SignalingChannel = function (params) {
         port = pieces[1];
 
         socket = io.connect(baseURL, {
-            'host': host,
-            'port': port,
-            'protocol': protocol,
-            'secure': (protocol === 'https'),
-            'query': 'app-token=' + appToken
+            'connect timeout': 2000,
+            reconnect: true,
+            host: host,
+            port: port,
+            protocol: protocol,
+            secure: (protocol === 'https'),
+            query: 'app-token=' + appToken
         });
 
-        /**
-         * @fires brightstream.Group#message
-         * @fires brightstream.Client#message
-         */
-        socket.on('pubsub', function handleMessage(message) {
-            var group;
-            var groupMessage;
+        socket.on('connect', generateConnectHandler(function onSuccess(user) {
+            deferred.resolve(user);
+        }, function onError(err) {
+            log.debug("Couldn't register endpoint.", err);
+            deferred.reject(err);
+        }));
 
-            if (message.header.from === clientObj.user.getName()) {
-                return;
-            }
+        socket.on('join', onJoin);
+        socket.on('leave', onLeave);
+        socket.on('pubsub', onPubSub);
+        socket.on('message', onMessage);
+        socket.on('presence', onPresence);
 
-            groupMessage = brightstream.TextMessage({
-                rawMessage: message
-            });
-
-            group = clientObj.getGroup({id: message.header.channel});
-            if (group) {
-                /**
-                 * @event brightstream.Group#message
-                 * @type {brightstream.Event}
-                 * @property {brightstream.TextMessage} message
-                 */
-                group.fire('message', {
-                    message: groupMessage
-                });
-            } else if (clientObj.onMessage) {
-                /**
-                 * @event brightstream.Client#message
-                 * @type {brightstream.Event}
-                 * @property {brightstream.TextMessage} message
-                 */
-                clientObj.fire('message', {
-                    message: groupMessage
-                });
-            }
-        });
-
-        socket.on('presence', function handleMessage(message) {
-            var endpoint;
-            var groups;
-
-            log.debug('socket.on presence', message);
-            if (message.header.from === endpointId) {
-                return;
-            }
-
-            endpoint = clientObj.getEndpoint({
-                id: message.header.from,
-                createData: {
-                    client: client,
-                    id: message.header.from,
-                    name: message.header.from,
-                    connection: message.header.fromConnection
-                }
-            });
-
-            if (message.type === 'unavailable') {
-                var groups = clientObj.getGroups();
-                if (groups) {
-                    groups.forEach(function (group) {
-                        group.getEndpoints().done(function (endpoints) {
-                            endpoints.forEach(function (endpoint) {
-                                if (endpoint.getName() === message.header.from) {
-                                    group.removeEndpoint(endpoint);
-                                }
-                            });
-                        });
-                    });
-                }
-            }
-
-            endpoint.setPresence({
-                connectionId: message.header.fromConnection,
-                presence: message.type
-            });
-        });
-
-        socket.on('join', function handleMessage(message) {
-            var group;
-            var presenceMessage;
-            var endpoint;
-
-            if (message.endpoint === endpointId) {
-                return;
-            }
-
-            endpoint = clientObj.getEndpoint({
-                id: message.endpoint,
-                createData: {
-                    client: client,
-                    id: message.endpoint,
-                    name: message.endpoint,
-                    connection: message.connectionId
-                }
-            });
-
-            // Handle presence not associated with a channel
-            if (message.header.channel.indexOf('system') > -1) {
-                endpoint.setPresence({
-                    connectionId: message.connectionId,
-                    presence: 'available'
-                });
-                return;
-            }
-
-            that.registerPresence({endpointList: [message.endpoint]});
-            group = clientObj.getGroup({id: message.header.channel});
-
-            if (group && endpoint) {
-                group.addEndpoint(endpoint);
-            } else {
-                log.error("Can't add endpoint to group:", message, group, endpoint);
-            }
-        });
-
-        socket.on('leave', function handleMessage(message) {
-            var group;
-            var presenceMessage;
-            var endpoint;
-
-            if (message.endpointId === clientObj.user.getID()) {
-                return;
-            }
-
-            endpoint = clientObj.getEndpoint({
-                id: message.endpointId
-            });
-
-            group = clientObj.getGroup({id: message.header.channel});
-            if (group && endpoint) {
-                group.removeEndpoint(endpoint);
-                clientObj.checkEndpointForRemoval(endpoint);
-            } else {
-                log.error("Can't remove endpoint from group:", group, endpoint);
-            }
-        });
-
-        /**
-         * @fires brightstream.Endpoint#message
-         * @fires brightstream.Client#message
-         */
-        socket.on('message', function handleMessage(message) {
-            var endpoint;
-            message = brightstream.TextMessage({rawMessage: message});
-            endpoint = clientObj.getEndpoint({id: message.endpointId});
-            if (endpoint) {
-                /**
-                 * @event brightstream.Endpoint#message
-                 * @type {brightstream.Event}
-                 * @property {brightstream.TextMessage} message
-                 */
-                endpoint.fire('message', {
-                    message: message
-                });
-            } else if (clientObj.onMessage) {
-                /**
-                 * @event brightstream.Client#message
-                 * @type {brightstream.Event}
-                 * @property {brightstream.TextMessage} message
-                 */
-                clientObj.fire('message', {
-                    message: message
-                });
-            }
-        });
-
-        socket.on('connect', function handleConnect() {
-            Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
-                if (!handlerQueue[category]) {
-                    return;
-                }
-
-                handlerQueue[category].forEach(function addEachHandler(handler) {
-                    socket.on(category, handler);
-                });
-                handlerQueue[category] = [];
-            });
-
-            wsCall({
-                path: '/v1/endpointconnections',
-                httpMethod: 'POST'
-            }).then(function (res) {
-                log.debug('endpointconnections result', res);
-                endpointId = res.endpointId;
-                var user = brightstream.User({
-                    client: client,
-                    id: res.id,
-                    name: res.endpointId
-                });
-                deferred.resolve(user);
-            }, function (err) {
-                log.debug("Couldn't register endpoint.", err);
-                deferred.reject(err);
-            });
+        socket.on('error', function (res) {
+            log.trace('socket#error', res);
         });
 
         that.addHandler({
@@ -874,6 +958,32 @@ brightstream.SignalingChannel = function (params) {
                 that.routeSignal(message);
             }
         });
+
+        socket.on('disconnect', function onDisconnect() {
+            /**
+             * @event brightstream.Client#disconnect
+             */
+            clientObj.fire('disconnect');
+            socket.removeAllListeners('connect');
+
+            socket.on('connect', generateConnectHandler(function onSuccess(user) {
+                log.debug('socket reconnected');
+                Q.all(clientObj.getGroups().map(function iterGroups(group) {
+                    clientObj.join({id: group.id});
+                })).done(function (result) {
+                    clientObj.user = user;
+                    /**
+                     * @event brightstream.Client#reconnect
+                     */
+                    clientObj.fire('reconnect');
+                }, function (err) {
+                    throw new Error(err.message);
+                });
+            }, function onError(err) {
+                throw new Error(err.message);
+            }));
+        });
+
         return deferred.promise;
     });
 
@@ -973,7 +1083,7 @@ brightstream.SignalingChannel = function (params) {
         socket.emit(params.httpMethod, JSON.stringify({
             url: params.path,
             data: params.parameters,
-            headers: { 'X-App-Token': appToken}
+            headers: {'X-App-Token': appToken}
         }), function handleResponse(response) {
             log.debug('socket response', params.httpMethod, params.path, response);
 
