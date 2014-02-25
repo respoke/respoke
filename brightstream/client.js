@@ -167,7 +167,7 @@ brightstream.Client = function (params) {
             disconnectPromise = disconnectPromise.promise;
         }
 
-        disconnectPromise.then(function () {
+        var afterDisconnect = function () {
             connected = false;
             endpoints = [];
             groups = [];
@@ -175,9 +175,9 @@ brightstream.Client = function (params) {
              * @event brightstream.Client#disconnect
              */
             that.fire('disconnect');
-        }, function (err) {
-            throw err;
-        });
+        };
+
+        disconnectPromise.done(afterDisconnect, afterDisconnect);
 
         return disconnectPromise;
     });
