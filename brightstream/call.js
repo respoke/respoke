@@ -547,9 +547,7 @@ brightstream.Call = function (params) {
             return;
         }
 
-        console.log('forceTurn is', forceTurn);
         if (forceTurn === true && oCan.candidate.candidate.indexOf("typ relay") === -1) {
-            console.log('skipping candidate');
             return;
         }
 
