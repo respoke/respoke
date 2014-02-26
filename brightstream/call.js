@@ -17,6 +17,7 @@
  * @param {boolean} initiator - whether or not we initiated the call
  * @param {boolean} receiveOnly - whether or not we accept media
  * @param {boolean} sendOnly - whether or not we send media
+ * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
  * @param {brightstream.Endpoint} remoteEndpoint
  * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
  * local media becoming available and calling approve().
@@ -58,6 +59,7 @@ brightstream.Call = function (params) {
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
     var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
     var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
+    var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
     var candidateSendingQueue = [];
     var candidateReceivingQueue = [];
     var mediaStreams = [];
@@ -157,6 +159,7 @@ brightstream.Call = function (params) {
      * @param {function} [onLocalVideo]
      * @param {function} [onRemoteVideo]
      * @param {function} [onHangup]
+     * @param {boolean} [forceTurn]
      * @param {boolean} [receiveOnly]
      */
     var answer = that.publicize('answer', function (params) {
@@ -165,6 +168,7 @@ brightstream.Call = function (params) {
         log.trace('answer');
         registerListeners(params);
 
+        forceTurn = typeof params.forceTurn === 'boolean' ? params.receiveOnly : forceTurn;
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
@@ -543,8 +547,9 @@ brightstream.Call = function (params) {
             return;
         }
 
-        if (callSettings.forceTurn === true &&
-                oCan.candidate.candidate.indexOf("typ relay") === -1) {
+        console.log('forceTurn is', forceTurn);
+        if (forceTurn === true && oCan.candidate.candidate.indexOf("typ relay") === -1) {
+            console.log('skipping candidate');
             return;
         }
 
