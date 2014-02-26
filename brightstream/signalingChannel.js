@@ -73,6 +73,7 @@ brightstream.SignalingChannel = function (params) {
             },
             responseHandler: function (response) {
                 if (!response.error) {
+                    brightstream.token = response.result.token;
                     deferred.resolve();
                     log.trace("Signaling connection open to", baseURL);
                     state = 'open';
@@ -607,7 +608,8 @@ brightstream.SignalingChannel = function (params) {
             'host': host,
             'port': port,
             'protocol': protocol,
-            'secure': (protocol === 'https')
+            'secure': (protocol === 'https'),
+            'query': brightstream.token ? ('app-token=' + brightstream.token) : ''
         });
 
 
@@ -987,6 +989,9 @@ brightstream.SignalingChannel = function (params) {
             paramString = JSON.stringify(params.parameters);
             try {
                 xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                if (brightstream.token) {
++                    xhr.setRequestHeader("X-App-Token", brightstream.token);
++                }
             } catch (e) {
                 log.debug("Can't set content-type header in readyState " +
                     xhr.readyState + ". " + e.message);
