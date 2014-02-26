@@ -336,6 +336,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendMessage
      * @param {brightstream.SignalingMessage} message - The string text message to send.
      * @param {brightstream.Endpoint} recipient
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
@@ -343,14 +344,16 @@ brightstream.SignalingChannel = function (params) {
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var message = brightstream.TextMessage({
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId,
+            message: params.message
+        });
 
         wsCall({
             path: '/v1/messages',
             httpMethod: 'POST',
-            parameters: brightstream.TextMessage({
-                endpointId: params.recipient.getID(),
-                message: params.message
-            })
+            parameters: message
         }).then(function () {
             deferred.resolve();
         }, function (err) {
@@ -365,6 +368,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendSignal
      * @param {brightstream.SignalingMessage} signal
      * @param {brightstream.Endpoint} recipient
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
@@ -372,6 +376,8 @@ brightstream.SignalingChannel = function (params) {
     var sendSignal = that.publicize('sendSignal', function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        params.toConnection = params.connectionId;
+        delete params.connectionId;
 
         wsCall({
             path: '/v1/signaling',
@@ -391,6 +397,7 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendCandidate
      * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {string} [connectionId]
      * @param {RTCIceCandidate} candObj - An ICE candidate to JSONify and send.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
@@ -403,6 +410,7 @@ brightstream.SignalingChannel = function (params) {
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
+                connectionId: params.connectionId,
                 signal: JSON.stringify(params.candObj)
             })
         }).then(function () {
@@ -419,6 +427,7 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendSDP
      * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {string} [connectionId]
      * @param {RTCSessionDescription} sdpObj - An SDP to JSONify and send.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
@@ -431,6 +440,7 @@ brightstream.SignalingChannel = function (params) {
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
+                connectionId: params.connectionId,
                 signal: JSON.stringify(params.sdpObj)
             })
         }).then(function () {
@@ -447,6 +457,7 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendBye
      * @param {brightstream.Endpoint} recipient The recipient.
+     * @param {string} [connectionId]
      * @param {string} reason The reason the session is being terminated.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
@@ -459,6 +470,7 @@ brightstream.SignalingChannel = function (params) {
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
+                connectionId: params.connectionId,
                 signal: JSON.stringify({'type': 'bye', 'reason': params.reason})
             })
         }).then(function () {

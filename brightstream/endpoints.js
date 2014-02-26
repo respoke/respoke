@@ -122,6 +122,7 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendMessage
      * @param {string} message
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
@@ -129,6 +130,7 @@ brightstream.Endpoint = function (params) {
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
         return signalingChannel.sendMessage({
+            connectionId: params.connectionId,
             message: params.message,
             recipient: that,
             onSuccess: params.onSuccess,
@@ -141,6 +143,7 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendSignal
      * @param {object|string} signal
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
@@ -155,6 +158,7 @@ brightstream.Endpoint = function (params) {
         }
 
         signalingChannel.sendSignal({
+            connectionId: params.connectionId,
             signal: params.signal,
             recipient: that,
             onSuccess: params.onSuccess,
@@ -175,11 +179,11 @@ brightstream.Endpoint = function (params) {
      * @method brightstream.Endpoint.call
      * @param {RTCServers} [servers]
      * @param {RTCConstraints} [constraints]
+     * @param {string} [connectionId]
      * @param {boolean} [initiator] Whether the logged-in user initiated the call.
      * @returns {brightstream.Call}
      */
     var call = that.publicize('call', function (params) {
-        var id = that.getID();
         var call = null;
         var clientObj = brightstream.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
@@ -191,7 +195,7 @@ brightstream.Endpoint = function (params) {
             params.initiator = true;
         }
 
-        if (!id) {
+        if (!that.id) {
             log.error("Can't start a call without endpoint ID!");
             return;
         }
@@ -208,6 +212,7 @@ brightstream.Endpoint = function (params) {
         params.signalOffer = function (sdp) {
             log.trace('signalOffer');
             signalingChannel.sendSDP({
+                connectionId: params.connectionId,
                 recipient: that,
                 sdpObj: sdp
             });
@@ -215,6 +220,7 @@ brightstream.Endpoint = function (params) {
         params.signalAnswer = function (sdp) {
             log.trace('signalAnswer');
             signalingChannel.sendSDP({
+                connectionId: params.connectionId,
                 recipient: that,
                 sdpObj: sdp
             });
@@ -222,6 +228,7 @@ brightstream.Endpoint = function (params) {
         params.signalCandidate = function (oCan) {
             oCan.type = 'candidate';
             signalingChannel.sendCandidate({
+                connectionId: params.connectionId,
                 recipient: that,
                 candObj: oCan
             });
@@ -229,6 +236,7 @@ brightstream.Endpoint = function (params) {
         params.signalTerminate = function () {
             log.trace('signalTerminate');
             signalingChannel.sendBye({
+                connectionId: params.connectionId,
                 recipient: that
             });
         };
@@ -248,13 +256,13 @@ brightstream.Endpoint = function (params) {
 
         // Don't use params.onHangup here. Will overwrite the developer's callback.
         call.listen('hangup', function hangupListener(evt) {
-            user.removeCall({endpointId: id});
+            user.removeCall({endpointId: that.id});
         });
         return call;
     });
 
     /**
-     * Find the presence out of all known sessions with the highest priority (most availability)
+     * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.setPresence

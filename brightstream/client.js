@@ -203,23 +203,45 @@ brightstream.Client = function (params) {
     });
 
     /**
+     * Send a message to an endpoint.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.sendMessage
+     * @param {string} endpointId
+     * @param {string} [connectionId]
+     * @param {string} message
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<undefined>}
+     */
+    var sendMessage = that.publicize('sendMessage', function (params) {
+        var endpoint = that.getEndpoint({id: params.endpointId});
+
+        if (!endpoint) {
+            throw new Error("Can't find an endpoint with id", params.endpointId);
+        }
+
+        delete params.endpointId;
+        return endpoint.sendMessage(params);
+    });
+
+    /**
      * Call an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.call
-     * @param {string} endpoint
-     * @param {string} connection
+     * @param {string} endpointId
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {brightstream.Call}
      */
     var call = that.publicize('call', function (params) {
-        var endpoint = that.getEndpoint({id: params.id});
+        var endpoint = that.getEndpoint({id: params.endpointId});
 
         if (!endpoint) {
-            throw new Error("Can't find an endpoint with id", params.id);
+            throw new Error("Can't find an endpoint with id", params.endpointId);
         }
 
-        delete params.id;
+        delete params.endpointId;
         return endpoint.call(params);
     });
 
