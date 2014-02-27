@@ -488,7 +488,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.routeSignal
      * @param {brightstream.SignalingMessage} message - A message to route
      * @fires brightstream.Call#offer
-     * @fires brightstream.Call#accept
+     * @fires brightstream.Call#connected
      * @fires brightstream.Call#answer
      * @fires brightstream.Call#candidate
      * @fires brightstream.Call#bye
@@ -525,13 +525,13 @@ brightstream.SignalingChannel = function (params) {
                 signal: signal
             });
             break;
-        case 'accept':
+        case 'connected':
             /**
-             * @event brightstream.Call#accept
+             * @event brightstream.Call#connected
              * @type {brightstream.Event}
              * @property {object} signal
              */
-            call.fire('accept', {
+            call.fire('connected', {
                 signal: signal
             });
             break;

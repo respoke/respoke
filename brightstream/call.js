@@ -22,6 +22,7 @@
  * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
  * local media becoming available and calling approve().
  * @param {function} signalOffer - Signaling action from SignalingChannel.
+ * @param {function} signalConnected - Signaling action from SignalingChannel.
  * @param {function} signalAnswer - Signaling action from SignalingChannel.
  * @param {function} signalTerminate - Signaling action from SignalingChannel.
  * @param {function} signalReport - Signaling action from SignalingChannel.
