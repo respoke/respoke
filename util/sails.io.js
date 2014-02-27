@@ -125,7 +125,10 @@
     // Build to request
     var json = window.io.JSON.stringify({
       url: url,
-      data: data
+      data: data,
+      headers: {
+        'X-App-Token': brightstream.token 
+      }
     });
 
 
