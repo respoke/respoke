@@ -829,9 +829,7 @@ brightstream.Call = function (params) {
      * @todo TODO Make this listen to events and be private.
      */
     var setConnected = that.publicize('setConnected', function (signal) {
-        console.log('setConnected', signal);
         if (signal.connectionId !== clientObj.user.id) {
-            console.log('hanging up');
             that.hangup(false);
         }
     });
