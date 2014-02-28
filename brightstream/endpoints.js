@@ -209,40 +209,47 @@ brightstream.Endpoint = function (params) {
         params.client = client;
         params.remoteEndpoint = that;
 
-        params.signalOffer = function (sdp) {
+        params.signalOffer = function (signalParams) {
             log.trace('signalOffer');
+            signalParams.sdp.type = 'offer';
             signalingChannel.sendSDP({
-                connectionId: params.connectionId,
                 recipient: that,
-                sdpObj: sdp
+                sdpObj: signalParams.sdp
             });
         };
-        params.signalAnswer = function (sdp) {
-            log.trace('signalAnswer');
-            signalingChannel.sendSDP({
-                connectionId: params.connectionId,
-                recipient: that,
-                sdpObj: sdp
-            });
-        };
-        params.signalCandidate = function (oCan) {
-            oCan.type = 'candidate';
-            signalingChannel.sendCandidate({
-                connectionId: params.connectionId,
-                recipient: that,
-                candObj: oCan
-            });
-        };
-        params.signalTerminate = function () {
-            log.trace('signalTerminate');
-            signalingChannel.sendBye({
-                connectionId: params.connectionId,
+        params.signalConnected = function (signalParams) {
+            log.trace('signalConnected');
+            signalingChannel.sendConnected({
+                connectionId: signalParams.connectionId,
                 recipient: that
             });
         };
-        params.signalReport = function (oReport) {
+        params.signalAnswer = function (signalParams) {
+            log.trace('signalAnswer');
+            signalParams.sdp.type = 'answer';
+            signalingChannel.sendSDP({
+                connectionId: signalParams.connectionId,
+                recipient: that,
+                sdpObj: signalParams.sdp
+            });
+        };
+        params.signalCandidate = function (signalParams) {
+            signalingChannel.sendCandidate({
+                connectionId: signalParams.connectionId,
+                recipient: that,
+                candObj: signalParams.candidate
+            });
+        };
+        params.signalTerminate = function (signalParams) {
+            log.trace('signalTerminate');
+            signalingChannel.sendBye({
+                connectionId: signalParams.connectionId,
+                recipient: that
+            });
+        };
+        params.signalReport = function (signalParams) {
             log.debug("Not sending report");
-            log.debug(oReport);
+            log.debug(signalParams.report);
         };
         call = brightstream.Call(params);
 

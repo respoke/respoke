@@ -19,6 +19,7 @@
  * @param {boolean} sendOnly - whether or not we send media
  * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
  * @param {brightstream.Endpoint} remoteEndpoint
+ * @param {string} connectionId - The connection ID of the remoteEndpoint.
  * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
  * local media becoming available and calling approve().
  * @param {function} signalOffer - Signaling action from SignalingChannel.
@@ -36,8 +37,6 @@
  * @param {object} [localVideoElements]
  * @param {object} [remoteVideoElements]
  * @returns {brightstream.Call}
- * @property {boolean} initiator Indicate whether this Call belongs to the Endpoint
- * that initiated the WebRTC session.
  */
 /*global brightstream: false */
 brightstream.Call = function (params) {
@@ -70,11 +69,15 @@ brightstream.Call = function (params) {
     var videoLocalElement = null;
     var videoRemoteElement = null;
     var signalOffer = params.signalOffer;
+    var signalConnected = params.signalConnected;
     var signalAnswer = params.signalAnswer;
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
     var signalCandidate = function (oCan) {
-        params.signalCandidate(oCan);
+        params.signalCandidate({
+            candidate: oCan,
+            connectionId: that.connectionId
+        });
         report.candidatesSent.push(oCan);
     };
     var callSettings = params.callSettings;
@@ -608,7 +611,7 @@ brightstream.Call = function (params) {
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
-            signalOffer(oSession);
+            signalOffer({sdp: oSession});
             defOffer.resolve(oSession);
         }, function errorHandler(p) {
             log.error('setLocalDescription failed');
@@ -631,7 +634,10 @@ brightstream.Call = function (params) {
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
-            signalAnswer(oSession);
+            signalAnswer({
+                sdp: oSession,
+                connectionId: that.connectionId
+            });
             defAnswer.resolve(oSession);
         }, function errorHandler(p) {
             log.error('setLocalDescription failed');
@@ -691,11 +697,14 @@ brightstream.Call = function (params) {
         params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
         if (params.signal) {
             log.info('sending bye');
-            signalTerminate();
+            signalTerminate({connectionId: that.connectionId});
         }
 
         report.callStopped = new Date().getTime();
-        signalReport(report);
+        signalReport({
+            report: report,
+            connectionId: that.connectionId
+        });
 
         /**
          * @event brightstream.Call#hangup
@@ -760,6 +769,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.setOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
+     * @todo TODO Make this listen to events and be private.
      */
     var setOffer = that.publicize('setOffer', function (oOffer) {
         log.debug('got offer', oOffer);
@@ -771,7 +781,7 @@ brightstream.Call = function (params) {
         } else {
             defOffer.reject(new Error("Received offer in a bad state."));
             log.warn('Got offer in precall state.');
-            signalTerminate();
+            signalTerminate({connectionId: that.connectionId});
         }
     });
 
@@ -779,14 +789,23 @@ brightstream.Call = function (params) {
      * Save the answer and tell the browser about it.
      * @memberof! brightstream.Call
      * @method brightstream.Call.setAnswer
-     * @param {RTCSessionDescription} oSession The remote SDP.
+     * @param {RTCSessionDescription} oSession - The remote SDP.
+     * @todo TODO Make this listen to events and be private.
      */
     var setAnswer = that.publicize('setAnswer', function (oSession) {
+        if (defAnswer.promise.isFulfilled()) {
+            log.debug("Ignoring duplicate answer.");
+            return;
+        }
+
         that.state = ST_ANSWERED;
         log.debug('got answer', oSession);
 
         report.sdpsReceived.push(oSession);
         report.lastSDPString = oSession.sdp;
+        that.connectionId = oSession.connectionId;
+        delete oSession.connectionId;
+        signalConnected({connectionId: that.connectionId});
 
         pc.setRemoteDescription(
             new RTCSessionDescription(oSession),
@@ -803,11 +822,27 @@ brightstream.Call = function (params) {
     });
 
     /**
+     * Save the answer and tell the browser about it.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.setConnected
+     * @param {RTCSessionDescription} oSession The remote SDP.
+     * @todo TODO Make this listen to events and be private.
+     */
+    var setConnected = that.publicize('setConnected', function (signal) {
+        console.log('setConnected', signal);
+        if (signal.connectionId !== clientObj.user.id) {
+            console.log('hanging up');
+            that.hangup(false);
+        }
+    });
+
+    /**
      * Save the candidate. If we initiated the call, place the candidate into the queue so
      * we can process them after we receive the answer.
      * @memberof! brightstream.Call
      * @method brightstream.Call.addRemoteCandidate
      * @param {RTCIceCandidate} oCan The ICE candidate.
+     * @todo TODO Make this listen to events and be private.
      */
     var addRemoteCandidate = that.publicize('addRemoteCandidate', function (oCan) {
         if (!oCan || oCan.candidate === null) {
@@ -996,6 +1031,7 @@ brightstream.Call = function (params) {
      * Save the hangup reason and hang up.
      * @memberof! brightstream.Call
      * @method brightstream.Call.setBye
+     * @todo TODO Make this listen to events and be private.
      */
     var setBye = that.publicize('setBye', function (params) {
         params = params || {};

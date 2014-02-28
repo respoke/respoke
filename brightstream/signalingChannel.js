@@ -407,6 +407,7 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
+        params.candObj.type = 'candidate';
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
@@ -456,9 +457,9 @@ brightstream.SignalingChannel = function (params) {
      * Send a message terminating the WebRTC session.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendBye
-     * @param {brightstream.Endpoint} recipient The recipient.
+     * @param {brightstream.Endpoint} recipient - The recipient.
      * @param {string} [connectionId]
-     * @param {string} reason The reason the session is being terminated.
+     * @param {string} reason - The reason the session is being terminated.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
@@ -483,6 +484,36 @@ brightstream.SignalingChannel = function (params) {
     });
 
     /**
+     * Send a message to all connection ids indicating we have negotiated a call with one connection.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendConnected
+     * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @return {Promise<undefined>}
+     */
+    var sendConnected = that.publicize('sendConnected', function (params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        that.sendSignal({
+            signal: brightstream.SignalingMessage({
+                endpointId: params.recipient.getID(),
+                signal: JSON.stringify({
+                    type: 'connected',
+                    connectionId: params.connectionId
+                })
+            })
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    });
+
+    /**
      * Route different types of signaling messages via events.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.routeSignal
@@ -492,6 +523,7 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Call#answer
      * @fires brightstream.Call#candidate
      * @fires brightstream.Call#bye
+     * @todo TODO Make the call.set* methods accept the entire message.
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.signal;
@@ -515,6 +547,7 @@ brightstream.SignalingChannel = function (params) {
 
         switch (signal.type) {
         case 'offer':
+            call.connectionId = message.connectionId;
             call.setOffer(signal);
             /**
              * @event brightstream.Call#offer
@@ -526,6 +559,7 @@ brightstream.SignalingChannel = function (params) {
             });
             break;
         case 'connected':
+            call.setConnected(signal);
             /**
              * @event brightstream.Call#connected
              * @type {brightstream.Event}
@@ -536,6 +570,7 @@ brightstream.SignalingChannel = function (params) {
             });
             break;
         case 'answer':
+            signal.connectionId = message.connectionId;
             call.setAnswer(signal);
             /**
              * @event brightstream.Call#answer
@@ -558,6 +593,9 @@ brightstream.SignalingChannel = function (params) {
             });
             break;
         case 'bye':
+            if (call.connectionId !== message.connectionId) {
+                return;
+            }
             call.setBye(signal);
             /**
              * @event brightstream.Call#bye
@@ -621,7 +659,6 @@ brightstream.SignalingChannel = function (params) {
             'protocol': protocol,
             'secure': (protocol === 'https')
         });
-
 
         /**
          * @fires brightstream.Group#message
