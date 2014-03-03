@@ -29,9 +29,11 @@ brightstream.SignalingChannel = function (params) {
     var socket = null;
     var clientSettings = null; // client is not set up yet
     var baseURL = null;
+    var appId = null;
+    var endpointId = null;
+    var appToken = null;
+
     var xhr = new XMLHttpRequest();
-    var appId;
-    var endpointId;
     xhr.withCredentials = true;
 
     var handlerQueue = {
@@ -54,7 +56,7 @@ brightstream.SignalingChannel = function (params) {
      * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.open
-     * @param {string} token - The App's auth token
+     * @param {string} token - The Endpoint's auth token
      * @param {string} appId - The App's id
      * @return {Promise<undefined>}
      */
@@ -73,6 +75,7 @@ brightstream.SignalingChannel = function (params) {
             },
             responseHandler: function (response) {
                 if (!response.error) {
+                    appToken = response.result.token;
                     deferred.resolve();
                     log.trace("Signaling connection open to", baseURL);
                     state = 'open';
@@ -647,6 +650,10 @@ brightstream.SignalingChannel = function (params) {
         var host = null;
         var port = null;
 
+        if (!appToken) {
+            deferred.reject(new Error("Can't open a websocket without an app token."));
+        }
+
         pieces = baseURL.split(/:\/\//);
         protocol = pieces[0];
         pieces = pieces[1].split(/:/);
@@ -657,7 +664,8 @@ brightstream.SignalingChannel = function (params) {
             'host': host,
             'port': port,
             'protocol': protocol,
-            'secure': (protocol === 'https')
+            'secure': (protocol === 'https'),
+            'query': 'app-token=' + appToken
         });
 
         /**
@@ -957,19 +965,31 @@ brightstream.SignalingChannel = function (params) {
 
         log.debug('socket request', params.httpMethod, params.path, params.parameters);
 
-        if (!socket || !socket[params.httpMethod]) {
+        if (!socket) {
             deferred.reject(new Error("Can't make websocket request: no connection."));
             return deferred.promise;
         }
 
-        socket[params.httpMethod](params.path, params.parameters, function handleResponse(response) {
+        socket.emit(params.httpMethod, JSON.stringify({
+            url: params.path,
+            data: params.parameters,
+            headers: { 'X-App-Token': appToken}
+        }), function handleResponse(response) {
             log.debug('socket response', params.httpMethod, params.path, response);
+
+            try {
+                response = JSON.parse(response);
+            } catch (e) {
+                throw new Error("Server response could not be parsed!", response);
+            }
+
             if (response && response.error) {
                 deferred.reject(new Error(response.error + '(' + params.httpMethod + ' ' + params.path + ')'));
             } else {
-                deferred.resolve(response || {statusCode: 200});
+                deferred.resolve(response);
             }
         });
+
         return deferred.promise;
     };
 
@@ -1036,6 +1056,9 @@ brightstream.SignalingChannel = function (params) {
             paramString = JSON.stringify(params.parameters);
             try {
                 xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                if (appToken) {
+                    xhr.setRequestHeader("X-App-Token", appToken);
+                }
             } catch (e) {
                 log.debug("Can't set content-type header in readyState " +
                     xhr.readyState + ". " + e.message);
