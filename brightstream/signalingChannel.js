@@ -336,6 +336,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendMessage
      * @param {brightstream.SignalingMessage} message - The string text message to send.
      * @param {brightstream.Endpoint} recipient
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
@@ -343,14 +344,16 @@ brightstream.SignalingChannel = function (params) {
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var message = brightstream.TextMessage({
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId,
+            message: params.message
+        });
 
         wsCall({
             path: '/v1/messages',
             httpMethod: 'POST',
-            parameters: brightstream.TextMessage({
-                endpointId: params.recipient.getID(),
-                message: params.message
-            })
+            parameters: message
         }).then(function () {
             deferred.resolve();
         }, function (err) {
@@ -365,6 +368,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendSignal
      * @param {brightstream.SignalingMessage} signal
      * @param {brightstream.Endpoint} recipient
+     * @param {string} [connectionId]
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
@@ -372,6 +376,8 @@ brightstream.SignalingChannel = function (params) {
     var sendSignal = that.publicize('sendSignal', function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        params.toConnection = params.connectionId;
+        delete params.connectionId;
 
         wsCall({
             path: '/v1/signaling',
@@ -391,6 +397,7 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendCandidate
      * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {string} [connectionId]
      * @param {RTCIceCandidate} candObj - An ICE candidate to JSONify and send.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
@@ -400,9 +407,11 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
+        params.candObj.type = 'candidate';
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
+                connectionId: params.connectionId,
                 signal: JSON.stringify(params.candObj)
             })
         }).then(function () {
@@ -419,6 +428,7 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendSDP
      * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {string} [connectionId]
      * @param {RTCSessionDescription} sdpObj - An SDP to JSONify and send.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
@@ -431,6 +441,7 @@ brightstream.SignalingChannel = function (params) {
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
+                connectionId: params.connectionId,
                 signal: JSON.stringify(params.sdpObj)
             })
         }).then(function () {
@@ -446,8 +457,9 @@ brightstream.SignalingChannel = function (params) {
      * Send a message terminating the WebRTC session.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendBye
-     * @param {brightstream.Endpoint} recipient The recipient.
-     * @param {string} reason The reason the session is being terminated.
+     * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {string} [connectionId]
+     * @param {string} reason - The reason the session is being terminated.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
@@ -459,7 +471,38 @@ brightstream.SignalingChannel = function (params) {
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
+                connectionId: params.connectionId,
                 signal: JSON.stringify({'type': 'bye', 'reason': params.reason})
+            })
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    });
+
+    /**
+     * Send a message to all connection ids indicating we have negotiated a call with one connection.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendConnected
+     * @param {brightstream.Endpoint} recipient - The recipient.
+     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @return {Promise<undefined>}
+     */
+    var sendConnected = that.publicize('sendConnected', function (params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        that.sendSignal({
+            signal: brightstream.SignalingMessage({
+                endpointId: params.recipient.getID(),
+                signal: JSON.stringify({
+                    type: 'connected',
+                    connectionId: params.connectionId
+                })
             })
         }).then(function () {
             deferred.resolve();
@@ -476,10 +519,11 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.routeSignal
      * @param {brightstream.SignalingMessage} message - A message to route
      * @fires brightstream.Call#offer
-     * @fires brightstream.Call#accept
+     * @fires brightstream.Call#connected
      * @fires brightstream.Call#answer
      * @fires brightstream.Call#candidate
      * @fires brightstream.Call#bye
+     * @todo TODO Make the call.set* methods accept the entire message.
      */
     var routeSignal = that.publicize('routeSignal', function (message) {
         var signal = message.signal;
@@ -503,6 +547,7 @@ brightstream.SignalingChannel = function (params) {
 
         switch (signal.type) {
         case 'offer':
+            call.connectionId = message.connectionId;
             call.setOffer(signal);
             /**
              * @event brightstream.Call#offer
@@ -513,17 +558,19 @@ brightstream.SignalingChannel = function (params) {
                 signal: signal
             });
             break;
-        case 'accept':
+        case 'connected':
+            call.setConnected(signal);
             /**
-             * @event brightstream.Call#accept
+             * @event brightstream.Call#connected
              * @type {brightstream.Event}
              * @property {object} signal
              */
-            call.fire('accept', {
+            call.fire('connected', {
                 signal: signal
             });
             break;
         case 'answer':
+            signal.connectionId = message.connectionId;
             call.setAnswer(signal);
             /**
              * @event brightstream.Call#answer
@@ -546,6 +593,9 @@ brightstream.SignalingChannel = function (params) {
             });
             break;
         case 'bye':
+            if (call.connectionId !== message.connectionId) {
+                return;
+            }
             call.setBye(signal);
             /**
              * @event brightstream.Call#bye
@@ -609,7 +659,6 @@ brightstream.SignalingChannel = function (params) {
             'protocol': protocol,
             'secure': (protocol === 'https')
         });
-
 
         /**
          * @fires brightstream.Group#message
