@@ -104,8 +104,8 @@ brightstream.Client = function (params) {
                 appId: app.appId
             });
         }, function (err) {
-            deferred.reject("Couldn't connect to brightstream.");
-            throw new Error(err.message);
+            log.error(err.message);
+            deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
         }).done(function (user) {
             connected = true;
 
