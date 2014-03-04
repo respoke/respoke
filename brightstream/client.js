@@ -159,13 +159,17 @@ brightstream.Client = function (params) {
             var leaveGroups = groups.map(function (group) {
                 group.leave();
             });
-            Q.all(leaveGroups).done(function () {
-                signalingChannel.close().done(function () {
+            Q.all(leaveGroups).then(function () {
+                return signalingChannel.close();
+            }, function (err) {
+                // Possibly the socket got closed already and we couldn't leave our groups. Backed will clean this up.
+                disconnectPromise.resolve();
+            }).fin(function () {
+                if (!disconnectPromise.promise.isFulfilled()) {
+                    // Successfully closed our socket after leaving all groups.
                     disconnectPromise.resolve();
-                }, function (err) {
-                    throw new Error(err.message);
-                });
-            }, null);
+                }
+            });
         } else {
             disconnectPromise.resolve();
         }
