@@ -181,7 +181,6 @@ brightstream.Client = function (params) {
         };
 
         disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
-
         return disconnectPromise.promise;
     });
 

@@ -669,7 +669,7 @@ brightstream.SignalingChannel = function (params) {
         var group;
         var groupMessage;
 
-        if (message.header.from === clientObj.user.id) {
+        if (message.header.from === clientObj.user.getName()) {
             return;
         }
 
