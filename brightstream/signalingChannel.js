@@ -814,7 +814,6 @@ brightstream.SignalingChannel = function (params) {
      */
     var generateConnectHandler = function generateConnectHandler(onSuccess, onError) {
         return function onConnect() {
-            log.debug('socket connected');
             Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
                 if (!handlerQueue[category]) {
                     return;
@@ -924,6 +923,9 @@ brightstream.SignalingChannel = function (params) {
 
         socket = io.connect(baseURL, {
             'connect timeout': 2000,
+            'reconnection limit ': 10000,
+            'max reconnection attempts': 5000,
+            'force new connection': true,
             reconnect: true,
             host: host,
             port: port,
@@ -944,6 +946,18 @@ brightstream.SignalingChannel = function (params) {
         socket.on('pubsub', onPubSub);
         socket.on('message', onMessage);
         socket.on('presence', onPresence);
+
+        socket.on('connect_failed', function (res) {
+            log.error('Connect failed.');
+        });
+
+        socket.on('reconnect_failed', function (res) {
+            log.error('Reconnect failed.');
+        });
+
+        socket.on('reconnecting', function (res) {
+            log.info('reconnecting');
+        });
 
         socket.on('error', function (res) {
             log.trace('socket#error', res);
