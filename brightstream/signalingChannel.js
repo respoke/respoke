@@ -89,24 +89,6 @@ brightstream.SignalingChannel = function (params) {
     });
 
     /**
-     * End an AppAuthSession
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.deleteAppAuthSession
-     * @private
-     */
-    var deleteAppAuthSession = function () {
-        call({
-            path: '/v1/appauthsessions',
-            httpMethod: 'DELETE',
-            responseHandler: function (response) {
-                socket.removeAllListeners();
-                socket.disconnect();
-                state = 'closed';
-            }
-        });
-    };
-
-    /**
      * Close a connection to the REST API. Invalidate the appauthsession.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.close
@@ -122,18 +104,7 @@ brightstream.SignalingChannel = function (params) {
             path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
             objectId: clientObj.user.getID()
-        }).done(function () {
-            call({
-                path: '/v1/appauthsessions',
-                httpMethod: 'DELETE',
-                responseHandler: function (response) {
-                    socket.removeAllListeners();
-                    socket.disconnect();
-                    state = 'closed';
-                    deferred.resolve();
-                }
-            });
-        }, function () {
+        }).fin(function () {
             call({
                 path: '/v1/appauthsessions',
                 httpMethod: 'DELETE',
