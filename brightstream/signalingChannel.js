@@ -924,14 +924,12 @@ brightstream.SignalingChannel = function (params) {
         /**
          * Try to connect for 2 seconds before failing.
          * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-         * is doubled up to a maximum of 10 seconds. From the on, it will attempt to reconnect every 10 seconds
-         * until it has tried 5000 times. Then it will give up.
+         * is doubled up to a maximum of 5 minutes. From the on, it will attempt to reconnect every 5 mins forever.
          */
         socket = io.connect(baseURL, {
-            'close timeout': 5,
             'connect timeout': 2000,
-            'reconnection limit': 10000,
-            'max reconnection attempts': 5000,
+            'reconnection limit': 5 * 60 * 60 * 1000,
+            'max reconnection attempts': Infinity,
             'force new connection': true, // Don't try to reuse old connection.
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: true,
