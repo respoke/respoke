@@ -104,8 +104,8 @@ brightstream.Client = function (params) {
                 appId: app.appId
             });
         }, function (err) {
-            deferred.reject("Couldn't connect to brightstream.");
             log.error(err.message);
+            deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
         }).done(function (user) {
             connected = true;
 
@@ -151,23 +151,30 @@ brightstream.Client = function (params) {
      */
     var disconnect = that.publicize('disconnect', function (params) {
         // TODO: also call this on socket disconnect
-        var disconnectPromise;
         params = params || {};
+        var disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         if (signalingChannel.isOpen()) {
             // do websocket stuff. If the websocket is already closed, we have to skip this stuff.
             var leaveGroups = groups.map(function (group) {
                 group.leave();
             });
-            leaveGroups.push(signalingChannel.close());
-            disconnectPromise = Q.all(leaveGroups);
+            Q.all(leaveGroups).then(function () {
+                return signalingChannel.close();
+            }, function (err) {
+                // Possibly the socket got closed already and we couldn't leave our groups. Backed will clean this up.
+                disconnectPromise.resolve();
+            }).fin(function () {
+                if (!disconnectPromise.promise.isFulfilled()) {
+                    // Successfully closed our socket after leaving all groups.
+                    disconnectPromise.resolve();
+                }
+            });
         } else {
-            disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
             disconnectPromise.resolve();
-            disconnectPromise = disconnectPromise.promise;
         }
 
-        disconnectPromise.then(function () {
+        var afterDisconnect = function () {
             connected = false;
             endpoints = [];
             groups = [];
@@ -175,11 +182,10 @@ brightstream.Client = function (params) {
              * @event brightstream.Client#disconnect
              */
             that.fire('disconnect');
-        }, function (err) {
-            throw err;
-        });
+        };
 
-        return disconnectPromise;
+        disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
+        return disconnectPromise.promise;
     });
 
     /**
