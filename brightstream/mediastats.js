@@ -46,7 +46,7 @@ brightstream.MediaStats = function (params) {
     var interestingStats = {
         cons: {
             type: "googCandidatePair",
-            match: {k: "googActiveConnection", v: "true"},
+            match: {key: "googActiveConnection", value: "true"},
             keys: [
                 "googWritable", "googReadable",
                 "googTransportType", "googLocalCandidateType",
