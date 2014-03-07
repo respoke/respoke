@@ -9,7 +9,7 @@
 /**
  * Create a new Call.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.Call
+ * @class brightstream.DirectConnection
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and call state.
@@ -36,16 +36,16 @@
  * @param {object} callSettings
  * @param {object} [localVideoElements]
  * @param {object} [remoteVideoElements]
- * @returns {brightstream.Call}
+ * @returns {brightstream.DirectConnection}
  */
 /*global brightstream: false */
-brightstream.Call = function (params) {
+brightstream.DirectConnection = function (params) {
     "use strict";
     params = params || {};
     var client = params.client;
     var that = brightstream.EventEmitter(params);
     delete that.client;
-    that.className = 'brightstream.Call';
+    that.className = 'brightstream.DirectConnection';
     that.id = brightstream.makeUniqueID().toString();
 
     if (!that.initiator) {
@@ -53,12 +53,12 @@ brightstream.Call = function (params) {
     }
 
     var pc = null;
+    var dataChannel = null;
     var defOffer = Q.defer();
     var defAnswer = Q.defer();
     var defApproved = Q.defer();
-    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
-    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
-    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
+    var sendOnly = that.initiator === true;
+    var receiveOnly = that.initiator !== true;
     var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
     var candidateSendingQueue = [];
     var candidateReceivingQueue = [];
@@ -115,6 +115,12 @@ brightstream.Call = function (params) {
      * before we can act on the call.
      */
     if (that.initiator !== true) {
+        callSettings.constraints = {
+            audio: false,
+            video: false,
+            offerToReceiveVideo: false,
+            offerToReceiveAudio: true
+        };
         Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
             if (approved === true && oOffer && oOffer.sdp) {
                 processOffer(oOffer);
@@ -122,12 +128,19 @@ brightstream.Call = function (params) {
         }, function (err) {
             log.warn("Call rejected.");
         }).done();
+    } else {
+        callSettings.constraints = {
+            audio: true,
+            video: false,
+            offerToReceiveVideo: false,
+            offerToReceiveAudio: false
+        };
     }
 
     /**
      * Register any event listeners passed in as callbacks
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.registerListeners
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.registerListeners
      * @param {function} [onLocalVideo]
      * @param {function} [onRemoteVideo]
      * @param {function} [onHangup]
@@ -156,10 +169,9 @@ brightstream.Call = function (params) {
      * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiate,
      * since the library calls this method for the initiate. Developers will use this method to pass in
      * callbacks for the non-initiate.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.answer
-     * @fires brightstream.Call#answer
-     * @param {function} [previewLocalMedia]
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.answer
+     * @fires brightstream.DirectConnection#answer
      * @param {function} [onLocalVideo]
      * @param {function} [onRemoteVideo]
      * @param {function} [onHangup]
@@ -174,34 +186,33 @@ brightstream.Call = function (params) {
 
         forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
-            params.previewLocalMedia : previewLocalMedia;
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
         /**
-         * @event brightstream.Call#answer
+         * @event brightstream.DirectConnection#answer
          */
         that.fire('answer');
 
+        /* Think we don't need this for data channels
         if (receiveOnly !== true) {
             requestMedia(params);
         } else if (typeof previewLocalMedia !== 'function') {
             approve();
-        }
+        }*/
     });
 
     /**
      * Start the process of network and media negotiation. Called after local video approved.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.approve.
-     * @fires brightstream.Call#approve
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.approve.
+     * @fires brightstream.DirectConnection#approve
      */
     var approve = that.publicize('approve', function () {
         that.state = ST_APPROVED;
         log.trace('Call.approve');
         /**
-         * @event brightstream.Call#approve
+         * @event brightstream.DirectConnection#approve
          */
         that.fire('approve');
 
@@ -218,8 +229,8 @@ brightstream.Call = function (params) {
 
     /**
      * Process a remote offer if we are not the initiator.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.processOffer
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.processOffer
      * @private
      * @param {RTCSessionDescriptor}
      */
@@ -249,11 +260,11 @@ brightstream.Call = function (params) {
 
     /**
      * Save the local stream. Kick off SDP creation.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onReceiveUserMedia
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onReceiveUserMedia
      * @private
      * @param {MediaStream}
-     * @fires brightstream.Call#local-stream-received
+     * @fires brightstream.DirectConnection#local-stream-received
      */
     var onReceiveUserMedia = function (stream) {
         log.debug('User gave permission to use media.');
@@ -284,7 +295,7 @@ brightstream.Call = function (params) {
         if (brightstream.streams[callSettings.constraints]) {
             brightstream.streams[callSettings.constraints].numPc += 1;
             /**
-             * @event brightstream.Call#local-stream-received
+             * @event brightstream.DirectConnection#local-stream-received
              * @type {brightstream.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
              */
@@ -307,7 +318,7 @@ brightstream.Call = function (params) {
             videoLocalElement.used = true;
 
             /**
-             * @event brightstream.Call#local-stream-received
+             * @event brightstream.DirectConnection#local-stream-received
              * @type {brightstream.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
              */
@@ -316,19 +327,14 @@ brightstream.Call = function (params) {
             });
         }
 
-        if (typeof previewLocalMedia === 'function') {
-            that.state = ST_INREVIEW;
-            previewLocalMedia(videoLocalElement, that);
-        } else {
-            approve();
-        }
+        approve();
     };
 
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
      * statistics, we'll return a promise for the stats object.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getStats
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.getStats
      * @returns {Promise<object>}
      * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
      * @param {function} [onStats] - An optional callback to receive the stats. If no callback is provided,
@@ -354,7 +360,7 @@ brightstream.Call = function (params) {
                     interval: params.interval,
                     onStats: function (stats) {
                         /**
-                         * @event brightstream.Call#stats
+                         * @event brightstream.DirectConnection#stats
                          * @type {brightstream.Event}
                          * @property {object} stats - an object with stats in it.
                          */
@@ -383,8 +389,8 @@ brightstream.Call = function (params) {
 
     /**
      * Return local video element.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getLocalElement
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.getLocalElement
      */
     var getLocalElement = that.publicize('getLocalElement', function () {
         return videoLocalElement;
@@ -392,8 +398,8 @@ brightstream.Call = function (params) {
 
     /**
      * Return remote video element.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getRemoteElement
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.getRemoteElement
      */
     var getRemoteElement = that.publicize('getRemoteElement', function () {
         return videoRemoteElement;
@@ -401,8 +407,8 @@ brightstream.Call = function (params) {
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.requestMedia
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.requestMedia
      * @todo Find out when we can stop deleting TURN servers
      * @private
      * @param {object} callSettings
@@ -469,8 +475,8 @@ brightstream.Call = function (params) {
 
     /**
      * Handle any error that comes up during the process of getting user media.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onUserMediaError
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onUserMediaError
      * @private
      * @param {object}
      */
@@ -489,8 +495,8 @@ brightstream.Call = function (params) {
 
     /**
      * Listen for the remote side to remove media in the middle of the call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onRemoteStreamRemoved
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onRemoteStreamRemoved
      * @private
      * @param {object}
      */
@@ -500,11 +506,11 @@ brightstream.Call = function (params) {
 
     /**
      * Listen for the remote side to add additional media in the middle of the call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onRemoteStreamAdded
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onRemoteStreamAdded
      * @private
      * @param {object}
-     * @fires brightstream.Call#remote-stream-received
+     * @fires brightstream.DirectConnection#remote-stream-received
      */
     var onRemoteStreamAdded = function (evt) {
         that.state = ST_FLOWING;
@@ -525,7 +531,7 @@ brightstream.Call = function (params) {
         videoRemoteElement.play();
         attachMediaStream(videoRemoteElement, evt.stream);
         /**
-         * @event brightstream.Call#remote-stream-received
+         * @event brightstream.DirectConnection#remote-stream-received
          * @type {brightstream.Event}
          * @property {Element} element - the HTML5 Video element with the new stream attached.
          */
@@ -537,12 +543,28 @@ brightstream.Call = function (params) {
             'stream': evt.stream,
             'isLocal': false
         }));
+
+        dataChannel = pc.createDataChannel();
+        dataChannel.onerror = function (error) {
+            console.log("DataChannel error:", error);
+        };
+        dataChannel.onmessage = function (event) {
+            console.log("Got Data Channel Message:", event.data);
+        };
+
+        dataChannel.onopen = function () {
+            dataChannel.send("Hello World!");
+        };
+
+        dataChannel.onclose = function () {
+            console.log("The Data Channel is Closed");
+        };
     };
 
     /**
      * Process a local ICE Candidate
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onIceCandidate
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onIceCandidate
      * @private
      * @param {RTCICECandidate}
      */
@@ -565,8 +587,8 @@ brightstream.Call = function (params) {
 
     /**
      * Handle renegotiation
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onNegotiationNeeded
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onNegotiationNeeded
      * @private
      */
     var onNegotiationNeeded = function () {
@@ -576,8 +598,8 @@ brightstream.Call = function (params) {
     /**
      * Process any ICE candidates that we received either from the browser or the other side while
      * we were trying to set up our RTCPeerConnection to handle them.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.processQueues
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.processQueues
      * @private
      */
     var processQueues = function () {
@@ -599,8 +621,8 @@ brightstream.Call = function (params) {
     /**
      * Save an SDP we've gotten from the browser which will be an offer and send it to the other
      * side.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.saveOfferAndSend
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.saveOfferAndSend
      * @param {RTCSessionDescription}
      * @private
      */
@@ -622,8 +644,8 @@ brightstream.Call = function (params) {
     /**
      * Save our SDP we've gotten from the browser which will be an answer and send it to the
      * other side.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.saveAnswerAndSend
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.saveAnswerAndSend
      * @param {RTCSessionDescription}
      * @private
      */
@@ -647,8 +669,8 @@ brightstream.Call = function (params) {
 
     /**
      * Handle shutting the session down if the other side hangs up.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onRemoteHangup
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onRemoteHangup
      * @private
      */
     var onRemoteHangup = function () {
@@ -665,9 +687,9 @@ brightstream.Call = function (params) {
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
      * signal is not false and we have not received a bye signal from the remote party.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.hangup
-     * @fires brightstream.Call#hangup
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.hangup
+     * @fires brightstream.DirectConnection#hangup
      * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
@@ -707,7 +729,7 @@ brightstream.Call = function (params) {
         });
 
         /**
-         * @event brightstream.Call#hangup
+         * @event brightstream.DirectConnection#hangup
          * @type {brightstream.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
          */
@@ -735,8 +757,8 @@ brightstream.Call = function (params) {
 
     /*
      * Expose hangup as reject for approve/reject workflow.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.reject
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.reject
      * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
@@ -744,8 +766,8 @@ brightstream.Call = function (params) {
 
     /**
      * Indicate whether a call is being setup or is in progress.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.isActive
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.isActive
      * @returns {boolean}
      */
     var isActive = that.publicize('isActive', function () {
@@ -766,8 +788,8 @@ brightstream.Call = function (params) {
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.setOffer
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.setOffer
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @todo TODO Make this listen to events and be private.
      */
@@ -787,8 +809,8 @@ brightstream.Call = function (params) {
 
     /**
      * Save the answer and tell the browser about it.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.setAnswer
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.setAnswer
      * @param {RTCSessionDescription} oSession - The remote SDP.
      * @todo TODO Make this listen to events and be private.
      */
@@ -823,8 +845,8 @@ brightstream.Call = function (params) {
 
     /**
      * Save the answer and tell the browser about it.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.setConnected
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.setConnected
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @todo TODO Make this listen to events and be private.
      */
@@ -837,8 +859,8 @@ brightstream.Call = function (params) {
     /**
      * Save the candidate. If we initiated the call, place the candidate into the queue so
      * we can process them after we receive the answer.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.addRemoteCandidate
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.addRemoteCandidate
      * @param {RTCIceCandidate} oCan The ICE candidate.
      * @todo TODO Make this listen to events and be private.
      */
@@ -867,8 +889,8 @@ brightstream.Call = function (params) {
 
     /**
      * Get the state of the Call
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getState
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.getState
      * @returns {string}
      */
     var getState = that.publicize('getState', function () {
@@ -877,8 +899,8 @@ brightstream.Call = function (params) {
 
     /**
      * Indicate whether the logged-in User initated the Call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.isInitiator
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.isInitiator
      * @returns {boolean}
      */
     var isInitiator = that.publicize('isInitiator', function () {
@@ -886,149 +908,9 @@ brightstream.Call = function (params) {
     });
 
     /**
-     * Return all MediaStreams
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getStreams
-     * @returns {brightstream.MediaStream[]}
-     */
-    var getStreams = that.publicize('getStreams', function () {
-        return mediaStreams;
-    });
-
-    /**
-     * Return all local MediaStreams
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getLocalStreams
-     * @returns {brightstream.MediaStream[]}
-     */
-    var getLocalStreams = that.publicize('getLocalStreams', function () {
-        var streams = [];
-
-        mediaStreams.forEach(function addLocal(stream) {
-            if (stream.isLocal()) {
-                streams.push(stream);
-            }
-        });
-
-        return streams;
-    });
-
-    /**
-     * Return all remote MediaStreams
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getRemoteStreams
-     * @returns {brightstream.MediaStream[]}
-     */
-    var getRemoteStreams = that.publicize('getRemoteStreams', function () {
-        var streams = [];
-
-        mediaStreams.forEach(function addRemote(stream) {
-            if (!stream.isLocal()) {
-                streams.push(stream);
-            }
-        });
-
-        return streams;
-    });
-
-    /**
-     * If video is muted, unmute. If not muted, mute. TODO: How should this behave?
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.toggleVideo
-     */
-    var toggleVideo = that.publicize('toggleVideo', function () {
-        if (that.isActive()) {
-            if (pc.localStreams[0].videoTracks[0].enabled) {
-                that.muteVideo();
-            } else {
-                that.unmuteVideo();
-            }
-        }
-    });
-
-    /**
-     * If audio is muted, unmute. If not muted, mute. TODO: How should this behave?
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.toggleAudio
-     */
-    var toggleAudio = that.publicize('toggleAudio', function () {
-        if (that.isActive()) {
-            if (pc.localStreams[0].audioTracks[0].enabled) {
-                that.muteAudio();
-            } else {
-                that.unmuteAudio();
-            }
-        }
-    });
-
-    /**
-     * Mute video. TODO: How should this behave?
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.muteVideo
-     * @fires brightstream.Call#video-muted
-     */
-    var muteVideo = that.publicize('muteVideo', function () {
-        mediaStreams.forEach(function muteEach(stream) {
-            stream.muteVideo();
-        });
-        /**
-         * @event brightstream.Call#video-muted
-         */
-        that.fire('video-muted');
-    });
-
-    /**
-     * Unmute video. TODO: How should this behave?
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.unmuteVideo
-     * @fires brightstream.Call#video-unmuted
-     */
-    var unmuteVideo = that.publicize('unmuteVideo', function () {
-        mediaStreams.forEach(function unmuteEach(stream) {
-            stream.unmuteVideo();
-        });
-        /**
-         * @event brightstream.Call#video-unmuted
-         */
-        that.fire('video-unmuted');
-    });
-
-    /**
-     * Mute audio. TODO: How should this behave?
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.muteAudio
-     * @fires brightstream.Call#audio-muted
-     */
-    var muteAudio = that.publicize('muteAudio', function () {
-        mediaStreams.forEach(function muteEach(stream) {
-            stream.muteAudio();
-        });
-        /**
-         * @event brightstream.Call#audio-muted
-         */
-        that.fire('audio-muted');
-    });
-
-    /**
-     * Unmute audio. TODO: How should this behave?
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.unmuteAudio
-     * @fires brightstream.Call#audio-unmuted
-     */
-    var unmuteAudio = that.publicize('unmuteAudio', function () {
-        mediaStreams.forEach(function unmuteEach(stream) {
-            stream.unmuteAudio();
-        });
-        /**
-         * @event brightstream.Call#audio-unmuted
-         */
-        that.fire('audio-unmuted');
-    });
-
-    /**
      * Save the hangup reason and hang up.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.setBye
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.setBye
      * @todo TODO Make this listen to events and be private.
      */
     var setBye = that.publicize('setBye', function (params) {
@@ -1038,134 +920,4 @@ brightstream.Call = function (params) {
     });
 
     return that;
-}; // End brightstream.Call
-
-/**
- * Create a new MediaStream.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.MediaStream
- * @constructor
- * @augments brightstream.EventEmitter
- * @classdesc Manage native MediaStreams.
- * @returns {brightstream.MediaStream}
- * @property {object} stream - The native MediaStream we are managing.
- * @property {boolean} islocal - whether the stream is local or remote.
- * @property {brightstream.Endpoint} stream The Endpoint to whom this stream belongs.
- */
-brightstream.MediaStream = function (params) {
-    "use strict";
-    params = params || {};
-    var that = brightstream.EventEmitter(params);
-    that.className = 'brightstream.MediaStream';
-
-    var stream = params.stream;
-    var local = params.isLocal;
-
-    /**
-     * Stop this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.stop
-     */
-    var stop = that.publicize('stop', function () {
-        stream.stop();
-    });
-
-    /**
-     * Mute the audio on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.muteAudio
-     * @fires brightstream.MediaStream#audio-muted
-     */
-    var muteAudio = that.publicize('muteAudio', function () {
-        stream.audioTracks[0].enabled = false;
-        /**
-         * @event brightstream.MediaStream#audio-muted
-         */
-        that.fire('audio-muted');
-    });
-
-    /**
-     * Mute the video on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.muteVideo
-     * @fires brightstream.MediaStream#video-muted
-     */
-    var muteVideo = that.publicize('muteVideo', function () {
-        stream.videoTracks[0].enabled = false;
-        /**
-         * @event brightstream.MediaStream#video-muted
-         */
-        that.fire('video-muted');
-    });
-
-    /**
-     * Unmute the audio on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.unmuteAudio
-     * @fires brightstream.MediaStream#audio-unmuted
-     */
-    var unmuteAudio = that.publicize('unmuteAudio', function () {
-        stream.audioTracks[0].enabled = true;
-        /**
-         * @event brightstream.MediaStream#audio-unmuted
-         */
-        that.fire('audio-unmuted');
-    });
-
-    /**
-     * Unmute the video on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.unmuteVideo
-     * @fires brightstream.MediaStream#video-unmuted
-     */
-    var unmuteVideo = that.publicize('unmuteVideo', function () {
-        stream.videoTracks[0].enabled = true;
-        /**
-         * @event brightstream.MediaStream#video-unmuted
-         */
-        that.fire('video-unmuted');
-    });
-
-    /**
-     * Indicate whether the MediaStream is the local User's stream.
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.isLocal
-     * @return {boolean}
-     */
-    var isLocal = that.publicize('isLocal', function () {
-        return !!local;
-    });
-
-    /**
-     * Indicate whether the MediaStream is a Endpoint's stream. Do we need this if we
-     * have MediaStream.isLocal()?
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.isRemote
-     * @return {boolean}
-     */
-    var isRemote = that.publicize('isRemote', function () {
-        return !isLocal();
-    });
-
-    /**
-     * Get the media stream's unique id.
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.getID
-     * @return {string}
-     */
-    var getID = that.publicize('getID', function () {
-        return stream.id;
-    });
-
-    /**
-     * Get the stream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.getStream
-     * @return {MediaStream}
-     */
-    var getStream = that.publicize('getStream', function () {
-        return stream;
-    });
-
-    return that;
-}; // End brightstream.MediaStream
+}; // End brightstream.DirectConnection

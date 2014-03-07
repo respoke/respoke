@@ -212,6 +212,7 @@ brightstream.Endpoint = function (params) {
         params.signalOffer = function (signalParams) {
             log.trace('signalOffer');
             signalParams.sdp.type = 'offer';
+            signalParams.sdp.target = 'call';
             signalingChannel.sendSDP({
                 recipient: that,
                 sdpObj: signalParams.sdp
@@ -221,12 +222,14 @@ brightstream.Endpoint = function (params) {
             log.trace('signalConnected');
             signalingChannel.sendConnected({
                 connectionId: signalParams.connectionId,
-                recipient: that
+                recipient: that,
+                signal: {target: 'call'}
             });
         };
         params.signalAnswer = function (signalParams) {
             log.trace('signalAnswer');
             signalParams.sdp.type = 'answer';
+            signalParams.sdp.target = 'call';
             signalingChannel.sendSDP({
                 connectionId: signalParams.connectionId,
                 recipient: that,
@@ -234,6 +237,7 @@ brightstream.Endpoint = function (params) {
             });
         };
         params.signalCandidate = function (signalParams) {
+            signalParams.candidate.target = 'call';
             signalingChannel.sendCandidate({
                 connectionId: signalParams.connectionId,
                 recipient: that,
@@ -244,10 +248,12 @@ brightstream.Endpoint = function (params) {
             log.trace('signalTerminate');
             signalingChannel.sendBye({
                 connectionId: signalParams.connectionId,
-                recipient: that
+                recipient: that,
+                signal: {target: 'call'}
             });
         };
         params.signalReport = function (signalParams) {
+            signalParams.report.target = 'call';
             log.debug("Not sending report");
             log.debug(signalParams.report);
         };
@@ -263,9 +269,109 @@ brightstream.Endpoint = function (params) {
 
         // Don't use params.onHangup here. Will overwrite the developer's callback.
         call.listen('hangup', function hangupListener(evt) {
-            user.removeCall({endpointId: that.id});
+            user.removeCall({id: call.id});
         });
         return call;
+    });
+
+    /**
+     * Create a new DirectConnection. If initiator is set to true, the Call will start the call.
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.getDirectConnection
+     * @param {RTCServers} [servers]
+     * @param {string} [connectionId]
+     * @param {boolean} [initiator] Whether the logged-in user initiated the call.
+     * @returns {brightstream.Call}
+     */
+    var getDirectConnection = that.publicize('getDirectConnection', function (params) {
+        var directConnection = null;
+        var clientObj = brightstream.getClient(client);
+        var combinedCallSettings = clientObj.getCallSettings();
+        var user = clientObj.user;
+        params = params || {};
+
+        log.trace('Endpoint.getDirectConnection');
+
+        if (that.directConnection) {
+            return that.directConnection;
+        }
+
+        if (params.initiator === undefined) {
+            params.initiator = true;
+        }
+
+        if (!that.id) {
+            log.error("Can't start a direct connection without endpoint ID!");
+            return;
+        }
+
+        // Apply call-specific callSettings to the app's defaults
+        combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
+        log.debug('Final callSettings is', combinedCallSettings);
+
+        params.callSettings = combinedCallSettings;
+        params.client = client;
+        params.remoteEndpoint = that;
+
+        params.signalOffer = function (signalParams) {
+            log.trace('signalOffer');
+            signalParams.sdp.type = 'offer';
+            signalingChannel.sendSDP({
+                target: 'directConnection',
+                recipient: that,
+                sdpObj: signalParams.sdp
+            });
+        };
+        params.signalConnected = function (signalParams) {
+            log.trace('signalConnected');
+            signalingChannel.sendConnected({
+                target: 'directConnection',
+                connectionId: signalParams.connectionId,
+                recipient: that
+            });
+        };
+        params.signalAnswer = function (signalParams) {
+            log.trace('signalAnswer');
+            signalParams.sdp.type = 'answer';
+            signalingChannel.sendSDP({
+                target: 'directConnection',
+                connectionId: signalParams.connectionId,
+                recipient: that,
+                sdpObj: signalParams.sdp
+            });
+        };
+        params.signalCandidate = function (signalParams) {
+            signalingChannel.sendCandidate({
+                target: 'directConnection',
+                connectionId: signalParams.connectionId,
+                recipient: that,
+                candObj: signalParams.candidate
+            });
+        };
+        params.signalTerminate = function (signalParams) {
+            log.trace('signalTerminate');
+            signalingChannel.sendBye({
+                target: 'directConnection',
+                connectionId: signalParams.connectionId,
+                recipient: that
+            });
+        };
+        params.signalReport = function (signalParams) {
+            signalParams.report.target = 'directConnection';
+            log.debug("Not sending report");
+            log.debug(signalParams.report);
+        };
+        directConnection = that.directConnection = brightstream.DirectConnection(params);
+
+        if (params.initiator === true) {
+            directConnection.answer();
+        }
+
+        directConnection.listen('hangup', function (evt) {
+            that.directConnection = undefined;
+        });
+
+        return directConnection;
     });
 
     /**
@@ -409,11 +515,13 @@ brightstream.User = function (params) {
     });
 
     /**
-     * Associate the call with this user.
+     * Associate the call or direct connection with this user.
      * @memberof! brightstream.User
      * @method brightstream.User.addCall
-     * @param {brightstream.Call} call
+     * @param {brightstream.Call|brightstream.DirectConnection} call
      * @fires brightstream.User#call
+     * @fires brightstream.User#direct-connection
+     * @todo TODO rename this something else
      */
     var addCall = that.publicize('addCall', function (params) {
         if (calls.indexOf(params.call) === -1) {
@@ -424,29 +532,37 @@ brightstream.User = function (params) {
              * @property {brightstream.Call} call
              * @property {brightstream.Endpoint} endpoint
              */
-            that.fire('call', {
-                endpoint: params.endpoint,
-                call: params.call
-            });
+            if (params.call.className === 'brightstream.Call') {
+                that.fire('call', {
+                    endpoint: params.endpoint,
+                    call: params.call
+                });
+            } else if (params.call.className === 'brightstream.DirectConnection') {
+                that.fire('direct-connection', {
+                    endpoint: params.endpoint,
+                    directConnection: params.call
+                });
+            }
         }
     });
 
     /**
-     * Remove the call.
+     * Remove the call or direct connection.
      * @memberof! brightstream.User
      * @method brightstream.User.removeCall
-     * @param {string} [endpointId]
-     * @param {brightstream.Call} [call]
+     * @param {string} [id] Call or DirectConnection id
+     * @param {brightstream.Call} [call] Call or DirectConnection
+     * @todo TODO rename this something else
      */
     var removeCall = that.publicize('removeCall', function (params) {
         var match = false;
-        if (!params.endpointId && !params.call) {
+        if (!params.id && !params.call) {
             throw new Error("Must specify endpointId of Call to remove or the call itself.");
         }
 
         // Loop backward since we're modifying the array in place.
         for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if ((params.endpointId && calls[i].remoteEndpoint.getID() === params.endpointId) ||
+            if (calls[i].id === params.id ||
                     (params.call && calls[i] === params.call)) {
                 calls.splice(i);
                 match = true;
