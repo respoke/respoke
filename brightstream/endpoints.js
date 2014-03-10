@@ -113,12 +113,14 @@ brightstream.Endpoint = function (params) {
     var that = brightstream.Presentable(params);
     delete that.client;
     that.className = 'brightstream.Endpoint';
+    that.directConnection = null;
     var sessions = {};
 
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
-     * Send a message to the endpoint.
+     * Send a message to the endpoint. If a DirectConnection exists, send peer-to-peer. If not, send it through
+     * the infrastructure.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendMessage
      * @param {string} message
@@ -129,6 +131,19 @@ brightstream.Endpoint = function (params) {
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
+        if (that.directConnection) {
+            var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+            try {
+                that.directConnection.send({
+                    message: params.message
+                });
+                deferred.resolve();
+                return deferred.promise;
+            } catch (e) {
+                // Fall through to non-p2p messaging
+                log.error("Can't send message through direct connection.", e);
+            }
+        }
         return signalingChannel.sendMessage({
             connectionId: params.connectionId,
             message: params.message,
@@ -278,6 +293,9 @@ brightstream.Endpoint = function (params) {
      * Create a new DirectConnection. If initiator is set to true, the Call will start the call.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.getDirectConnection
+     * @param {function} [onOpen]
+     * @param {function} [onClose]
+     * @param {function} [onMessage]
      * @param {RTCServers} [servers]
      * @param {string} [connectionId]
      * @param {boolean} [initiator] Whether the logged-in user initiated the call.
@@ -286,7 +304,7 @@ brightstream.Endpoint = function (params) {
     var getDirectConnection = that.publicize('getDirectConnection', function (params) {
         var directConnection = null;
         var clientObj = brightstream.getClient(client);
-        var combinedCallSettings = clientObj.getCallSettings();
+        var combinedConnectionSettings = clientObj.getCallSettings();
         var user = clientObj.user;
         params = params || {};
 
@@ -305,11 +323,10 @@ brightstream.Endpoint = function (params) {
             return;
         }
 
-        // Apply call-specific callSettings to the app's defaults
-        combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
-        log.debug('Final callSettings is', combinedCallSettings);
+        // Apply connection-specific callSettings to the app's defaults
+        combinedConnectionSettings.servers = params.servers || combinedConnectionSettings.servers;
 
-        params.callSettings = combinedCallSettings;
+        params.connectionSettings = combinedConnectionSettings;
         params.client = client;
         params.remoteEndpoint = that;
 
@@ -364,10 +381,24 @@ brightstream.Endpoint = function (params) {
         directConnection = that.directConnection = brightstream.DirectConnection(params);
 
         if (params.initiator === true) {
-            directConnection.answer();
+            directConnection.answer({
+                onOpen: params.onOpen,
+                onClose: params.onClose,
+                onMessage: params.onMessage
+            });
+        } else {
+            /**
+             * @event brightstream.User#direct-connection
+             * @type {brightstream.Event}
+             * @property {brightstream.DirectConnection}
+             */
+            clientObj.user.fire('direct-connection', {
+                directConnection: directConnection,
+                endpoint: that
+            });
         }
 
-        directConnection.listen('hangup', function (evt) {
+        directConnection.listen('close', function (evt) {
             that.directConnection = undefined;
         });
 

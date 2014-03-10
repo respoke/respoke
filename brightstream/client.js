@@ -87,6 +87,8 @@ brightstream.Client = function (params) {
      * @param {function} [onDisconnect] - Callback for Client disconnect.
      * @param {function} [onReconnect] - Callback for Client reconnect. Not Implemented.
      * @param {function} [onCall] - Callback for when this client's user receives a call.
+     * @param {function} [onDirectConnection] - Callback for when this client's user receives a request for a direct
+     * connection.
      * @returns {Promise<brightstream.User>}
      * @fires brightstream.Client#connect
      */
@@ -111,6 +113,7 @@ brightstream.Client = function (params) {
 
             user.setOnline(); // Initiates presence.
             user.listen('call', params.onCall);
+            user.listen('direct-connection', params.onDirectConnection);
             user.listen('join', params.onJoin);
             user.listen('leave', params.onLeave);
             that.user = user;
