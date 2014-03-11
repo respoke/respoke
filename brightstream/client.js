@@ -551,6 +551,7 @@ brightstream.Client = function (params) {
         });
 
         if (!endpoint && params) {
+            params.client = client;
             endpoint = brightstream.Endpoint(params);
             addEndpoint(endpoint);
         }
