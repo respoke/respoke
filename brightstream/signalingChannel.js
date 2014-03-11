@@ -687,12 +687,9 @@ brightstream.SignalingChannel = function (params) {
 
         endpoint = clientObj.getEndpoint({
             id: message.endpoint,
-            createData: {
-                client: client,
-                id: message.endpoint,
-                name: message.endpoint,
-                connection: message.connectionId
-            }
+            client: client,
+            name: message.endpoint,
+            connection: message.connectionId
         });
 
         // Handle presence not associated with a channel
@@ -836,12 +833,9 @@ brightstream.SignalingChannel = function (params) {
 
         endpoint = clientObj.getEndpoint({
             id: message.header.from,
-            createData: {
-                client: client,
-                id: message.header.from,
-                name: message.header.from,
-                connection: message.header.fromConnection
-            }
+            client: client,
+            name: message.header.from,
+            connection: message.header.fromConnection
         });
 
         if (message.type === 'unavailable') {
@@ -1530,10 +1524,7 @@ brightstream.Group = function (params) {
                 endpoint.name = endpoint.endpointId;
                 endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
-                endpoint = clientObj.getEndpoint({
-                    id: endpoint.id,
-                    createData: endpoint
-                });
+                endpoint = clientObj.getEndpoint(endpoint);
                 if (endpoint) {
                     /**
                      * @event brightstream.Group#join
