@@ -131,19 +131,7 @@ brightstream.Endpoint = function (params) {
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         params = params || {};
-        if (that.directConnection) {
-            var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-            try {
-                that.directConnection.send({
-                    message: params.message
-                });
-                deferred.resolve();
-                return deferred.promise;
-            } catch (e) {
-                // Fall through to non-p2p messaging
-                log.error("Can't send message through direct connection.", e);
-            }
-        }
+
         return signalingChannel.sendMessage({
             connectionId: params.connectionId,
             message: params.message,
@@ -381,7 +369,7 @@ brightstream.Endpoint = function (params) {
         directConnection = that.directConnection = brightstream.DirectConnection(params);
 
         if (params.initiator === true) {
-            directConnection.answer({
+            directConnection.accept({
                 onOpen: params.onOpen,
                 onClose: params.onClose,
                 onMessage: params.onMessage

@@ -12,7 +12,7 @@
  * @class brightstream.DirectConnection
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and connection state.
+ * @classdesc WebRTC DataChannel including path negotation and connection state.
  * @param {string} client - client id
  * @param {boolean} initiator - whether or not we initiated the connection
  * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
@@ -150,14 +150,14 @@ brightstream.DirectConnection = function (params) {
      * since the library calls this method for the initiate. Developers will use this method to pass in
      * callbacks for the non-initiate.
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.answer
-     * @fires brightstream.DirectConnection#answer
+     * @method brightstream.DirectConnection.accept
+     * @fires brightstream.DirectConnection#accept
      * @param {function} [onOpen]
      * @param {function} [onClose]
      * @param {function} [onMessage]
      * @param {boolean} [forceTurn]
      */
-    var answer = that.publicize('answer', function (params) {
+    var accept = that.publicize('accept', function (params) {
         that.state = ST_STARTED;
         params = params || {};
         log.trace('answer');
@@ -171,8 +171,8 @@ brightstream.DirectConnection = function (params) {
          * @event brightstream.DirectConnection#answer
          * @type {brighstream.Event}
          */
-        that.fire('answer');
-        requestMedia(params);
+        that.fire('accept');
+        startPeerConnection(params);
         createDataChannel();
     });
 
@@ -376,12 +376,12 @@ brightstream.DirectConnection = function (params) {
      * For the non-initiator, set up all the handlers we'll need to keep track of the
      * datachannel's state and to receive messages.
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.requestMedia
+     * @method brightstream.DirectConnection.startPeerConnection
      * @todo Find out when we can stop deleting TURN servers
      * @private
      * @param {object} connectionSettings
      */
-    var requestMedia = function (finalConnectionSettings) {
+    var startPeerConnection = function (finalConnectionSettings) {
         var now = new Date();
         var toDelete = [];
         var url = '';
@@ -392,7 +392,7 @@ brightstream.DirectConnection = function (params) {
         }
 
         report.connectionStarted = now.getTime();
-        log.trace('requestMedia');
+        log.trace('startPeerConnection');
 
         try {
             pc = new RTCPeerConnection(connectionSettings.servers, options);
@@ -632,19 +632,28 @@ brightstream.DirectConnection = function (params) {
     });
 
     /*
-     * Send a message over the datachannel in the form of a JSON-encoded plain old JavaScript object.
+     * Send a message over the datachannel in the form of a JSON-encoded plain old JavaScript object. Only one
+     * attribute may be given: either a string 'message' or an object 'object'.
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.send
-     * @param {string|object} message - The message to send.
+     * @method brightstream.DirectConnection.sendMessage
+     * @param {string} [message] - The message to send.
+     * @param {object} object - An object to send.
+     * @param [function] onSuccess - Success handler.
+     * @param [function] onError - Error handler.
+     * @returns {Promise<undefined>}
      */
-    var send = that.publicize('send', function (params) {
+    var sendMessage = that.publicize('sendMessage', function (params) {
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         if (dataChannel.readyState === 'open') {
-            dataChannel.send(JSON.stringify({
+            dataChannel.send(JSON.stringify(params.object || {
                 message: params.message
             }));
+            deferred.resolve();
         } else {
             log.error("dataChannel not in an open state.");
+            deferred.reject();
         }
+        return deferred.promise;
     });
 
     /*
