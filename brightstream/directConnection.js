@@ -597,7 +597,7 @@ brightstream.DirectConnection = function (params) {
         }
 
         clientObj.updateTurnCredentials();
-        log.debug('hanging up');
+        log.debug('closing direct connection');
 
         params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
         if (params.signal) {
@@ -620,6 +620,9 @@ brightstream.DirectConnection = function (params) {
             sentSignal: params.signal
         });
         that.ignore();
+
+        dataChannel.close();
+        dataChannel =  null;
 
         if (pc) {
             pc.close();
