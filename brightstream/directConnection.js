@@ -146,9 +146,9 @@ brightstream.DirectConnection = function (params) {
     registerListeners(params);
 
     /**
-     * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiate,
-     * since the library calls this method for the initiate. Developers will use this method to pass in
-     * callbacks for the non-initiate.
+     * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiator,
+     * since the library calls this method for the initiator. Developers will use this method to pass in
+     * callbacks for the non-initiator.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.accept
      * @fires brightstream.DirectConnection#accept
@@ -566,7 +566,7 @@ brightstream.DirectConnection = function (params) {
         } else {
             report.connectionStoppedReason = 'Remote side hung up.';
         }
-        log.info('Non-initiate busy or connection rejected:' + report.connectionStoppedReason);
+        log.info('Non-initiator busy or connection rejected:' + report.connectionStoppedReason);
         close({signal: false});
     };
 
