@@ -213,46 +213,42 @@ brightstream.Endpoint = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
-            log.trace('signalOffer');
-            signalParams.sdp.type = 'offer';
-            signalParams.sdp.target = 'call';
             signalingChannel.sendSDP({
+                type: 'offer',
+                target: 'call',
                 recipient: that,
                 sdpObj: signalParams.sdp
             });
         };
         params.signalConnected = function (signalParams) {
-            log.trace('signalConnected');
             signalingChannel.sendConnected({
+                target: 'call',
                 connectionId: signalParams.connectionId,
-                recipient: that,
-                signal: {target: 'call'}
+                recipient: that
             });
         };
         params.signalAnswer = function (signalParams) {
-            log.trace('signalAnswer');
-            signalParams.sdp.type = 'answer';
-            signalParams.sdp.target = 'call';
             signalingChannel.sendSDP({
+                type: 'answer',
+                target: 'call',
                 connectionId: signalParams.connectionId,
                 recipient: that,
                 sdpObj: signalParams.sdp
             });
         };
         params.signalCandidate = function (signalParams) {
-            signalParams.candidate.target = 'call';
             signalingChannel.sendCandidate({
+                target: 'call',
                 connectionId: signalParams.connectionId,
                 recipient: that,
                 candObj: signalParams.candidate
             });
         };
         params.signalTerminate = function (signalParams) {
-            log.trace('signalTerminate');
             signalingChannel.sendBye({
+                target: 'call',
                 connectionId: signalParams.connectionId,
-                recipient: that,
-                signal: {target: 'call'}
+                recipient: that
             });
         };
         params.signalReport = function (signalParams) {
@@ -273,7 +269,7 @@ brightstream.Endpoint = function (params) {
         // Don't use params.onHangup here. Will overwrite the developer's callback.
         call.listen('hangup', function hangupListener(evt) {
             user.removeCall({id: call.id});
-        });
+        }, true);
         return call;
     });
 
@@ -319,16 +315,14 @@ brightstream.Endpoint = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
-            log.trace('signalOffer');
-            signalParams.sdp.type = 'offer';
             signalingChannel.sendSDP({
+                type: 'offer',
                 target: 'directConnection',
                 recipient: that,
                 sdpObj: signalParams.sdp
             });
         };
         params.signalConnected = function (signalParams) {
-            log.trace('signalConnected');
             signalingChannel.sendConnected({
                 target: 'directConnection',
                 connectionId: signalParams.connectionId,
@@ -336,10 +330,9 @@ brightstream.Endpoint = function (params) {
             });
         };
         params.signalAnswer = function (signalParams) {
-            log.trace('signalAnswer');
-            signalParams.sdp.type = 'answer';
             signalingChannel.sendSDP({
                 target: 'directConnection',
+                type: 'answer',
                 connectionId: signalParams.connectionId,
                 recipient: that,
                 sdpObj: signalParams.sdp
@@ -354,7 +347,6 @@ brightstream.Endpoint = function (params) {
             });
         };
         params.signalTerminate = function (signalParams) {
-            log.trace('signalTerminate');
             signalingChannel.sendBye({
                 target: 'directConnection',
                 connectionId: signalParams.connectionId,
@@ -384,11 +376,16 @@ brightstream.Endpoint = function (params) {
                 directConnection: directConnection,
                 endpoint: that
             });
+            if (!clientObj.user.hasListeners('direct-connection')) {
+                log.warn("Got an incoming direct connection with no handlers to accept it!");
+                directConnection.reject();
+            }
         }
 
         directConnection.listen('close', function (evt) {
+            that.directConnection.ignore();
             that.directConnection = undefined;
-        });
+        }, true);
 
         return directConnection;
     });
@@ -537,9 +534,8 @@ brightstream.User = function (params) {
      * Associate the call or direct connection with this user.
      * @memberof! brightstream.User
      * @method brightstream.User.addCall
-     * @param {brightstream.Call|brightstream.DirectConnection} call
+     * @param {brightstream.Call} call
      * @fires brightstream.User#call
-     * @fires brightstream.User#direct-connection
      * @todo TODO rename this something else
      */
     var addCall = that.publicize('addCall', function (params) {
@@ -552,14 +548,14 @@ brightstream.User = function (params) {
              * @property {brightstream.Endpoint} endpoint
              */
             if (params.call.className === 'brightstream.Call') {
+                if (!params.call.initiator && !that.hasListeners('call')) {
+                    log.warn("Got an incoming call with no handlers to accept it!");
+                    params.call.reject();
+                    return;
+                }
                 that.fire('call', {
                     endpoint: params.endpoint,
                     call: params.call
-                });
-            } else if (params.call.className === 'brightstream.DirectConnection') {
-                that.fire('direct-connection', {
-                    endpoint: params.endpoint,
-                    directConnection: params.call
                 });
             }
         }

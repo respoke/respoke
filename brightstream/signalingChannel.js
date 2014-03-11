@@ -376,6 +376,10 @@ brightstream.SignalingChannel = function (params) {
         params.toConnection = params.connectionId;
         delete params.connectionId;
 
+        if (params.signal.signal.indexOf('target') === -1) {
+            throw new Error("Can't send signal without target", params.signal);
+        }
+
         wsCall({
             path: '/v1/signaling',
             httpMethod: 'POST',
@@ -404,13 +408,15 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        params.candObj.type = 'candidate';
-        params.candObj.target = params.target;
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
                 connectionId: params.connectionId,
-                signal: JSON.stringify(params.candObj)
+                signal: JSON.stringify({
+                    candidate: params.candObj,
+                    target: params.target,
+                    type: 'candidate'
+                })
             })
         }).then(function () {
             deferred.resolve();
@@ -436,12 +442,15 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        params.sdpObj.target = params.target;
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
                 connectionId: params.connectionId,
-                signal: JSON.stringify(params.sdpObj)
+                signal: JSON.stringify({
+                    sdp: params.sdpObj,
+                    target: params.target,
+                    type: params.type
+                })
             })
         }).then(function () {
             deferred.resolve();
@@ -468,15 +477,15 @@ brightstream.SignalingChannel = function (params) {
         params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        params.signal.connectionId = params.connectionId;
-        params.signal.type = 'bye';
-        params.signal.reason = params.reason;
-        params.signal.target = params.target;
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
                 connectionId: params.connectionId,
-                signal: JSON.stringify(params.signal)
+                signal: JSON.stringify({
+                    type: 'bye',
+                    reason: params.reason,
+                    target: params.target
+                })
             })
         }).then(function () {
             deferred.resolve();
@@ -501,13 +510,14 @@ brightstream.SignalingChannel = function (params) {
         params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        params.signal.connectionId = params.connectionId;
-        params.signal.type = 'connected';
-        params.signal.target = params.target;
         that.sendSignal({
             signal: brightstream.SignalingMessage({
                 endpointId: params.recipient.getID(),
-                signal: JSON.stringify(params.signal)
+                signal: JSON.stringify({
+                    connectionId: params.connectionId,
+                    type: 'connected',
+                    target: params.target
+                })
             })
         }).then(function () {
             deferred.resolve();
@@ -535,6 +545,7 @@ brightstream.SignalingChannel = function (params) {
         var target = null;
         var toCreate = false;
         var method = 'do';
+        var endpoint;
         var knownSignals = ['offer', 'answer', 'connected', 'candidate', 'bye'];
         var firstUpper = function (str) {
             return str[0].toUpperCase() + str.slice(1);
@@ -567,9 +578,10 @@ brightstream.SignalingChannel = function (params) {
             method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
         } else if (signal.target === 'directConnection') {
             try {
-                target = clientObj.getEndpoint({
+                endpoint = clientObj.getEndpoint({
                     id: message.endpointId
-                }).getDirectConnection({
+                });
+                target = endpoint.getDirectConnection({
                     create: toCreate,
                     initiator: !toCreate
                 });
@@ -639,7 +651,8 @@ brightstream.SignalingChannel = function (params) {
     };
 
     routingMethods.doCallBye = function (params) {
-        if (params.call.connectionId !== params.message.connectionId) {
+        // we may receive bye before connectionId is set if the call is rejected
+        if (params.call.connectionId && params.call.connectionId !== params.message.connectionId) {
             return;
         }
         params.call.setBye(params.signal);
@@ -708,7 +721,9 @@ brightstream.SignalingChannel = function (params) {
     };
 
     routingMethods.doDirectConnectionBye = function (params) {
-        if (params.call.connectionId !== params.message.connectionId) {
+        // we may receive bye before connectionId is set if the call is rejected
+        if (params.call.connectionId && params.call.connectionId !== params.message.connectionId) {
+            console.log('not accepting bye', params.call.connectionId, params.call.connectionId, params.message.connectionId);
             return;
         }
         params.call.setBye(params.signal);

@@ -259,8 +259,9 @@ brightstream.Call = function (params) {
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
 
+        // This happens when we get an automatic hangup or reject from the other side.
         if (pc === null) {
-            log.error("Peer connection is null!");
+            hangup({signal: false});
             return;
         }
 
@@ -366,7 +367,7 @@ brightstream.Call = function (params) {
                 });
                 that.listen('hangup', function (evt) {
                     stats.stopStats();
-                });
+                }, true);
                 deferred.resolve(stats);
             }, function (err) {
                 log.warn("Call rejected.");
@@ -768,16 +769,16 @@ brightstream.Call = function (params) {
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
      * @memberof! brightstream.Call
      * @method brightstream.Call.setOffer
-     * @param {RTCSessionDescription} oSession The remote SDP.
+     * @param {RTCSessionDescription} sdp - The remote SDP.
      * @todo TODO Make this listen to events and be private.
      */
-    var setOffer = that.publicize('setOffer', function (oOffer) {
-        log.debug('got offer', oOffer);
+    var setOffer = that.publicize('setOffer', function (params) {
+        log.debug('got offer', params.sdp);
 
         if (!that.initiator) {
-            report.sdpsReceived.push(oOffer);
-            report.lastSDPString = oOffer.sdp;
-            defOffer.resolve(oOffer);
+            report.sdpsReceived.push(params.sdp);
+            report.lastSDPString = params.sdp.sdp;
+            defOffer.resolve(params.sdp);
         } else {
             defOffer.reject(new Error("Received offer in a bad state."));
             log.warn('Got offer in precall state.');
@@ -789,33 +790,33 @@ brightstream.Call = function (params) {
      * Save the answer and tell the browser about it.
      * @memberof! brightstream.Call
      * @method brightstream.Call.setAnswer
-     * @param {RTCSessionDescription} oSession - The remote SDP.
+     * @param {RTCSessionDescription} sdp - The remote SDP.
+     * @param {string} connectionId - The connectionId of the endpoint who answered the call.
      * @todo TODO Make this listen to events and be private.
      */
-    var setAnswer = that.publicize('setAnswer', function (oSession) {
+    var setAnswer = that.publicize('setAnswer', function (params) {
         if (defAnswer.promise.isFulfilled()) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
 
         that.state = ST_ANSWERED;
-        log.debug('got answer', oSession);
+        log.debug('got answer', params);
 
-        report.sdpsReceived.push(oSession);
-        report.lastSDPString = oSession.sdp;
-        that.connectionId = oSession.connectionId;
-        delete oSession.connectionId;
+        report.sdpsReceived.push(params.sdp);
+        report.lastSDPString = params.sdp.sdp;
+        that.connectionId = params.connectionId;
+        delete params.connectionId;
         signalConnected({connectionId: that.connectionId});
 
         pc.setRemoteDescription(
-            new RTCSessionDescription(oSession),
+            new RTCSessionDescription(params.sdp),
             function successHandler() {
                 processQueues();
-                defAnswer.resolve(oSession);
+                defAnswer.resolve(params.sdp);
             }, function errorHandler(p) {
-                log.error('set remote desc of answer failed');
+                log.error('set remote desc of answer failed', params.sdp);
                 report.callStoppedReason = 'setRemoteDescription failed at answer.';
-                log.error(oSession);
                 hangup();
             }
         );
@@ -839,30 +840,30 @@ brightstream.Call = function (params) {
      * we can process them after we receive the answer.
      * @memberof! brightstream.Call
      * @method brightstream.Call.addRemoteCandidate
-     * @param {RTCIceCandidate} oCan The ICE candidate.
+     * @param {RTCIceCandidate} candidate The ICE candidate.
      * @todo TODO Make this listen to events and be private.
      */
-    var addRemoteCandidate = that.publicize('addRemoteCandidate', function (oCan) {
-        if (!oCan || oCan.candidate === null) {
+    var addRemoteCandidate = that.publicize('addRemoteCandidate', function (params) {
+        if (!params || params.candidate === null) {
             return;
         }
-        if (!oCan.hasOwnProperty('sdpMLineIndex') || !oCan.candidate) {
-            log.warn("addRemoteCandidate got wrong format!", oCan);
+        if (!params.candidate.hasOwnProperty('sdpMLineIndex') || !params.candidate) {
+            log.warn("addRemoteCandidate got wrong format!", params);
             return;
         }
         if (that.initiator && that.state < ST_ANSWERED) {
-            candidateReceivingQueue.push(oCan);
+            candidateReceivingQueue.push(params);
             log.debug('Queueing a candidate.');
             return;
         }
         try {
-            pc.addIceCandidate(new RTCIceCandidate(oCan));
+            pc.addIceCandidate(new RTCIceCandidate(params.candidate));
         } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message, oCan);
+            log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
             return;
         }
-        log.debug('Got a remote candidate.', oCan);
-        report.candidatesReceived.push(oCan);
+        log.debug('Got a remote candidate.', params.candidate);
+        report.candidatesReceived.push(params.candidate);
     });
 
     /**
