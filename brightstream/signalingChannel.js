@@ -751,25 +751,26 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
         endpoint = clientObj.getEndpoint({id: message.endpointId});
-        if (endpoint) {
+        //if (endpoint) {
             /**
              * @event brightstream.Endpoint#message
              * @type {brightstream.Event}
              * @property {brightstream.TextMessage} message
              */
-            endpoint.fire('message', {
-                message: message
-            });
-        } else if (clientObj.onMessage) {
+        endpoint.fire('message', {
+            message: message
+        });
+        //} else if (clientObj.onMessage) {
             /**
              * @event brightstream.Client#message
              * @type {brightstream.Event}
              * @property {brightstream.TextMessage} message
              */
-            clientObj.fire('message', {
-                message: message
-            });
-        }
+        clientObj.fire('message', {
+            endpoint: endpoint,
+            message: message
+        });
+        //}
     };
 
     /**
