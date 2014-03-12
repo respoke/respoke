@@ -879,27 +879,32 @@ brightstream.SignalingChannel = function (params) {
     var onMessage = function onMessage(message) {
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
-        endpoint = clientObj.getEndpoint({id: message.endpointId});
-        //if (endpoint) {
+        endpoint = clientObj.getEndpoint({
+            id: message.endpointId,
+            skipCreate: true
+        });
+        if (endpoint) {
             /**
              * @event brightstream.Endpoint#message
              * @type {brightstream.Event}
              * @property {brightstream.TextMessage} message
              */
-        endpoint.fire('message', {
-            message: message
-        });
-        //} else if (clientObj.onMessage) {
-            /**
-             * @event brightstream.Client#message
-             * @type {brightstream.Event}
-             * @property {brightstream.TextMessage} message
-             */
+            endpoint.fire('message', {
+                message: message
+            });
+        }
+        /**
+         * @event brightstream.Client#message
+         * @type {brightstream.Event}
+         * @property {brightstream.TextMessage} message
+         * @property {brightstream.Endpoint} [endpoint] - If the message is from an endpoint we already know about,
+         * this will be set. If null, the developer can use client.getEndpoint({id: evt.message.endpointId}) to get
+         * the Endpoint. From that point forward, Endpoint#message will fire when a message is received as well.
+         */
         clientObj.fire('message', {
-            endpoint: endpoint,
+            endpoint: endpoint || null,
             message: message
         });
-        //}
     };
 
     /**
