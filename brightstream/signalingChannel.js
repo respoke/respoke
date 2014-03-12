@@ -833,7 +833,7 @@ brightstream.SignalingChannel = function (params) {
         that.registerPresence({endpointList: [message.endpoint]});
         group = clientObj.getGroup({id: message.header.channel});
 
-        if (group && endpoint) {
+        if (group) {
             group.addEndpoint(endpoint);
         } else {
             log.error("Can't add endpoint to group:", message, group, endpoint);
@@ -860,7 +860,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         group = clientObj.getGroup({id: message.header.channel});
-        if (group && endpoint) {
+        if (group) {
             group.removeEndpoint(endpoint);
             clientObj.checkEndpointForRemoval(endpoint);
         } else {
@@ -978,9 +978,9 @@ brightstream.SignalingChannel = function (params) {
             if (groups) {
                 groups.forEach(function (group) {
                     group.getEndpoints().done(function (endpoints) {
-                        endpoints.forEach(function (endpoint) {
-                            if (endpoint.getName() === message.header.from) {
-                                group.removeEndpoint(endpoint);
+                        endpoints.forEach(function (eachEndpoint) {
+                            if (eachEndpoint.getName() === message.header.from) {
+                                group.removeEndpoint(eachEndpoint);
                             }
                         });
                     });
@@ -1664,21 +1664,19 @@ brightstream.Group = function (params) {
                 endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
                 endpoint = clientObj.getEndpoint(endpoint);
-                if (endpoint) {
-                    /**
-                     * @event brightstream.Group#join
-                     * @type {brightstream.Event}
-                     * @property {brightstream.Group} group
-                     * @property {brightstream.Endpoint} endpoint
-                     */
-                    group.fire('join', {
-                        group: group,
-                        endpoint: endpoint
-                    });
-                    if (endpointList.indexOf(endpoint.getID()) === -1) {
-                        endpointList.push(endpoint.getID());
-                        addEndpoint(endpoint);
-                    }
+                /**
+                 * @event brightstream.Group#join
+                 * @type {brightstream.Event}
+                 * @property {brightstream.Group} group
+                 * @property {brightstream.Endpoint} endpoint
+                 */
+                group.fire('join', {
+                    group: group,
+                    endpoint: endpoint
+                });
+                if (endpointList.indexOf(endpoint.getID()) === -1) {
+                    endpointList.push(endpoint.getID());
+                    addEndpoint(endpoint);
                 }
             });
 
