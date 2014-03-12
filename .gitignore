@@ -2,3 +2,5 @@
 node_modules
 brightstream.min.js
 brightstream-stats.min.js
+brightstream.min.map
+brightstream-stats.min.map
