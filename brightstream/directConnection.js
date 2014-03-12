@@ -137,7 +137,7 @@ brightstream.DirectConnection = function (params) {
         }
 
         if (typeof params.onMessage === 'function') {
-            that.listen('close', params.onMessage);
+            that.listen('message', params.onMessage);
         }
     };
     registerListeners(params);
