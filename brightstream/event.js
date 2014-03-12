@@ -28,14 +28,25 @@ brightstream.EventEmitter = function (params) {
     var eventList = {};
 
     /**
-     * Add a listener to an object.
+     * Add a listener to an object.  This method adds the given listener to the given event in the case that the same
+     * listener is not already registered to this even and the listener is a function.  The third argument 'isInternal'
+     * is used only internally by the library to indicate that this listener is a library-used listener and should not
+     * count when we are trying to determine if an event has listeners placed by the developer.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.listen
      * @param {string} eventType - A developer-specified string identifying the event.
      * @param {function} listener - A function to call when the event is fire.
+     * @param {boolean} [isInternal] - A flag to indicate this listener was added by the library. This parameter should
+     * not be used by developers who are using the library, only by developers who are working on the library itself.
      */
-    var listen = that.publicize('listen', function (eventType, listener) {
+    var listen = that.publicize('listen', function (eventType, listener, isInternal) {
+        if (listener === undefined) {
+            return;
+        }
+
         eventList[eventType] = eventList[eventType] || [];
+        listener.isInternal = !!isInternal; // boolify
+
         if (typeof listener === 'function' && eventList[eventType].map(function (a) {
             return a.toString();
         }).indexOf(listener.toString()) === -1) {
@@ -52,8 +63,8 @@ brightstream.EventEmitter = function (params) {
      * will be removed.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.ignore
-     * @param {string} eventType - An optional developer-specified string identifying the event.
-     * @param {function} listener - An optional function to remove from the specified event.
+     * @param {string} [eventType] - An optional developer-specified string identifying the event.
+     * @param {function} [listener] - An optional function to remove from the specified event.
      */
     var ignore = that.publicize('ignore', function (eventType, listener) {
         // Remove all events from this object
@@ -113,18 +124,41 @@ brightstream.EventEmitter = function (params) {
         log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     });
 
+    /**
+     * Determine if an object has had any listeners registered for a given event outside the library. This method
+     * checks for the isInternal flag on each listener and doesn't count it toward an event being listened to. This
+     * method is used in the library to handle situations where an action is needed if an event won't be acted on.
+     * For instance, if a call comes in for the logged-in user, but the developer isn't listening to
+     * {brightstream.User#call}, we'll need to reject the call immediately.
+     * @memberof! brightstream.EventEmitter
+     * @method brightstream.EventEmitter.hasListeners
+     * @param {string} eventType - The name of the event
+     */
+    var hasListeners = that.publicize('hasListeners', function (eventType) {
+        if (eventType === undefined) {
+            throw new Error("Missing required parameter event type.");
+        }
+
+        if (!eventList[eventType]) {
+            return false;
+        }
+
+        return !eventList[eventType].every(function (listener) {
+            return listener.isInternal;
+        });
+    });
+
     return that;
 }; // End brightstream.EventEmitter
 
 /**
- * Create a generic Event object for EventEmitters to pass to event listeners.
+ * Create a generic Event object for EventEmitters to pass to event listeners. In addition to the two properties
+ * mentioned below, this object will retain any other properties passed into the factory. This structure is used
+ * to construct arbitrary POJO's to be used as event values.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Event
  * @property {string} name
  * @property {brightstream.Class} target
- * @property {brightstream.Group} [group]
- * @property {brightsetream.Endpoint} [endpoint]
- * @property {brightsetream.Call} [call]
  * @constructor
  * @classdesc Event object.
  * @returns {brightstream.Event}
