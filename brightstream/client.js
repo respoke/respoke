@@ -13,7 +13,9 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
- * API server and receiving server-side app-specific information.
+ * API server, receiving server-side app-specific information, and interacting with information the library keeps
+ * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct connections
+ * as well as automatically reconnecting to the service when network activity is lost.
  * @param {object} clientSettings
  * @param {string} appId
  * @param {RTCConstraints} [constraints]
@@ -224,11 +226,6 @@ brightstream.Client = function (params) {
      */
     var sendMessage = that.publicize('sendMessage', function (params) {
         var endpoint = that.getEndpoint({id: params.endpointId});
-
-        if (!endpoint) {
-            throw new Error("Can't find an endpoint with id", params.endpointId);
-        }
-
         delete params.endpointId;
         return endpoint.sendMessage(params);
     });
@@ -245,11 +242,6 @@ brightstream.Client = function (params) {
      */
     var call = that.publicize('call', function (params) {
         var endpoint = that.getEndpoint({id: params.endpointId});
-
-        if (!endpoint) {
-            throw new Error("Can't find an endpoint with id", params.endpointId);
-        }
-
         delete params.endpointId;
         return endpoint.call(params);
     });
@@ -553,8 +545,9 @@ brightstream.Client = function (params) {
             return true;
         });
 
-        if (!endpoint && params.createData) {
-            endpoint = brightstream.Endpoint(params.createData);
+        if (!endpoint && params && !params.skipCreate) {
+            params.client = client;
+            endpoint = brightstream.Endpoint(params);
             addEndpoint(endpoint);
         }
 

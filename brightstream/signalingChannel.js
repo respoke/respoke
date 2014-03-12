@@ -816,12 +816,9 @@ brightstream.SignalingChannel = function (params) {
 
         endpoint = clientObj.getEndpoint({
             id: message.endpoint,
-            createData: {
-                client: client,
-                id: message.endpoint,
-                name: message.endpoint,
-                connection: message.connectionId
-            }
+            client: client,
+            name: message.endpoint,
+            connection: message.connectionId
         });
 
         // Handle presence not associated with a channel
@@ -836,7 +833,7 @@ brightstream.SignalingChannel = function (params) {
         that.registerPresence({endpointList: [message.endpoint]});
         group = clientObj.getGroup({id: message.header.channel});
 
-        if (group && endpoint) {
+        if (group) {
             group.addEndpoint(endpoint);
         } else {
             log.error("Can't add endpoint to group:", message, group, endpoint);
@@ -863,7 +860,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         group = clientObj.getGroup({id: message.header.channel});
-        if (group && endpoint) {
+        if (group) {
             group.removeEndpoint(endpoint);
             clientObj.checkEndpointForRemoval(endpoint);
         } else {
@@ -882,7 +879,10 @@ brightstream.SignalingChannel = function (params) {
     var onMessage = function onMessage(message) {
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
-        endpoint = clientObj.getEndpoint({id: message.endpointId});
+        endpoint = clientObj.getEndpoint({
+            id: message.endpointId,
+            skipCreate: true
+        });
         if (endpoint) {
             /**
              * @event brightstream.Endpoint#message
@@ -892,16 +892,19 @@ brightstream.SignalingChannel = function (params) {
             endpoint.fire('message', {
                 message: message
             });
-        } else if (clientObj.onMessage) {
-            /**
-             * @event brightstream.Client#message
-             * @type {brightstream.Event}
-             * @property {brightstream.TextMessage} message
-             */
-            clientObj.fire('message', {
-                message: message
-            });
         }
+        /**
+         * @event brightstream.Client#message
+         * @type {brightstream.Event}
+         * @property {brightstream.TextMessage} message
+         * @property {brightstream.Endpoint} [endpoint] - If the message is from an endpoint we already know about,
+         * this will be set. If null, the developer can use client.getEndpoint({id: evt.message.endpointId}) to get
+         * the Endpoint. From that point forward, Endpoint#message will fire when a message is received as well.
+         */
+        clientObj.fire('message', {
+            endpoint: endpoint || null,
+            message: message
+        });
     };
 
     /**
@@ -965,12 +968,9 @@ brightstream.SignalingChannel = function (params) {
 
         endpoint = clientObj.getEndpoint({
             id: message.header.from,
-            createData: {
-                client: client,
-                id: message.header.from,
-                name: message.header.from,
-                connection: message.header.fromConnection
-            }
+            client: client,
+            name: message.header.from,
+            connection: message.header.fromConnection
         });
 
         if (message.type === 'unavailable') {
@@ -978,9 +978,9 @@ brightstream.SignalingChannel = function (params) {
             if (groups) {
                 groups.forEach(function (group) {
                     group.getEndpoints().done(function (endpoints) {
-                        endpoints.forEach(function (endpoint) {
-                            if (endpoint.getName() === message.header.from) {
-                                group.removeEndpoint(endpoint);
+                        endpoints.forEach(function (eachEndpoint) {
+                            if (eachEndpoint.getName() === message.header.from) {
+                                group.removeEndpoint(eachEndpoint);
                             }
                         });
                     });
@@ -1663,25 +1663,20 @@ brightstream.Group = function (params) {
                 endpoint.name = endpoint.endpointId;
                 endpoint.id = endpoint.endpointId;
                 delete endpoint.endpointId;
-                endpoint = clientObj.getEndpoint({
-                    id: endpoint.id,
-                    createData: endpoint
+                endpoint = clientObj.getEndpoint(endpoint);
+                /**
+                 * @event brightstream.Group#join
+                 * @type {brightstream.Event}
+                 * @property {brightstream.Group} group
+                 * @property {brightstream.Endpoint} endpoint
+                 */
+                group.fire('join', {
+                    group: group,
+                    endpoint: endpoint
                 });
-                if (endpoint) {
-                    /**
-                     * @event brightstream.Group#join
-                     * @type {brightstream.Event}
-                     * @property {brightstream.Group} group
-                     * @property {brightstream.Endpoint} endpoint
-                     */
-                    group.fire('join', {
-                        group: group,
-                        endpoint: endpoint
-                    });
-                    if (endpointList.indexOf(endpoint.getID()) === -1) {
-                        endpointList.push(endpoint.getID());
-                        addEndpoint(endpoint);
-                    }
+                if (endpointList.indexOf(endpoint.getID()) === -1) {
+                    endpointList.push(endpoint.getID());
+                    addEndpoint(endpoint);
                 }
             });
 
