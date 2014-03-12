@@ -64,7 +64,7 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         clientSettings = brightstream.getClient(client).getClientSettings();
-        baseURL = clientSettings.baseURL || 'https://demo.digiumlabs.com:1337';
+        baseURL = clientSettings.baseURL || 'https://collective.brightstream.io';
 
         call({
             path: '/v1/appauthsessions',
