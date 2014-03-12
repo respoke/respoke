@@ -68,6 +68,8 @@ brightstream.Call = function (params) {
     var remoteVideoElements = params.remoteVideoElements || [];
     var videoLocalElement = null;
     var videoRemoteElement = null;
+    var videoIsMuted = false;
+    var audioIsMuted = false;
     var signalOffer = params.signalOffer;
     var signalConnected = params.signalConnected;
     var signalAnswer = params.signalAnswer;
@@ -198,7 +200,9 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#approve
      */
     var approve = that.publicize('approve', function () {
-        that.state = ST_APPROVED;
+        if (that.state < ST_APPROVED) {
+            that.state = ST_APPROVED;
+        }
         log.trace('Call.approve');
         /**
          * @event brightstream.Call#approve
@@ -508,7 +512,9 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#remote-stream-received
      */
     var onRemoteStreamAdded = function (evt) {
-        that.state = ST_FLOWING;
+        if (that.state < ST_FLOWING) {
+            that.state = ST_FLOWING;
+        }
         log.trace('received remote media');
 
         for (var i = 0; (i < remoteVideoElements.length && videoRemoteElement === null); i += 1) {
@@ -607,7 +613,9 @@ brightstream.Call = function (params) {
      */
     var saveOfferAndSend = function (oSession) {
         oSession.type = 'offer';
-        that.state = ST_OFFERED;
+        if (that.state < ST_OFFERED) {
+            that.state = ST_OFFERED;
+        }
         log.debug('setting and sending offer', oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
@@ -630,7 +638,9 @@ brightstream.Call = function (params) {
      */
     var saveAnswerAndSend = function (oSession) {
         oSession.type = 'answer';
-        that.state = ST_ANSWERED;
+        if (that.state < ST_ANSWERED) {
+            that.state = ST_ANSWERED;
+        }
         log.debug('setting and sending answer', oSession);
         report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
@@ -750,19 +760,7 @@ brightstream.Call = function (params) {
      * @returns {boolean}
      */
     var isActive = that.publicize('isActive', function () {
-        var inProgress = false;
-
-        log.trace('isActive');
-
-        if (!pc || that.state < ST_ENDED) {
-            return inProgress;
-        }
-
-        inProgress = pc.readyState in ['new', 'active'];
-        log.info('readyState is ' + pc.readyState + '. Call is ' +
-            (inProgress ? '' : 'not ') + 'in progress.');
-
-        return inProgress;
+        return (pc && pc.iceConnectionState === 'connected' && that.state === ST_FLOWING);
     });
 
     /**
@@ -800,7 +798,9 @@ brightstream.Call = function (params) {
             return;
         }
 
-        that.state = ST_ANSWERED;
+        if (that.state < ST_ANSWERED) {
+            that.state = ST_ANSWERED;
+        }
         log.debug('got answer', params);
 
         report.sdpsReceived.push(params.sdp);
@@ -939,7 +939,7 @@ brightstream.Call = function (params) {
      */
     var toggleVideo = that.publicize('toggleVideo', function () {
         if (that.isActive()) {
-            if (pc.localStreams[0].videoTracks[0].enabled) {
+            if (!videoIsMuted) {
                 that.muteVideo();
             } else {
                 that.unmuteVideo();
@@ -954,7 +954,7 @@ brightstream.Call = function (params) {
      */
     var toggleAudio = that.publicize('toggleAudio', function () {
         if (that.isActive()) {
-            if (pc.localStreams[0].audioTracks[0].enabled) {
+            if (!audioIsMuted) {
                 that.muteAudio();
             } else {
                 that.unmuteAudio();
@@ -963,67 +963,91 @@ brightstream.Call = function (params) {
     });
 
     /**
-     * Mute video. TODO: How should this behave?
+     * Mute all local video streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.muteVideo
      * @fires brightstream.Call#video-muted
      */
     var muteVideo = that.publicize('muteVideo', function () {
-        mediaStreams.forEach(function muteEach(stream) {
-            stream.muteVideo();
+        if (videoIsMuted) {
+            return;
+        }
+        pc.getLocalStreams().forEach(function (stream) {
+            stream.getVideoTracks().forEach(function (track) {
+                track.enabled = false;
+            });
         });
         /**
          * @event brightstream.Call#video-muted
          */
         that.fire('video-muted');
+        videoIsMuted = true;
     });
 
     /**
-     * Unmute video. TODO: How should this behave?
+     * Unmute all local video streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.unmuteVideo
      * @fires brightstream.Call#video-unmuted
      */
     var unmuteVideo = that.publicize('unmuteVideo', function () {
-        mediaStreams.forEach(function unmuteEach(stream) {
-            stream.unmuteVideo();
+        if (!videoIsMuted) {
+            return;
+        }
+        pc.getLocalStreams().forEach(function (stream) {
+            stream.getVideoTracks().forEach(function (track) {
+                track.enabled = true;
+            });
         });
         /**
          * @event brightstream.Call#video-unmuted
          */
         that.fire('video-unmuted');
+        videoIsMuted = false;
     });
 
     /**
-     * Mute audio. TODO: How should this behave?
+     * Mute all local audio streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.muteAudio
      * @fires brightstream.Call#audio-muted
      */
     var muteAudio = that.publicize('muteAudio', function () {
-        mediaStreams.forEach(function muteEach(stream) {
-            stream.muteAudio();
+        if (audioIsMuted) {
+            return;
+        }
+        pc.getLocalStreams().forEach(function (stream) {
+            stream.getAudioTracks().forEach(function (track) {
+                track.enabled = false;
+            });
         });
         /**
          * @event brightstream.Call#audio-muted
          */
         that.fire('audio-muted');
+        audioIsMuted = true;
     });
 
     /**
-     * Unmute audio. TODO: How should this behave?
+     * Unmute all local audio streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.unmuteAudio
      * @fires brightstream.Call#audio-unmuted
      */
     var unmuteAudio = that.publicize('unmuteAudio', function () {
-        mediaStreams.forEach(function unmuteEach(stream) {
-            stream.unmuteAudio();
+        if (!audioIsMuted) {
+            return;
+        }
+        pc.getLocalStreams().forEach(function (stream) {
+            stream.getAudioTracks().forEach(function (track) {
+                track.enabled = true;
+            });
         });
         /**
          * @event brightstream.Call#audio-unmuted
          */
         that.fire('audio-unmuted');
+        audioIsMuted = false;
     });
 
     /**
