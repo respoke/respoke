@@ -12,7 +12,6 @@ module.exports = function(grunt) {
                 files: {
                     'brightstream.min.js': [
                         'util/socket.io.js',
-                        'util/sails.io.js',
                         'util/q.js',
                         'util/loglevel.js',
                         'util/adapter.js',
@@ -22,7 +21,8 @@ module.exports = function(grunt) {
                         'brightstream/identity.js',
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
-                        'brightstream/call.js'
+                        'brightstream/call.js',
+                        'brightstream/directConnection.js'
                     ]
                 }
             },
