@@ -11,11 +11,27 @@
  * @namespace brightstream
  * @global
  */
-var brightstream = {
-    streams: {},
-    instances: {}
-};
-log.setLevel('debug');
+/*global Bugsnag: true, brightstream: true*/
+(function brightstreamInit() {
+    'use strict';
+    window.brightstream = {
+        streams: {},
+        instances: {}
+    };
+    log.setLevel('debug');
+
+    if (!window.skipBugsnag) {
+        // Use bugsnag.
+        var bugsnag = document.createElement('script');
+        var first = document.getElementsByTagName('script')[0];
+        first.parentNode.insertBefore(bugsnag, first);
+
+        bugsnag.onload = function () {
+            Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
+        };
+        bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';
+    }
+}());
 
 Q.longStackSupport = true;
 Q.stackJumpLimit = 5;
