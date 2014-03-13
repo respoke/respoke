@@ -1026,7 +1026,7 @@ brightstream.SignalingChannel = function (params) {
          * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
          * is doubled up to a maximum of 5 minutes. From the on, it will attempt to reconnect every 5 mins forever.
          */
-        socket = io.connect(baseURL, {
+        var connectParams = {
             'connect timeout': 2000,
             'reconnection limit': 5 * 60 * 60 * 1000,
             'max reconnection attempts': Infinity,
@@ -1034,11 +1034,15 @@ brightstream.SignalingChannel = function (params) {
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: true,
             host: host,
-            port: port,
             protocol: protocol,
             secure: (protocol === 'https'),
             query: 'app-token=' + appToken
-        });
+        };
+        if (port) {
+            connectParams.port = port;
+        }
+
+        socket = io.connect(baseURL, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess(user) {
             deferred.resolve(user);
