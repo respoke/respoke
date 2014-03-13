@@ -621,13 +621,14 @@ brightstream.DirectConnection = function (params) {
         });
         that.ignore();
 
-        dataChannel.close();
+        if (dataChannel) {
+            dataChannel.close();
+        }
         dataChannel =  null;
 
         if (pc) {
             pc.close();
         }
-
         pc = null;
     });
 
