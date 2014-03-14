@@ -60,7 +60,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} appId - The App's id
      * @return {Promise<undefined>}
      */
-    var open = that.publicize('open', function (params) {
+    that.open = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         clientSettings = brightstream.getClient(client).getClientSettings();
@@ -86,7 +86,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Close a connection to the REST API. Invalidate the appauthsession.
@@ -96,7 +96,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var close = that.publicize('close', function (params) {
+    that.close = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -118,7 +118,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Return the state of the signaling channel
@@ -126,9 +126,9 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getState
      * @return {string} The state of the signaling channel.
     */
-    var getState = that.publicize('getState', function () {
+    that.getState = function () {
         return state;
-    });
+    };
 
     /**
      * Whether signaling channel is open.
@@ -136,9 +136,9 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.isOpen
      * @return {boolean}
      */
-    var isOpen = that.publicize('isOpen', function () {
+    that.isOpen = function () {
         return state === 'open';
-    });
+    };
 
     /**
      * Generate and send a presence message representing the user's current status. This triggers
@@ -151,7 +151,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
-    var sendPresence = that.publicize('sendPresence', function (params) {
+    that.sendPresence = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         log.trace("Signaling sendPresence");
@@ -173,7 +173,7 @@ brightstream.SignalingChannel = function (params) {
             deferred.reject(err);
         });
         return deferred.promise;
-    });
+    };
 
     /**
      * Get or create a group in the infrastructure.
@@ -184,7 +184,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} name
      */
-    var getGroup = that.publicize('getGroup', function (params) {
+    that.getGroup = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         log.trace('signalingChannel.getGroup');
@@ -203,7 +203,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Join a group.
@@ -214,7 +214,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
-    var leaveGroup = that.publicize('leaveGroup', function (params) {
+    that.leaveGroup = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -229,7 +229,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Join a group.
@@ -240,7 +240,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
-    var joinGroup = that.publicize('joinGroup', function (params) {
+    that.joinGroup = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -255,7 +255,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Publish a message to a group.
@@ -267,7 +267,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} id
      * @param {string} message
      */
-    var publish = that.publicize('publish', function (params) {
+    that.publish = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var message = brightstream.TextMessage({
@@ -286,7 +286,7 @@ brightstream.SignalingChannel = function (params) {
             deferred.reject(err);
         });
         return deferred.promise;
-    });
+    };
 
     /**
      * Register as an observer of presence for the specified endpoint ids.
@@ -294,7 +294,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.registerPresence
      * @param {Array<string>} endpointList
      */
-    var registerPresence = that.publicize('registerPresence', function (params) {
+    that.registerPresence = function (params) {
         wsCall({
             httpMethod: 'POST',
             path: '/v1/presenceobservers',
@@ -302,7 +302,7 @@ brightstream.SignalingChannel = function (params) {
                 endpointList: params.endpointList
             }
         });
-    });
+    };
 
     /**
      * Join a group.
@@ -313,7 +313,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} id
      */
-    var getGroupMembers = that.publicize('getGroupMembers', function (params) {
+    that.getGroupMembers = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         if (!params.id) {
             deferred.reject(new Error("Can't get group's endpoints without group ID."));
@@ -325,7 +325,7 @@ brightstream.SignalingChannel = function (params) {
             objectId: params.id,
             httpMethod: 'GET'
         });
-    });
+    };
 
     /**
      * Send a chat message.
@@ -338,7 +338,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
-    var sendMessage = that.publicize('sendMessage', function (params) {
+    that.sendMessage = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var message = brightstream.TextMessage({
@@ -357,7 +357,7 @@ brightstream.SignalingChannel = function (params) {
             deferred.reject(err);
         });
         return deferred.promise;
-    });
+    };
 
     /**
      * Send a signaling message.
@@ -370,7 +370,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var sendSignal = that.publicize('sendSignal', function (params) {
+    that.sendSignal = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         params.toConnection = params.connectionId;
@@ -391,7 +391,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Send an ICE candidate.
@@ -404,7 +404,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var sendCandidate = that.publicize('sendCandidate', function (params) {
+    that.sendCandidate = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -425,7 +425,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Send an SDP.
@@ -438,7 +438,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var sendSDP = that.publicize('sendSDP', function (params) {
+    that.sendSDP = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -459,7 +459,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Send a message terminating the WebRTC session.
@@ -472,7 +472,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var sendBye = that.publicize('sendBye', function (params) {
+    that.sendBye = function (params) {
         params = params || {};
         params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -494,7 +494,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Send a message to all connection ids indicating we have negotiated a call with one connection.
@@ -505,7 +505,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var sendConnected = that.publicize('sendConnected', function (params) {
+    that.sendConnected = function (params) {
         params = params || {};
         params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -526,7 +526,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Route different types of signaling messages via events.
@@ -540,16 +540,16 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Call#bye
      * @todo TODO Make the call.set* methods accept the entire message.
      */
-    var routeSignal = that.publicize('routeSignal', function (message) {
+    that.routeSignal = function (message) {
         var signal = message.signal;
         var target = null;
         var toCreate = false;
         var method = 'do';
         var endpoint;
         var knownSignals = ['offer', 'answer', 'connected', 'candidate', 'bye'];
-        var firstUpper = function (str) {
+        function firstUpper(str) {
             return str[0].toUpperCase() + str.slice(1);
-        };
+        }
 
         if (signal.type !== 'candidate') { // Too many of these!
             log.debug(signal.type, signal);
@@ -598,7 +598,7 @@ brightstream.SignalingChannel = function (params) {
             message: message,
             signal: signal
         });
-    });
+    };
 
     routingMethods.doCallOffer = function (params) {
         params.call.connectionId = params.message.connectionId;
@@ -723,7 +723,6 @@ brightstream.SignalingChannel = function (params) {
     routingMethods.doDirectConnectionBye = function (params) {
         // we may receive bye before connectionId is set if the call is rejected
         if (params.call.connectionId && params.call.connectionId !== params.message.connectionId) {
-            console.log('not accepting bye', params.call.connectionId, params.call.connectionId, params.message.connectionId);
             return;
         }
         params.call.setBye(params.signal);
@@ -749,13 +748,13 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} handler - A function to which to pass the message
      * @todo TODO See if this is necessary anymore
      */
-    var addHandler = that.publicize('addHandler', function (params) {
+    that.addHandler = function (params) {
         if (socket.socket && socket.socket.open) {
             socket.on(params.type, params.handler);
         } else {
             handlerQueue[params.type].push(params.handler);
         }
-    });
+    };
 
     /**
      * Socket handler for pub-sub messages.
@@ -866,7 +865,6 @@ brightstream.SignalingChannel = function (params) {
         group = clientObj.getGroup({id: message.header.channel});
         if (group) {
             group.removeEndpoint(endpoint);
-            clientObj.checkEndpointForRemoval(endpoint);
         } else {
             log.error("Can't remove endpoint from group:", group, endpoint);
         }
@@ -961,7 +959,7 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.onPresence
      * @private
      */
-    var onPresence = function onPresence(message) {
+    function onPresence(message) {
         var endpoint;
         var groups;
 
@@ -996,7 +994,7 @@ brightstream.SignalingChannel = function (params) {
             connectionId: message.header.fromConnection,
             presence: message.type
         });
-    };
+    }
 
     /**
      * Authenticate to the cloud and call the handler on state change.
@@ -1007,7 +1005,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<undefined>}
      */
-    var authenticate = that.publicize('authenticate', function (params) {
+    that.authenticate = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var pieces = [];
@@ -1109,7 +1107,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Get ephemeral TURN credentials.  This method is called every 20 hours in setInterval
@@ -1122,7 +1120,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {Promise<Array>}
      */
-    var getTurnCredentials = that.publicize('getTurnCredentials', function (params) {
+    that.getTurnCredentials = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -1158,7 +1156,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Construct a websocket API call and return the formatted response and errors. The 'success'
@@ -1177,7 +1175,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} parameters
      * @return {Promise<object>}
      */
-    var wsCall = function (params) {
+    function wsCall(params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -1229,7 +1227,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    };
+    }
 
     /**
      * Construct an API call and return the formatted response and errors. The 'success'
@@ -1247,7 +1245,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} responseHandler
      * @todo TODO change this to return a promise
      */
-    var call = function (params) {
+    function call(params) {
         /* Params go in the URI for GET, DELETE, same format for
          * POST and PUT, but they must be sent separately after the
          * request is opened. */
@@ -1338,7 +1336,7 @@ brightstream.SignalingChannel = function (params) {
                 log.warn('unexpected response ' + this.status);
             }
         };
-    };
+    }
 
     /**
      * Turn key/value and key/list pairs into an HTTP URL parameter string.
@@ -1349,7 +1347,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params - Collection of strings and arrays to serialize.
      * @returns {string}
      */
-    var makeParamString = function (params) {
+    function makeParamString(params) {
         var strings = [];
         if (!params) {
             return '';
@@ -1370,7 +1368,7 @@ brightstream.SignalingChannel = function (params) {
         } else {
             return '';
         }
-    };
+    }
 
     return that;
 }; // End brightstream.SignalingChannel
@@ -1398,7 +1396,7 @@ brightstream.TextMessage = function (params) {
      * @method brightstream.TextMessage.parse
      * @private
      */
-    var parse = function () {
+    function parse() {
         if (params.rawMessage) {
             try {
                 that.endpointId = params.rawMessage.header.from;
@@ -1420,7 +1418,7 @@ brightstream.TextMessage = function (params) {
             }
             that.message = params.message;
         }
-    };
+    }
 
     parse();
     return that;
@@ -1449,7 +1447,7 @@ brightstream.SignalingMessage = function (params) {
      * @method brightstream.SignalingMessage.parse
      * @private
      */
-    var parse = function () {
+    function parse() {
         if (params.rawMessage) {
             try {
                 that.endpointId = params.rawMessage.header.from;
@@ -1467,7 +1465,7 @@ brightstream.SignalingMessage = function (params) {
             }
             that.signal = params.signal; // Outgoing message
         }
-    };
+    }
 
     parse();
     return that;
@@ -1518,9 +1516,9 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.getID
      * @return {string}
      */
-    var getID = group.publicize('getID', function () {
+    group.getID = function () {
         return group.id;
-    });
+    };
 
     /**
      * Get the name of the group
@@ -1529,7 +1527,7 @@ brightstream.Group = function (params) {
      * @return {string}
      * @todo TODO maybe one day we will have separate group names and ids
      */
-    group.publicize('getName', getID);
+    group.getName = group.getID;
 
     /**
      * Leave a group
@@ -1540,7 +1538,7 @@ brightstream.Group = function (params) {
      * @return {Promise<undefined>}
      * @fires brightstream.User#leave
      */
-    var leave = group.publicize('leave', function (params) {
+    group.leave = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var clientObj = brightstream.getClient(client);
@@ -1560,7 +1558,7 @@ brightstream.Group = function (params) {
             deferred.reject();
         });
         return deferred.promise;
-    });
+    };
 
     /**
      * Remove an endpoint from a group
@@ -1570,7 +1568,7 @@ brightstream.Group = function (params) {
      * @param {string} [id] Endpoint id
      * @fires brightstream.Group#leave
      */
-    var removeEndpoint = group.publicize('removeEndpoint', function (newEndpoint) {
+    group.removeEndpoint = function (newEndpoint) {
         if (!newEndpoint.id || !newEndpoint.name) {
             throw new Error("Can't remove endpoint from a group without a name or id.");
         }
@@ -1589,7 +1587,7 @@ brightstream.Group = function (params) {
                 });
             }
         }
-    });
+    };
 
     /**
      * Add an endpoint to a group
@@ -1599,7 +1597,7 @@ brightstream.Group = function (params) {
      * @param {string} [id] Endpoint id
      * @fires brightstream.Group#join
      */
-    var addEndpoint = group.publicize('addEndpoint', function (newEndpoint) {
+    group.addEndpoint = function (newEndpoint) {
         var foundEndpoint;
         var exists;
         if (!newEndpoint.id || !newEndpoint.name) {
@@ -1625,7 +1623,7 @@ brightstream.Group = function (params) {
                 endpoint: newEndpoint
             });
         }
-    });
+    };
 
     /**
      * Send a message to the entire group
@@ -1635,10 +1633,10 @@ brightstream.Group = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {string} message
      */
-    var sendMessage = group.publicize('sendMessage', function (params) {
+    group.sendMessage = function (params) {
         params.id = group.id;
         return signalingChannel.publish(params);
-    });
+    };
 
     /**
      * Get an array of subscribers of the group
@@ -1648,7 +1646,7 @@ brightstream.Group = function (params) {
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
-    var getEndpoints = group.publicize('getEndpoints', function (params) {
+    group.getEndpoints = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var clientObj = brightstream.getClient(client);
@@ -1680,7 +1678,7 @@ brightstream.Group = function (params) {
                 });
                 if (endpointList.indexOf(endpoint.getID()) === -1) {
                     endpointList.push(endpoint.getID());
-                    addEndpoint(endpoint);
+                    group.addEndpoint(endpoint);
                 }
             });
 
@@ -1694,7 +1692,7 @@ brightstream.Group = function (params) {
             deferred.reject(err);
         });
         return deferred.promise;
-    });
+    };
 
     return group;
 }; // End brightstream.Group

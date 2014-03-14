@@ -94,7 +94,7 @@ brightstream.Client = function (params) {
      * @returns {Promise<brightstream.User>}
      * @fires brightstream.Client#connect
      */
-    var connect = that.publicize('connect', function (params) {
+    that.connect = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -128,7 +128,7 @@ brightstream.Client = function (params) {
 
             log.info('logged in as user ' + user.getName());
             log.debug(user);
-            updateTurnCredentials();
+            that.updateTurnCredentials();
 
             /**
              * @event brightstream.Client#connect
@@ -144,7 +144,7 @@ brightstream.Client = function (params) {
             log.error(err.message);
         });
         return deferred.promise;
-    });
+    };
 
     /**
      * Disconnect from the Digium infrastructure. Invalidates the API token.
@@ -154,7 +154,7 @@ brightstream.Client = function (params) {
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
-    var disconnect = that.publicize('disconnect', function (params) {
+    that.disconnect = function (params) {
         // TODO: also call this on socket disconnect
         params = params || {};
         var disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -179,7 +179,7 @@ brightstream.Client = function (params) {
             disconnectPromise.resolve();
         }
 
-        var afterDisconnect = function () {
+        function afterDisconnect() {
             connected = false;
             endpoints = [];
             groups = [];
@@ -187,11 +187,11 @@ brightstream.Client = function (params) {
              * @event brightstream.Client#disconnect
              */
             that.fire('disconnect');
-        };
+        }
 
         disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
         return disconnectPromise.promise;
-    });
+    };
 
     /**
      * Get the client ID
@@ -199,9 +199,9 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getID
      * @return {string}
      */
-    var getID = that.publicize('getID', function () {
+    that.getID = function () {
         return client;
-    });
+    };
 
     /**
      * Get all current calls.
@@ -209,9 +209,9 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getCalls
      * @returns {Array<brightstream.Call>}
      */
-    var getCalls = that.publicize('getCalls', function (params) {
+    that.getCalls = function (params) {
         return that.user ? that.user.getCalls() : null;
-    });
+    };
 
     /**
      * Send a message to an endpoint.
@@ -224,11 +224,11 @@ brightstream.Client = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
-    var sendMessage = that.publicize('sendMessage', function (params) {
+    that.sendMessage = function (params) {
         var endpoint = that.getEndpoint({id: params.endpointId});
         delete params.endpointId;
         return endpoint.sendMessage(params);
-    });
+    };
 
     /**
      * Call an endpoint.
@@ -240,18 +240,18 @@ brightstream.Client = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @return {brightstream.Call}
      */
-    var call = that.publicize('call', function (params) {
+    that.call = function (params) {
         var endpoint = that.getEndpoint({id: params.endpointId});
         delete params.endpointId;
         return endpoint.call(params);
-    });
+    };
 
     /**
      * Update TURN credentials and set a timeout to do it again in 20 hours.
      * @memberof! brightstream.Client
      * @method brightstream.Client.updateTurnCredentials
      */
-    var updateTurnCredentials = that.publicize('updateTurnCredentials', function () {
+    that.updateTurnCredentials = function () {
         if (callSettings.disableTurn === true) {
             return;
         }
@@ -262,8 +262,8 @@ brightstream.Client = function (params) {
         }, function errorHandler(error) {
             throw error;
         });
-        turnRefresher = setInterval(updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
-    });
+        turnRefresher = setInterval(that.updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
+    };
 
     /**
      * Determine whether the Client has authenticated with its appKey against Digium services
@@ -272,9 +272,9 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.isConnected
      * @returns {boolean}
      */
-    var isConnected = that.publicize('isConnected', function () {
+    that.isConnected = function () {
         return !!connected;
-    });
+    };
 
      /**
      * Get an object containing the client settings.
@@ -282,9 +282,9 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getClientSettings
      * @returns {object} An object containing the client settings.
      */
-    var getClientSettings = that.publicize('getClientSettings', function () {
+    that.getClientSettings = function () {
         return app;
-    });
+    };
 
     /**
      * Get an object containing the default media constraints and other media settings.
@@ -293,9 +293,9 @@ brightstream.Client = function (params) {
      * @returns {object} An object containing the media settings which will be used in
      * brightstream calls.
      */
-    var getCallSettings = that.publicize('getCallSettings', function () {
+    that.getCallSettings = function () {
         return callSettings;
-    });
+    };
 
     /**
      * Set the default media constraints and other media settings.
@@ -304,7 +304,7 @@ brightstream.Client = function (params) {
      * @param {object} [constraints]
      * @param {object} [servers]
      */
-    var setDefaultCallSettings = that.publicize('setDefaultCallSettings', function (params) {
+    that.setDefaultCallSettings = function (params) {
         params = params || {};
         if (params.constraints) {
             callSettings.constraints = params.constraints;
@@ -312,7 +312,7 @@ brightstream.Client = function (params) {
         if (params.servers) {
             callSettings.servers = params.servers;
         }
-    });
+    };
 
     /**
      * Get the SignalingChannel.
@@ -320,9 +320,9 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getSignalingChannel
      * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
      */
-    var getSignalingChannel = that.publicize('getSignalingChannel', function () {
+    that.getSignalingChannel = function () {
         return signalingChannel;
-    });
+    };
 
     /**
      * Get a Group
@@ -338,7 +338,7 @@ brightstream.Client = function (params) {
      * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
      * @fires brightstream.User#join
      */
-    var join = that.publicize('join', function (params) {
+    that.join = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         if (!params.id) {
             deferred.reject(new Error("Can't join a group with no group id."));
@@ -359,12 +359,15 @@ brightstream.Client = function (params) {
                 group: group
             });
             addGroup(group);
+            group.listen('leave', function (evt) {
+                checkEndpointForRemoval(evt.endpoint);
+            });
             deferred.resolve(group);
         }, function (err) {
             deferred.reject(err);
         });
         return deferred.promise;
-    });
+    };
 
     /**
      * Add a Group
@@ -373,7 +376,7 @@ brightstream.Client = function (params) {
      * @param {brightstream.Group}
      * @private
      */
-    var addGroup = function (newGroup) {
+    function addGroup(newGroup) {
         var group;
         if (!newGroup || newGroup.className !== 'brightstream.Group') {
             throw new Error("Can't add group to internal tracking without a group.");
@@ -388,11 +391,11 @@ brightstream.Client = function (params) {
 
         if (!group) {
             newGroup.listen('leave', function (evt) {
-                that.checkEndpointForRemoval(evt.endpoint);
+                checkEndpointForRemoval(evt.endpoint);
             }, true);
             groups.push(newGroup);
         }
-    };
+    }
 
     /**
      * Remove a Group
@@ -401,7 +404,7 @@ brightstream.Client = function (params) {
      * @param {brightstream.Group}
      * @private
      */
-    var removeGroup = function (newGroup) {
+    function removeGroup(newGroup) {
         var index;
         var endpoints;
         if (!newGroup || !(newGroup instanceof brightstream.Group)) {
@@ -425,7 +428,7 @@ brightstream.Client = function (params) {
                 });
             });
         }
-    };
+    }
 
     /**
      * Find a group by id and return it.
@@ -434,9 +437,9 @@ brightstream.Client = function (params) {
      * @param {string} id
      * @returns {brightstream.Group}
      */
-    var getGroups = that.publicize('getGroups', function (params) {
+    that.getGroups = function (params) {
         return groups;
-    });
+    };
 
     /**
      * Find a group by id and return it.
@@ -445,7 +448,7 @@ brightstream.Client = function (params) {
      * @param {string} id
      * @returns {brightstream.Group}
      */
-    var getGroup = that.publicize('getGroup', function (params) {
+    that.getGroup = function (params) {
         var group;
         if (!params || !params.id) {
             throw new Error("Can't get a group without group id.");
@@ -459,7 +462,7 @@ brightstream.Client = function (params) {
             return true;
         });
         return group;
-    });
+    };
 
     /**
      * Add an Endpoint
@@ -468,7 +471,7 @@ brightstream.Client = function (params) {
      * @param {brightstream.Endpoint}
      * @private
      */
-    var addEndpoint = that.publicize('addEndpoint', function (newEndpoint) {
+    that.addEndpoint = function (newEndpoint) {
         var absent = false;
         if (!newEndpoint || newEndpoint.className !== 'brightstream.Endpoint') {
             throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
@@ -483,16 +486,16 @@ brightstream.Client = function (params) {
         if (absent) {
             endpoints.push(newEndpoint);
         }
-    });
+    };
 
     /**
      * Remove an Endpoint
      * @memberof! brightstream.Client
-     * @method brightstream.Client.removeEndpoint
+     * @method brightstream.Client.checkEndpointForRemoval
      * @param {brightstream.Endpoint}
      * @private
      */
-    var checkEndpointForRemoval = that.publicize('checkEndpointForRemoval', function (theEndpoint) {
+    function checkEndpointForRemoval(theEndpoint) {
         var inAGroup;
         var index;
         if (!theEndpoint || theEndpoint.className !== 'brightstream.Endpoint') {
@@ -522,7 +525,7 @@ brightstream.Client = function (params) {
                 }
             }
         });
-    });
+    }
 
     /**
      * Find an endpoint by id and return it.
@@ -531,7 +534,7 @@ brightstream.Client = function (params) {
      * @param {string} id
      * @returns {brightstream.Endpoint}
      */
-    var getEndpoint = that.publicize('getEndpoint', function (params) {
+    that.getEndpoint = function (params) {
         var endpoint;
         if (!params || !params.id) {
             throw new Error("Can't get an endpoint without endpoint id.");
@@ -548,11 +551,11 @@ brightstream.Client = function (params) {
         if (!endpoint && params && !params.skipCreate) {
             params.client = client;
             endpoint = brightstream.Endpoint(params);
-            addEndpoint(endpoint);
+            that.addEndpoint(endpoint);
         }
 
         return endpoint;
-    });
+    };
 
     /**
      * Get the list of all endpoints we know about.
@@ -560,9 +563,9 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getEndpoints
      * @returns {Array<brightstream.Endpoint>}
      */
-    var getEndpoints = that.publicize('getEndpoints', function () {
+    that.getEndpoints = function () {
         return endpoints;
-    });
+    };
 
     return that;
 }; // End brightstream.Client
