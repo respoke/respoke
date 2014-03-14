@@ -119,8 +119,7 @@ brightstream.Endpoint = function (params) {
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
-     * Send a message to the endpoint. If a DirectConnection exists, send peer-to-peer. If not, send it through
-     * the infrastructure.
+     * Send a message to the endpoint through the infrastructure.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendMessage
      * @param {string} message

@@ -69,11 +69,6 @@ brightstream.DirectConnection = function (params) {
         report.candidatesSent.push(oCan);
     };
     var connectionSettings = params.connectionSettings;
-    connectionSettings.constraints = {
-        audio: true,
-        video: false
-    };
-
     var options = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
