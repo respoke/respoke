@@ -787,16 +787,20 @@ brightstream.SignalingChannel = function (params) {
             group.fire('message', {
                 message: groupMessage
             });
-        } else if (clientObj.onMessage) {
-            /**
-             * @event brightstream.Client#message
-             * @type {brightstream.Event}
-             * @property {brightstream.TextMessage} message
-             */
-            clientObj.fire('message', {
-                message: groupMessage
-            });
         }
+        /**
+         * @event brightstream.Client#message
+         * @type {brightstream.Event}
+         * @property {brightstream.TextMessage} message
+         * @property {brightstream.Group} [group] - If the message is to a group we already know about,
+         * this will be set. If null, the developer can use client.join({id: "myGroupName"}) to join
+         * the group. From that point forward, Group#message will fire when a message is received as well. If
+         * group is undefined instead of null, the message is not a group message at all.
+         */
+        clientObj.fire('message', {
+            message: groupMessage,
+            group: group || null
+        });
     };
 
     /**
