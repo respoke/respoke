@@ -1041,13 +1041,11 @@ brightstream.SignalingChannel = function (params) {
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: true,
             host: host,
+            port: port || '443',
             protocol: protocol,
             secure: (protocol === 'https'),
             query: 'app-token=' + appToken
         };
-        if (port) {
-            connectParams.port = port;
-        }
 
         socket = io.connect(baseURL, connectParams);
 
