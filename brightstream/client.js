@@ -7,55 +7,53 @@
  */
 
 /**
- * Create a new WebRTC Client object.
+ * Create a new WebRTC Client object. Configure the client to connect to the infrastructure. Set up some listeners
+ * on common events. Set up the signaling channel. Set up the default WebRTC constraints.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Client
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
  * API server, receiving server-side app-specific information, and interacting with information the library keeps
- * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct connections
- * as well as automatically reconnecting to the service when network activity is lost.
- * @param {object} clientSettings
- * @param {string} appId
- * @param {RTCConstraints} [constraints]
- * @param {RTCICEServers} [servers]
+ * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
+ * connections as well as automatically reconnecting to the service when network activity is lost.
+ * @param {object} params
+ * @param {string} [params.appId]
+ * @param {string} [params.baseURL]
+ * @param {string} [params.authToken]
+ * @param {RTCConstraints} [params.constraints]
+ * @param {RTCICEServers} [params.servers]
+ * @property {brightstream.User} user
+ * @property {string} className
  * @returns {brightstream.Client}
- * @property {object} clientSettings Client settings.
- * @property {brightstream.SignalingChannel} signalingChannel A reference to the signaling channel.
- * @property {function} chatMessage Class to use for chat messages.
- * @property {function} signalingMessage Class to use for signaling.
- * @property {function} presenceMessage Class to use for presence messages.
- * @property {brightstream.User} user Logged-in user's User object.
  */
 /*global brightstream: false */
 brightstream.Client = function (params) {
     "use strict";
     params = params || {};
-    var client = brightstream.makeUniqueID().toString();
+    var client = brightstream.makeUniqueID().toString(); /** @private */
     var that = brightstream.EventEmitter(params);
     brightstream.instances[client] = that;
     that.className = 'brightstream.Client';
 
-    var host = window.location.hostname;
-    var port = window.location.port;
-    var connected = false;
-    var app = {
+    var host = window.location.hostname; /** @private */
+    var port = window.location.port; /** @private */
+    var connected = false; /** @private */
+    var app = { /** @private */
         baseURL: params.baseURL,
         authToken: params.authToken,
         appId: params.appId
     };
-    delete params.appId;
-    delete params.baseURL;
-    var signalingChannel = null;
-    var turnRefresher = null;
-    var groups = [];
-    var endpoints = [];
-
+    delete that.appId;
+    delete that.baseURL;
+    that.user = null;
+    var turnRefresher = null; /** @private */
+    var groups = []; /** @private */
+    var endpoints = []; /** @private */
 
     log.debug("Client ID is ", client);
 
-    var callSettings = {
+    var callSettings = { /** @private */
         constraints: params.constraints || {
             video : true,
             audio : true,
@@ -67,30 +65,30 @@ brightstream.Client = function (params) {
         }
     };
 
-    signalingChannel = brightstream.SignalingChannel({'client': client});
-    that.user = null;
-    log.debug(signalingChannel);
+    var signalingChannel = brightstream.SignalingChannel({'client': client}); /** @private */
 
     /**
-     * Connect to the Digium infrastructure and authenticate using the appkey.  Store
-     * a token to be used in API requests.
+     * Connect to the Digium infrastructure and authenticate using the appkey.  Store a token to be used in API
+     * requests. Accept and attach quite a few event listeners for things like group joining and connection
+     * statuses. Get the first set of TURN credentials and store them internally for later use.
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
-     * @param {string} authToken
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
-     * @param {function} [onJoin] - Callback for when this client's endpoint joins a group.
-     * @param {function} [onLeave] - Callback for when this client's endpoint leaves a group.
-     * @param {function} [onAutoJoin] - Callback for when this client's user automatically joins a group. Not
+     * @param {object} params
+     * @param {string} params.authToken
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
+     * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
+     * @param {function} [params.onAutoJoin] - Callback for when this client's user automatically joins a group. Not
      * Implemented.
-     * @param {function} [onAutoLeave] - Callback for when this client's user automatically leaves a group. Not
+     * @param {function} [params.onAutoLeave] - Callback for when this client's user automatically leaves a group. Not
      * Implemented.
-     * @param {function} [onMessage] - Callback for when an unknown Endpoint sends a message.
-     * @param {function} [onDisconnect] - Callback for Client disconnect.
-     * @param {function} [onReconnect] - Callback for Client reconnect. Not Implemented.
-     * @param {function} [onCall] - Callback for when this client's user receives a call.
-     * @param {function} [onDirectConnection] - Callback for when this client's user receives a request for a direct
-     * connection.
+     * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+     * @param {function} [params.onDisconnect] - Callback for Client disconnect.
+     * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+     * @param {function} [params.onCall] - Callback for when this client's user receives a call.
+     * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
+     * direct connection.
      * @returns {Promise<brightstream.User>}
      * @fires brightstream.Client#connect
      */
@@ -100,6 +98,11 @@ brightstream.Client = function (params) {
 
         app.authToken = params.authToken;
         app.appId = params.appId || app.appId;
+
+        if (!app.authToken || !app.appId) {
+            deferred.reject(new Error("Can't connect without appId and authToken"));
+        }
+
         signalingChannel.open({
             appId: app.appId,
             token: app.authToken
@@ -147,12 +150,13 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Disconnect from the Digium infrastructure. Invalidates the API token.
+     * Disconnect from the Digium infrastructure. Invalidates the API token and disconnects the websocket.
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
      * @returns {Promise<undefined>}
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @fires brightstream.Client#disconnect
      */
     that.disconnect = function (params) {
         // TODO: also call this on socket disconnect
@@ -180,6 +184,7 @@ brightstream.Client = function (params) {
         }
 
         function afterDisconnect() {
+            that.user = null;
             connected = false;
             endpoints = [];
             groups = [];
@@ -194,17 +199,18 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Get the client ID
+     * Get the client ID. This can be used in the brightstream.getClient static method to obtain a reference
+     * to the client object. Developers can instantiate multiple clients.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getID
-     * @return {string}
+     * @return {string} The ID of this client.
      */
     that.getID = function () {
         return client;
     };
 
     /**
-     * Get all current calls.
+     * Get an array containing all call in progress. Returns null if not connected.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getCalls
      * @returns {Array<brightstream.Call>}
@@ -217,9 +223,10 @@ brightstream.Client = function (params) {
      * Send a message to an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.sendMessage
-     * @param {string} endpointId
-     * @param {string} [connectionId]
-     * @param {string} message
+     * @param {string} endpointId - The endpoint id of the recipient.
+     * @param {string} [connectionId] - The optional connection id of the receipient. If not set, message will be
+     * broadcast to all connections for this endpoint.
+     * @param {string} message - a string message.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
@@ -231,7 +238,7 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Call an endpoint.
+     * Place an audio and/or video call to an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.call
      * @param {string} endpointId
@@ -266,8 +273,7 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Determine whether the Client has authenticated with its appKey against Digium services
-     * by checking the validity of the apiToken.
+     * Determine whether the Client has authenticated with its token against the brightstream infrastructure.
      * @memberof! brightstream.Client
      * @method brightstream.Client.isConnected
      * @returns {boolean}
@@ -306,30 +312,27 @@ brightstream.Client = function (params) {
      */
     that.setDefaultCallSettings = function (params) {
         params = params || {};
-        if (params.constraints) {
-            callSettings.constraints = params.constraints;
-        }
-        if (params.servers) {
-            callSettings.servers = params.servers;
-        }
+        callSettings.constraints = params.constraints || callSettings.constraints;
+        callSettings.servers = params.servers || callSettings.servers;
     };
 
     /**
-     * Get the SignalingChannel.
+     * Get the SignalingChannel. This is not really a private method but we don't want our developers interacting
+     * directly with the signaling channel.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getSignalingChannel
      * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
+     * @private
      */
     that.getSignalingChannel = function () {
         return signalingChannel;
     };
 
     /**
-     * Get a Group
+     * Join a Group and begin keeping track of it. Attach some event listeners.
      * @memberof! brightstream.Client
      * @method brightstream.Client.join
-     * @param {string} The name of the group.
-     * @param {string} id
+     * @param {string} id - The name of the group.
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @param {function} [onMessage] - Message handler for messages from this group only.
@@ -355,6 +358,11 @@ brightstream.Client = function (params) {
                 onJoin: params.onJoin,
                 onLeave: params.onLeave
             });
+            /**
+             * @event {brightstream.User#join}
+             * @type {brightstream.Event}
+             * @property {brighstream.Group} group
+             */
             that.user.fire('join', {
                 group: group
             });
@@ -370,7 +378,7 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Add a Group
+     * Add a Group. This is called when we join a group and need to begin keeping track of it.
      * @memberof! brightstream.Client
      * @method brightstream.Client.addGroup
      * @param {brightstream.Group}
@@ -398,7 +406,7 @@ brightstream.Client = function (params) {
     }
 
     /**
-     * Remove a Group
+     * Remove a Group. This is called when we have left a group and no longer need to keep track of it.
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeGroup
      * @param {brightstream.Group}
@@ -407,7 +415,7 @@ brightstream.Client = function (params) {
     function removeGroup(newGroup) {
         var index;
         var endpoints;
-        if (!newGroup || !(newGroup instanceof brightstream.Group)) {
+        if (!newGroup || newGroup.className === 'brightstream.Group') {
             throw new Error("Can't remove group to internal tracking without a group.");
         }
 
@@ -431,11 +439,10 @@ brightstream.Client = function (params) {
     }
 
     /**
-     * Find a group by id and return it.
+     * Get a list of all the groups we're currently a member of.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getGroups
-     * @param {string} id
-     * @returns {brightstream.Group}
+     * @returns {Array<brightstream.Group>}
      */
     that.getGroups = function (params) {
         return groups;
@@ -465,11 +472,10 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Add an Endpoint
+     * Add an Endpoint. This is called when we need to start keeping track of an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.addEndpoint
      * @param {brightstream.Endpoint}
-     * @private
      */
     that.addEndpoint = function (newEndpoint) {
         var absent = false;
@@ -489,7 +495,11 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Remove an Endpoint
+     * Remove an Endpoint. Since an endpoint can be a member of multiple groups, we can't just remove it from
+     * our list on brightstream.Endpoint#leave. We must see if it's a member of any more groups. If it's not
+     * a member of any other groups, we can stop keeping track of it.
+     * @todo TODO Need to account for Endpoints not created as part of a group. These do not need to be
+     * deleted based on group membership.
      * @memberof! brightstream.Client
      * @method brightstream.Client.checkEndpointForRemoval
      * @param {brightstream.Endpoint}
@@ -528,7 +538,9 @@ brightstream.Client = function (params) {
     }
 
     /**
-     * Find an endpoint by id and return it.
+     * Find an endpoint by id and return it. In most cases, if we don't find it we will create it. This is useful
+     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true to return undefined
+     * if the Endpoint is not already known.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getEndpoint
      * @param {string} id

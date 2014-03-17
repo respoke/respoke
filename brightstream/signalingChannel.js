@@ -7,7 +7,12 @@
  */
 
 /**
- * Create a new SignalingChannel.
+ * Create a new SignalingChannel.  The purpose of this class is to make a method call for each API call
+ * to the backend REST interface.  This class takes care of App authentication, websocket connection,
+ * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise which
+ * can be thenned directly, but to abstract that from developers who might prefer not to use Promises, they
+ * also take callbacks named onSuccess and onError which the methods attach to the promises themselves so
+ * that the developer doesn't have to.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.SignalingChannel
  * @constructor
@@ -24,25 +29,25 @@ brightstream.SignalingChannel = function (params) {
     delete that.client;
     that.className = 'brightstream.SignalingChannel';
 
-    var clientObj = brightstream.getClient(client);
-    var state = 'new';
-    var socket = null;
-    var clientSettings = null; // client is not set up yet
-    var baseURL = null;
-    var appId = null;
-    var endpointId = null;
-    var appToken = null;
+    var clientObj = brightstream.getClient(client); /** @private */
+    var state = 'new'; /** @private */
+    var socket = null; /** @private */
+    var clientSettings = null;  /** @private */
+    var baseURL = null; /** @private */
+    var appId = null; /** @private */
+    var endpointId = null; /** @private */
+    var appToken = null; /** @private */
 
-    var xhr = new XMLHttpRequest();
+    var xhr = new XMLHttpRequest(); /** @private */
 
-    var routingMethods = {};
-    var handlerQueue = {
+    var routingMethods = {}; /** @private */
+    var handlerQueue = { /** @private */
         'message': [],
         'signal': [],
         'presence': []
     };
 
-    var errors = {
+    var errors = { /** @private */
         // TODO convert this to strings
         400: "Can't perform this action: missing or invalid parameters.",
         401: "Can't perform this action: not authenticated.",
@@ -792,7 +797,7 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {brightstream.TextMessage} message
          * @property {brightstream.Group} [group] - If the message is to a group we already know about,
-         * this will be set. If null, the developer can use client.join({id: "myGroupName"}) to join
+         * this will be set. If null, the developer can use client.join({id: evt.message.header.channel}) to join
          * the group. From that point forward, Group#message will fire when a message is received as well. If
          * group is undefined instead of null, the message is not a group message at all.
          */
@@ -1321,7 +1326,7 @@ brightstream.SignalingChannel = function (params) {
                 log.error("Status is 0: Incomplete request, SSL error, or CORS error.");
                 return;
             }
-            if ([200, 204, 205, 302, 403, 404, 418].indexOf(this.status) > -1) {
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
                 response.code = this.status;
                 if (this.response) {
                     try {
