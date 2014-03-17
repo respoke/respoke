@@ -39,7 +39,7 @@ brightstream.EventEmitter = function (params) {
      * @param {boolean} [isInternal] - A flag to indicate this listener was added by the library. This parameter should
      * not be used by developers who are using the library, only by developers who are working on the library itself.
      */
-    var listen = that.publicize('listen', function (eventType, listener, isInternal) {
+    that.listen = function (eventType, listener, isInternal) {
         if (listener === undefined) {
             return;
         }
@@ -54,7 +54,7 @@ brightstream.EventEmitter = function (params) {
         } else if (eventList[eventType].indexOf(listener) !== -1) {
             log.warn("not adding duplicate listener.");
         }
-    });
+    };
 
     /**
      * Remove a listener from an object. If no eventType is specified, all eventTypes will be
@@ -66,7 +66,7 @@ brightstream.EventEmitter = function (params) {
      * @param {string} [eventType] - An optional developer-specified string identifying the event.
      * @param {function} [listener] - An optional function to remove from the specified event.
      */
-    var ignore = that.publicize('ignore', function (eventType, listener) {
+    that.ignore = function (eventType, listener) {
         // Remove all events from this object
         if (eventType === undefined) {
             eventList = {};
@@ -86,7 +86,7 @@ brightstream.EventEmitter = function (params) {
                 return;
             }
         }
-    });
+    };
 
     /**
      * Trigger an event on an object. All listeners for the specified eventType will be called.
@@ -98,7 +98,7 @@ brightstream.EventEmitter = function (params) {
      * @param {string|number|object|array} any - Any number of optional parameters to be passed to
      * the listener
      */
-    var fire = that.publicize('fire', function (eventType, evt) {
+    that.fire = function (eventType, evt) {
         var args = null;
         var count = 0;
 
@@ -122,7 +122,7 @@ brightstream.EventEmitter = function (params) {
             }
         });
         log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
-    });
+    };
 
     /**
      * Determine if an object has had any listeners registered for a given event outside the library. This method
@@ -134,7 +134,7 @@ brightstream.EventEmitter = function (params) {
      * @method brightstream.EventEmitter.hasListeners
      * @param {string} eventType - The name of the event
      */
-    var hasListeners = that.publicize('hasListeners', function (eventType) {
+    that.hasListeners = function (eventType) {
         if (eventType === undefined) {
             throw new Error("Missing required parameter event type.");
         }
@@ -146,7 +146,7 @@ brightstream.EventEmitter = function (params) {
         return !eventList[eventType].every(function (listener) {
             return listener.isInternal;
         });
-    });
+    };
 
     return that;
 }; // End brightstream.EventEmitter

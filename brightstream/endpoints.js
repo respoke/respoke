@@ -35,9 +35,9 @@ brightstream.Presentable = function (params) {
      * @method brightstream.Presentable.getID
      * @return {string}
      */
-    var getID = that.publicize('getID', function () {
+    that.getID = function () {
         return that.id;
-    });
+    };
 
     /**
      * Get the name.
@@ -45,9 +45,9 @@ brightstream.Presentable = function (params) {
      * @method brightstream.Presentable.getName
      * @return {string}
      */
-    var getName = that.publicize('getName', function () {
+    that.getName = function () {
         return that.name;
-    });
+    };
 
     /**
      * Set the presence on the object and the session
@@ -57,7 +57,7 @@ brightstream.Presentable = function (params) {
      * @param {string} connectionId
      * @fires brightstream.Presentable#presence
      */
-    var setPresence = that.publicize('setPresence', function (params) {
+    that.setPresence = function (params) {
         params = params || {};
         params.presence = params.presence || 'available';
         params.connectionId = params.connectionId || 'local';
@@ -81,7 +81,7 @@ brightstream.Presentable = function (params) {
         that.fire('presence', {
             presence: presence
         });
-    });
+    };
 
     /**
      * Get the presence.
@@ -89,9 +89,9 @@ brightstream.Presentable = function (params) {
      * @method brightstream.Presentable.getPresence
      * @returns {string}
      */
-    var getPresence = that.publicize('getPresence', function () {
+    that.getPresence = function () {
         return presence;
-    });
+    };
 
     return that;
 }; // End brightstream.Presentable
@@ -119,8 +119,7 @@ brightstream.Endpoint = function (params) {
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
-     * Send a message to the endpoint. If a DirectConnection exists, send peer-to-peer. If not, send it through
-     * the infrastructure.
+     * Send a message to the endpoint through the infrastructure.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendMessage
      * @param {string} message
@@ -129,7 +128,7 @@ brightstream.Endpoint = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
-    var sendMessage = that.publicize('sendMessage', function (params) {
+    that.sendMessage = function (params) {
         params = params || {};
 
         return signalingChannel.sendMessage({
@@ -139,7 +138,7 @@ brightstream.Endpoint = function (params) {
             onSuccess: params.onSuccess,
             onError: params.onError
         });
-    });
+    };
 
     /**
      * Send a signal to the endpoint.
@@ -151,7 +150,7 @@ brightstream.Endpoint = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
-    var sendSignal = that.publicize('sendSignal', function (params) {
+    that.sendSignal = function (params) {
         log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -173,7 +172,7 @@ brightstream.Endpoint = function (params) {
         });
 
         return deferred.promise;
-    });
+    };
 
     /**
      * Create a new Call for a voice and/or video call. If initiator is set to true,
@@ -186,7 +185,7 @@ brightstream.Endpoint = function (params) {
      * @param {boolean} [initiator] Whether the logged-in user initiated the call.
      * @returns {brightstream.Call}
      */
-    var call = that.publicize('call', function (params) {
+    that.call = function (params) {
         var call = null;
         var clientObj = brightstream.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
@@ -271,7 +270,7 @@ brightstream.Endpoint = function (params) {
             user.removeCall({id: call.id});
         }, true);
         return call;
-    });
+    };
 
     /**
      * Create a new DirectConnection. If initiator is set to true, the Call will start the call.
@@ -285,8 +284,7 @@ brightstream.Endpoint = function (params) {
      * @param {boolean} [initiator] Whether the logged-in user initiated the call.
      * @returns {brightstream.Call}
      */
-    var getDirectConnection = that.publicize('getDirectConnection', function (params) {
-        var directConnection = null;
+    that.getDirectConnection = function (params) {
         var clientObj = brightstream.getClient(client);
         var combinedConnectionSettings = clientObj.getCallSettings();
         var user = clientObj.user;
@@ -358,10 +356,10 @@ brightstream.Endpoint = function (params) {
             log.debug("Not sending report");
             log.debug(signalParams.report);
         };
-        directConnection = that.directConnection = brightstream.DirectConnection(params);
+        that.directConnection = brightstream.DirectConnection(params);
 
         if (params.initiator === true) {
-            directConnection.accept({
+            that.directConnection.accept({
                 onOpen: params.onOpen,
                 onClose: params.onClose,
                 onMessage: params.onMessage
@@ -373,22 +371,22 @@ brightstream.Endpoint = function (params) {
              * @property {brightstream.DirectConnection}
              */
             clientObj.user.fire('direct-connection', {
-                directConnection: directConnection,
+                directConnection: that.directConnection,
                 endpoint: that
             });
             if (!clientObj.user.hasListeners('direct-connection')) {
                 log.warn("Got an incoming direct connection with no handlers to accept it!");
-                directConnection.reject();
+                that.directConnection.reject();
             }
         }
 
-        directConnection.listen('close', function (evt) {
+        that.directConnection.listen('close', function (evt) {
             that.directConnection.ignore();
             that.directConnection = undefined;
         }, true);
 
-        return directConnection;
-    });
+        return that.directConnection;
+    };
 
     /**
      * Find the presence out of all known connections with the highest priority (most availability)
@@ -399,7 +397,7 @@ brightstream.Endpoint = function (params) {
      * @private
      * @returns {string}
      */
-    var resolvePresence = that.publicize('resolvePresence', function (params) {
+    that.resolvePresence = function (params) {
         var presence;
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
         params = params || {};
@@ -424,7 +422,7 @@ brightstream.Endpoint = function (params) {
         presence = connectionIds[0] ? params.sessions[connectionIds[0]].presence : 'unavailable';
 
         return presence;
-    });
+    };
 
     return that;
 }; // End brightstream.Endpoint
@@ -465,7 +463,7 @@ brightstream.User = function (params) {
      * @param {function} onError
      * @return {Promise<undefined>}
      */
-    var setPresence = that.publicize('setPresence', function (params) {
+    that.setPresence = function (params) {
         params = params || {};
         params.presence = params.presence || "available";
         log.info('sending my presence update ' + params.presence);
@@ -480,7 +478,7 @@ brightstream.User = function (params) {
             },
             onError: params.onError
         });
-    });
+    };
 
     /**
      * Get all current calls.
@@ -488,9 +486,9 @@ brightstream.User = function (params) {
      * @method brightstream.User.getCalls
      * @returns {Array<brightstream.Call>}
      */
-    var getCalls = that.publicize('getCalls', function (params) {
+    that.getCalls = function (params) {
         return calls;
-    });
+    };
 
     /**
      * Get the Call with the endpoint specified.
@@ -500,7 +498,7 @@ brightstream.User = function (params) {
      * @param {boolean} create - whether or not to create a new call if the specified endpointId isn't found
      * @returns {brightstream.Call}
      */
-    var getCall = that.publicize('getCall', function (params) {
+    that.getCall = function (params) {
         var call = null;
         var endpoint = null;
         var callSettings = null;
@@ -528,7 +526,7 @@ brightstream.User = function (params) {
             }
         }
         return call;
-    });
+    };
 
     /**
      * Associate the call or direct connection with this user.
@@ -538,7 +536,7 @@ brightstream.User = function (params) {
      * @fires brightstream.User#call
      * @todo TODO rename this something else
      */
-    var addCall = that.publicize('addCall', function (params) {
+    that.addCall = function (params) {
         if (calls.indexOf(params.call) === -1) {
             calls.push(params.call);
             /**
@@ -559,7 +557,7 @@ brightstream.User = function (params) {
                 });
             }
         }
-    });
+    };
 
     /**
      * Remove the call or direct connection.
@@ -569,7 +567,7 @@ brightstream.User = function (params) {
      * @param {brightstream.Call} [call] Call or DirectConnection
      * @todo TODO rename this something else
      */
-    var removeCall = that.publicize('removeCall', function (params) {
+    that.removeCall = function (params) {
         var match = false;
         if (!params.id && !params.call) {
             throw new Error("Must specify endpointId of Call to remove or the call itself.");
@@ -587,7 +585,7 @@ brightstream.User = function (params) {
         if (!match) {
             log.warn("No call removed.");
         }
-    });
+    };
 
 
     /**
@@ -596,11 +594,11 @@ brightstream.User = function (params) {
      * @method brightstream.User.setOnline
      * @param {string}
      */
-    var setOnline = that.publicize('setOnline', function (params) {
+    that.setOnline = function (params) {
         params = params || {};
         params.presence = params.presence || 'available';
         return that.setPresence(params);
-    });
+    };
 
     return that;
 }; // End brightstream.User

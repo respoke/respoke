@@ -70,19 +70,21 @@ brightstream.Call = function (params) {
     var videoRemoteElement = null;
     var videoIsMuted = false;
     var audioIsMuted = false;
+
+    var callSettings = params.callSettings;
     var signalOffer = params.signalOffer;
     var signalConnected = params.signalConnected;
     var signalAnswer = params.signalAnswer;
     var signalTerminate = params.signalTerminate;
     var signalReport = params.signalReport;
-    var signalCandidate = function (oCan) {
+    function signalCandidate(oCan) {
         params.signalCandidate({
             candidate: oCan,
             connectionId: that.connectionId
         });
         report.candidatesSent.push(oCan);
-    };
-    var callSettings = params.callSettings;
+    }
+
     var options = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
@@ -135,7 +137,7 @@ brightstream.Call = function (params) {
      * @param {function} [onHangup]
      * @private
      */
-    var registerListeners = function (params) {
+    function registerListeners(params) {
         if (typeof params.onLocalVideo === 'function') {
             that.listen('local-stream-received', params.onLocalVideo);
         }
@@ -147,7 +149,7 @@ brightstream.Call = function (params) {
         if (typeof params.onHangup === 'function') {
             that.listen('hangup', params.onHangup);
         }
-    };
+    }
 
     /**
      * Must call registerListeners as part of object construction.
@@ -168,7 +170,7 @@ brightstream.Call = function (params) {
      * @param {boolean} [forceTurn]
      * @param {boolean} [receiveOnly]
      */
-    var answer = that.publicize('answer', function (params) {
+    that.answer = function (params) {
         that.state = ST_STARTED;
         params = params || {};
         log.trace('answer');
@@ -189,9 +191,9 @@ brightstream.Call = function (params) {
         if (receiveOnly !== true) {
             requestMedia(params);
         } else if (typeof previewLocalMedia !== 'function') {
-            approve();
+            that.approve();
         }
-    });
+    };
 
     /**
      * Start the process of network and media negotiation. Called after local video approved.
@@ -199,7 +201,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.approve.
      * @fires brightstream.Call#approve
      */
-    var approve = that.publicize('approve', function () {
+    that.approve = function () {
         if (that.state < ST_APPROVED) {
             that.state = ST_APPROVED;
         }
@@ -218,7 +220,7 @@ brightstream.Call = function (params) {
         } else {
             defApproved.resolve(true);
         }
-    });
+    };
 
     /**
      * Process a remote offer if we are not the initiator.
@@ -227,7 +229,7 @@ brightstream.Call = function (params) {
      * @private
      * @param {RTCSessionDescriptor}
      */
-    var processOffer = function (oOffer) {
+    function processOffer(oOffer) {
         log.trace('processOffer');
         log.debug('processOffer', oOffer);
 
@@ -242,14 +244,14 @@ brightstream.Call = function (params) {
                 }, function errorHandler(err) {
                     log.error('set remote desc of offer failed', err);
                     report.callStoppedReason = 'setLocalDescr failed at offer.';
-                    hangup();
+                    that.hangup();
                 }
             );
             that.state = ST_OFFERED;
         } catch (err) {
             log.error("error processing offer: ", err);
         }
-    };
+    }
 
     /**
      * Save the local stream. Kick off SDP creation.
@@ -259,13 +261,13 @@ brightstream.Call = function (params) {
      * @param {MediaStream}
      * @fires brightstream.Call#local-stream-received
      */
-    var onReceiveUserMedia = function (stream) {
+    function onReceiveUserMedia(stream) {
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
 
         // This happens when we get an automatic hangup or reject from the other side.
         if (pc === null) {
-            hangup({signal: false});
+            that.hangup({signal: false});
             return;
         }
 
@@ -325,9 +327,9 @@ brightstream.Call = function (params) {
             that.state = ST_INREVIEW;
             previewLocalMedia(videoLocalElement, that);
         } else {
-            approve();
+            that.approve();
         }
-    };
+    }
 
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
@@ -341,7 +343,7 @@ brightstream.Call = function (params) {
      * @param {function} [onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
-    var getStats = function (params) {
+    function getStats(params) {
         var deferred = brightstream.makeDeferred(null, function (err) {
             log.warn("Couldn't start stats:", err.message);
         });
@@ -380,10 +382,10 @@ brightstream.Call = function (params) {
             deferred.reject(new Error("Statistics module is not loaded."));
         }
         return deferred.promise;
-    };
+    }
 
     if (brightstream.MediaStats) {
-        that.publicize('getStats', getStats);
+        that.getStats = getStats;
     }
 
     /**
@@ -391,18 +393,18 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.getLocalElement
      */
-    var getLocalElement = that.publicize('getLocalElement', function () {
+    that.getLocalElement = function () {
         return videoLocalElement;
-    });
+    };
 
     /**
      * Return remote video element.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getRemoteElement
      */
-    var getRemoteElement = that.publicize('getRemoteElement', function () {
+    that.getRemoteElement = function () {
         return videoRemoteElement;
-    });
+    };
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
@@ -412,7 +414,7 @@ brightstream.Call = function (params) {
      * @private
      * @param {object} callSettings
      */
-    var requestMedia = function (finalCallSettings) {
+    function requestMedia(finalCallSettings) {
         var now = new Date();
         var toDelete = [];
         var url = '';
@@ -470,7 +472,7 @@ brightstream.Call = function (params) {
         } catch (e) {
             log.error("Couldn't get user media: " + e.message);
         }
-    };
+    }
 
     /**
      * Handle any error that comes up during the process of getting user media.
@@ -479,7 +481,7 @@ brightstream.Call = function (params) {
      * @private
      * @param {object}
      */
-    var onUserMediaError = function (p) {
+    function onUserMediaError(p) {
         log.trace('onUserMediaError');
         that.state = ST_MEDIA_ERROR;
         if (p.code === 1) {
@@ -489,8 +491,8 @@ brightstream.Call = function (params) {
             log.warn(p);
             report.callStoppedReason = p.code;
         }
-        hangup({signal: !that.initiator});
-    };
+        that.hangup({signal: !that.initiator});
+    }
 
     /**
      * Listen for the remote side to remove media in the middle of the call.
@@ -499,9 +501,9 @@ brightstream.Call = function (params) {
      * @private
      * @param {object}
      */
-    var onRemoteStreamRemoved = function (evt) {
+    function onRemoteStreamRemoved(evt) {
         log.trace('pc event: remote stream removed');
-    };
+    }
 
     /**
      * Listen for the remote side to add additional media in the middle of the call.
@@ -511,7 +513,7 @@ brightstream.Call = function (params) {
      * @param {object}
      * @fires brightstream.Call#remote-stream-received
      */
-    var onRemoteStreamAdded = function (evt) {
+    function onRemoteStreamAdded(evt) {
         if (that.state < ST_FLOWING) {
             that.state = ST_FLOWING;
         }
@@ -544,7 +546,7 @@ brightstream.Call = function (params) {
             'stream': evt.stream,
             'isLocal': false
         }));
-    };
+    }
 
     /**
      * Process a local ICE Candidate
@@ -553,7 +555,7 @@ brightstream.Call = function (params) {
      * @private
      * @param {RTCICECandidate}
      */
-    var onIceCandidate = function (oCan) {
+    function onIceCandidate(oCan) {
         if (!oCan.candidate || !oCan.candidate.candidate) {
             return;
         }
@@ -568,7 +570,7 @@ brightstream.Call = function (params) {
         } else {
             signalCandidate(oCan.candidate);
         }
-    };
+    }
 
     /**
      * Handle renegotiation
@@ -576,9 +578,9 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onNegotiationNeeded
      * @private
      */
-    var onNegotiationNeeded = function () {
+    function onNegotiationNeeded() {
         log.warn("Negotiation needed.");
-    };
+    }
 
     /**
      * Process any ICE candidates that we received either from the browser or the other side while
@@ -587,7 +589,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.processQueues
      * @private
      */
-    var processQueues = function () {
+    function processQueues() {
         /* We only need to queue (and thus process queues) if
          * we are the initiator. The person receiving the call
          * never has a valid PeerConnection at a time when we don't
@@ -598,10 +600,10 @@ brightstream.Call = function (params) {
         }
         candidateSendingQueue = [];
         for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            addRemoteCandidate(candidateReceivingQueue[i]);
+            that.addRemoteCandidate(candidateReceivingQueue[i]);
         }
         candidateReceivingQueue = [];
-    };
+    }
 
     /**
      * Save an SDP we've gotten from the browser which will be an offer and send it to the other
@@ -611,7 +613,7 @@ brightstream.Call = function (params) {
      * @param {RTCSessionDescription}
      * @private
      */
-    var saveOfferAndSend = function (oSession) {
+    function saveOfferAndSend(oSession) {
         oSession.type = 'offer';
         if (that.state < ST_OFFERED) {
             that.state = ST_OFFERED;
@@ -626,7 +628,7 @@ brightstream.Call = function (params) {
             log.error('setLocalDescription failed');
             log.error(p);
         });
-    };
+    }
 
     /**
      * Save our SDP we've gotten from the browser which will be an answer and send it to the
@@ -636,7 +638,7 @@ brightstream.Call = function (params) {
      * @param {RTCSessionDescription}
      * @private
      */
-    var saveAnswerAndSend = function (oSession) {
+    function saveAnswerAndSend(oSession) {
         oSession.type = 'answer';
         if (that.state < ST_ANSWERED) {
             that.state = ST_ANSWERED;
@@ -654,7 +656,7 @@ brightstream.Call = function (params) {
             log.error('setLocalDescription failed');
             log.error(p);
         });
-    };
+    }
 
     /**
      * Handle shutting the session down if the other side hangs up.
@@ -662,7 +664,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onRemoteHangup
      * @private
      */
-    var onRemoteHangup = function () {
+    function onRemoteHangup() {
         if (pc && pc.readyState !== 'active') {
             report.callStoppedReason = report.byeReasonReceived ||
                 'Remote side did not confirm media.';
@@ -670,8 +672,8 @@ brightstream.Call = function (params) {
             report.callStoppedReason = 'Remote side hung up.';
         }
         log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        hangup({signal: false});
-    };
+        that.hangup({signal: false});
+    }
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
@@ -682,7 +684,7 @@ brightstream.Call = function (params) {
      * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var hangup = that.publicize('hangup', function (params) {
+    that.hangup = function (params) {
         params = params || {};
         if (that.state === ST_ENDED) {
             log.trace("Call.hangup got called twice.");
@@ -742,7 +744,7 @@ brightstream.Call = function (params) {
 
         mediaStreams = [];
         pc = null;
-    });
+    };
 
     /*
      * Expose hangup as reject for approve/reject workflow.
@@ -751,7 +753,7 @@ brightstream.Call = function (params) {
      * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    var reject = that.publicize('reject', hangup);
+    that.reject = that.hangup;
 
     /**
      * Indicate whether a call is being setup or is in progress.
@@ -759,9 +761,9 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.isActive
      * @returns {boolean}
      */
-    var isActive = that.publicize('isActive', function () {
+    that.isActive = function () {
         return (pc && pc.iceConnectionState === 'connected' && that.state === ST_FLOWING);
-    });
+    };
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
@@ -770,7 +772,7 @@ brightstream.Call = function (params) {
      * @param {RTCSessionDescription} sdp - The remote SDP.
      * @todo TODO Make this listen to events and be private.
      */
-    var setOffer = that.publicize('setOffer', function (params) {
+    that.setOffer = function (params) {
         log.debug('got offer', params.sdp);
 
         if (!that.initiator) {
@@ -782,7 +784,7 @@ brightstream.Call = function (params) {
             log.warn('Got offer in precall state.');
             signalTerminate({connectionId: that.connectionId});
         }
-    });
+    };
 
     /**
      * Save the answer and tell the browser about it.
@@ -792,7 +794,7 @@ brightstream.Call = function (params) {
      * @param {string} connectionId - The connectionId of the endpoint who answered the call.
      * @todo TODO Make this listen to events and be private.
      */
-    var setAnswer = that.publicize('setAnswer', function (params) {
+    that.setAnswer = function (params) {
         if (defAnswer.promise.isFulfilled()) {
             log.debug("Ignoring duplicate answer.");
             return;
@@ -817,10 +819,10 @@ brightstream.Call = function (params) {
             }, function errorHandler(p) {
                 log.error('set remote desc of answer failed', params.sdp);
                 report.callStoppedReason = 'setRemoteDescription failed at answer.';
-                hangup();
+                that.hangup();
             }
         );
-    });
+    };
 
     /**
      * Save the answer and tell the browser about it.
@@ -829,11 +831,11 @@ brightstream.Call = function (params) {
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @todo TODO Make this listen to events and be private.
      */
-    var setConnected = that.publicize('setConnected', function (signal) {
+    that.setConnected = function (signal) {
         if (signal.connectionId !== clientObj.user.id) {
             that.hangup(false);
         }
-    });
+    };
 
     /**
      * Save the candidate. If we initiated the call, place the candidate into the queue so
@@ -843,7 +845,7 @@ brightstream.Call = function (params) {
      * @param {RTCIceCandidate} candidate The ICE candidate.
      * @todo TODO Make this listen to events and be private.
      */
-    var addRemoteCandidate = that.publicize('addRemoteCandidate', function (params) {
+    that.addRemoteCandidate = function (params) {
         if (!params || params.candidate === null) {
             return;
         }
@@ -864,7 +866,7 @@ brightstream.Call = function (params) {
         }
         log.debug('Got a remote candidate.', params.candidate);
         report.candidatesReceived.push(params.candidate);
-    });
+    };
 
     /**
      * Get the state of the Call
@@ -872,9 +874,9 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.getState
      * @returns {string}
      */
-    var getState = that.publicize('getState', function () {
+    that.getState = function () {
         return pc ? that.state : "before";
-    });
+    };
 
     /**
      * Indicate whether the logged-in User initated the Call.
@@ -882,9 +884,9 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.isInitiator
      * @returns {boolean}
      */
-    var isInitiator = that.publicize('isInitiator', function () {
+    that.isInitiator = function () {
         return that.initiator;
-    });
+    };
 
     /**
      * Return all MediaStreams
@@ -892,9 +894,9 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.getStreams
      * @returns {brightstream.MediaStream[]}
      */
-    var getStreams = that.publicize('getStreams', function () {
+    that.getStreams = function () {
         return mediaStreams;
-    });
+    };
 
     /**
      * Return all local MediaStreams
@@ -902,7 +904,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.getLocalStreams
      * @returns {brightstream.MediaStream[]}
      */
-    var getLocalStreams = that.publicize('getLocalStreams', function () {
+    that.getLocalStreams = function () {
         var streams = [];
 
         mediaStreams.forEach(function addLocal(stream) {
@@ -912,7 +914,7 @@ brightstream.Call = function (params) {
         });
 
         return streams;
-    });
+    };
 
     /**
      * Return all remote MediaStreams
@@ -920,7 +922,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.getRemoteStreams
      * @returns {brightstream.MediaStream[]}
      */
-    var getRemoteStreams = that.publicize('getRemoteStreams', function () {
+    that.getRemoteStreams = function () {
         var streams = [];
 
         mediaStreams.forEach(function addRemote(stream) {
@@ -930,14 +932,14 @@ brightstream.Call = function (params) {
         });
 
         return streams;
-    });
+    };
 
     /**
      * If video is muted, unmute. If not muted, mute. TODO: How should this behave?
      * @memberof! brightstream.Call
      * @method brightstream.Call.toggleVideo
      */
-    var toggleVideo = that.publicize('toggleVideo', function () {
+    that.toggleVideo = function () {
         if (that.isActive()) {
             if (!videoIsMuted) {
                 that.muteVideo();
@@ -945,14 +947,14 @@ brightstream.Call = function (params) {
                 that.unmuteVideo();
             }
         }
-    });
+    };
 
     /**
      * If audio is muted, unmute. If not muted, mute. TODO: How should this behave?
      * @memberof! brightstream.Call
      * @method brightstream.Call.toggleAudio
      */
-    var toggleAudio = that.publicize('toggleAudio', function () {
+    that.toggleAudio = function () {
         if (that.isActive()) {
             if (!audioIsMuted) {
                 that.muteAudio();
@@ -960,7 +962,7 @@ brightstream.Call = function (params) {
                 that.unmuteAudio();
             }
         }
-    });
+    };
 
     /**
      * Mute all local video streams.
@@ -968,7 +970,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.muteVideo
      * @fires brightstream.Call#video-muted
      */
-    var muteVideo = that.publicize('muteVideo', function () {
+    that.muteVideo = function () {
         if (videoIsMuted) {
             return;
         }
@@ -982,7 +984,7 @@ brightstream.Call = function (params) {
          */
         that.fire('video-muted');
         videoIsMuted = true;
-    });
+    };
 
     /**
      * Unmute all local video streams.
@@ -990,7 +992,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.unmuteVideo
      * @fires brightstream.Call#video-unmuted
      */
-    var unmuteVideo = that.publicize('unmuteVideo', function () {
+    that.unmuteVideo = function () {
         if (!videoIsMuted) {
             return;
         }
@@ -1004,7 +1006,7 @@ brightstream.Call = function (params) {
          */
         that.fire('video-unmuted');
         videoIsMuted = false;
-    });
+    };
 
     /**
      * Mute all local audio streams.
@@ -1012,7 +1014,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.muteAudio
      * @fires brightstream.Call#audio-muted
      */
-    var muteAudio = that.publicize('muteAudio', function () {
+    that.muteAudio = function () {
         if (audioIsMuted) {
             return;
         }
@@ -1026,7 +1028,7 @@ brightstream.Call = function (params) {
          */
         that.fire('audio-muted');
         audioIsMuted = true;
-    });
+    };
 
     /**
      * Unmute all local audio streams.
@@ -1034,7 +1036,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.unmuteAudio
      * @fires brightstream.Call#audio-unmuted
      */
-    var unmuteAudio = that.publicize('unmuteAudio', function () {
+    that.unmuteAudio = function () {
         if (!audioIsMuted) {
             return;
         }
@@ -1048,7 +1050,7 @@ brightstream.Call = function (params) {
          */
         that.fire('audio-unmuted');
         audioIsMuted = false;
-    });
+    };
 
     /**
      * Save the hangup reason and hang up.
@@ -1056,11 +1058,11 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.setBye
      * @todo TODO Make this listen to events and be private.
      */
-    var setBye = that.publicize('setBye', function (params) {
+    that.setBye = function (params) {
         params = params || {};
         report.callStoppedReason = params.reason || "Remote side hung up";
-        hangup({signal: false});
-    });
+        that.hangup({signal: false});
+    };
 
     return that;
 }; // End brightstream.Call
@@ -1091,9 +1093,9 @@ brightstream.MediaStream = function (params) {
      * @memberof! brightstream.MediaStream
      * @method brightstream.MediaStream.stop
      */
-    var stop = that.publicize('stop', function () {
+    that.stop = function () {
         stream.stop();
-    });
+    };
 
     /**
      * Mute the audio on this MediaStream
@@ -1101,13 +1103,13 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.muteAudio
      * @fires brightstream.MediaStream#audio-muted
      */
-    var muteAudio = that.publicize('muteAudio', function () {
+    that.muteAudio = function () {
         stream.audioTracks[0].enabled = false;
         /**
          * @event brightstream.MediaStream#audio-muted
          */
         that.fire('audio-muted');
-    });
+    };
 
     /**
      * Mute the video on this MediaStream
@@ -1115,13 +1117,13 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.muteVideo
      * @fires brightstream.MediaStream#video-muted
      */
-    var muteVideo = that.publicize('muteVideo', function () {
+    that.muteVideo = function () {
         stream.videoTracks[0].enabled = false;
         /**
          * @event brightstream.MediaStream#video-muted
          */
         that.fire('video-muted');
-    });
+    };
 
     /**
      * Unmute the audio on this MediaStream
@@ -1129,13 +1131,13 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.unmuteAudio
      * @fires brightstream.MediaStream#audio-unmuted
      */
-    var unmuteAudio = that.publicize('unmuteAudio', function () {
+    that.unmuteAudio = function () {
         stream.audioTracks[0].enabled = true;
         /**
          * @event brightstream.MediaStream#audio-unmuted
          */
         that.fire('audio-unmuted');
-    });
+    };
 
     /**
      * Unmute the video on this MediaStream
@@ -1143,13 +1145,13 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.unmuteVideo
      * @fires brightstream.MediaStream#video-unmuted
      */
-    var unmuteVideo = that.publicize('unmuteVideo', function () {
+    that.unmuteVideo = function () {
         stream.videoTracks[0].enabled = true;
         /**
          * @event brightstream.MediaStream#video-unmuted
          */
         that.fire('video-unmuted');
-    });
+    };
 
     /**
      * Indicate whether the MediaStream is the local User's stream.
@@ -1157,9 +1159,9 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.isLocal
      * @return {boolean}
      */
-    var isLocal = that.publicize('isLocal', function () {
+    that.isLocal = function () {
         return !!local;
-    });
+    };
 
     /**
      * Indicate whether the MediaStream is a Endpoint's stream. Do we need this if we
@@ -1168,9 +1170,9 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.isRemote
      * @return {boolean}
      */
-    var isRemote = that.publicize('isRemote', function () {
-        return !isLocal();
-    });
+    that.isRemote = function () {
+        return !that.isLocal();
+    };
 
     /**
      * Get the media stream's unique id.
@@ -1178,9 +1180,9 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.getID
      * @return {string}
      */
-    var getID = that.publicize('getID', function () {
+    that.getID = function () {
         return stream.id;
-    });
+    };
 
     /**
      * Get the stream
@@ -1188,9 +1190,9 @@ brightstream.MediaStream = function (params) {
      * @method brightstream.MediaStream.getStream
      * @return {MediaStream}
      */
-    var getStream = that.publicize('getStream', function () {
+    that.getStream = function () {
         return stream;
-    });
+    };
 
     return that;
 }; // End brightstream.MediaStream

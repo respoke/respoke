@@ -94,9 +94,9 @@ brightstream.MediaStats = function (params) {
      * @returns {boolean}
      * @private
      */
-    var startsWith = function (string, value) {
+    function startsWith(string, value) {
         return (string && string.slice && (string.slice(0, value.length) === value));
-    };
+    }
 
     /**
      * Parse the SDPs. Kick off continuous calling of getStats() every `interval` milliseconds.
@@ -104,7 +104,7 @@ brightstream.MediaStats = function (params) {
      * @method brightstream.Call.initStats
      * @private
      */
-    var initStats = function () {
+    function initStats() {
         var sdp = {};
         if (!pc || !pc.remoteDescription || !pc.remoteDescription.sdp ||
                 !pc.localDescription || !pc.localDescription.sdp) {
@@ -158,7 +158,7 @@ brightstream.MediaStats = function (params) {
         } else {
             log.warn("Not starting stats, no onStats callback provided.");
         }
-    };
+    }
 
     /**
      * Get one snapshot of stats from the call's PeerConnection.
@@ -168,7 +168,7 @@ brightstream.MediaStats = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      * @returns {Promise<object>}
      */
-    var getStats = that.publicize('getStats', function (params) {
+    that.getStats = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var args = [];
@@ -191,16 +191,16 @@ brightstream.MediaStats = function (params) {
         });
         pc.getStats.apply(pc, args);
         return deferred.promise;
-    });
+    };
 
     /**
      * Stop fetching and processing of call stats.
      * @memberof! brightstream.Call
      * @method brightstream.Call.stopStats
      */
-    var stopStats = that.publicize('stopStats', function () {
+    that.stopStats = function () {
         clearInterval(timer);
-    });
+    };
 
     /**
      * Receive raw stats and parse them.
@@ -209,7 +209,7 @@ brightstream.MediaStats = function (params) {
      * @param {object} rawStats
      * @private
      */
-    var buildStats = function buildStats(rawStats) {
+    function buildStats(rawStats) {
         // extract and repackage 'interesting' stats using the rules above
         var stats = rawStats; // might need to re-instate some sort of wrapper here
         var results = stats.result();
@@ -249,7 +249,7 @@ brightstream.MediaStats = function (params) {
         });
         oldStats = allStats;
         return allStats;
-    };
+    }
 
     initStats();
 

@@ -18,7 +18,7 @@
         streams: {},
         instances: {}
     };
-    log.setLevel('debug');
+    log.setLevel('trace');
 
     if (!window.skipBugsnag) {
         // Use bugsnag.
@@ -119,26 +119,8 @@ Object.defineProperty(Object.prototype, 'isNumber', {
 });
 
 /**
- * Simple function to add a method to the instance.  Meant to be used in the following form:
- * var myFunction = that.publicize('myFunction', function);
- * In this way, we have a private reference to the function so the developer cannot override
- * some functions.
- * @param {string} name The function's name
- * @param {function} func The function
- * @returns {function} The unmodified function.
- */
-Object.defineProperty(Object.prototype, 'publicize', {
-    value: function (name, func) {
-        "use strict";
-        this[name] = func;
-        return func;
-    },
-    enumerable: false,
-    configurable: false
-});
-
-/**
- * Empty base class.
+ * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
+ * params that were passed in onto the base object. Add the class name.
  * @class brightstream.Class
  * @classdesc Empty base class.
  * @constructor
@@ -146,14 +128,17 @@ Object.defineProperty(Object.prototype, 'publicize', {
  */
 brightstream.Class = function (params) {
     "use strict";
-    var that = params.that || {};
-    that.className = 'brightstream.Class';
     params = params || {};
+    var that = params.that || {};
     var client = params.client;
+
+    that.className = 'brightstream.Class';
     delete params.that;
     delete that.client;
+
     Object.keys(params).forEach(function copyParam(name) {
         that[name] = params[name];
     });
+
     return that;
 }; // End brightstream.Class
