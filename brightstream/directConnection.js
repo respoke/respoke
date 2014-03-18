@@ -47,51 +47,33 @@ brightstream.DirectConnection = function (params) {
         that.initiator = false;
     }
 
-    var pc = null;
-    var dataChannel = null;
     var defOffer = Q.defer();
     var defAnswer = Q.defer();
     var defApproved = Q.defer();
-    var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
+    var dataChannel = null;
+    var onOpen = null;
+    var onClose = null;
+    var onMessage = null;
+    var forceTurn = null;
+    var disableTurn = null;
+    var callSettings = null;
     var candidateSendingQueue = [];
     var candidateReceivingQueue = [];
     var clientObj = brightstream.getClient(client);
-    var signalOffer = params.signalOffer;
-    var signalConnected = params.signalConnected;
-    var signalAnswer = params.signalAnswer;
-    var signalTerminate = params.signalTerminate;
-    var signalReport = params.signalReport;
-    function signalCandidate(oCan) {
-        params.signalCandidate({
-            candidate: oCan,
-            connectionId: that.connectionId
-        });
-        report.candidatesSent.push(oCan);
-    }
     var connectionSettings = params.connectionSettings;
 
-    [ // clean up
-        'signalOffer', 'signalConnected', 'signalAnswer', 'signalTerminate',
-        'signalReport', 'signalCandidate', ''
-    ].forEach(function (name) { delete that[name]; });
-    var options = {
+    var mediaOptions = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
             { RtpDataChannels: false }
         ]
     };
 
-    var report = {
-        connectionStarted: 0,
-        connectionStopped: 0,
-        lastSDPString: '',
-        sdpsSent: [],
-        sdpsReceived: [],
-        candidatesSent: [],
-        candidatesReceived: [],
-        stats: [],
-        userAgent: navigator.userAgent,
-        os: navigator.platform
+    var offerOptions = {
+        mandatory: {
+            OfferToReceiveAudio: true,
+            OfferToReceiveVideo: true
+        }
     };
 
     var ST_STARTED = 0;
@@ -103,6 +85,27 @@ brightstream.DirectConnection = function (params) {
     var ST_ENDED = 6;
     var ST_MEDIA_ERROR = 7;
 
+    var pc = brightstream.PeerConnection({
+        client: client,
+        connectionId: that.connectionId,
+        initiator: that.initiator,
+        forceTurn: forceTurn,
+        callSettings: callSettings,
+        pcOptions: {
+            optional: [
+                { DtlsSrtpKeyAgreement: true },
+                { RtpDataChannels: false }
+            ]
+        },
+        offerOptions: offerOptions,
+        signalOffer: params.signalOffer,
+        signalConnected: params.signalConnected,
+        signalAnswer: params.signalAnswer,
+        signalTerminate: params.signalTerminate,
+        signalReport: params.signalReport,
+        signalCandidate: params.signalCandidate
+    });
+
     /**
      * Initiate some state. If we're not the initiator, we need to listen for approval AND the remote SDP to come in
      * before we can act on the peerconnection. Save callbacks off the params object passed into the DirectConnection
@@ -111,7 +114,11 @@ brightstream.DirectConnection = function (params) {
     if (that.initiator !== true) {
         Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
             if (approved === true && oOffer && oOffer.sdp) {
-                processOffer(oOffer);
+                pc.processOffer(oOffer.sdp).done(function () {
+                    that.state = ST_OFFERED;
+                }, function () {
+                    that.hangup({signal: !that.initiator});
+                });
             }
         }, function (err) {
             log.warn("Call rejected.");
@@ -121,29 +128,50 @@ brightstream.DirectConnection = function (params) {
     /**
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.registerListeners
+     * @method brightstream.DirectConnection.saveParameters
      * @param {function} [onOpen]
      * @param {function} [onClose]
      * @param {function} [onMessage]
+     * @param {object} [callSettings]
+     * @param {object} [constraints]
+     * @param {array} [servers]
+     * @param {boolean} [forceTurn]
      * @private
      */
-    function registerListeners(params) {
-        if (typeof params.onOpen === 'function') {
-            that.listen('open', params.onOpen);
-        }
-
-        if (typeof params.onClose === 'function') {
-            that.listen('close', params.onClose);
-        }
-
-        if (typeof params.onMessage === 'function') {
-            that.listen('message', params.onMessage);
-        }
+    function saveParameters(params) {
+        that.listen('open', params.onOpen);
+        that.listen('close', params.onClose);
+        that.listen('message', params.onMessage);
+        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
+        callSettings = params.callSettings || callSettings || {};
+        callSettings.servers = params.servers || callSettings.servers;
+        callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
+        pc.callSettings = callSettings;
+        pc.forceTurn = forceTurn;
+        pc.listen('stats', function fireStats(evt) {
+            /**
+             * @event brightstream.Call#stats
+             * @type {brightstream.Event}
+             * @property {object} stats - an object with stats in it.
+             */
+            that.fire('stats', {stats: evt.stats});
+        }, true);
     }
-    registerListeners(params);
+    saveParameters(params);
+
+    delete params.signalOffer;
+    delete params.signalConnected;
+    delete params.signalAnswer;
+    delete params.signalTerminate;
+    delete params.signalReport;
+    delete params.signalCandidate;
+    delete params.onOpen;
+    delete params.onClose;
+    delete params.onMessage;
+    delete params.callSettings;
 
     /**
-     * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiator,
+     * Start the process of obtaining media. saveParameters will only be meaningful for the non-initiator,
      * since the library calls this method for the initiator. Developers will use this method to pass in
      * callbacks for the non-initiator.
      * @memberof! brightstream.DirectConnection
@@ -158,9 +186,7 @@ brightstream.DirectConnection = function (params) {
         that.state = ST_STARTED;
         params = params || {};
         log.trace('answer');
-        registerListeners(params);
-
-        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
+        saveParameters(params);
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
@@ -189,48 +215,12 @@ brightstream.DirectConnection = function (params) {
         defApproved.resolve(true);
 
         if (that.initiator === true) {
-            log.info('creating offer');
-            pc.createOffer(saveOfferAndSend, function errorHandler(p) {
-                log.error('createOffer failed');
-            }, {
-                mandatory: {
-                    OfferToReceiveAudio: true,
-                    OfferToReceiveVideo: true
-                }
-            });
+            pc.initOffer();
+            return;
+        } else {
+            defApproved.resolve(true);
         }
     };
-
-    /**
-     * Process a remote offer if we are not the initiator.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.processOffer
-     * @private
-     * @param {RTCSessionDescriptor}
-     */
-    function processOffer(oOffer) {
-        log.trace('processOffer');
-        log.debug('processOffer', oOffer);
-
-        try {
-            pc.setRemoteDescription(new RTCSessionDescription(oOffer),
-                function successHandler() {
-                    log.debug('set remote desc of offer succeeded');
-                    pc.createAnswer(saveAnswerAndSend, function errorHandler(err) {
-                        log.error("Error creating SDP answer.", err);
-                        report.connectionStoppedReason = 'Error creating SDP answer.';
-                    });
-                }, function errorHandler(err) {
-                    log.error('set remote desc of offer failed', err);
-                    report.connectionStoppedReason = 'setLocalDescr failed at offer.';
-                    that.close();
-                }
-            );
-            that.state = ST_OFFERED;
-        } catch (err) {
-            log.error("error processing offer: ", err);
-        }
-    }
 
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
@@ -245,44 +235,12 @@ brightstream.DirectConnection = function (params) {
      * @param {function} [onError] - Error handler for this invocation of this method only.
      */
     function getStats(params) {
-        var deferred = brightstream.makeDeferred(null, function (err) {
-            log.warn("Couldn't start stats:", err.message);
-        });
-
-        if (!pc) {
-            deferred.reject(new Error("Can't get stats, pc is null."));
-            return deferred.promise;
-        }
-
-        if (brightstream.MediaStats) {
+        if (pc && pc.getStats) {
             that.listen('stats', params.onStats);
-            Q.all([defOffer.promise, defAnswer.promise]).done(function () {
-                var stats = brightstream.MediaStats({
-                    peerConnection: pc,
-                    interval: params.interval,
-                    onStats: function (stats) {
-                        /**
-                         * @event brightstream.DirectConnection#stats
-                         * @type {brightstream.Event}
-                         * @property {object} stats - an object with stats in it.
-                         */
-                        that.fire('stats', {
-                            stats: stats
-                        });
-                        report.stats.push(stats);
-                    }
-                });
-                that.listen('close', function (evt) {
-                    stats.stopStats();
-                }, true);
-                deferred.resolve(stats);
-            }, function (err) {
-                log.warn("DirectConnection rejected.");
-            });
-        } else {
-            deferred.reject(new Error("Statistics module is not loaded."));
+            delete params.onStats;
+            return pc.getStats(params);
         }
-        return deferred.promise;
+        return null;
     }
 
     if (brightstream.MediaStats) {
@@ -376,46 +334,15 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.startPeerConnection
      * @todo Find out when we can stop deleting TURN servers
      * @private
-     * @param {object} connectionSettings
+     * @param {object} params
      */
-    function startPeerConnection(finalConnectionSettings) {
-        var now = new Date();
-        var toDelete = [];
-        var url = '';
-
-        finalConnectionSettings = finalConnectionSettings || {};
-        if (finalConnectionSettings.servers) {
-            connectionSettings.servers = finalConnectionSettings.servers;
-        }
-
-        report.connectionStarted = now.getTime();
+    function startPeerConnection(params) {
+        params = params || {};
         log.trace('startPeerConnection');
 
-        try {
-            pc = new RTCPeerConnection(connectionSettings.servers, options);
-        } catch (e) {
-            /* TURN is not supported, delete them from the array.
-             * TODO: Find out when we can remove this workaround
-             */
-            log.debug("Removing TURN servers.");
-            for (var i in connectionSettings.servers.iceServers) {
-                if (connectionSettings.servers.iceServers.hasOwnProperty(i)) {
-                    url = connectionSettings.servers.iceServers[i].url;
-                    if (url.toLowerCase().indexOf('turn') > -1) {
-                        toDelete.push(i);
-                    }
-                }
-            }
-            toDelete.sort(function sorter(a, b) { return b - a; });
-            toDelete.forEach(function deleteByIndex(value, index) {
-                connectionSettings.servers.iceServers.splice(index);
-            });
-            pc = new RTCPeerConnection(connectionSettings.servers, options);
-        }
+        pc.init(callSettings);
 
-        pc.onicecandidate = onIceCandidate;
-        pc.onnegotiationneeded = onNegotiationNeeded;
-        pc.ondatachannel = function (evt) {
+        pc.listen('datachannel', function ondatachannel(evt) {
             if (evt && evt.channel) {
                 dataChannel = evt.channel;
                 dataChannel.onError = onDataChannelError;
@@ -423,7 +350,7 @@ brightstream.DirectConnection = function (params) {
                 dataChannel.onopen = onDataChannelOpen;
                 dataChannel.onclose = onDataChannelClose;
             }
-        };
+        });
     }
 
     /**
@@ -446,128 +373,6 @@ brightstream.DirectConnection = function (params) {
     }
 
     /**
-     * Process a local ICE Candidate
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.onIceCandidate
-     * @private
-     * @param {RTCICECandidate}
-     */
-    function onIceCandidate(oCan) {
-        if (!oCan.candidate || !oCan.candidate.candidate) {
-            return;
-        }
-
-        if (forceTurn === true && oCan.candidate.candidate.indexOf("typ relay") === -1) {
-            return;
-        }
-
-        if (that.initiator && that.state < ST_ANSWERED) {
-            candidateSendingQueue.push(oCan.candidate);
-        } else {
-            signalCandidate(oCan.candidate);
-        }
-    }
-
-    /**
-     * Handle renegotiation
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.onNegotiationNeeded
-     * @private
-     */
-    function onNegotiationNeeded() {
-        log.warn("Negotiation needed.");
-    }
-
-    /**
-     * Process any ICE candidates that we received either from the browser or the other side while
-     * we were trying to set up our RTCPeerConnection to handle them.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.processQueues
-     * @private
-     */
-    function processQueues() {
-        /* We only need to queue (and thus process queues) if
-         * we are the initiator. The person receiving the connection
-         * never has a valid PeerConnection at a time when we don't
-         * have one. */
-        var can = null;
-        for (var i = 0; i < candidateSendingQueue.length; i += 1) {
-            signalCandidate(candidateSendingQueue[i]);
-        }
-        candidateSendingQueue = [];
-        for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            that.addRemoteCandidate(candidateReceivingQueue[i]);
-        }
-        candidateReceivingQueue = [];
-    }
-
-    /**
-     * Save an SDP we've gotten from the browser which will be an offer and send it to the other
-     * side.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.saveOfferAndSend
-     * @param {RTCSessionDescription}
-     * @private
-     */
-    function saveOfferAndSend(oSession) {
-        oSession.type = 'offer';
-        that.state = ST_OFFERED;
-        log.debug('setting and sending offer', oSession);
-        report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function successHandler(p) {
-            oSession.type = 'offer';
-            signalOffer({sdp: oSession});
-            defOffer.resolve(oSession);
-        }, function errorHandler(p) {
-            log.error('setLocalDescription failed');
-            log.error(p);
-        });
-    }
-
-    /**
-     * Save our SDP we've gotten from the browser which will be an answer and send it to the
-     * other side.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.saveAnswerAndSend
-     * @param {RTCSessionDescription}
-     * @private
-     */
-    function saveAnswerAndSend(oSession) {
-        oSession.type = 'answer';
-        that.state = ST_ANSWERED;
-        log.debug('setting and sending answer', oSession);
-        report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function successHandler(p) {
-            oSession.type = 'answer';
-            signalAnswer({
-                sdp: oSession,
-                connectionId: that.connectionId
-            });
-            defAnswer.resolve(oSession);
-        }, function errorHandler(p) {
-            log.error('setLocalDescription failed');
-            log.error(p);
-        });
-    }
-
-    /**
-     * Handle shutting the session down if the other side hangs up.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.onRemoteHangup
-     * @private
-     */
-    function onRemoteHangup() {
-        if (pc && pc.readyState !== 'active') {
-            report.connectionStoppedReason = report.byeReasonReceived ||
-                'Remote side did not confirm media.';
-        } else {
-            report.connectionStoppedReason = 'Remote side hung up.';
-        }
-        log.info('Non-initiator busy or connection rejected:' + report.connectionStoppedReason);
-        that.close({signal: false});
-    }
-
-    /**
      * Tear down the connection.  Send a bye signal to the remote party if
      * signal is not false and we have not received a bye signal from the remote party.
      * @memberof! brightstream.DirectConnection
@@ -578,38 +383,24 @@ brightstream.DirectConnection = function (params) {
      */
     that.close = function (params) {
         params = params || {};
+        var toHangup = false;
+
         if (that.state === ST_ENDED) {
             log.trace("DirectConnection.close got called twice.");
             return;
         }
         that.state = ST_ENDED;
 
-        log.trace("at close, connection state is " + that.state);
-        if (that.initiator === true) {
-            if (that.state < ST_OFFERED) {
-                // Never send bye if we are the initiator but we haven't sent any other signal yet.
-                params.signal = false;
-            }
-        } else {
-            if (defApproved.promise.isPending()) {
-                defApproved.reject(new Error("Call hung up before approval."));
-            }
+        if (!that.initiator && defApproved.promise.isPending()) {
+            defApproved.reject(new Error("Connection ended before approval."));
         }
 
         clientObj.updateTurnCredentials();
         log.debug('closing direct connection');
 
-        params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
-        if (params.signal) {
-            log.info('sending bye');
-            signalTerminate({connectionId: that.connectionId});
+        if (pc) {
+            toHangup = pc.close(params);
         }
-
-        report.connectionStopped = new Date().getTime();
-        signalReport({
-            report: report,
-            connectionId: that.connectionId
-        });
 
         /**
          * @event brightstream.DirectConnection#close
@@ -617,7 +408,7 @@ brightstream.DirectConnection = function (params) {
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
          */
         that.fire('close', {
-            sentSignal: params.signal
+            sentSignal: toHangup
         });
         that.ignore();
 
@@ -625,10 +416,6 @@ brightstream.DirectConnection = function (params) {
             dataChannel.close();
         }
         dataChannel =  null;
-
-        if (pc) {
-            pc.close();
-        }
         pc = null;
     };
 
@@ -645,7 +432,7 @@ brightstream.DirectConnection = function (params) {
      */
     that.sendMessage = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        if (dataChannel.readyState === 'open') {
+        if (dataChannel && dataChannel.readyState === 'open') {
             dataChannel.send(JSON.stringify(params.object || {
                 message: params.message
             }));
@@ -672,15 +459,7 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.isActive
      * @returns {boolean}
      */
-    that.isActive = function () {
-        log.trace('isActive');
-
-        if (!pc || that.state < ST_ENDED) {
-            return false;
-        }
-
-        return dataChannel.readyState === 'open';
-    };
+    that.isActive = pc.isActive;
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
@@ -690,17 +469,7 @@ brightstream.DirectConnection = function (params) {
      * @todo TODO Make this listen to events and be private.
      */
     that.setOffer = function (params) {
-        log.debug('got offer', params.sdp);
-
-        if (!that.initiator) {
-            report.sdpsReceived.push(params.sdp);
-            report.lastSDPString = params.sdp.sdp;
-            defOffer.resolve(params.sdp);
-        } else {
-            defOffer.reject(new Error("Received offer in a bad state."));
-            log.warn('Got offer in pre-connection state.');
-            signalTerminate({connectionId: that.connectionId});
-        }
+        defOffer.resolve(params);
     };
 
     /**
@@ -716,27 +485,10 @@ brightstream.DirectConnection = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-
-        that.state = ST_ANSWERED;
-        log.debug('got answer', params.sdp);
-
-        report.sdpsReceived.push(params.sdp);
-        report.lastSDPString = params.sdp.sdp;
-        that.connectionId = params.connectionId;
-        delete params.connectionId;
-        signalConnected({connectionId: that.connectionId});
-
-        pc.setRemoteDescription(
-            new RTCSessionDescription(params.sdp),
-            function successHandler() {
-                processQueues();
-                defAnswer.resolve(params.sdp);
-            }, function errorHandler(p) {
-                log.error('set remote desc of answer failed', params.sdp);
-                report.connectionStoppedReason = 'setRemoteDescription failed at answer.';
-                that.close();
-            }
-        );
+        if (that.state < ST_ANSWERED) {
+            that.state = ST_ANSWERED;
+        }
+        pc.setAnswer(params);
     };
 
     /**
@@ -747,9 +499,9 @@ brightstream.DirectConnection = function (params) {
      * @todo TODO Make this listen to events and be private.
      */
     that.setConnected = function (signal) {
-        if (signal.connectionId !== clientObj.user.id) {
-            that.close(false);
-        }
+        pc.setConnected(signal, function endCall() {
+            that.hangup(false);
+        });
     };
 
     /**
@@ -760,28 +512,7 @@ brightstream.DirectConnection = function (params) {
      * @param {RTCIceCandidate} candidate The ICE candidate.
      * @todo TODO Make this listen to events and be private.
      */
-    that.addRemoteCandidate = function (params) {
-        if (!params || params.candidate === null) {
-            return;
-        }
-        if (!params.candidate.hasOwnProperty('sdpMLineIndex') || !params.candidate) {
-            log.warn("addRemoteCandidate got wrong format!", params);
-            return;
-        }
-        if (that.initiator && that.state < ST_ANSWERED) {
-            candidateReceivingQueue.push(params);
-            log.debug('Queueing a candidate.');
-            return;
-        }
-        try {
-            pc.addIceCandidate(new RTCIceCandidate(params.candidate));
-        } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
-            return;
-        }
-        log.debug('Got a remote candidate.', params.candidate);
-        report.candidatesReceived.push(params.candidate);
-    };
+    that.addRemoteCandidate = pc.addRemoteCandidate;
 
     /**
      * Get the state of the connection.
@@ -790,7 +521,7 @@ brightstream.DirectConnection = function (params) {
      * @returns {string}
      */
     that.getState = function () {
-        return pc ? that.state : "before";
+        return pc.getState();
     };
 
     /**
@@ -811,7 +542,7 @@ brightstream.DirectConnection = function (params) {
      */
     that.setBye = function (params) {
         params = params || {};
-        report.connectionStoppedReason = params.reason || "Remote side hung up";
+        pc.report.connectionStoppedReason = params.reason || "Remote side hung up";
         that.close({signal: false});
     };
 
