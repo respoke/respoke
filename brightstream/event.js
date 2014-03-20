@@ -7,12 +7,13 @@
  */
 
 /**
- * Create a generic EventEmitter class for objects with events to extend.
+ * Create a generic EventEmitter class for objects with events to extend. Most classes in this library
+ * extend this class with the exception of classes which are simple POJOs like {brightstream.TextMessage},
+ * {brightstream.SignalingMessage}, and {brightstream.Event}.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.EventEmitter
  * @augments brightstream.Class
  * @constructor
- * @classdesc EventEmitter class.
  * @param {object} params
  * @param {string} params.client
  * @returns {brightstream.EventEmitter}
@@ -178,7 +179,6 @@ brightstream.EventEmitter = function (params) {
  * @property {string} name
  * @property {brightstream.Class} target
  * @constructor
- * @classdesc Event object.
  * @returns {brightstream.Event}
  */
 brightstream.Event = function (that) {

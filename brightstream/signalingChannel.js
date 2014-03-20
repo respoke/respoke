@@ -7,7 +7,7 @@
  */
 
 /**
- * Create a new SignalingChannel.  The purpose of this class is to make a method call for each API call
+ * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
  * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise which
  * can be thenned directly, but to abstract that from developers who might prefer not to use Promises, they
@@ -17,7 +17,6 @@
  * @class brightstream.SignalingChannel
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc REST API Signaling class.
  * @param {object} params
  * @param {string} params.client - client id
  * @returns {brightstream.SignalingChannel}
@@ -1583,11 +1582,10 @@ brightstream.SignalingChannel = function (params) {
 }; // End brightstream.SignalingChannel
 
 /**
- * Create a new TextMessage.
+ * A text message and the information needed to route it.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.TextMessage
  * @constructor
- * @classdesc A message.
  * @param {object} params
  * @param {string} [params.endpointId] - If sending, endpoint ID of the thing we're sending a message to.
  * @param {string} [params.connectionId] - If sending, connection ID of the thing we're sending a message to.
@@ -1635,11 +1633,10 @@ brightstream.TextMessage = function (params) {
 }; // End brightstream.TextMessage
 
 /**
- * Create a new SignalingMessage.
+ * A signaling message and the informaiton needed to route it.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.SignalingMessage
  * @constructor
- * @classdesc A message.
  * @param {object} params
  * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
  * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
@@ -1683,12 +1680,10 @@ brightstream.SignalingMessage = function (params) {
 }; // End brightstream.SignalingMessage
 
 /**
- * Create a new Group.
+ * A group, representing a collection of endpoints and the method by which to communicate with them.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Group
  * @constructor
- * @classdesc A group, representing a collection of users and the method by which to communicate
- * with them.
  * @param {object} params
  * @param {string} params.client
  * @param {function} params.onJoin

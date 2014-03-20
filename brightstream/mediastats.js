@@ -7,13 +7,13 @@
  */
 
 /**
- * Create a new set of stats.
+ * A handler for WebRTC statistics. This class takes an `onStats` callback which it calls every `interval` seconds
+ * with the latest live statistics.
  * @author Tim Panton <tpanton@digium.com>
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.MediaStats
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC Call stats
  * @param {RTCPeerConnection} peerConnection
  */
 /*global brightstream: false */

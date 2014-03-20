@@ -7,14 +7,13 @@
  */
 
 /**
- * Create a new PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
+ * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
  * or the not-yet-implemented ScreenShare.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.PeerConnection
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC PeerConnection path and codec negotation and call state.
  * @param {object} params
  * @param {string} params.client - client id
  * @param {boolean} params.initiator - whether or not we initiated the call

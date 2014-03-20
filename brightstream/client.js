@@ -7,16 +7,15 @@
  */
 
 /**
- * Create a new WebRTC Client object. Configure the client to connect to the infrastructure. Set up some listeners
- * on common events. Set up the signaling channel. Set up the default WebRTC constraints.
+ * This is a top-level interface to the API. It handles authenticating the app to the
+ * API server, receiving server-side app-specific information including callbacks and listeners, and interacting with
+ * information the library keeps
+ * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
+ * connections as well as automatically reconnecting to the service when network activity is lost.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Client
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc This is a top-level interface to the API. It handles authenticating the app to the
- * API server, receiving server-side app-specific information, and interacting with information the library keeps
- * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
- * connections as well as automatically reconnecting to the service when network activity is lost.
  * @param {object} params
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]

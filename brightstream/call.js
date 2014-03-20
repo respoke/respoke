@@ -7,12 +7,11 @@
  */
 
 /**
- * Create a new Call.
+ * WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Call
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @param {object} params
  * @param {string} params.client - client id
  * @param {boolean} params.initiator - whether or not we initiated the call

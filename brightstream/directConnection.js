@@ -7,16 +7,16 @@
  */
 
 /**
- * Create a new direct connection via RTCDataChannel.
+ * A direct connection via RTCDataChannel, including state and path negotation.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.DirectConnection
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC DataChannel including path negotation and connection state.
  * @param {string} params
  * @param {string} params.client - client id
  * @param {boolean} params.initiator - whether or not we initiated the connection
- * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
+ * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
+ * candidates.
  * @param {brightstream.Endpoint} params.remoteEndpoint
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.

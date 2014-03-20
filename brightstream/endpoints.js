@@ -8,12 +8,11 @@
 
 /*global brightstream: false */
 /**
- * Create a new Presentable.
+ * Superclass used to contain presence.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc Presentable class
  * @param {object} params
  * @param {string} params.client
  * @param {string} params.id
@@ -120,11 +119,10 @@ brightstream.Presentable = function (params) {
 }; // End brightstream.Presentable
 
 /**
- * Create a new Endpoint.
+ * Represents remote Endpoints.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments brightstream.Presentable
- * @classdesc Endpoint class
  * @param {object} params
  * @param {string} params.client
  * @param {string} params.id
@@ -327,7 +325,7 @@ brightstream.Endpoint = function (params) {
     };
 
     /**
-     * Create a new DirectConnection. If initiator is set to true, the Call will start the call.
+     * Create a new DirectConnection.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.getDirectConnection
      * @param {object} params
@@ -336,8 +334,8 @@ brightstream.Endpoint = function (params) {
      * @param {function} [params.onMessage]
      * @param {RTCServers} [params.servers]
      * @param {string} [params.connectionId]
-     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
-     * @returns {brightstream.Call}
+     * @param {boolean} [params.initiator] Whether the logged-in user initiated the datachannel.
+     * @returns {brightstream.DirectConnection}
      */
     that.getDirectConnection = function (params) {
         var clientObj = brightstream.getClient(client);
@@ -484,11 +482,10 @@ brightstream.Endpoint = function (params) {
 }; // End brightstream.Endpoint
 
 /**
- * Create a new User.
+ * Represents the currently logged-in Endpoint.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments brightstream.Presentable
- * @classdesc User class
  * @param {object} params
  * @param {string} params.client
  * @param {Date} params.timeLoggedIn
