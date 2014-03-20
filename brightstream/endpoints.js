@@ -14,21 +14,43 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc Presentable class
- * @param {string} client
- * @param {string} id
+ * @param {object} params
+ * @param {string} params.client
+ * @param {string} params.id
  * @returns {brightstream.Presentable}
  */
 brightstream.Presentable = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.Presentable
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.EventEmitter(params);
     delete that.client;
+    /**
+     * @memberof! brightstream.Presentable
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.Presentable';
-
+    /**
+     * @memberof! brightstream.Presentable
+     * @name sessions
+     * @private
+     * @type {Array}
+     */
     var sessions = [];
+    /**
+     * @memberof! brightstream.Presentable
+     * @name presence
+     * @private
+     * @type {string}
+     */
     var presence = 'unavailable';
-
     /**
      * Return the user ID
      * @memberof! brightstream.Presentable
@@ -53,8 +75,9 @@ brightstream.Presentable = function (params) {
      * Set the presence on the object and the session
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.setPresence
-     * @param {string} presence
-     * @param {string} connectionId
+     * @param {object} params
+     * @param {string} params.presence
+     * @param {string} params.connectionId
      * @fires brightstream.Presentable#presence
      */
     that.setPresence = function (params) {
@@ -102,30 +125,59 @@ brightstream.Presentable = function (params) {
  * @constructor
  * @augments brightstream.Presentable
  * @classdesc Endpoint class
- * @param {string} client
- * @param {string} id
+ * @param {object} params
+ * @param {string} params.client
+ * @param {string} params.id
  * @returns {brightstream.Endpoint}
  */
 brightstream.Endpoint = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.Endpoint
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.Presentable(params);
     delete that.client;
+    /**
+     * @memberof! brightstream.Endpoint
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.Endpoint';
+    /**
+     * @memberof! brightstream.Endpoint
+     * @name directConnection
+     * @type {brightstream.DirectConnection}
+     */
     that.directConnection = null;
+    /**
+     * @memberof! brightstream.Endpoint
+     * @name sessions
+     * @private
+     * @type {object}
+     */
     var sessions = {};
-
+    /**
+     * @memberof! brightstream.Endpoint
+     * @name signalingChannel
+     * @private
+     * @type {brightstream.SignalingChannel}
+     */
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
      * Send a message to the endpoint through the infrastructure.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendMessage
-     * @param {string} message
-     * @param {string} [connectionId]
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {object} params
+     * @param {string} params.message
+     * @param {string} [params.connectionId]
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
     that.sendMessage = function (params) {
@@ -144,10 +196,11 @@ brightstream.Endpoint = function (params) {
      * Send a signal to the endpoint.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.sendSignal
-     * @param {object|string} signal
-     * @param {string} [connectionId]
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {object} params
+     * @param {object|string} params.signal
+     * @param {string} [params.connectionId]
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
     that.sendSignal = function (params) {
@@ -179,10 +232,11 @@ brightstream.Endpoint = function (params) {
      * the Call will start the call.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.call
-     * @param {RTCServers} [servers]
-     * @param {RTCConstraints} [constraints]
-     * @param {string} [connectionId]
-     * @param {boolean} [initiator] Whether the logged-in user initiated the call.
+     * @param {object} params
+     * @param {RTCServers} [params.servers]
+     * @param {RTCConstraints} [params.constraints]
+     * @param {string} [params.connectionId]
+     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
      * @returns {brightstream.Call}
      */
     that.call = function (params) {
@@ -276,12 +330,13 @@ brightstream.Endpoint = function (params) {
      * Create a new DirectConnection. If initiator is set to true, the Call will start the call.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.getDirectConnection
-     * @param {function} [onOpen]
-     * @param {function} [onClose]
-     * @param {function} [onMessage]
-     * @param {RTCServers} [servers]
-     * @param {string} [connectionId]
-     * @param {boolean} [initiator] Whether the logged-in user initiated the call.
+     * @param {object} params
+     * @param {function} [params.onOpen]
+     * @param {function} [params.onClose]
+     * @param {function} [params.onMessage]
+     * @param {RTCServers} [params.servers]
+     * @param {string} [params.connectionId]
+     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
      * @returns {brightstream.Call}
      */
     that.getDirectConnection = function (params) {
@@ -393,7 +448,8 @@ brightstream.Endpoint = function (params) {
      * and set it as the endpoint's resolved presence.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.setPresence
-     * @param {array} sessions - Endpoint's sessions
+     * @param {object} params
+     * @param {array} params.sessions - Endpoint's sessions
      * @private
      * @returns {string}
      */
@@ -433,10 +489,11 @@ brightstream.Endpoint = function (params) {
  * @constructor
  * @augments brightstream.Presentable
  * @classdesc User class
- * @param {string} client
- * @param {Date} timeLoggedIn
- * @param {boolean} loggedIn
- * @param {string} token
+ * @param {object} params
+ * @param {string} params.client
+ * @param {Date} params.timeLoggedIn
+ * @param {boolean} params.loggedIn
+ * @param {string} params.token
  * @returns {brightstream.User}
  */
 brightstream.User = function (params) {
@@ -458,9 +515,10 @@ brightstream.User = function (params) {
      * Override Presentable.setPresence to send presence to the server before updating the object.
      * @memberof! brightstream.User
      * @method brightstream.User.setPresence
-     * @param {string} presence
-     * @param {function} onSuccess
-     * @param {function} onError
+     * @param {object} params
+     * @param {string} params.presence
+     * @param {function} [params.onSuccess]
+     * @param {function} [params.onError]
      * @return {Promise<undefined>}
      */
     that.setPresence = function (params) {
@@ -486,7 +544,7 @@ brightstream.User = function (params) {
      * @method brightstream.User.getCalls
      * @returns {Array<brightstream.Call>}
      */
-    that.getCalls = function (params) {
+    that.getCalls = function () {
         return calls;
     };
 
@@ -494,8 +552,9 @@ brightstream.User = function (params) {
      * Get the Call with the endpoint specified.
      * @memberof! brightstream.User
      * @method brightstream.User.getCall
-     * @param {string} id - Endpoint ID
-     * @param {boolean} create - whether or not to create a new call if the specified endpointId isn't found
+     * @param {object} params
+     * @param {string} params.id - Endpoint ID
+     * @param {boolean} params.create - whether or not to create a new call if the specified endpointId isn't found
      * @returns {brightstream.Call}
      */
     that.getCall = function (params) {
@@ -532,7 +591,8 @@ brightstream.User = function (params) {
      * Associate the call or direct connection with this user.
      * @memberof! brightstream.User
      * @method brightstream.User.addCall
-     * @param {brightstream.Call} call
+     * @param {object} params
+     * @param {brightstream.Call} params.call
      * @fires brightstream.User#call
      * @todo TODO rename this something else
      */
@@ -563,7 +623,8 @@ brightstream.User = function (params) {
      * Remove the call or direct connection.
      * @memberof! brightstream.User
      * @method brightstream.User.removeCall
-     * @param {string} [id] Call or DirectConnection id
+     * @param {object} params
+     * @param {string} [params.id] Call or DirectConnection id
      * @param {brightstream.Call} [call] Call or DirectConnection
      * @todo TODO rename this something else
      */
@@ -587,12 +648,12 @@ brightstream.User = function (params) {
         }
     };
 
-
     /**
      * Set presence to available.
      * @memberof! brightstream.User
      * @method brightstream.User.setOnline
-     * @param {string}
+     * @param {object} params
+     * @param {string} params.presence - The presence to set.
      */
     that.setOnline = function (params) {
         params = params || {};

@@ -23,37 +23,100 @@
  * @param {string} [params.authToken]
  * @param {RTCConstraints} [params.constraints]
  * @param {RTCICEServers} [params.servers]
- * @property {brightstream.User} user
- * @property {string} className
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
 brightstream.Client = function (params) {
     "use strict";
     params = params || {};
-    var client = brightstream.makeUniqueID().toString(); /** @private */
+    /**
+     * @memberof! brightstream.Client
+     * @name client
+     * @private
+     * @type {string}
+     */
+    var client = brightstream.makeUniqueID().toString();
     var that = brightstream.EventEmitter(params);
     brightstream.instances[client] = that;
+    /**
+     * @memberof! brightstream.Client
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.Client';
-
-    var host = window.location.hostname; /** @private */
-    var port = window.location.port; /** @private */
-    var connected = false; /** @private */
-    var app = { /** @private */
+    /**
+     * @memberof! brightstream.Client
+     * @name host
+     * @type {string}
+     * @private
+     */
+    var host = window.location.hostname;
+    /**
+     * @memberof! brightstream.Client
+     * @name port
+     * @type {number}
+     * @private
+     */
+    var port = window.location.port;
+    /**
+     * @memberof! brightstream.Client
+     * @name connected
+     * @type {boolean}
+     * @private
+     */
+    var connected = false;
+    /**
+     * @memberof! brightstream.Client
+     * @name app
+     * @type {object}
+     * @private
+     * @desc A container for baseURL, authToken, and appId so they won't be accessble on the console.
+     */
+    var app = {
         baseURL: params.baseURL,
         authToken: params.authToken,
         appId: params.appId
     };
     delete that.appId;
     delete that.baseURL;
+    /**
+     * @memberof! brightstream.Client
+     * @name user
+     * @type {brightstream.User}
+     */
     that.user = null;
-    var turnRefresher = null; /** @private */
-    var groups = []; /** @private */
-    var endpoints = []; /** @private */
+    /**
+     * @memberof! brightstream.Client
+     * @name turnRefresher
+     * @type {number}
+     * @private
+     * @desc A timer to facilitate refreshing the TURN credentials every 20 hours.
+     */
+    var turnRefresher = null;
+    /**
+     * @memberof! brightstream.Client
+     * @name groups
+     * @type {Array<brightstream.Group>}
+     * @private
+     */
+    var groups = [];
+    /**
+     * @memberof! brightstream.Client
+     * @name endpoints
+     * @type {Array<brightstream.Endpoint>}
+     * @private
+     */
+    var endpoints = [];
 
     log.debug("Client ID is ", client);
 
-    var callSettings = { /** @private */
+    /**
+     * @memberof! brightstream.Client
+     * @name callSettings
+     * @type {object}
+     * @private
+     */
+    var callSettings = {
         constraints: params.constraints || {
             video : true,
             audio : true,
@@ -65,7 +128,13 @@ brightstream.Client = function (params) {
         }
     };
 
-    var signalingChannel = brightstream.SignalingChannel({'client': client}); /** @private */
+    /**
+     * @memberof! brightstream.Client
+     * @name signalingChannel
+     * @type {brightstream.SignalingChannel}
+     * @private
+     */
+    var signalingChannel = brightstream.SignalingChannel({'client': client});
 
     /**
      * Connect to the Digium infrastructure and authenticate using the appkey.  Store a token to be used in API
@@ -154,8 +223,9 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
      * @returns {Promise<undefined>}
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @fires brightstream.Client#disconnect
      */
     that.disconnect = function (params) {
@@ -215,7 +285,7 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getCalls
      * @returns {Array<brightstream.Call>}
      */
-    that.getCalls = function (params) {
+    that.getCalls = function () {
         return that.user ? that.user.getCalls() : null;
     };
 
@@ -224,11 +294,12 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.sendMessage
      * @param {string} endpointId - The endpoint id of the recipient.
-     * @param {string} [connectionId] - The optional connection id of the receipient. If not set, message will be
+     * @param {object} params
+     * @param {string} [params.connectionId] - The optional connection id of the receipient. If not set, message will be
      * broadcast to all connections for this endpoint.
-     * @param {string} message - a string message.
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {string} params.message - a string message.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @returns {Promise<undefined>}
      */
     that.sendMessage = function (params) {
@@ -241,10 +312,11 @@ brightstream.Client = function (params) {
      * Place an audio and/or video call to an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.call
-     * @param {string} endpointId
-     * @param {string} [connectionId]
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {object} params
+     * @param {string} params.endpointId
+     * @param {string} [params.connectionId]
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {brightstream.Call}
      */
     that.call = function (params) {
@@ -307,8 +379,9 @@ brightstream.Client = function (params) {
      * Set the default media constraints and other media settings.
      * @memberof! brightstream.Client
      * @method brightstream.Client.setDefaultCallSettings
-     * @param {object} [constraints]
-     * @param {object} [servers]
+     * @param {object} params
+     * @param {object} [params.constraints]
+     * @param {object} [params.servers]
      */
     that.setDefaultCallSettings = function (params) {
         params = params || {};
@@ -332,12 +405,13 @@ brightstream.Client = function (params) {
      * Join a Group and begin keeping track of it. Attach some event listeners.
      * @memberof! brightstream.Client
      * @method brightstream.Client.join
-     * @param {string} id - The name of the group.
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
-     * @param {function} [onMessage] - Message handler for messages from this group only.
-     * @param {function} [onJoin] - Join event listener for endpoints who join this group only.
-     * @param {function} [onLeave] - Leave event listener for endpoints who leave this group only.
+     * @param {object} params
+     * @param {string} params.id - The name of the group.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {function} [params.onMessage] - Message handler for messages from this group only.
+     * @param {function} [params.onJoin] - Join event listener for endpoints who join this group only.
+     * @param {function} [params.onLeave] - Leave event listener for endpoints who leave this group only.
      * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
      * @fires brightstream.User#join
      */
@@ -444,7 +518,7 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getGroups
      * @returns {Array<brightstream.Group>}
      */
-    that.getGroups = function (params) {
+    that.getGroups = function () {
         return groups;
     };
 
@@ -452,7 +526,8 @@ brightstream.Client = function (params) {
      * Find a group by id and return it.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getGroup
-     * @param {string} id
+     * @param {object} params
+     * @param {string} params.id
      * @returns {brightstream.Group}
      */
     that.getGroup = function (params) {
@@ -543,7 +618,8 @@ brightstream.Client = function (params) {
      * if the Endpoint is not already known.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getEndpoint
-     * @param {string} id
+     * @param {object} params
+     * @param {string} params.id
      * @returns {brightstream.Endpoint}
      */
     that.getEndpoint = function (params) {

@@ -13,78 +13,266 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and call state.
- * @param {string} client - client id
- * @param {boolean} initiator - whether or not we initiated the call
- * @param {boolean} receiveOnly - whether or not we accept media
- * @param {boolean} sendOnly - whether or not we send media
- * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
- * @param {brightstream.Endpoint} remoteEndpoint
- * @param {string} connectionId - The connection ID of the remoteEndpoint.
- * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
+ * @param {object} params
+ * @param {string} params.client - client id
+ * @param {boolean} params.initiator - whether or not we initiated the call
+ * @param {boolean} params.receiveOnly - whether or not we accept media
+ * @param {boolean} params.sendOnly - whether or not we send media
+ * @param {boolean} params.forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
+ * candidates.
+ * @param {brightstream.Endpoint} params.remoteEndpoint
+ * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
+ * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action between
  * local media becoming available and calling approve().
- * @param {function} signalOffer - Signaling action from SignalingChannel.
- * @param {function} signalConnected - Signaling action from SignalingChannel.
- * @param {function} signalAnswer - Signaling action from SignalingChannel.
- * @param {function} signalTerminate - Signaling action from SignalingChannel.
- * @param {function} signalReport - Signaling action from SignalingChannel.
- * @param {function} signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [onLocalVideo] - Callback for the developer to receive the local video element.
- * @param {function} [onRemoteVideo] - Callback for the developer to receive the remote video element.
- * @param {function} [onHangup] - Callback for the developer to be notified about hangup.
- * @param {object} callSettings
- * @param {object} [localVideoElements]
- * @param {object} [remoteVideoElements]
+ * @param {function} params.signalOffer - Signaling action from SignalingChannel.
+ * @param {function} params.signalConnected - Signaling action from SignalingChannel.
+ * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalReport - Signaling action from SignalingChannel.
+ * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
+ * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
+ * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
+ * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {object} params.callSettings
+ * @param {object} [params.localVideoElements]
+ * @param {object} [params.remoteVideoElements]
  * @returns {brightstream.Call}
  */
 /*global brightstream: false */
 brightstream.Call = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.Call
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.EventEmitter(params);
     delete that.client;
+    /**
+     * @memberof! brightstream.Call
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.Call';
+    /**
+     * @memberof! brightstream.Call
+     * @name id
+     * @type {string}
+     */
     that.id = brightstream.makeUniqueID().toString();
 
     if (!that.initiator) {
+        /**
+         * @memberof! brightstream.Call
+         * @name initiator
+         * @type {boolean}
+         */
         that.initiator = false;
     }
 
+    /**
+     * @memberof! brightstream.Call
+     * @name defOffer
+     * @private
+     * @type {Promise}
+     */
     var defOffer = Q.defer();
+    /**
+     * @memberof! brightstream.Call
+     * @name defAnswer
+     * @private
+     * @type {Promise}
+     */
     var defAnswer = Q.defer();
+    /**
+     * @memberof! brightstream.Call
+     * @name defApproved
+     * @private
+     * @type {Promise}
+     */
     var defApproved = Q.defer();
+    /**
+     * @memberof! brightstream.Call
+     * @name previewLocalMedia
+     * @private
+     * @type {function}
+     */
     var previewLocalMedia = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name onLocalVideo
+     * @private
+     * @type {function}
+     */
     var onLocalVideo = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name onRemoteVideo
+     * @private
+     * @type {function}
+     */
     var onRemoteVideo = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name onHangup
+     * @private
+     * @type {function}
+     */
     var onHangup = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name sendOnly
+     * @private
+     * @type {boolean}
+     */
     var sendOnly = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name receiveOnly
+     * @private
+     * @type {boolean}
+     */
     var receiveOnly = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name forceTurn
+     * @private
+     * @type {boolean}
+     */
     var forceTurn = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name clientObj
+     * @private
+     * @type {brightstream.getClient}
+     */
     var clientObj = brightstream.getClient(client);
+    /**
+     * @memberof! brightstream.Call
+     * @name localVideoElements
+     * @private
+     * @type {Array<Video>}
+     */
     var localVideoElements = params.localVideoElements || [];
+    /**
+     * @memberof! brightstream.Call
+     * @name remoteVideoElements
+     * @private
+     * @type {Array<Video>}
+     */
     var remoteVideoElements = params.remoteVideoElements || [];
+    /**
+     * @memberof! brightstream.Call
+     * @name videoLocalElement
+     * @private
+     * @type {Video}
+     */
     var videoLocalElement = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name videoRemoteElement
+     * @private
+     * @type {Video}
+     */
     var videoRemoteElement = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name videoIsMuted
+     * @private
+     * @type {boolean}
+     */
     var videoIsMuted = false;
+    /**
+     * @memberof! brightstream.Call
+     * @name audioIsMuted
+     * @private
+     * @type {boolean}
+     */
     var audioIsMuted = false;
+    /**
+     * @memberof! brightstream.Call
+     * @name callSettings
+     * @private
+     * @type {object}
+     */
     var callSettings = params.callSettings;
-
+    /**
+     * @memberof! brightstream.Call
+     * @name mediaOptions
+     * @private
+     * @type {object}
+     */
     var mediaOptions = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
             { RtpDataChannels: false }
         ]
     };
-
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_STARTED
+     * @private
+     * @type {number}
+     */
     var ST_STARTED = 0;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_INREVIEW
+     * @private
+     * @type {number}
+     */
     var ST_INREVIEW = 1;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_APPROVED
+     * @private
+     * @type {number}
+     */
     var ST_APPROVED = 2;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_OFFERED
+     * @private
+     * @type {number}
+     */
     var ST_OFFERED = 3;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_ANSWERED
+     * @private
+     * @type {number}
+     */
     var ST_ANSWERED = 4;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_FLOWING
+     * @private
+     * @type {number}
+     */
     var ST_FLOWING = 5;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_ENDED
+     * @private
+     * @type {number}
+     */
     var ST_ENDED = 6;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_MEDIA_ERROR
+     * @private
+     * @type {number}
+     */
     var ST_MEDIA_ERROR = 7;
-
+    /**
+     * @memberof! brightstream.Call
+     * @name pc
+     * @private
+     * @type {brightstream.PeerConnection}
+     */
     var pc = brightstream.PeerConnection({
         client: client,
         connectionId: that.connectionId,
@@ -128,16 +316,17 @@ brightstream.Call = function (params) {
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.Call
      * @method brightstream.Call.saveParameters
-     * @param {function} [onLocalVideo]
-     * @param {function} [onRemoteVideo]
-     * @param {function} [onHangup]
-     * @param {function} [previewLocalMedia]
-     * @param {object} [callSettings]
-     * @param {object} [constraints]
-     * @param {array} [servers]
-     * @param {boolean} [forceTurn]
-     * @param {boolean} [receiveOnly]
-     * @param {boolean} [sendOnly]
+     * @param {object} params
+     * @param {function} [params.onLocalVideo]
+     * @param {function} [params.onRemoteVideo]
+     * @param {function} [params.onHangup]
+     * @param {function} [params.previewLocalMedia]
+     * @param {object} [params.callSettings]
+     * @param {object} [params.constraints]
+     * @param {array} [params.servers]
+     * @param {boolean} [params.forceTurn]
+     * @param {boolean} [params.receiveOnly]
+     * @param {boolean} [params.sendOnly]
      * @private
      */
     function saveParameters(params) {
@@ -327,11 +516,12 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.getStats
      * @returns {Promise<object>|null}
-     * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [onStats] - An optional callback to receive the stats. If no callback is provided,
+     * @param {object} params
+     * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {function} [params.onStats] - An optional callback to receive the stats. If no callback is provided,
      * the call's report will contain stats but the developer will not receive them on the client-side.
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      */
     function getStats(params) {
         if (pc && pc.getStats) {
@@ -349,6 +539,7 @@ brightstream.Call = function (params) {
      * Return local video element.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getLocalElement
+     * @returns {Video}
      */
     that.getLocalElement = function () {
         return videoLocalElement;
@@ -357,7 +548,8 @@ brightstream.Call = function (params) {
     /**
      * Return remote video element.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.getRemoteElement
+     * @method brightstream.Call.getRemoteE
+     * @returns {Video}
      */
     that.getRemoteElement = function () {
         return videoRemoteElement;
@@ -369,11 +561,8 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.requestMedia
      * @todo Find out when we can stop deleting TURN servers
      * @private
-     * @param {object} params
      */
-    function requestMedia(params) {
-        params = params || {};
-
+    function requestMedia() {
         log.trace('requestMedia');
 
         pc.init(callSettings);
@@ -470,7 +659,8 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.hangup
      * @fires brightstream.Call#hangup
-     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
+     * @param {object} params
+     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     that.hangup = function (params) {
@@ -487,7 +677,7 @@ brightstream.Call = function (params) {
             defApproved.reject(new Error("Call hung up before approval."));
         }
 
-        clientObj.updateTurnCredentials(); // TODO Move
+        clientObj.updateTurnCredentials();
         log.debug('hanging up');
 
         if (pc) {
@@ -547,8 +737,9 @@ brightstream.Call = function (params) {
      * Save the answer and tell the browser about it.
      * @memberof! brightstream.Call
      * @method brightstream.Call.setAnswer
-     * @param {RTCSessionDescription} sdp - The remote SDP.
-     * @param {string} connectionId - The connectionId of the endpoint who answered the call.
+     * @param {object} params
+     * @param {RTCSessionDescription} params.sdp - The remote SDP.
+     * @param {string} params.connectionId - The connectionId of the endpoint who answered the call.
      * @todo TODO Make this listen to events and be private.
      */
     that.setAnswer = function (params) {
@@ -593,16 +784,6 @@ brightstream.Call = function (params) {
      */
     that.getState = function () {
         return pc.getState();
-    };
-
-    /**
-     * Indicate whether the logged-in User initated the Call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.isInitiator
-     * @returns {boolean}
-     */
-    that.isInitiator = function () {
-        return that.initiator;
     };
 
     /**
@@ -728,6 +909,8 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.setBye
      * @todo TODO Make this listen to events and be private.
+     * @params {object} params
+     * @params {string} [params.reason] - An optional reason for a hangup.
      */
     that.setBye = function (params) {
         params = params || {};

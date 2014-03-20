@@ -13,18 +13,36 @@
  * @augments brightstream.Class
  * @constructor
  * @classdesc EventEmitter class.
- * @param {string} client
+ * @param {object} params
+ * @param {string} params.client
  * @returns {brightstream.EventEmitter}
  */
 /*global brightstream: false */
 brightstream.EventEmitter = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.EventEmitter
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.Class(params);
     delete that.client;
+    /**
+     * @memberof! brightstream.EventEmitter
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.EventEmitter';
 
+    /**
+     * @memberof! brightstream.EventEmitter
+     * @name eventList
+     * @private
+     * @type {object}
+     */
     var eventList = {};
 
     /**

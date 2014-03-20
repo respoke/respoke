@@ -15,59 +15,228 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc WebRTC PeerConnection path and codec negotation and call state.
- * @param {string} client - client id
- * @param {boolean} initiator - whether or not we initiated the call
- * @param {boolean} receiveOnly - whether or not we accept media
- * @param {boolean} sendOnly - whether or not we send media
- * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
- * @param {brightstream.Endpoint} remoteEndpoint
- * @param {string} connectionId - The connection ID of the remoteEndpoint.
- * @param {function} signalOffer - Signaling action from SignalingChannel.
- * @param {function} signalConnected - Signaling action from SignalingChannel.
- * @param {function} signalAnswer - Signaling action from SignalingChannel.
- * @param {function} signalTerminate - Signaling action from SignalingChannel.
- * @param {function} signalReport - Signaling action from SignalingChannel.
- * @param {function} signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [onHangup] - Callback for the developer to be notified about hangup.
- * @param {function} [onStats] - Callback for the developer to receive statistics about the call. This is only used
- * if call.getStats() is called and the stats module is loaded.
- * @param {object} callSettings
- * @param {object} pcOptions
- * @param {object} offerOptions
+ * @param {object} params
+ * @param {string} params.client - client id
+ * @param {boolean} params.initiator - whether or not we initiated the call
+ * @param {boolean} [params.receiveOnly] - whether or not we accept media
+ * @param {boolean} [params.sendOnly] - whether or not we send media
+ * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
+ * candidates.
+ * @param {brightstream.Endpoint} params.remoteEndpoint
+ * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
+ * @param {function} params.signalOffer - Signaling action from SignalingChannel.
+ * @param {function} params.signalConnected - Signaling action from SignalingChannel.
+ * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalReport - Signaling action from SignalingChannel.
+ * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
+ * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {function} [params.onStats] - Callback for the developer to receive statistics about the call. This is only
+ * used if call.getStats() is called and the stats module is loaded.
+ * @param {object} [params.callSettings]
+ * @param {object} [params.pcOptions]
+ * @param {object} [params.offerOptions]
  * @returns {brightstream.PeerConnection}
  */
 /*global brightstream: false */
 brightstream.PeerConnection = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.EventEmitter(params);
     delete that.client;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.PeerConnection';
 
     if (!that.initiator) {
+        /**
+         * @memberof! brightstream.PeerConnection
+         * @name initiator
+         * @type {boolean}
+         */
         that.initiator = false;
     }
 
-    var pc = null;
-    var defOffer = Q.defer();
-    var defAnswer = Q.defer();
-    var defApproved = Q.defer();
-    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
-    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
-    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
-    var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
-    var candidateSendingQueue = [];
-    var candidateReceivingQueue = [];
-    var clientObj = brightstream.getClient(client);
-    var callSettings = params.callSettings || {};
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name remoteEndpoint
+     * @type {brightstream.Endpoint}
+     */
 
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name state
+     * @type {number}
+     */
+    that.state = -1;
+
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @private
+     * @name pc
+     * @type RTCPeerConnection
+     * @desc The RTCPeerConnection as provided by the browser API. All internal state, networking functionality, and
+     * raw data transfer occurs within the PeerConnection.
+     */
+    var pc = null;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name defOffer
+     * @private
+     * @type {Promise}
+     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
+     * handling, or sending of some information.
+     */
+    var defOffer = Q.defer();
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name defAnswer
+     * @private
+     * @type {Promise}
+     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
+     * handling, or sending of some information.
+     */
+    var defAnswer = Q.defer();
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name defApproved
+     * @private
+     * @type {Promise}
+     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
+     * handling, or sending of some information.
+     */
+    var defApproved = Q.defer();
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name previewLocalMedia
+     * @private
+     * @type {function}
+     * @desc A callback provided by the developer that we'll call after receiving local media and before
+     * approve() is called.
+     */
+    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
+        params.previewLocalMedia : undefined;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name sendOnly
+     * @private
+     * @type {boolean}
+     * @desc A flag indicating we will send media but not receive it.
+     */
+    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name receiveOnly
+     * @private
+     * @type {boolean}
+     * @desc A flag indicating we will receive media but will not send it.
+     */
+    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name forceTurn
+     * @private
+     * @type {boolean}
+     * @desc A flag indicating we will not permit data to flow peer-to-peer.
+     */
+    var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name candidateSendingQueue
+     * @private
+     * @type {array}
+     * @desc An array to save candidates between offer and answer so that both parties can process them simultaneously.
+     */
+    var candidateSendingQueue = [];
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name candidateReceivingQueue
+     * @private
+     * @type {array}
+     * @desc An array to save candidates between offer and answer so that both parties can process them simultaneously.
+     */
+    var candidateReceivingQueue = [];
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name clientObj
+     * @private
+     * @type {brightstream.Client}
+     */
+    var clientObj = brightstream.getClient(client);
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name callSettings
+     * @private
+     * @type {object}
+     * @desc A container for constraints and servers.
+     */
+    var callSettings = params.callSettings || {};
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalOffer
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed by the signaling channel.
+     */
     var signalOffer = params.signalOffer;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalConnected
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed by the signaling channel.
+     */
     var signalConnected = params.signalConnected;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalAnswer
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed by the signaling channel.
+     */
     var signalAnswer = params.signalAnswer;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalTerminate
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed by the signaling channel.
+     */
     var signalTerminate = params.signalTerminate;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalReport
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed by the signaling channel.
+     */
     var signalReport = params.signalReport;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalCandidateOrig
+     * @private
+     * @type {function}
+     * @desc A temporary function saved from params in order to construct the candidate signaling function.
+     */
     var signalCandidateOrig = params.signalCandidate;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name signalCandidate
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed from the one passed to us by the signaling channel with additions
+     * to facilitate candidate logging.
+     */
     function signalCandidate(oCan) {
         signalCandidateOrig({
             candidate: oCan,
@@ -76,7 +245,19 @@ brightstream.PeerConnection = function (params) {
         that.report.candidatesSent.push(oCan);
     }
 
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name offerOptions
+     * @private
+     * @type {object}
+     */
     var offerOptions = params.offerOptions || null;
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name pcOptions
+     * @private
+     * @type {object}
+     */
     var pcOptions = params.pcOptions || {
         optional: [
             { DtlsSrtpKeyAgreement: true },
@@ -84,6 +265,11 @@ brightstream.PeerConnection = function (params) {
         ]
     };
 
+    /**
+     * @memberof! brightstream.PeerConnection
+     * @name report
+     * @type {object}
+     */
     that.report = {
         callStarted: 0,
         callStopped: 0,
@@ -97,13 +283,53 @@ brightstream.PeerConnection = function (params) {
         os: navigator.platform
     };
 
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_STARTED = 0;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_INREVIEW = 1;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_APPROVED = 2;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_OFFERED = 3;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_ANSWERED = 4;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_FLOWING = 5;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_ENDED = 6;
+    /**
+     * @private
+     * @constant
+     * @type {number}
+     */
     var ST_MEDIA_ERROR = 7;
 
     /**
@@ -172,10 +398,12 @@ brightstream.PeerConnection = function (params) {
      * statistics, we'll return a promise for the stats object.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.getStats
-     * @returns {Promise<object>}
-     * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<{brightstream.MediaStats}>}
+     * @param {object} params
+     * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @fires brightstream.PeerConnection#stats
      */
     function getStats(params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -400,9 +628,11 @@ brightstream.PeerConnection = function (params) {
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.close
      * @fires brightstream.PeerConnection#destoy
-     * @param {boolean} [signal] - Optional flag to indicate whether to send or suppress sending
+     * @param {object} param
+     * @param {boolean} [param.signal] - Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side. This is set to false by the library if we're responding to a
      * bye signal.
+     * @fires brightstream.PeerConnection#close
      */
     that.close = function (params) {
         params = params || {};
@@ -474,8 +704,8 @@ brightstream.PeerConnection = function (params) {
      * @param {object} params
      * @param {RTCSessionDescription} params.sdp - The remote SDP.
      * @param {string} params.connectionId - The connectionId of the endpoint who answered the call.
-     * @param {function} params.onSuccess
-     * @param {function} params.onError
+     * @param {function} [params.onSuccess]
+     * @param {function} [params.onError]
      * @todo TODO Make this listen to events and be private.
      * @returns {Promise<undefined>}
      */
@@ -517,7 +747,8 @@ brightstream.PeerConnection = function (params) {
      * Save the answer and tell the browser about it.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.setConnected
-     * @param {RTCSessionDescription} oSession The remote SDP.
+     * @param {RTCSessionDescription} oSession - The remote SDP.
+     * @param {function} endCall - a hangup callback.
      * @todo TODO Make this listen to events and be private.
      */
     that.setConnected = function (signal, endCall) {
@@ -531,30 +762,30 @@ brightstream.PeerConnection = function (params) {
      * we can process them after we receive the answer.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.addRemoteCandidate
-     * @param {RTCIceCandidate} candidate The ICE candidate.
+     * @param {RTCIceCandidate} candidate - The ICE candidate.
      * @todo TODO Make this listen to events and be private.
      */
-    that.addRemoteCandidate = function (params) {
-        if (!params || params.candidate === null) {
+    that.addRemoteCandidate = function (candidate) {
+        if (!candidate || candidate.candidate === null) {
             return;
         }
-        if (!params.candidate.hasOwnProperty('sdpMLineIndex') || !params.candidate) {
-            log.warn("addRemoteCandidate got wrong format!", params);
+        if (!candidate.candidate.hasOwnProperty('sdpMLineIndex') || !candidate.candidate) {
+            log.warn("addRemoteCandidate got wrong format!", candidate);
             return;
         }
         if (!pc || that.initiator && that.state < ST_ANSWERED) {
-            candidateReceivingQueue.push(params);
+            candidateReceivingQueue.push(candidate);
             log.debug('Queueing a candidate.');
             return;
         }
         try {
-            pc.addIceCandidate(new RTCIceCandidate(params.candidate));
+            pc.addIceCandidate(new RTCIceCandidate(candidate.candidate));
         } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
+            log.error("Couldn't add ICE candidate: " + e.message, candidate.candidate);
             return;
         }
-        log.debug('Got a remote candidate.', params.candidate);
-        that.report.candidatesReceived.push(params.candidate);
+        log.debug('Got a remote candidate.', candidate.candidate);
+        that.report.candidatesReceived.push(candidate.candidate);
     };
 
     /**
@@ -568,20 +799,12 @@ brightstream.PeerConnection = function (params) {
     };
 
     /**
-     * Indicate whether the logged-in User initated the Call.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.isInitiator
-     * @returns {boolean}
-     */
-    that.isInitiator = function () {
-        return that.initiator;
-    };
-
-    /**
      * Save the hangup reason and hang up.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.setBye
      * @todo TODO Make this listen to events and be private.
+     * @param {object} params
+     * @param {string} [params.reason] - Optional reason for hanging up.
      */
     that.setBye = function (params) {
         params = params || {};

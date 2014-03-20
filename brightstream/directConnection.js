@@ -13,22 +13,23 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @classdesc WebRTC DataChannel including path negotation and connection state.
- * @param {string} client - client id
- * @param {boolean} initiator - whether or not we initiated the connection
- * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
- * @param {brightstream.Endpoint} remoteEndpoint
- * @param {string} connectionId - The connection ID of the remoteEndpoint.
- * @param {function} signalOffer - Signaling action from SignalingChannel.
- * @param {function} signalConnected - Signaling action from SignalingChannel.
- * @param {function} signalAnswer - Signaling action from SignalingChannel.
- * @param {function} signalTerminate - Signaling action from SignalingChannel.
- * @param {function} signalReport - Signaling action from SignalingChannel.
- * @param {function} signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [onClose] - Callback for the developer to be notified about closing the connection.
- * @param {function} [onOpen] - Callback for the developer to be notified about opening the connection.
- * @param {function} [onMessage] - Callback for the developer to be notified about incoming messages. Not usually
+ * @param {string} params
+ * @param {string} params.client - client id
+ * @param {boolean} params.initiator - whether or not we initiated the connection
+ * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
+ * @param {brightstream.Endpoint} params.remoteEndpoint
+ * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
+ * @param {function} params.signalOffer - Signaling action from SignalingChannel.
+ * @param {function} params.signalConnected - Signaling action from SignalingChannel.
+ * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalReport - Signaling action from SignalingChannel.
+ * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
+ * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
+ * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
+ * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages. Not usually
  * necessary to listen to this event if you are already listening to brightstream.Endpoint#message
- * @param {function} [onStats] - Callback for the developer to receive statistics about the connection.
+ * @param {function} [params.onStats] - Callback for the developer to receive statistics about the connection.
  * This is only used if connection.getStats() is called and the stats module is loaded.
  * @param {object} connectionSettings
  * @returns {brightstream.DirectConnection}
@@ -129,13 +130,14 @@ brightstream.DirectConnection = function (params) {
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.saveParameters
-     * @param {function} [onOpen]
-     * @param {function} [onClose]
-     * @param {function} [onMessage]
-     * @param {object} [callSettings]
-     * @param {object} [constraints]
-     * @param {array} [servers]
-     * @param {boolean} [forceTurn]
+     * @param {function} params
+     * @param {function} [params.onOpen]
+     * @param {function} [params.onClose]
+     * @param {function} [params.onMessage]
+     * @param {object} [params.callSettings]
+     * @param {object} [params.constraints]
+     * @param {array} [params.servers]
+     * @param {boolean} [params.forceTurn]
      * @private
      */
     function saveParameters(params) {
@@ -177,10 +179,11 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.accept
      * @fires brightstream.DirectConnection#accept
-     * @param {function} [onOpen]
-     * @param {function} [onClose]
-     * @param {function} [onMessage]
-     * @param {boolean} [forceTurn]
+     * @param {object} params
+     * @param {function} [params.onOpen]
+     * @param {function} [params.onClose]
+     * @param {function} [params.onMessage]
+     * @param {boolean} [params.forceTurn]
      */
     that.accept = function (params) {
         that.state = ST_STARTED;
@@ -195,7 +198,7 @@ brightstream.DirectConnection = function (params) {
          * @type {brighstream.Event}
          */
         that.fire('accept');
-        startPeerConnection(params);
+        startPeerConnection();
         createDataChannel();
     };
 
@@ -228,11 +231,12 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.getStats
      * @returns {Promise<object>}
-     * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [onStats] - An optional callback to receive the stats. If no callback is provided,
+     * @param {object} params
+     * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {function} [params.onStats] - An optional callback to receive the stats. If no callback is provided,
      * the connection's report will contain stats but the developer will not receive them on the client-side.
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      */
     function getStats(params) {
         if (pc && pc.getStats) {
@@ -334,9 +338,8 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.startPeerConnection
      * @todo Find out when we can stop deleting TURN servers
      * @private
-     * @param {object} params
      */
-    function startPeerConnection(params) {
+    function startPeerConnection() {
         params = params || {};
         log.trace('startPeerConnection');
 
@@ -378,7 +381,8 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.close
      * @fires brightstream.DirectConnection#close
-     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
+     * @param {object} params
+     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     that.close = function (params) {
@@ -424,10 +428,11 @@ brightstream.DirectConnection = function (params) {
      * attribute may be given: either a string 'message' or an object 'object'.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.sendMessage
-     * @param {string} [message] - The message to send.
-     * @param {object} object - An object to send.
-     * @param [function] onSuccess - Success handler.
-     * @param [function] onError - Error handler.
+     * @param {object} params
+     * @param {string} [params.message] - The message to send.
+     * @param {object} [params.object] - An object to send.
+     * @param [function] [params.onSuccess] - Success handler.
+     * @param [function] [params.onError] - Error handler.
      * @returns {Promise<undefined>}
      */
     that.sendMessage = function (params) {
@@ -525,20 +530,12 @@ brightstream.DirectConnection = function (params) {
     };
 
     /**
-     * Indicate whether the logged-in User initated the connection.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.isInitiator
-     * @returns {boolean}
-     */
-    that.isInitiator = function () {
-        return that.initiator;
-    };
-
-    /**
      * Save the close reason and hang up.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.setBye
      * @todo TODO Make this listen to events and be private.
+     * @param {object} params
+     * @param {string} [params.reason] - An optional reason for the hangup.
      */
     that.setBye = function (params) {
         params = params || {};
