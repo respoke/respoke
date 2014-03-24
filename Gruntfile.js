@@ -60,7 +60,6 @@ module.exports = function(grunt) {
             },
             'brightstream-beautify-stats': {
                 options: {
-                    compress: true,
                     sourceMap: true
                 },
                 files: {
