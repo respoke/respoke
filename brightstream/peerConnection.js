@@ -692,7 +692,7 @@ brightstream.PeerConnection = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        return (pc && pc.iceConnectionState === 'connected' && that.state === ST_FLOWING);
+        return (pc && pc.iceConnectionState === 'connected');
     };
 
 

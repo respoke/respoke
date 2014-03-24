@@ -200,6 +200,20 @@ brightstream.Call = function (params) {
     var callSettings = params.callSettings;
     /**
      * @memberof! brightstream.Call
+     * @name directConnection
+     * @private
+     * @type {brightstream.DirectConnection}
+     */
+    var directConnection = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name localStreams
+     * @private
+     * @type {Array<brightstream.LocalMedia>}
+     */
+    var localStreams = [];
+    /**
+     * @memberof! brightstream.Call
      * @name mediaOptions
      * @private
      * @type {object}
@@ -395,7 +409,7 @@ brightstream.Call = function (params) {
         saveParameters(params);
 
         pc.listen('remote-stream-received', onRemoteStreamAdded, true);
-        pc.listen('local-stream-received', onRemoteStreamRemoved, true);
+        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
@@ -404,8 +418,9 @@ brightstream.Call = function (params) {
          */
         that.fire('answer');
 
+        pc.init(callSettings);
         if (receiveOnly !== true) {
-            requestMedia();
+            requestData();
         } else if (typeof previewLocalMedia !== 'function') {
             that.approve();
         }
@@ -436,77 +451,43 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Save the local stream. Kick off SDP creation.
+     * Listen for the remote side to remove media in the middle of the call.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.onReceiveUserMedia
+     * @method brightstream.Call.onRemoteStreamRemoved
      * @private
-     * @param {RTCMediaStream}
-     * @fires brightstream.Call#local-stream-received
+     * @param {object}
      */
-    function onReceiveUserMedia(stream) {
-        log.debug('User gave permission to use media.');
-        log.trace('onReceiveUserMedia');
+    function onRemoteStreamRemoved(evt) {
+        log.trace('pc event: remote stream removed');
+    }
 
-        // This happens when we get an automatic hangup or reject from the other side.
-        if (pc === null) {
-            that.hangup({signal: false});
-            return;
+    /**
+     * Listen for the remote side to add additional media in the middle of the call.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.onRemoteStreamAdded
+     * @private
+     * @param {object}
+     * @fires brightstream.Call#remote-stream-received
+     */
+    function onRemoteStreamAdded(evt) {
+        if (that.state < ST_FLOWING) {
+            that.state = ST_FLOWING;
         }
+        log.debug('received remote media', evt);
 
-        pc.addStream(stream);
-
-        for (var i = 0; (i < localVideoElements.length && videoLocalElement === null); i += 1) {
-            if (localVideoElements[i].tagName === 'VIDEO' && !localVideoElements[i].used) {
-                videoLocalElement = localVideoElements[i];
-            }
-        }
-
-        if (videoLocalElement === null) {
-            videoLocalElement = document.createElement('video');
-        }
-
-        // This still needs some work. Using cached streams causes an unused video element to be passed
-        // back to the App. This is because we assume at the moment that only one local media video element
-        // will be needed. The first one passed back will contain media and the others will fake it. Media
-        // will still be sent with every peer connection. Also need to study the use of getLocalElement
-        // and the implications of passing back a video element with no media attached.
-        if (brightstream.streams[callSettings.constraints]) {
-            brightstream.streams[callSettings.constraints].numPc += 1;
-            /**
-             * @event brightstream.Call#local-stream-received
-             * @type {brightstream.Event}
-             * @property {Element} element - the HTML5 Video element with the new stream attached.
-             */
-            that.fire('local-stream-received', {
-                element: videoLocalElement
-            });
-        } else {
-            stream.numPc = 1;
-            brightstream.streams[callSettings.constraints] = stream;
-
-            stream.id = clientObj.user.getID();
-            attachMediaStream(videoLocalElement, stream);
-            // We won't want our local video outputting audio.
-            videoLocalElement.muted = true;
-            videoLocalElement.autoplay = true;
-            videoLocalElement.used = true;
-
-            /**
-             * @event brightstream.Call#local-stream-received
-             * @type {brightstream.Event}
-             * @property {Element} element - the HTML5 Video element with the new stream attached.
-             */
-            that.fire('local-stream-received', {
-                element: videoLocalElement
-            });
-        }
-
-        if (typeof previewLocalMedia === 'function') {
-            that.state = ST_INREVIEW;
-            previewLocalMedia(videoLocalElement, that);
-        } else {
-            that.approve();
-        }
+        videoRemoteElement = document.createElement('video');
+        attachMediaStream(videoRemoteElement, evt.stream);
+        videoRemoteElement.autoplay = true;
+        videoRemoteElement.used = true;
+        videoRemoteElement.play();
+        /**
+         * @event brightstream.LocalMedia#remote-stream-received
+         * @type {brightstream.Event}
+         * @property {Element} element - the HTML5 Video element with the new stream attached.
+         */
+        that.fire('remote-stream-received', {
+            element: videoRemoteElement
+        });
     }
 
     /**
@@ -557,100 +538,118 @@ brightstream.Call = function (params) {
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.requestMedia
+     * @method brightstream.Call.requestData
      * @todo Find out when we can stop deleting TURN servers
      * @private
+     * @param {object} params
+     * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
+     * an audio and/or video stream.
+     * @param {boolean} [params.directConnection] - Indicates media being requested is a direct connection.
+     * @param {function} [params.onHangup] - Call hangup callback; requires params.constraints be set.
+     * @param {function} [params.onOpen] - DirectConnection is open callback; requires params.directConnection=true.
+     * @param {function} [params.onClose] - DirectConnection is closed callback; requires params.directConnection=true.
+     * @param {function} [params.onMessage] - DirectConnection message callback; requires params.directConnection=true.
      */
-    function requestMedia() {
-        log.trace('requestMedia');
-
-        pc.init(callSettings);
-
-        if (brightstream.streams[callSettings.constraints]) {
-            log.debug('using old stream');
-            onReceiveUserMedia(brightstream.streams[callSettings.constraints]);
-            return;
-        }
+    function requestData(params) {
+        log.trace('requestData');
+        params = params || {};
+        params.constraints = params.constraints || callSettings.constraints;
+        var data;
 
         try {
             log.debug("Running getUserMedia with constraints", callSettings.constraints);
             // TODO set brightstream.streams[callSettings.constraints] = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
-            getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
-        } catch (e) {
-            log.error("Couldn't get user media: " + e.message);
-        }
-    }
-
-    /**
-     * Handle any error that comes up during the process of getting user media.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onUserMediaError
-     * @private
-     * @param {object}
-     */
-    function onUserMediaError(p) {
-        log.trace('onUserMediaError');
-        that.state = ST_MEDIA_ERROR;
-        if (p.code === 1) {
-            log.warn("Permission denied.");
-            pc.report.callStoppedReason = 'Permission denied.';
-        } else {
-            log.warn(p);
-            pc.report.callStoppedReason = p.code;
-        }
-        that.hangup({signal: !that.initiator});
-    }
-
-    /**
-     * Listen for the remote side to remove media in the middle of the call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onRemoteStreamRemoved
-     * @private
-     * @param {object}
-     */
-    function onRemoteStreamRemoved(evt) {
-        log.trace('pc event: remote stream removed');
-    }
-
-    /**
-     * Listen for the remote side to add additional media in the middle of the call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onRemoteStreamAdded
-     * @private
-     * @param {object}
-     * @fires brightstream.Call#remote-stream-received
-     */
-    function onRemoteStreamAdded(evt) {
-        if (that.state < ST_FLOWING) {
-            that.state = ST_FLOWING;
-        }
-        log.debug('received remote media', evt);
-
-        for (var i = 0; (i < remoteVideoElements.length && videoRemoteElement === null); i += 1) {
-            if (remoteVideoElements[i].tagName === 'VIDEO' && !remoteVideoElements[i].used) {
-                videoRemoteElement = remoteVideoElements[i];
+            //getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
+            params.pc = pc;
+            if (params.directConnection) {
+                that.addDirectConnection(params);
+            } else if (params.constraints) {
+                that.addVideo(params);
             }
+        } catch (e) {
+            log.error("Couldn't get anything to add to the call: " + e.message);
         }
-
-        if (videoRemoteElement === null) {
-            videoRemoteElement = document.createElement('video');
-        }
-
-        attachMediaStream(videoRemoteElement, evt.stream);
-        videoRemoteElement.autoplay = true;
-        videoRemoteElement.used = true;
-        videoRemoteElement.play();
-        /**
-         * @event brightstream.Call#remote-stream-received
-         * @type {brightstream.Event}
-         * @property {Element} element - the HTML5 Video element with the new stream attached.
-         */
-        that.fire('remote-stream-received', {
-            element: videoRemoteElement
-        });
     }
+
+    /**
+     * Add a video and audio stream to the existing call. By default, this method adds both video AND audio.
+     * If audio is not desired, pass {audio: false}.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.addVideo
+     * @param {object} params
+     * @param {boolean} [audio=true]
+     * @param {boolean} [video=true]
+     * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
+     * an audio and/or video stream.
+     * @param {function} [onLocalVideo]
+     * @param {function} [onRemoteVideo]
+     * @param {function} [onError]
+     */
+    that.addVideo = function (params) {
+        var stream;
+        params = params || {};
+        params.constraints = params.constraints || {video: true, audio: true};
+        params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
+        params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
+        params.client = client;
+
+        stream = brightstream.LocalMedia(params);
+        stream.listen('stream-received', function (evt) {
+            console.log("adding stream", evt);
+            pc.addStream(evt.stream);
+            if (typeof previewLocalMedia === 'function') {
+                previewLocalMedia(evt.element, that);
+            } else {
+                that.approve();
+            }
+            that.fire('local-stream-received', {
+                element: evt.element
+            });
+        }, true);
+        stream.listen('error', function (evt) {
+            pc.report.callStoppedReason = evt.reason;
+        });
+        localStreams.push(stream);
+    };
+
+    /**
+     * Add an audio stream to the existing call.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.addAudio
+     * @param {object} params
+     * @param {boolean} [audio=true]
+     * @param {boolean} [video=false]
+     * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
+     * an audio and/or video stream.
+     * @param {function} [onLocalVideo]
+     * @param {function} [onRemoteVideo]
+     */
+    that.addAudio = function (params) {
+        params = params || {};
+        params.constraints = params.constraints || {video: false, audio: true};
+        params.constraints.video = typeof params.constraints.video === 'boolean' ?
+            params.constraints.video : false;
+        that.addVideo(params);
+    };
+    /**
+     *
+     * Add a direct connection to the existing call.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.addDirectConnection
+     * @param {object} params
+     * @param {function} [onOpen]
+     * @param {function} [onClose]
+     */
+    that.addDirectConnection = function (params) {
+        if (directConnection) {
+            log.warn("Not creating a new direct connection.");
+            return directConnection;
+        }
+        directConnection = brightstream.DirectConnection(params);
+        return directConnection;
+    };
 
     /**
      * Tear down the call, release user media.  Send a bye signal to the remote party if
@@ -692,6 +691,10 @@ brightstream.Call = function (params) {
             toHangup = pc.close(params);
         }
 
+        if (directConnection) {
+            directConnection.close();
+        }
+
         /**
          * @event brightstream.Call#hangup
          * @type {brightstream.Event}
@@ -719,7 +722,12 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.isActive
      * @returns {boolean}
      */
-    that.isActive = pc.isActive;
+    that.isActive = function () {
+        return (pc.isActive() && (
+            (localStreams.length > 0) ||
+            (directConnection && directConnection.isActive())
+        ));
+    };
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
@@ -786,7 +794,7 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * If video is muted, unmute. If not muted, mute. TODO: How should this behave?
+     * If video is muted, unmute. If not muted, mute.
      * @memberof! brightstream.Call
      * @method brightstream.Call.toggleVideo
      */
@@ -801,7 +809,7 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * If audio is muted, unmute. If not muted, mute. TODO: How should this behave?
+     * If audio is muted, unmute. If not muted, mute.
      * @memberof! brightstream.Call
      * @method brightstream.Call.toggleAudio
      */
@@ -812,6 +820,8 @@ brightstream.Call = function (params) {
             } else {
                 that.unmuteAudio();
             }
+        } else {
+            console.log("skipping, media not active.");
         }
     };
 
@@ -822,13 +832,14 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#video-muted
      */
     that.muteVideo = function () {
+        console.log('muteVideo');
         if (videoIsMuted) {
+            console.log('skipping');
             return;
         }
-        pc.getLocalStreams().forEach(function (stream) {
-            stream.getVideoTracks().forEach(function (track) {
-                track.enabled = false;
-            });
+        localStreams.forEach(function (stream) {
+            stream.muteVideo();
+            console.log('done');
         });
         /**
          * @event brightstream.Call#video-muted
@@ -844,13 +855,14 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#video-unmuted
      */
     that.unmuteVideo = function () {
+        console.log('unmuteVideo');
         if (!videoIsMuted) {
+            console.log('skipping');
             return;
         }
-        pc.getLocalStreams().forEach(function (stream) {
-            stream.getVideoTracks().forEach(function (track) {
-                track.enabled = true;
-            });
+        localStreams.forEach(function (stream) {
+            stream.unmuteVideo();
+            console.log('done');
         });
         /**
          * @event brightstream.Call#video-unmuted
@@ -866,13 +878,14 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#audio-muted
      */
     that.muteAudio = function () {
+        console.log('muteAudio');
         if (audioIsMuted) {
+            console.log('skipping');
             return;
         }
-        pc.getLocalStreams().forEach(function (stream) {
-            stream.getAudioTracks().forEach(function (track) {
-                track.enabled = false;
-            });
+        localStreams.forEach(function (stream) {
+            stream.muteAudio();
+            console.log('done');
         });
         /**
          * @event brightstream.Call#audio-muted
@@ -888,13 +901,14 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#audio-unmuted
      */
     that.unmuteAudio = function () {
+        console.log('unmuteAudio');
         if (!audioIsMuted) {
+            console.log('skipping');
             return;
         }
-        pc.getLocalStreams().forEach(function (stream) {
-            stream.getAudioTracks().forEach(function (track) {
-                track.enabled = true;
-            });
+        localStreams.forEach(function (stream) {
+            stream.unmuteAudio();
+            console.log('done');
         });
         /**
          * @event brightstream.Call#audio-unmuted

@@ -135,7 +135,6 @@ brightstream.DirectConnection = function (params) {
      * @param {function} [params.onClose]
      * @param {function} [params.onMessage]
      * @param {object} [params.callSettings]
-     * @param {object} [params.constraints]
      * @param {array} [params.servers]
      * @param {boolean} [params.forceTurn]
      * @private
@@ -386,41 +385,13 @@ brightstream.DirectConnection = function (params) {
      * a hangup signal to the remote side.
      */
     that.close = function (params) {
-        params = params || {};
-        var toHangup = false;
-
-        if (that.state === ST_ENDED) {
-            log.trace("DirectConnection.close got called twice.");
-            return;
-        }
-        that.state = ST_ENDED;
-
-        if (!that.initiator && defApproved.promise.isPending()) {
-            defApproved.reject(new Error("Connection ended before approval."));
-        }
-
-        clientObj.updateTurnCredentials();
-        log.debug('closing direct connection');
-
-        if (pc) {
-            toHangup = pc.close(params);
-        }
-
-        /**
-         * @event brightstream.DirectConnection#close
-         * @type {brightstream.Event}
-         * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
-         */
-        that.fire('close', {
-            sentSignal: toHangup
-        });
+        that.fire('close');
         that.ignore();
 
         if (dataChannel) {
             dataChannel.close();
         }
         dataChannel =  null;
-        pc = null;
     };
 
     /*
@@ -464,7 +435,9 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.isActive
      * @returns {boolean}
      */
-    that.isActive = pc.isActive;
+    that.isActive = function () {
+        return (pc.isActive() && dataChannel && dataChannel.readyState === 'open');
+    };
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
