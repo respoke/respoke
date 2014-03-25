@@ -15,8 +15,8 @@
  * @param {string} params
  * @param {string} params.client - client id
  * @param {boolean} params.initiator - whether or not we initiated the connection
- * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
- * candidates.
+ * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
+ * it to flow peer-to-peer. The relay acts like a blind proxy.
  * @param {brightstream.Endpoint} params.remoteEndpoint
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
@@ -131,13 +131,13 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.saveParameters
      * @param {function} params
-     * @param {function} [params.onOpen]
-     * @param {function} [params.onClose]
-     * @param {function} [params.onMessage]
-     * @param {object} [params.callSettings]
-     * @param {object} [params.constraints]
-     * @param {array} [params.servers]
-     * @param {boolean} [params.forceTurn]
+     * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
+     * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
+     * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages.
+     * @param {array} [params.servers] - Additional resources for determining network connectivity between two
+     * endpoints.
+     * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
+     * it to flow peer-to-peer. The relay acts like a blind proxy.
      * @private
      */
     function saveParameters(params) {
@@ -180,10 +180,11 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.accept
      * @fires brightstream.DirectConnection#accept
      * @param {object} params
-     * @param {function} [params.onOpen]
-     * @param {function} [params.onClose]
-     * @param {function} [params.onMessage]
-     * @param {boolean} [params.forceTurn]
+     * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
+     * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
+     * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages.
+     * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
+     * it to flow peer-to-peer. The relay acts like a blind proxy.
      */
     that.accept = function (params) {
         that.state = ST_STARTED;
@@ -205,7 +206,7 @@ brightstream.DirectConnection = function (params) {
     /**
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.approve.
+     * @method brightstream.DirectConnection.approve
      * @fires brightstream.DirectConnection#approve
      */
     that.approve = function () {

@@ -334,7 +334,7 @@ brightstream.PeerConnection = function (params) {
     /**
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.initOffer.
+     * @method brightstream.PeerConnection.initOffer
      * @fires brightstream.PeerConnection#initOffer
      */
     that.initOffer = function () {
