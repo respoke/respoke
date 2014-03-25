@@ -193,4 +193,4 @@ brightstream.Event = function (that) {
     }
 
     return that;
-}; // End brighstream.Event
+}; // End brightstream.Event

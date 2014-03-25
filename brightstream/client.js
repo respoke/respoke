@@ -434,7 +434,7 @@ brightstream.Client = function (params) {
             /**
              * @event {brightstream.User#join}
              * @type {brightstream.Event}
-             * @property {brighstream.Group} group
+             * @property {brightstream.Group} group
              */
             that.user.fire('join', {
                 group: group

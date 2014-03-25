@@ -18,7 +18,7 @@
         streams: {},
         instances: {}
     };
-    log.setLevel('debug');
+    log.setLevel('trace');
 
     if (!window.skipBugsnag) {
         // Use bugsnag.

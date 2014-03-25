@@ -631,6 +631,16 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
+     * Uppercase the first letter of the word.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.firstUpper
+     * @private
+     */
+    function firstUpper(str) {
+        return str[0].toUpperCase() + str.slice(1);
+    }
+
+    /**
      * Route different types of signaling messages via events.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.routeSignal
@@ -654,9 +664,6 @@ brightstream.SignalingChannel = function (params) {
         var method = 'do';
         var endpoint;
         var knownSignals = ['offer', 'answer', 'connected', 'candidate', 'bye'];
-        function firstUpper(str) {
-            return str[0].toUpperCase() + str.slice(1);
-        }
 
         if (signal.type !== 'candidate') { // Too many of these!
             log.debug(signal.type, signal);
@@ -688,16 +695,24 @@ brightstream.SignalingChannel = function (params) {
                 endpoint = clientObj.getEndpoint({
                     id: message.endpointId
                 });
-                target = endpoint.getDirectConnection({
+                endpoint.getDirectConnection({
                     create: toCreate,
                     initiator: !toCreate
+                }).done(function (target) {
+                    method += firstUpper(signal.target);
+                    method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
+                    routingMethods[method]({
+                        call: target,
+                        message: message,
+                        signal: signal
+                    });
+                }, function (err) {
+                    throw new Error(err.message);
                 });
+                return;
             } catch (e) {
                 log.error("Can't get direct connection.", e);
             }
-
-            method += firstUpper(signal.target);
-            method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
         }
 
         routingMethods[method]({

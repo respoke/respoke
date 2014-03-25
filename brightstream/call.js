@@ -17,6 +17,7 @@
  * @param {boolean} params.initiator - whether or not we initiated the call
  * @param {boolean} params.receiveOnly - whether or not we accept media
  * @param {boolean} params.sendOnly - whether or not we send media
+ * @param {boolean} params.directConnectionOnly - flag to enable skipping media & opening direct connection.
  * @param {boolean} params.forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
  * candidates.
  * @param {brightstream.Endpoint} params.remoteEndpoint
@@ -73,6 +74,7 @@ brightstream.Call = function (params) {
     }
 
     /**
+     * Promise used to trigger actions dependant upon having received an offer.
      * @memberof! brightstream.Call
      * @name defOffer
      * @private
@@ -80,6 +82,7 @@ brightstream.Call = function (params) {
      */
     var defOffer = Q.defer();
     /**
+     * Promise used to trigger actions dependant upon having received an answer.
      * @memberof! brightstream.Call
      * @name defAnswer
      * @private
@@ -87,12 +90,21 @@ brightstream.Call = function (params) {
      */
     var defAnswer = Q.defer();
     /**
+     * Promise used to trigger actions dependant upon the call having been approved.
      * @memberof! brightstream.Call
      * @name defApproved
      * @private
      * @type {Promise}
      */
     var defApproved = Q.defer();
+    /**
+     * Promise used to trigger actions dependant upon having received media or a datachannel.
+     * @memberof! brightstream.Call
+     * @name defMedia
+     * @private
+     * @type {Promise}
+     */
+    var defMedia = Q.defer();
     /**
      * @memberof! brightstream.Call
      * @name previewLocalMedia
@@ -121,6 +133,13 @@ brightstream.Call = function (params) {
      * @type {function}
      */
     var onHangup = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name directConnectionOnly
+     * @private
+     * @type {boolean}
+     */
+    var directConnectionOnly = null;
     /**
      * @memberof! brightstream.Call
      * @name sendOnly
@@ -308,21 +327,49 @@ brightstream.Call = function (params) {
     });
 
     /**
-     * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
-     * before we can act on the call.
+     * Set up promises. If we're not the initiator, we need to listen for approval AND the remote SDP to come in
+     * before we can act on the call. Save parameters sent in with the constructor, then delete them off the call.
+     * If this call was initiated with a DirectConnection, set it up so answer() will be the approval mechanism.
+     * @method brightstream.Call.init
+     * @memberof! brightstream.Call
+     * @private
      */
-    if (that.initiator !== true) {
-        Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
-            if (approved === true && oOffer && oOffer.sdp) {
-                pc.processOffer(oOffer.sdp).done(function () {
-                    that.state = ST_OFFERED;
-                }, function () {
-                    that.hangup({signal: !that.initiator});
-                });
-            }
-        }, function (err) {
-            log.warn("Call rejected.");
-        }).done();
+    function init() {
+        if (that.initiator !== true) {
+            Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
+                if (approved === true && oOffer && oOffer.sdp) {
+                    pc.processOffer(oOffer.sdp).done(function () {
+                        that.state = ST_OFFERED;
+                    }, function () {
+                        that.hangup({signal: !that.initiator});
+                    });
+                }
+            }, function (err) {
+                log.warn("Call rejected.");
+            }).done();
+        } else {
+            Q.all([defApproved.promise, defMedia.promise]).done(function () {
+                pc.initOffer();
+            }, function (err) {
+                log.warn("Call not approved or media error.");
+            });
+        }
+
+        saveParameters(params);
+        delete that.signalOffer;
+        delete that.signalConnected;
+        delete that.signalAnswer;
+        delete that.signalTerminate;
+        delete that.signalReport;
+        delete that.signalCandidate;
+        delete that.onRemoteVideo;
+        delete that.onLocalVideo;
+        delete that.callSettings;
+        delete that.directConnectionOnly;
+
+        if (directConnectionOnly === true) {
+            that.addDirectConnection();
+        }
     }
 
     /**
@@ -349,6 +396,8 @@ brightstream.Call = function (params) {
         forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
         sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
+        directConnectionOnly = typeof params.directConnectionOnly === 'boolean' ?
+            params.directConnectionOnly : directConnectionOnly;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
         callSettings = params.callSettings || callSettings || {};
@@ -368,21 +417,6 @@ brightstream.Call = function (params) {
             that.fire('stats', {stats: evt.stats});
         }, true);
     }
-
-    /**
-     * Must call saveParameters as part of object construction.
-     */
-    saveParameters(params);
-
-    delete params.signalOffer;
-    delete params.signalConnected;
-    delete params.signalAnswer;
-    delete params.signalTerminate;
-    delete params.signalReport;
-    delete params.signalCandidate;
-    delete params.onRemoteVideo;
-    delete params.onLocalVideo;
-    delete params.callSettings;
 
     /**
      * Start the process of obtaining media. saveParameters will only be meaningful for the non-initiate,
@@ -419,8 +453,15 @@ brightstream.Call = function (params) {
         that.fire('answer');
 
         pc.init(callSettings);
-        if (receiveOnly !== true) {
-            requestData();
+
+        /**
+         * There are a few situations in which we need to call approve automatically. Approve is for previewing
+         * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
+         * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
+         * previewLocalMedia callback to call, we will not wait for approval.
+         */
+        if (receiveOnly !== true && directConnectionOnly !== true) {
+            requestMedia(params);
         } else if (typeof previewLocalMedia !== 'function') {
             that.approve();
         }
@@ -442,12 +483,7 @@ brightstream.Call = function (params) {
          */
         that.fire('approve');
 
-        if (that.initiator === true) {
-            pc.initOffer();
-            return;
-        } else {
-            defApproved.resolve(true);
-        }
+        defApproved.resolve(true);
     };
 
     /**
@@ -536,9 +572,10 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
+     * Create the RTCPeerConnection and add handlers. Process any offer we have already received. This method is called
+     * after answer() so we cannot use this method to set up the DirectConnection.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.requestData
+     * @method brightstream.Call.requestMedia
      * @todo Find out when we can stop deleting TURN servers
      * @private
      * @param {object} params
@@ -550,24 +587,14 @@ brightstream.Call = function (params) {
      * @param {function} [params.onClose] - DirectConnection is closed callback; requires params.directConnection=true.
      * @param {function} [params.onMessage] - DirectConnection message callback; requires params.directConnection=true.
      */
-    function requestData(params) {
-        log.trace('requestData');
+    function requestMedia(params) {
+        log.debug('requestMedia');
         params = params || {};
         params.constraints = params.constraints || callSettings.constraints;
-        var data;
 
         try {
-            log.debug("Running getUserMedia with constraints", callSettings.constraints);
-            // TODO set brightstream.streams[callSettings.constraints] = true as a flag that we are already
-            // attempting to obtain this media so the race condition where gUM is called twice with
-            // the same constraints when calls are placed too quickly together doesn't occur.
-            //getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
             params.pc = pc;
-            if (params.directConnection) {
-                that.addDirectConnection(params);
-            } else if (params.constraints) {
-                that.addVideo(params);
-            }
+            that.addVideo(params);
         } catch (e) {
             log.error("Couldn't get anything to add to the call: " + e.message);
         }
@@ -586,6 +613,7 @@ brightstream.Call = function (params) {
      * @param {function} [onLocalVideo]
      * @param {function} [onRemoteVideo]
      * @param {function} [onError]
+     * @returns {brightstream.LocalMedia}
      */
     that.addVideo = function (params) {
         var stream;
@@ -596,22 +624,48 @@ brightstream.Call = function (params) {
         params.client = client;
 
         stream = brightstream.LocalMedia(params);
+        stream.listen('waiting-for-allow', function (evt) {
+            /**
+             * The browser is asking for permission to access the User's media. This would be an ideal time
+             * to modify the UI of the application so that the user notices the request for permissions
+             * and approves it.
+             * @event brightstream.Call#waiting-for-allow
+             * @type {brightstream.Event}
+             */
+            that.fire('waiting-for-allow');
+        });
+        stream.listen('allowed', function (evt) {
+            /**
+             * The user has approved the request for media. Any UI changes made to remind the user to click Allow
+             * should be canceled now.
+             * @event brightstream.Call#allowed
+             * @type {brightstream.Event}
+             */
+            that.fire('allowed');
+        });
         stream.listen('stream-received', function (evt) {
-            console.log("adding stream", evt);
+            defMedia.resolve(true);
             pc.addStream(evt.stream);
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
             } else {
                 that.approve();
             }
+            /**
+             * @event brightstream.Call#local-stream-received
+             * @type {brightstream.Event}
+             * @property {Element} element
+             */
             that.fire('local-stream-received', {
                 element: evt.element
             });
         }, true);
         stream.listen('error', function (evt) {
+            that.removeStream({id: stream.id});
             pc.report.callStoppedReason = evt.reason;
         });
         localStreams.push(stream);
+        return stream;
     };
 
     /**
@@ -625,14 +679,46 @@ brightstream.Call = function (params) {
      * an audio and/or video stream.
      * @param {function} [onLocalVideo]
      * @param {function} [onRemoteVideo]
+     * @returns {brightstream.LocalMedia}
      */
     that.addAudio = function (params) {
         params = params || {};
         params.constraints = params.constraints || {video: false, audio: true};
         params.constraints.video = typeof params.constraints.video === 'boolean' ?
             params.constraints.video : false;
-        that.addVideo(params);
+        params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
+        params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
+        return that.addVideo(params);
     };
+
+    /**
+     * Remove a stream from the existing call.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.removeStream
+     * @param {object} params
+     * @param {boolean} id - the id of the stream to remove.
+     */
+    that.removeStream = function (params) {
+        var savedIndex;
+        localStreams.forEach(function (stream, idx) {
+            if (stream.id === params.id) {
+                stream.stop();
+                savedIndex = idx;
+            }
+        });
+        localStreams.splice(savedIndex, 1);
+    };
+
+    /**
+     *
+     * Get the direct connection on this call, if it exists.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.getDirectConnection
+     */
+    that.getDirectConnection = function () {
+        return directConnection || null;
+    };
+
     /**
      *
      * Add a direct connection to the existing call.
@@ -641,14 +727,69 @@ brightstream.Call = function (params) {
      * @param {object} params
      * @param {function} [onOpen]
      * @param {function} [onClose]
+     * @param {function} [onMessage]
+     * @returns {brightstream.DirectConnection}
      */
     that.addDirectConnection = function (params) {
+        params = params || {};
         if (directConnection) {
             log.warn("Not creating a new direct connection.");
             return directConnection;
         }
+        params.client = client;
+        params.pc = pc;
+        params.initiator = that.initiator;
+        params.remoteEndpoint = that.remoteEndpoint;
         directConnection = brightstream.DirectConnection(params);
+        directConnection.setOffer = that.setOffer;
+        directConnection.setAnswer = that.setAnswer;
+        directConnection.setConnected = that.setConnected;
+        directConnection.addRemoteCandidate = that.addRemoteCandidate;
+        directConnection.setBye = that.setBye;
+
+        directConnection.listen('close', function () {
+            if (localStreams.length === 0) {
+                that.hangup();
+            }
+        });
+
+        directConnection.listen('accept', function () {
+            if (that.initiator === false) {
+                that.answer();
+            }
+            directConnectionOnly = false;
+        });
+
+        directConnection.listen('error', function (err) {
+            defMedia.reject(new Error(err));
+        });
+
+        directConnection.listen('started', function () {
+            defMedia.resolve(true);
+        });
+
+        /**
+         * @event brightstream.Call#direct-connection
+         * @type {brightstream.Event}
+         * @property {brightstream.DirectConnection} directConnection
+         */
+        that.fire('direct-connection', {
+            directConnection: directConnection
+        });
         return directConnection;
+    };
+
+    /**
+     *
+     * Close the direct connection.
+     * @memberof! brightstream.Call
+     * @method brightstream.Call.closeDirectConnection
+     */
+    that.closeDirectConnection = function () {
+        if (directConnection) {
+            directConnection.close();
+            directConnection = null;
+        }
     };
 
     /**
@@ -666,7 +807,6 @@ brightstream.Call = function (params) {
         var toHangup = false;
 
         if (that.state === ST_ENDED) {
-            log.trace("Call.hangup got called twice.");
             return;
         }
         that.state = ST_ENDED;
@@ -678,21 +818,19 @@ brightstream.Call = function (params) {
         clientObj.updateTurnCredentials();
         log.debug('hanging up');
 
-        if (pc) {
-            if (pc.getLocalStreams) {
-                pc.getLocalStreams().forEach(function (stream) {
-                    stream.numPc -= 1;
-                    if (stream.numPc === 0) {
-                        stream.stop();
-                        delete brightstream.streams[callSettings.constraints];
-                    }
-                });
-            }
-            toHangup = pc.close(params);
-        }
+        localStreams.forEach(function (stream) {
+            stream.stop();
+        });
 
         if (directConnection) {
-            directConnection.close();
+            if (directConnection.isActive()) {
+                directConnection.close();
+            }
+            directConnection.ignore();
+        }
+
+        if (pc) {
+            toHangup = pc.close(params);
         }
 
         /**
@@ -703,7 +841,10 @@ brightstream.Call = function (params) {
         that.fire('hangup', {
             sentSignal: toHangup
         });
+
         that.ignore();
+        that.remoteEndpoint.directConnection = null;
+        directConnection = null;
         pc = null;
     };
 
@@ -820,8 +961,6 @@ brightstream.Call = function (params) {
             } else {
                 that.unmuteAudio();
             }
-        } else {
-            console.log("skipping, media not active.");
         }
     };
 
@@ -832,14 +971,11 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#video-muted
      */
     that.muteVideo = function () {
-        console.log('muteVideo');
         if (videoIsMuted) {
-            console.log('skipping');
             return;
         }
         localStreams.forEach(function (stream) {
             stream.muteVideo();
-            console.log('done');
         });
         /**
          * @event brightstream.Call#video-muted
@@ -855,14 +991,11 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#video-unmuted
      */
     that.unmuteVideo = function () {
-        console.log('unmuteVideo');
         if (!videoIsMuted) {
-            console.log('skipping');
             return;
         }
         localStreams.forEach(function (stream) {
             stream.unmuteVideo();
-            console.log('done');
         });
         /**
          * @event brightstream.Call#video-unmuted
@@ -878,14 +1011,11 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#audio-muted
      */
     that.muteAudio = function () {
-        console.log('muteAudio');
         if (audioIsMuted) {
-            console.log('skipping');
             return;
         }
         localStreams.forEach(function (stream) {
             stream.muteAudio();
-            console.log('done');
         });
         /**
          * @event brightstream.Call#audio-muted
@@ -901,14 +1031,11 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#audio-unmuted
      */
     that.unmuteAudio = function () {
-        console.log('unmuteAudio');
         if (!audioIsMuted) {
-            console.log('skipping');
             return;
         }
         localStreams.forEach(function (stream) {
             stream.unmuteAudio();
-            console.log('done');
         });
         /**
          * @event brightstream.Call#audio-unmuted
@@ -931,5 +1058,6 @@ brightstream.Call = function (params) {
         that.hangup({signal: false});
     };
 
+    setTimeout(init, 5);
     return that;
 }; // End brightstream.Call

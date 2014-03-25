@@ -329,24 +329,29 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.getDirectConnection
      * @param {object} params
+     * @param {function} [params.onSuccess]
+     * @param {function} [params.onError]
      * @param {function} [params.onOpen]
      * @param {function} [params.onClose]
      * @param {function} [params.onMessage]
      * @param {RTCServers} [params.servers]
      * @param {string} [params.connectionId]
      * @param {boolean} [params.initiator] Whether the logged-in user initiated the datachannel.
-     * @returns {brightstream.DirectConnection}
+     * @returns {Promise<brightstream.DirectConnection>}
      */
     that.getDirectConnection = function (params) {
+        params = params || {};
         var clientObj = brightstream.getClient(client);
         var combinedConnectionSettings = clientObj.getCallSettings();
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var user = clientObj.user;
-        params = params || {};
+        var call;
 
         log.trace('Endpoint.getDirectConnection');
 
         if (that.directConnection) {
-            return that.directConnection;
+            deferred.resolve(that.directConnection);
+            return deferred.promise;
         }
 
         if (params.initiator === undefined) {
@@ -354,8 +359,8 @@ brightstream.Endpoint = function (params) {
         }
 
         if (!that.id) {
-            log.error("Can't start a direct connection without endpoint ID!");
-            return;
+            deferred.reject(new Error("Can't start a direct connection without endpoint ID!"));
+            return deferred.promise;
         }
 
         // Apply connection-specific callSettings to the app's defaults
@@ -409,36 +414,44 @@ brightstream.Endpoint = function (params) {
             log.debug("Not sending report");
             log.debug(signalParams.report);
         };
-        that.directConnection = brightstream.DirectConnection(params);
+        params.directConnectionOnly = true;
+
+        call = brightstream.Call(params);
+        call.listen('direct-connection', function (evt) {
+            that.directConnection = evt.directConnection;
+            if (params.initiator === true) {
+                that.directConnection.accept({
+                    onOpen: params.onOpen,
+                    onClose: params.onClose,
+                    onMessage: params.onMessage
+                });
+            } else {
+                /**
+                 * @event brightstream.User#direct-connection
+                 * @type {brightstream.Event}
+                 * @property {brightstream.DirectConnection}
+                 */
+                clientObj.user.fire('direct-connection', {
+                    directConnection: that.directConnection,
+                    endpoint: that
+                });
+                if (!clientObj.user.hasListeners('direct-connection')) {
+                    that.directConnection.reject();
+                    deferred.reject(new Error("Got an incoming direct connection with no handlers to accept it!"));
+                    return deferred.promise;
+                }
+
+                deferred.resolve(that.directConnection);
+                that.directConnection.listen('close', function (evt) {
+                    that.directConnection = undefined;
+                }, true);
+            }
+        });
 
         if (params.initiator === true) {
-            that.directConnection.accept({
-                onOpen: params.onOpen,
-                onClose: params.onClose,
-                onMessage: params.onMessage
-            });
-        } else {
-            /**
-             * @event brightstream.User#direct-connection
-             * @type {brightstream.Event}
-             * @property {brightstream.DirectConnection}
-             */
-            clientObj.user.fire('direct-connection', {
-                directConnection: that.directConnection,
-                endpoint: that
-            });
-            if (!clientObj.user.hasListeners('direct-connection')) {
-                log.warn("Got an incoming direct connection with no handlers to accept it!");
-                that.directConnection.reject();
-            }
+            call.answer(params);
         }
-
-        that.directConnection.listen('close', function (evt) {
-            that.directConnection.ignore();
-            that.directConnection = undefined;
-        }, true);
-
-        return that.directConnection;
+        return deferred.promise;
     };
 
     /**

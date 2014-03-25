@@ -14,7 +14,6 @@
  * @augments brightstream.EventEmitter
  * @param {object} params
  * @param {string} params.client - client id
- * candidates.
  * @param {object} params.callSettings
  * @returns {brightstream.LocalMedia}
  */
@@ -72,6 +71,15 @@ brightstream.LocalMedia = function (params) {
      * @type {boolean}
      */
     var audioIsMuted = false;
+    /**
+     * A timer to make sure we only fire {brightstream.LocalMedia#waiting-for-allow} if the browser doesn't
+     * automatically grant permission on behalf of the user. Timer is canceled in onReceiveUserMedia.
+     * @memberof! brightstream.LocalMedia
+     * @name allowTimer
+     * @private
+     * @type {number}
+     */
+    var allowTimer = 0;
     /**
      * @memberof! brightstream.LocalMedia
      * @name callSettings
@@ -167,8 +175,30 @@ brightstream.LocalMedia = function (params) {
      */
     function onReceiveUserMedia(theStream) {
         stream = theStream;
+        clearTimeout(allowTimer);
+        /**
+         * The user has approved the request for media. Any UI changes made to remind the user to click Allow
+         * should be canceled now.
+         * @event brightstream.LocalMedia#allowed
+         * @type {brightstream.Event}
+         */
+        that.fire('allowed');
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
+
+        /**
+         * Expose getAudioTracks.
+         * @memberof! brightstream.LocalMedia
+         * @method brightstream.LocalMedia.getAudioTracks
+         */
+        that.getAudioTracks = stream.getAudioTracks.bind(stream);
+
+        /**
+         * Expose getVideoTracks.
+         * @memberof! brightstream.LocalMedia
+         * @method brightstream.LocalMedia.getVideoTracks
+         */
+        that.getVideoTracks = stream.getVideoTracks.bind(stream);
 
         // This happens when we get an automatic hangup or reject from the other side.
         if (pc === null) {
@@ -183,8 +213,8 @@ brightstream.LocalMedia = function (params) {
         // will be needed. The first one passed back will contain media and the others will fake it. Media
         // will still be sent with every peer connection. Also need to study the use of getLocalElement
         // and the implications of passing back a video element with no media attached.
-        if (brightstream.streams[callSettings.constraints]) {
-            brightstream.streams[callSettings.constraints].numPc += 1;
+        if (brightstream.streams[that.constraints]) {
+            brightstream.streams[that.constraints].numPc += 1;
             /**
              * @event brightstream.LocalMedia#stream-received
              * @type {brightstream.Event}
@@ -197,7 +227,7 @@ brightstream.LocalMedia = function (params) {
             });
         } else {
             stream.numPc = 1;
-            brightstream.streams[callSettings.constraints] = stream;
+            brightstream.streams[that.constraints] = stream;
 
             stream.id = clientObj.user.getID();
             attachMediaStream(videoLocalElement, stream);
@@ -239,17 +269,33 @@ brightstream.LocalMedia = function (params) {
     function requestMedia() {
         log.trace('requestMedia');
 
-        if (brightstream.streams[callSettings.constraints]) {
+        that.constraints = callSettings.constraints;
+
+        if (!that.constraints) {
+            throw new Error('No constraints.');
+        }
+
+        if (brightstream.streams[that.constraints]) {
             log.debug('using old stream');
-            onReceiveUserMedia(brightstream.streams[callSettings.constraints]);
+            onReceiveUserMedia(brightstream.streams[that.constraints]);
             return;
         }
 
         try {
-            log.debug("Running getUserMedia with constraints", callSettings.constraints);
-            // TODO set brightstream.streams[callSettings.constraints] = true as a flag that we are already
+            log.debug("Running getUserMedia with constraints", that.constraints);
+            // TODO set brightstream.streams[that.constraints] = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
+            allowTimer = setTimeout(function allowTimer() {
+                /**
+                 * The browser is asking for permission to access the User's media. This would be an ideal time
+                 * to modify the UI of the application so that the user notices the request for permissions
+                 * and approves it.
+                 * @event brightstream.LocalMedia#waiting-for-allow
+                 * @type {brightstream.Event}
+                 */
+                that.fire('waiting-for-allow');
+            }, 500);
             getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
             log.error("Couldn't get user media: " + e.message);
@@ -382,6 +428,22 @@ brightstream.LocalMedia = function (params) {
          */
         that.fire('audio-unmuted');
         audioIsMuted = false;
+    };
+
+    /**
+     * Stop the stream.
+     * @memberof! brightstream.LocalMedia
+     * @method brightstream.LocalMedia.stop
+     * @fires brightstream.LocalMedia#stop
+     */
+    that.stop = function () {
+        stream.numPc -= 1;
+        if (stream.numPc === 0) {
+            stream.stop();
+            delete brightstream.streams[that.constraints];
+        }
+        stream = null;
+        that.fire('stop');
     };
 
     requestMedia();

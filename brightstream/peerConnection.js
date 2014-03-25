@@ -464,28 +464,35 @@ brightstream.PeerConnection = function (params) {
         log.trace('init');
 
         pc = new RTCPeerConnection(callSettings.servers, pcOptions);
+        window.pc = pc;
         pc.onicecandidate = onIceCandidate;
-        pc.ondatachannel = onNegotiationNeeded;
+        pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
             /**
              * @event brightstream.PeerConnection#remote-stream-received
-             * @type {MediaStreamEvent}
+             * @type {brightstream.Event}
              */
-            that.fire('remote-stream-received', evt);
+            that.fire('remote-stream-received', {
+                stream: evt.stream
+            });
         };
         pc.onremovestream = function onremovestream(evt) {
             /**
              * @event brightstream.PeerConnection#remote-stream-removed
-             * @type {MediaStreamEvent}
+             * @type {brightstream.Event}
              */
-            that.fire('remote-stream-removed', evt);
+            that.fire('remote-stream-removed', {
+                stream: evt.stream
+            });
         };
         pc.ondatachannel = function ondatachannel(evt) {
             /**
-             * @event brightstream.PeerConnection#datachannel
-             * @type {RTCDataChannelEvent}
+             * @event brightstream.PeerConnection#direct-connection
+             * @type {brightstream.Event}
              */
-            that.fire('datachannel', evt);
+            that.fire('direct-connection', {
+                channel: evt.channel
+            });
         };
 
         /**
@@ -525,7 +532,6 @@ brightstream.PeerConnection = function (params) {
             return;
         }
 
-        log.debug("local candidate", oCan.candidate);
         if (that.initiator && that.state < ST_ANSWERED) {
             candidateSendingQueue.push(oCan.candidate);
         } else {
