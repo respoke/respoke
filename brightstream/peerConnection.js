@@ -349,7 +349,7 @@ brightstream.PeerConnection = function (params) {
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
         log.debug('got offer', oOffer);
@@ -706,7 +706,7 @@ brightstream.PeerConnection = function (params) {
      * @param {function} [params.onSuccess]
      * @param {function} [params.onError]
      * @todo TODO Make this listen to events and be private.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.setAnswer = function (params) {
         params = params || {};

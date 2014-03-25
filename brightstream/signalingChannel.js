@@ -147,7 +147,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {string} params.token - The Endpoint's auth token
      * @param {string} params.appId - The App's id
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.open = function (params) {
         params = params || {};
@@ -184,7 +184,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.close = function (params) {
         params = params || {};
@@ -301,7 +301,7 @@ brightstream.SignalingChannel = function (params) {
      * Join a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.leaveGroup
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
@@ -328,7 +328,7 @@ brightstream.SignalingChannel = function (params) {
      * Join a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.joinGroup
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
@@ -355,7 +355,7 @@ brightstream.SignalingChannel = function (params) {
      * Publish a message to a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.publish
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -434,7 +434,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendMessage = function (params) {
         params = params || {};
@@ -467,7 +467,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendSignal = function (params) {
         params = params || {};
@@ -502,7 +502,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} params.candObj - An ICE candidate to JSONify and send.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendCandidate = function (params) {
         params = params || {};
@@ -537,7 +537,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} params.sdpObj - An SDP to JSONify and send.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendSDP = function (params) {
         params = params || {};
@@ -572,7 +572,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} params.reason - The reason the session is being terminated.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendBye = function (params) {
         params = params || {};
@@ -606,7 +606,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendConnected = function (params) {
         params = params || {};
@@ -1207,7 +1207,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} params.onStatusChange - A function to which to call on every state change.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.authenticate = function (params) {
         params = params || {};
@@ -1769,7 +1769,7 @@ brightstream.Group = function (params) {
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      * @fires brightstream.User#leave
      */
     group.leave = function (params) {
@@ -1877,7 +1877,7 @@ brightstream.Group = function (params) {
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @param {string} params.message - The message.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     group.sendMessage = function (params) {
         params.id = group.id;

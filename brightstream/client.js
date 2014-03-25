@@ -223,7 +223,7 @@ brightstream.Client = function (params) {
      * Disconnect from the Digium infrastructure. Invalidates the API token and disconnects the websocket.
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -302,7 +302,7 @@ brightstream.Client = function (params) {
      * @param {string} params.message - a string message.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendMessage = function (params) {
         var endpoint = that.getEndpoint({id: params.endpointId});

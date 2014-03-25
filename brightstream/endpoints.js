@@ -181,7 +181,7 @@ brightstream.Endpoint = function (params) {
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendMessage = function (params) {
         params = params || {};
@@ -205,7 +205,7 @@ brightstream.Endpoint = function (params) {
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @private
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendSignal = function (params) {
         log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
@@ -539,7 +539,7 @@ brightstream.User = function (params) {
      * @param {string} params.presence
      * @param {function} [params.onSuccess]
      * @param {function} [params.onError]
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.setPresence = function (params) {
         params = params || {};
@@ -676,7 +676,7 @@ brightstream.User = function (params) {
      * @method brightstream.User.setOnline
      * @param {object} params
      * @param {string} params.presence - The presence to set.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.setOnline = function (params) {
         params = params || {};

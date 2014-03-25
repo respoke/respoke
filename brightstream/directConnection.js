@@ -434,7 +434,7 @@ brightstream.DirectConnection = function (params) {
      * @param {object} [params.object] - An object to send.
      * @param [function] [params.onSuccess] - Success handler.
      * @param [function] [params.onError] - Error handler.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendMessage = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
