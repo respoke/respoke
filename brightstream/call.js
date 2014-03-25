@@ -371,9 +371,10 @@ brightstream.Call = function (params) {
     delete params.callSettings;
 
     /**
-     * Start the process of obtaining media. saveParameters will only be meaningful for the non-initiate,
-     * since the library calls this method for the initiate. Developers will use this method to pass in
-     * callbacks for the non-initiate.
+     * Answer the call and start the process of obtaining media. This method is called automatically on the caller's
+     * side. This method must be called on the callee's side to indicate that the endpoint does wish to accept the
+     * call. The app will have a later opportunity, by passing a callback named previewLocalMedia, to approve or
+     * reject the call based on whether audio and/or video is working and is working at an acceptable level.
      * @memberof! brightstream.Call
      * @method brightstream.Call.answer
      * @fires brightstream.Call#answer
@@ -392,6 +393,11 @@ brightstream.Call = function (params) {
         that.state = ST_STARTED;
         params = params || {};
         log.trace('answer');
+        /**
+         * saveParameters will only be meaningful for the non-initiate,
+         * since the library calls this method for the initiate. Developers will use this method to pass in
+         * callbacks for the non-initiate.
+         */
         saveParameters(params);
 
         pc.listen('remote-stream-received', onRemoteStreamAdded, true);
@@ -412,7 +418,11 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Start the process of network and media negotiation. Called after local video approved.
+     * Start the process of network and media negotiation. If the app passes in a callback named previewLocalMedia
+     * in order to allow the logged-in person a chance to base their decision to continue the call on whether
+     * audio and/or video is working correctly,
+     * this method must be called on both sides in order to begin the call. If call.approve() is called, the call
+     * will progress as expected. If call.reject() is called, the call will be aborted.
      * @memberof! brightstream.Call
      * @method brightstream.Call.approve.
      * @fires brightstream.Call#approve
@@ -510,17 +520,21 @@ brightstream.Call = function (params) {
     }
 
     /**
-     * Return media stats. Since we have to wait for both the answer and offer to be available before starting
-     * statistics, we'll return a promise for the stats object. Returns null if stats module is not loaded.
+     * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
+     * Since we have to wait for both the answer and offer to be available before starting
+     * statistics, the library returns a promise for the stats object. The statistics object does not contain the
+     * statistics; rather it contains methods of interacting with the actions of obtaining statistics. To obtain
+     * the actual statistics one time, use stats.getStats(); use the onStats callback to obtain a continuous
+     * stream of statistics every `interval` seconds.  Returns null if stats module is not loaded.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getStats
-     * @returns {Promise<object>|null}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
      * @param {function} [params.onStats] - An optional callback to receive the stats. If no callback is provided,
      * the call's report will contain stats but the developer will not receive them on the client-side.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<object>|null}
      */
     function getStats(params) {
         if (pc && pc.getStats) {
@@ -535,20 +549,20 @@ brightstream.Call = function (params) {
     }
 
     /**
-     * Return local video element.
+     * Return local video element with the logged-in endpoint's audio and/or video streams attached to it.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getLocalElement
-     * @returns {Video}
+     * @returns {Video} An HTML5 video element.
      */
     that.getLocalElement = function () {
         return videoLocalElement;
     };
 
     /**
-     * Return remote video element.
+     * Return remote video element with the remote endpoint's audio and/or video streams attached to it.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getRemoteE
-     * @returns {Video}
+     * @returns {Video} An HTML5 video element.
      */
     that.getRemoteElement = function () {
         return videoRemoteElement;
@@ -643,6 +657,7 @@ brightstream.Call = function (params) {
         videoRemoteElement.used = true;
         videoRemoteElement.play();
         /**
+         * This event is fired when the remote endpoint's audio and/or video have become available for displaying.
          * @event brightstream.Call#remote-stream-received
          * @type {brightstream.Event}
          * @property {Element} element - the HTML5 Video element with the new stream attached.
@@ -693,6 +708,7 @@ brightstream.Call = function (params) {
         }
 
         /**
+         * This event is fired when the call has hung up.
          * @event brightstream.Call#hangup
          * @type {brightstream.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
@@ -726,6 +742,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.setOffer
      * @param {RTCSessionDescription} sdp - The remote SDP.
+     * @private
      * @todo TODO Make this listen to events and be private.
      */
     that.setOffer = function (params) {
@@ -739,6 +756,7 @@ brightstream.Call = function (params) {
      * @param {object} params
      * @param {RTCSessionDescription} params.sdp - The remote SDP.
      * @param {string} params.connectionId - The connectionId of the endpoint who answered the call.
+     * @private
      * @todo TODO Make this listen to events and be private.
      */
     that.setAnswer = function (params) {
@@ -757,6 +775,7 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.setConnected
      * @param {RTCSessionDescription} oSession The remote SDP.
+     * @private
      * @todo TODO Make this listen to events and be private.
      */
     that.setConnected = function (signal) {
@@ -771,22 +790,28 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.addRemoteCandidate
      * @param {RTCIceCandidate} candidate The ICE candidate.
+     * @private
      * @todo TODO Make this listen to events and be private.
      */
     that.addRemoteCandidate = pc.addRemoteCandidate;
 
     /**
-     * Get the state of the Call
+     * Get the state of the Call. 0 indicates the call has just been created. 1 indicates the call is waiting for the
+     * audio and/or video to be approved. 2 indicates the audio and/or video have been approved. 3 indicates the caller
+     * has requested the call. 4 indicates the callee has answered the call and the call is being set up. 5 indicates
+     * that audio and/or video is flowing successfully.  6 indicates the call has ended. 7 indicates the call was never
+     * successful due to an error setting up the audio and/or video.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getState
-     * @returns {string}
+     * @returns {number} A number representing the current state of the call.
      */
     that.getState = function () {
         return pc.getState();
     };
 
     /**
-     * If video is muted, unmute. If not muted, mute. TODO: How should this behave?
+     * If video is muted, unmute. If not muted, mute.
+     * @deprecated
      * @memberof! brightstream.Call
      * @method brightstream.Call.toggleVideo
      */
@@ -801,7 +826,8 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * If audio is muted, unmute. If not muted, mute. TODO: How should this behave?
+     * If audio is muted, unmute. If not muted, mute.
+     * @deprecated
      * @memberof! brightstream.Call
      * @method brightstream.Call.toggleAudio
      */
@@ -831,6 +857,7 @@ brightstream.Call = function (params) {
             });
         });
         /**
+         * This event indicates that local video has been muted.
          * @event brightstream.Call#video-muted
          */
         that.fire('video-muted');
@@ -853,6 +880,7 @@ brightstream.Call = function (params) {
             });
         });
         /**
+         * This event indicates that local video has been unmuted.
          * @event brightstream.Call#video-unmuted
          */
         that.fire('video-unmuted');
@@ -875,6 +903,7 @@ brightstream.Call = function (params) {
             });
         });
         /**
+         * This event indicates that local audio has been muted.
          * @event brightstream.Call#audio-muted
          */
         that.fire('audio-muted');
@@ -897,6 +926,7 @@ brightstream.Call = function (params) {
             });
         });
         /**
+         * This event indicates that local audio has been unmuted.
          * @event brightstream.Call#audio-unmuted
          */
         that.fire('audio-unmuted');
@@ -910,6 +940,7 @@ brightstream.Call = function (params) {
      * @todo TODO Make this listen to events and be private.
      * @params {object} params
      * @params {string} [params.reason] - An optional reason for a hangup.
+     * @private
      */
     that.setBye = function (params) {
         params = params || {};

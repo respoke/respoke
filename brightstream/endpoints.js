@@ -32,7 +32,7 @@ brightstream.Presentable = function (params) {
     delete that.client;
     /**
      * @memberof! brightstream.Presentable
-     * @name className
+     * @name className - A name to identify the type of this object.
      * @type {string}
      */
     that.className = 'brightstream.Presentable';
@@ -51,7 +51,7 @@ brightstream.Presentable = function (params) {
      */
     var presence = 'unavailable';
     /**
-     * Return the user ID
+     * Return the endpoint ID.
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.getID
      * @return {string}
@@ -64,6 +64,7 @@ brightstream.Presentable = function (params) {
      * Get the name.
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.getName
+     * @private
      * @return {string}
      */
     that.getName = function () {
@@ -96,6 +97,7 @@ brightstream.Presentable = function (params) {
         }
 
         /**
+         * This event indicates that the presence for this endpoint has been updated.
          * @event brightstream.Presentable#presence
          * @type {brightstream.Event}
          * @property {string} presence
@@ -109,7 +111,7 @@ brightstream.Presentable = function (params) {
      * Get the presence.
      * @memberof! brightstream.Presentable
      * @method brightstream.Presentable.getPresence
-     * @returns {string}
+     * @returns {string} A string representing the current presence of this endpoint.
      */
     that.getPresence = function () {
         return presence;
@@ -119,12 +121,13 @@ brightstream.Presentable = function (params) {
 }; // End brightstream.Presentable
 
 /**
- * Represents remote Endpoints.
+ * Represents remote Endpoints. Endpoints are users of this application that are not the one logged into this
+ * instance of the application.  The currently logged-in user can interact with endpoints by calling them or
+ * sending them messages.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments brightstream.Presentable
  * @param {object} params
- * @param {string} params.client
  * @param {string} params.id
  * @returns {brightstream.Endpoint}
  */
@@ -141,12 +144,14 @@ brightstream.Endpoint = function (params) {
     var that = brightstream.Presentable(params);
     delete that.client;
     /**
+     * A name to identify the type of this object.
      * @memberof! brightstream.Endpoint
      * @name className
      * @type {string}
      */
     that.className = 'brightstream.Endpoint';
     /**
+     * A direct connection to this endpoint. This can be used to send direct messages.
      * @memberof! brightstream.Endpoint
      * @name directConnection
      * @type {brightstream.DirectConnection}
@@ -199,6 +204,7 @@ brightstream.Endpoint = function (params) {
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @private
      * @returns {Promise<undefined>}
      */
     that.sendSignal = function (params) {
@@ -235,6 +241,12 @@ brightstream.Endpoint = function (params) {
      * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
      * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
+     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * audio and/or video attached.
+     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
+     * audio and/or video attached.
+     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
+     * @param {function} [params.onStats] - Callback for receiving statistical information.
      * @returns {brightstream.Call}
      */
     that.call = function (params) {
@@ -242,6 +254,7 @@ brightstream.Endpoint = function (params) {
         var clientObj = brightstream.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
         var user = clientObj.user;
+        params = params || {};
 
         log.trace('Endpoint.call');
         log.debug('Default callSettings is', combinedCallSettings);
@@ -325,17 +338,24 @@ brightstream.Endpoint = function (params) {
     };
 
     /**
-     * Create a new DirectConnection.
+     * Create a new DirectConnection.  This method creates a new Call as well, attaching this DirectConnection to
+     * it for the purposes of creating a peer-to-peer link for sending data such as messages to the other endpoint.
+     * Information sent through a DirectConnection is not handled by the cloud infrastructure.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.getDirectConnection
      * @param {object} params
-     * @param {function} [params.onOpen]
-     * @param {function} [params.onClose]
-     * @param {function} [params.onMessage]
-     * @param {RTCServers} [params.servers]
-     * @param {string} [params.connectionId]
-     * @param {boolean} [params.initiator] Whether the logged-in user initiated the datachannel.
-     * @returns {brightstream.DirectConnection}
+     * @param {function} [params.onOpen] - A callback for receiving notification of when the DirectConnection is
+     * open and ready to be used.
+     * @param {function} [params.onClose] - A callback for receiving notification of when the DirectConnection
+     * is closed and the two Endpoints are disconnected.
+     * @param {function} [params.onMessage] - A callback for receiving messages sent through the DirectConnection.
+     * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
+     * @param {string} [params.connectionId] - An optional connection ID to use for this connection. This allows
+     * the connection to be made to a specific instance of an endpoint in the case that the same endpoint is logged
+     * in from multiple locations.
+     * @param {boolean} [params.initiator] - Whether the logged-in user initiated the DirectConnection.
+     * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
+     * directly to the other endpoint.
      */
     that.getDirectConnection = function (params) {
         var clientObj = brightstream.getClient(client);
@@ -419,6 +439,9 @@ brightstream.Endpoint = function (params) {
             });
         } else {
             /**
+             * This event is fired when the logged-in endpoint is receiving a request to open a direct connection
+             * to another endpoint.  If the user wishes to allow the direct connection, calling
+             * evt.directConnection.accept() will allow the connection to be set up.
              * @event brightstream.User#direct-connection
              * @type {brightstream.Event}
              * @property {brightstream.DirectConnection}
@@ -509,7 +532,7 @@ brightstream.User = function (params) {
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
-     * Override Presentable.setPresence to send presence to the server before updating the object.
+     * Overrides Presentable.setPresence to send presence to the server before updating the object.
      * @memberof! brightstream.User
      * @method brightstream.User.setPresence
      * @param {object} params
@@ -563,7 +586,7 @@ brightstream.User = function (params) {
         calls.forEach(function findCall(one) {
             if (one.remoteEndpoint.getID() === params.id) {
                 if (one.getState() >= 6) { // ended or media error
-                    return;
+                    return null;
                 }
                 call = one;
             }
@@ -585,18 +608,20 @@ brightstream.User = function (params) {
     };
 
     /**
-     * Associate the call or direct connection with this user.
+     * Associate the call with this user.
      * @memberof! brightstream.User
      * @method brightstream.User.addCall
      * @param {object} params
      * @param {brightstream.Call} params.call
      * @fires brightstream.User#call
-     * @todo TODO rename this something else
+     * @private
      */
     that.addCall = function (params) {
         if (calls.indexOf(params.call) === -1) {
             calls.push(params.call);
             /**
+             * This event provides notification for when an incoming call is being received.  If the user wishes
+             * to allow the call, the app should call evt.call.answer() to answer the call.
              * @event brightstream.User#call
              * @type {brightstream.Event}
              * @property {brightstream.Call} call
@@ -651,6 +676,7 @@ brightstream.User = function (params) {
      * @method brightstream.User.setOnline
      * @param {object} params
      * @param {string} params.presence - The presence to set.
+     * @returns {Promise<undefined>}
      */
     that.setOnline = function (params) {
         params = params || {};

@@ -17,11 +17,13 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} [params.appId]
- * @param {string} [params.baseURL]
- * @param {string} [params.authToken]
- * @param {RTCConstraints} [params.constraints]
- * @param {RTCICEServers} [params.servers]
+ * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+ * brightstream.connect, brightstream.createClient, or to client.connect.
+ * @param {string} [params.authToken] - The endpoint's authentication token.
+ * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
+ * different paramters than the built-in defaults.
+ * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
+ * different paramters than the built-in defaults.
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
@@ -39,7 +41,7 @@ brightstream.Client = function (params) {
     brightstream.instances[client] = that;
     /**
      * @memberof! brightstream.Client
-     * @name className
+     * @name className - A name to identify this class
      * @type {string}
      */
     that.className = 'brightstream.Client';
@@ -65,11 +67,14 @@ brightstream.Client = function (params) {
      */
     var connected = false;
     /**
+     * A container for baseURL, authToken, and appId so they won't be accessble on the console.
      * @memberof! brightstream.Client
      * @name app
      * @type {object}
      * @private
-     * @desc A container for baseURL, authToken, and appId so they won't be accessble on the console.
+     * @property {string} baseURL - the URL of the cloud infrastructure's REST API.
+     * @property {string} authToken - The endpoint's authentication token.
+     * @property {string} appId - The id of your BrightStream app.
      */
     var app = {
         baseURL: params.baseURL,
@@ -80,7 +85,7 @@ brightstream.Client = function (params) {
     delete that.baseURL;
     /**
      * @memberof! brightstream.Client
-     * @name user
+     * @name user - The currently logged-in endpoint.
      * @type {brightstream.User}
      */
     that.user = null;
@@ -147,10 +152,6 @@ brightstream.Client = function (params) {
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
-     * @param {function} [params.onAutoJoin] - Callback for when this client's user automatically joins a group. Not
-     * Implemented.
-     * @param {function} [params.onAutoLeave] - Callback for when this client's user automatically leaves a group. Not
-     * Implemented.
      * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
      * @param {function} [params.onDisconnect] - Callback for Client disconnect.
      * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
@@ -202,6 +203,7 @@ brightstream.Client = function (params) {
             that.updateTurnCredentials();
 
             /**
+             * This event is fired the first time the library connects to the cloud infrastructure.
              * @event brightstream.Client#connect
              * @type {brightstream.Event}
              * @property {brightstream.User}
@@ -258,6 +260,7 @@ brightstream.Client = function (params) {
             endpoints = [];
             groups = [];
             /**
+             * This event is fired when the library has disconnected from the cloud infrastructure.
              * @event brightstream.Client#disconnect
              */
             that.fire('disconnect');
@@ -282,7 +285,7 @@ brightstream.Client = function (params) {
      * Get an array containing all call in progress. Returns null if not connected.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getCalls
-     * @returns {Array<brightstream.Call>}
+     * @returns {Array<brightstream.Call>} A list of all the calls in progress.
      */
     that.getCalls = function () {
         return that.user ? that.user.getCalls() : null;
@@ -313,9 +316,16 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.call
      * @param {object} params
      * @param {string} params.endpointId
+     * @param {RTCServers} [params.servers]
+     * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
+     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * audio and/or video attached.
+     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
+     * audio and/or video attached.
+     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
+     * @param {function} [params.onStats] - Callback for receiving statistical information.
      * @return {brightstream.Call}
      */
     that.call = function (params) {
@@ -328,6 +338,7 @@ brightstream.Client = function (params) {
      * Update TURN credentials and set a timeout to do it again in 20 hours.
      * @memberof! brightstream.Client
      * @method brightstream.Client.updateTurnCredentials
+     * @private
      */
     that.updateTurnCredentials = function () {
         if (callSettings.disableTurn === true) {
@@ -347,7 +358,7 @@ brightstream.Client = function (params) {
      * Determine whether the Client has authenticated with its token against the brightstream infrastructure.
      * @memberof! brightstream.Client
      * @method brightstream.Client.isConnected
-     * @returns {boolean}
+     * @returns {boolean} True or false to indicate whether the library is connected.
      */
     that.isConnected = function () {
         return !!connected;
@@ -358,6 +369,7 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.getClientSettings
      * @returns {object} An object containing the client settings.
+     * @private
      */
     that.getClientSettings = function () {
         return app;
@@ -369,6 +381,7 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getCallSettings
      * @returns {object} An object containing the media settings which will be used in
      * brightstream calls.
+     * @private
      */
     that.getCallSettings = function () {
         return callSettings;
@@ -432,6 +445,8 @@ brightstream.Client = function (params) {
                 onLeave: params.onLeave
             });
             /**
+             * This event is fired every time the currently logged-in endpoint joins a group. If the endpoint leaves
+             * a group, this event will be fired again on the next time the endpoint joins the group.
              * @event {brightstream.User#join}
              * @type {brightstream.Event}
              * @property {brighstream.Group} group
@@ -515,7 +530,7 @@ brightstream.Client = function (params) {
      * Get a list of all the groups we're currently a member of.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getGroups
-     * @returns {Array<brightstream.Group>}
+     * @returns {Array<brightstream.Group>} All of the groups the library is aware of.
      */
     that.getGroups = function () {
         return groups;
@@ -527,7 +542,7 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getGroup
      * @param {object} params
      * @param {string} params.id
-     * @returns {brightstream.Group}
+     * @returns {brightstream.Group} The group whose ID was specified.
      */
     that.getGroup = function (params) {
         var group;
@@ -619,7 +634,7 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
-     * @returns {brightstream.Endpoint}
+     * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
         var endpoint;
@@ -645,7 +660,12 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Get the list of all endpoints we know about.
+     * Get the list of all endpoints that the library has knowledge of. The library gains knowledge of an endpoint
+     * either when an endpoint joins a group that the currently logged-in endpoint is a member of (if group presence is
+     * enabled); when an endpoint that the currently logged-in endpoint is watching (if enabled). If an endpoint that
+     * the library does not know about sends a message to the currently logged-in user, there is a special case in
+     * which the developer can immediately call the getEndpoint() method on the sender of the message. This tells
+     * the library to keep track of the endpoint, even though it had previously not had reason to do so.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getEndpoints
      * @returns {Array<brightstream.Endpoint>}

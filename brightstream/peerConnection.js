@@ -791,10 +791,10 @@ brightstream.PeerConnection = function (params) {
      * Get the state of the Call
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.getState
-     * @returns {string}
+     * @returns {number}
      */
     that.getState = function () {
-        return pc ? that.state : "before";
+        return pc ? that.state : 0;
     };
 
     /**
