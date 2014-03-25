@@ -433,7 +433,7 @@ brightstream.Call = function (params) {
      * this method must be called on both sides in order to begin the call. If call.approve() is called, the call
      * will progress as expected. If call.reject() is called, the call will be aborted.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.approve.
+     * @method brightstream.Call.approve
      * @fires brightstream.Call#approve
      */
     that.approve = function () {
