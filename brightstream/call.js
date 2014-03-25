@@ -561,7 +561,7 @@ brightstream.Call = function (params) {
     /**
      * Return remote video element with the remote endpoint's audio and/or video streams attached to it.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.getRemoteE
+     * @method brightstream.Call.getRemoteElement
      * @returns {Video} An HTML5 video element.
      */
     that.getRemoteElement = function () {
