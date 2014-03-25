@@ -1801,8 +1801,9 @@ brightstream.Group = function (params) {
      * @private
      * @memberof! brightstream.Group
      * @method brightstream.Group.removeEndpoint
-     * @param {string} [name] Endpoint name
-     * @param {string} [id] Endpoint id
+     * @param {object} params
+     * @param {string} [params.name] Endpoint name
+     * @param {string} [params.id] Endpoint id
      * @fires brightstream.Group#leave
      */
     group.removeEndpoint = function (newEndpoint) {
@@ -1833,8 +1834,9 @@ brightstream.Group = function (params) {
      * @memberof! brightstream.Group
      * @private
      * @method brightstream.Group.addEndpoint
-     * @param {string} [name] Endpoint name
-     * @param {string} [id] Endpoint id
+     * @param {object} params
+     * @param {string} [params.name] Endpoint name
+     * @param {string} [params.id] Endpoint id
      * @fires brightstream.Group#join
      */
     group.addEndpoint = function (newEndpoint) {
