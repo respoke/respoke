@@ -7,112 +7,291 @@
  */
 
 /**
- * Create a new Call.
+ * WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Call
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC Call including getUserMedia, path and codec negotation, and call state.
- * @param {string} client - client id
- * @param {boolean} initiator - whether or not we initiated the call
- * @param {boolean} receiveOnly - whether or not we accept media
- * @param {boolean} sendOnly - whether or not we send media
- * @param {boolean} forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay' candidates.
- * @param {brightstream.Endpoint} remoteEndpoint
- * @param {string} connectionId - The connection ID of the remoteEndpoint.
- * @param {function} [previewLocalMedia] - A function to call if the developer wants to perform an action between
+ * @param {object} params
+ * @param {string} params.client - client id
+ * @param {boolean} params.initiator - whether or not we initiated the call
+ * @param {boolean} params.receiveOnly - whether or not we accept media
+ * @param {boolean} params.sendOnly - whether or not we send media
+ * @param {boolean} params.forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
+ * candidates.
+ * @param {brightstream.Endpoint} params.remoteEndpoint
+ * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
+ * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action between
  * local media becoming available and calling approve().
- * @param {function} signalOffer - Signaling action from SignalingChannel.
- * @param {function} signalConnected - Signaling action from SignalingChannel.
- * @param {function} signalAnswer - Signaling action from SignalingChannel.
- * @param {function} signalTerminate - Signaling action from SignalingChannel.
- * @param {function} signalReport - Signaling action from SignalingChannel.
- * @param {function} signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [onLocalVideo] - Callback for the developer to receive the local video element.
- * @param {function} [onRemoteVideo] - Callback for the developer to receive the remote video element.
- * @param {function} [onHangup] - Callback for the developer to be notified about hangup.
- * @param {function} [onStats] - Callback for the developer to receive statistics about the call. This is only used
- * if call.getStats() is called and the stats module is loaded.
- * @param {object} callSettings
- * @param {object} [localVideoElements]
- * @param {object} [remoteVideoElements]
+ * @param {function} params.signalOffer - Signaling action from SignalingChannel.
+ * @param {function} params.signalConnected - Signaling action from SignalingChannel.
+ * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalReport - Signaling action from SignalingChannel.
+ * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
+ * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
+ * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
+ * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {object} params.callSettings
+ * @param {object} [params.localVideoElements]
+ * @param {object} [params.remoteVideoElements]
  * @returns {brightstream.Call}
  */
 /*global brightstream: false */
 brightstream.Call = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.Call
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.EventEmitter(params);
     delete that.client;
+    /**
+     * @memberof! brightstream.Call
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.Call';
+    /**
+     * @memberof! brightstream.Call
+     * @name id
+     * @type {string}
+     */
     that.id = brightstream.makeUniqueID().toString();
 
     if (!that.initiator) {
+        /**
+         * @memberof! brightstream.Call
+         * @name initiator
+         * @type {boolean}
+         */
         that.initiator = false;
     }
 
-    var pc = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name defOffer
+     * @private
+     * @type {Promise}
+     */
     var defOffer = Q.defer();
+    /**
+     * @memberof! brightstream.Call
+     * @name defAnswer
+     * @private
+     * @type {Promise}
+     */
     var defAnswer = Q.defer();
+    /**
+     * @memberof! brightstream.Call
+     * @name defApproved
+     * @private
+     * @type {Promise}
+     */
     var defApproved = Q.defer();
-    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
-    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
-    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
-    var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
-    var candidateSendingQueue = [];
-    var candidateReceivingQueue = [];
-    var mediaStreams = [];
+    /**
+     * @memberof! brightstream.Call
+     * @name previewLocalMedia
+     * @private
+     * @type {function}
+     */
+    var previewLocalMedia = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name onLocalVideo
+     * @private
+     * @type {function}
+     */
+    var onLocalVideo = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name onRemoteVideo
+     * @private
+     * @type {function}
+     */
+    var onRemoteVideo = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name onHangup
+     * @private
+     * @type {function}
+     */
+    var onHangup = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name sendOnly
+     * @private
+     * @type {boolean}
+     */
+    var sendOnly = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name receiveOnly
+     * @private
+     * @type {boolean}
+     */
+    var receiveOnly = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name forceTurn
+     * @private
+     * @type {boolean}
+     */
+    var forceTurn = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name clientObj
+     * @private
+     * @type {brightstream.getClient}
+     */
     var clientObj = brightstream.getClient(client);
+    /**
+     * @memberof! brightstream.Call
+     * @name localVideoElements
+     * @private
+     * @type {Array<Video>}
+     */
     var localVideoElements = params.localVideoElements || [];
+    /**
+     * @memberof! brightstream.Call
+     * @name remoteVideoElements
+     * @private
+     * @type {Array<Video>}
+     */
     var remoteVideoElements = params.remoteVideoElements || [];
+    /**
+     * @memberof! brightstream.Call
+     * @name videoLocalElement
+     * @private
+     * @type {Video}
+     */
     var videoLocalElement = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name videoRemoteElement
+     * @private
+     * @type {Video}
+     */
     var videoRemoteElement = null;
+    /**
+     * @memberof! brightstream.Call
+     * @name videoIsMuted
+     * @private
+     * @type {boolean}
+     */
     var videoIsMuted = false;
+    /**
+     * @memberof! brightstream.Call
+     * @name audioIsMuted
+     * @private
+     * @type {boolean}
+     */
     var audioIsMuted = false;
-
+    /**
+     * @memberof! brightstream.Call
+     * @name callSettings
+     * @private
+     * @type {object}
+     */
     var callSettings = params.callSettings;
-    var signalOffer = params.signalOffer;
-    var signalConnected = params.signalConnected;
-    var signalAnswer = params.signalAnswer;
-    var signalTerminate = params.signalTerminate;
-    var signalReport = params.signalReport;
-    function signalCandidate(oCan) {
-        params.signalCandidate({
-            candidate: oCan,
-            connectionId: that.connectionId
-        });
-        report.candidatesSent.push(oCan);
-    }
-
-    var options = {
+    /**
+     * @memberof! brightstream.Call
+     * @name mediaOptions
+     * @private
+     * @type {object}
+     */
+    var mediaOptions = {
         optional: [
             { DtlsSrtpKeyAgreement: true },
             { RtpDataChannels: false }
         ]
     };
-
-    var report = {
-        callStarted: 0,
-        callStopped: 0,
-        lastSDPString: '',
-        sdpsSent: [],
-        sdpsReceived: [],
-        candidatesSent: [],
-        candidatesReceived: [],
-        stats: [],
-        userAgent: navigator.userAgent,
-        os: navigator.platform
-    };
-
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_STARTED
+     * @private
+     * @type {number}
+     */
     var ST_STARTED = 0;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_INREVIEW
+     * @private
+     * @type {number}
+     */
     var ST_INREVIEW = 1;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_APPROVED
+     * @private
+     * @type {number}
+     */
     var ST_APPROVED = 2;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_OFFERED
+     * @private
+     * @type {number}
+     */
     var ST_OFFERED = 3;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_ANSWERED
+     * @private
+     * @type {number}
+     */
     var ST_ANSWERED = 4;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_FLOWING
+     * @private
+     * @type {number}
+     */
     var ST_FLOWING = 5;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_ENDED
+     * @private
+     * @type {number}
+     */
     var ST_ENDED = 6;
+    /**
+     * @memberof! brightstream.Call
+     * @name ST_MEDIA_ERROR
+     * @private
+     * @type {number}
+     */
     var ST_MEDIA_ERROR = 7;
+    /**
+     * @memberof! brightstream.Call
+     * @name pc
+     * @private
+     * @type {brightstream.PeerConnection}
+     */
+    var pc = brightstream.PeerConnection({
+        client: client,
+        connectionId: that.connectionId,
+        initiator: that.initiator,
+        forceTurn: forceTurn,
+        callSettings: callSettings,
+        pcOptions: {
+            optional: [
+                { DtlsSrtpKeyAgreement: true },
+                { RtpDataChannels: false }
+            ]
+        },
+        offerOptions: null,
+        signalOffer: params.signalOffer,
+        signalConnected: params.signalConnected,
+        signalAnswer: params.signalAnswer,
+        signalTerminate: params.signalTerminate,
+        signalReport: params.signalReport,
+        signalCandidate: params.signalCandidate
+    });
 
     /**
      * If we're not the initiator, we need to listen for approval AND the remote SDP to come in
@@ -121,7 +300,11 @@ brightstream.Call = function (params) {
     if (that.initiator !== true) {
         Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
             if (approved === true && oOffer && oOffer.sdp) {
-                processOffer(oOffer);
+                pc.processOffer(oOffer.sdp).done(function () {
+                    that.state = ST_OFFERED;
+                }, function () {
+                    that.hangup({signal: !that.initiator});
+                });
             }
         }, function (err) {
             log.warn("Call rejected.");
@@ -131,55 +314,88 @@ brightstream.Call = function (params) {
     /**
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.Call
-     * @method brightstream.Call.registerListeners
-     * @param {function} [onLocalVideo]
-     * @param {function} [onRemoteVideo]
-     * @param {function} [onHangup]
+     * @method brightstream.Call.saveParameters
+     * @param {object} params
+     * @param {function} [params.onLocalVideo]
+     * @param {function} [params.onRemoteVideo]
+     * @param {function} [params.onHangup]
+     * @param {function} [params.previewLocalMedia]
+     * @param {object} [params.callSettings]
+     * @param {object} [params.constraints]
+     * @param {array} [params.servers]
+     * @param {boolean} [params.forceTurn]
+     * @param {boolean} [params.receiveOnly]
+     * @param {boolean} [params.sendOnly]
      * @private
      */
-    function registerListeners(params) {
-        if (typeof params.onLocalVideo === 'function') {
-            that.listen('local-stream-received', params.onLocalVideo);
-        }
-
-        if (typeof params.onRemoteVideo === 'function') {
-            that.listen('remote-stream-received', params.onRemoteVideo);
-        }
-
-        if (typeof params.onHangup === 'function') {
-            that.listen('hangup', params.onHangup);
-        }
+    function saveParameters(params) {
+        that.listen('local-stream-received', params.onLocalVideo);
+        that.listen('remote-stream-received', params.onRemoteVideo);
+        that.listen('hangup', params.onHangup);
+        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
+        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
+        sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
+        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
+            params.previewLocalMedia : previewLocalMedia;
+        callSettings = params.callSettings || callSettings || {};
+        callSettings.servers = params.servers || callSettings.servers;
+        callSettings.constraints = params.constraints || callSettings.constraints;
+        callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
+        pc.callSettings = callSettings;
+        pc.forceTurn = forceTurn;
+        pc.receiveOnly = receiveOnly;
+        pc.sendOnly = sendOnly;
+        pc.listen('stats', function fireStats(evt) {
+            /**
+             * @event brightstream.Call#stats
+             * @type {brightstream.Event}
+             * @property {object} stats - an object with stats in it.
+             */
+            that.fire('stats', {stats: evt.stats});
+        }, true);
     }
 
     /**
-     * Must call registerListeners as part of object construction.
+     * Must call saveParameters as part of object construction.
      */
-    registerListeners(params);
+    saveParameters(params);
+
+    delete params.signalOffer;
+    delete params.signalConnected;
+    delete params.signalAnswer;
+    delete params.signalTerminate;
+    delete params.signalReport;
+    delete params.signalCandidate;
+    delete params.onRemoteVideo;
+    delete params.onLocalVideo;
+    delete params.callSettings;
 
     /**
-     * Start the process of obtaining media. registerListeners will only be meaningful for the non-initiate,
+     * Start the process of obtaining media. saveParameters will only be meaningful for the non-initiate,
      * since the library calls this method for the initiate. Developers will use this method to pass in
      * callbacks for the non-initiate.
      * @memberof! brightstream.Call
      * @method brightstream.Call.answer
      * @fires brightstream.Call#answer
-     * @param {function} [previewLocalMedia]
-     * @param {function} [onLocalVideo]
-     * @param {function} [onRemoteVideo]
-     * @param {function} [onHangup]
-     * @param {boolean} [forceTurn]
-     * @param {boolean} [receiveOnly]
+     * @param {object} [params]
+     * @param {function} [params.previewLocalMedia]
+     * @param {function} [params.onLocalVideo]
+     * @param {function} [params.onRemoteVideo]
+     * @param {function} [params.onHangup]
+     * @param {boolean} [params.disableTurn]
+     * @param {boolean} [params.receiveOnly]
+     * @param {boolean} [params.sendOnly]
+     * @param {object} [params.constraints]
+     * @param {array} [params.servers]
      */
     that.answer = function (params) {
         that.state = ST_STARTED;
         params = params || {};
         log.trace('answer');
-        registerListeners(params);
+        saveParameters(params);
 
-        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
-        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
-            params.previewLocalMedia : previewLocalMedia;
+        pc.listen('remote-stream-received', onRemoteStreamAdded, true);
+        pc.listen('local-stream-received', onRemoteStreamRemoved, true);
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
@@ -189,7 +405,7 @@ brightstream.Call = function (params) {
         that.fire('answer');
 
         if (receiveOnly !== true) {
-            requestMedia(params);
+            requestMedia();
         } else if (typeof previewLocalMedia !== 'function') {
             that.approve();
         }
@@ -212,10 +428,7 @@ brightstream.Call = function (params) {
         that.fire('approve');
 
         if (that.initiator === true) {
-            log.info('creating offer');
-            pc.createOffer(saveOfferAndSend, function errorHandler(p) {
-                log.error('createOffer failed');
-            }, null);
+            pc.initOffer();
             return;
         } else {
             defApproved.resolve(true);
@@ -223,42 +436,11 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Process a remote offer if we are not the initiator.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.processOffer
-     * @private
-     * @param {RTCSessionDescriptor}
-     */
-    function processOffer(oOffer) {
-        log.trace('processOffer');
-        log.debug('processOffer', oOffer);
-
-        try {
-            pc.setRemoteDescription(new RTCSessionDescription(oOffer),
-                function successHandler() {
-                    log.debug('set remote desc of offer succeeded');
-                    pc.createAnswer(saveAnswerAndSend, function errorHandler(err) {
-                        log.error("Error creating SDP answer.", err);
-                        report.callStoppedReason = 'Error creating SDP answer.';
-                    });
-                }, function errorHandler(err) {
-                    log.error('set remote desc of offer failed', err);
-                    report.callStoppedReason = 'setLocalDescr failed at offer.';
-                    that.hangup();
-                }
-            );
-            that.state = ST_OFFERED;
-        } catch (err) {
-            log.error("error processing offer: ", err);
-        }
-    }
-
-    /**
      * Save the local stream. Kick off SDP creation.
      * @memberof! brightstream.Call
      * @method brightstream.Call.onReceiveUserMedia
      * @private
-     * @param {MediaStream}
+     * @param {RTCMediaStream}
      * @fires brightstream.Call#local-stream-received
      */
     function onReceiveUserMedia(stream) {
@@ -301,10 +483,6 @@ brightstream.Call = function (params) {
         } else {
             stream.numPc = 1;
             brightstream.streams[callSettings.constraints] = stream;
-            mediaStreams.push(brightstream.MediaStream({
-                'stream': stream,
-                'isLocal': true
-            }));
 
             stream.id = clientObj.user.getID();
             attachMediaStream(videoLocalElement, stream);
@@ -333,57 +511,25 @@ brightstream.Call = function (params) {
 
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
-     * statistics, we'll return a promise for the stats object.
+     * statistics, we'll return a promise for the stats object. Returns null if stats module is not loaded.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getStats
-     * @returns {Promise<object>}
-     * @param {number} [interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [onStats] - An optional callback to receive the stats. If no callback is provided,
+     * @returns {Promise<object>|null}
+     * @param {object} params
+     * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {function} [params.onStats] - An optional callback to receive the stats. If no callback is provided,
      * the call's report will contain stats but the developer will not receive them on the client-side.
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      */
     function getStats(params) {
-        var deferred = brightstream.makeDeferred(null, function (err) {
-            log.warn("Couldn't start stats:", err.message);
-        });
-
-        if (!pc) {
-            deferred.reject(new Error("Can't get stats, pc is null."));
-            return deferred.promise;
-        }
-
-        if (brightstream.MediaStats) {
+        if (pc && pc.getStats) {
             that.listen('stats', params.onStats);
-            Q.all([defOffer.promise, defAnswer.promise]).done(function () {
-                var stats = brightstream.MediaStats({
-                    peerConnection: pc,
-                    interval: params.interval,
-                    onStats: function (stats) {
-                        /**
-                         * @event brightstream.Call#stats
-                         * @type {brightstream.Event}
-                         * @property {object} stats - an object with stats in it.
-                         */
-                        that.fire('stats', {
-                            stats: stats
-                        });
-                        report.stats.push(stats);
-                    }
-                });
-                that.listen('hangup', function (evt) {
-                    stats.stopStats();
-                }, true);
-                deferred.resolve(stats);
-            }, function (err) {
-                log.warn("Call rejected.");
-            });
-        } else {
-            deferred.reject(new Error("Statistics module is not loaded."));
+            delete params.onStats;
+            return pc.getStats(params);
         }
-        return deferred.promise;
+        return null;
     }
-
     if (brightstream.MediaStats) {
         that.getStats = getStats;
     }
@@ -392,6 +538,7 @@ brightstream.Call = function (params) {
      * Return local video element.
      * @memberof! brightstream.Call
      * @method brightstream.Call.getLocalElement
+     * @returns {Video}
      */
     that.getLocalElement = function () {
         return videoLocalElement;
@@ -400,7 +547,8 @@ brightstream.Call = function (params) {
     /**
      * Return remote video element.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.getRemoteElement
+     * @method brightstream.Call.getRemoteE
+     * @returns {Video}
      */
     that.getRemoteElement = function () {
         return videoRemoteElement;
@@ -412,50 +560,11 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.requestMedia
      * @todo Find out when we can stop deleting TURN servers
      * @private
-     * @param {object} callSettings
      */
-    function requestMedia(finalCallSettings) {
-        var now = new Date();
-        var toDelete = [];
-        var url = '';
-
-        finalCallSettings = finalCallSettings || {};
-        if (finalCallSettings.servers) {
-            callSettings.servers = finalCallSettings.servers;
-        }
-        if (finalCallSettings.constraints) {
-            callSettings.constraints = finalCallSettings.constraints;
-        }
-
-        report.callStarted = now.getTime();
+    function requestMedia() {
         log.trace('requestMedia');
 
-        try {
-            pc = new RTCPeerConnection(callSettings.servers, options);
-        } catch (e) {
-            /* TURN is not supported, delete them from the array.
-             * TODO: Find out when we can remove this workaround
-             */
-            log.debug("Removing TURN servers.");
-            for (var i in callSettings.servers.iceServers) {
-                if (callSettings.servers.iceServers.hasOwnProperty(i)) {
-                    url = callSettings.servers.iceServers[i].url;
-                    if (url.toLowerCase().indexOf('turn') > -1) {
-                        toDelete.push(i);
-                    }
-                }
-            }
-            toDelete.sort(function sorter(a, b) { return b - a; });
-            toDelete.forEach(function deleteByIndex(value, index) {
-                callSettings.servers.iceServers.splice(index);
-            });
-            pc = new RTCPeerConnection(callSettings.servers, options);
-        }
-
-        pc.onaddstream = onRemoteStreamAdded;
-        pc.onremovestream = onRemoteStreamRemoved;
-        pc.onicecandidate = onIceCandidate;
-        pc.onnegotiationneeded = onNegotiationNeeded;
+        pc.init(callSettings);
 
         if (brightstream.streams[callSettings.constraints]) {
             log.debug('using old stream');
@@ -486,10 +595,10 @@ brightstream.Call = function (params) {
         that.state = ST_MEDIA_ERROR;
         if (p.code === 1) {
             log.warn("Permission denied.");
-            report.callStoppedReason = 'Permission denied.';
+            pc.report.callStoppedReason = 'Permission denied.';
         } else {
             log.warn(p);
-            report.callStoppedReason = p.code;
+            pc.report.callStoppedReason = p.code;
         }
         that.hangup({signal: !that.initiator});
     }
@@ -517,7 +626,7 @@ brightstream.Call = function (params) {
         if (that.state < ST_FLOWING) {
             that.state = ST_FLOWING;
         }
-        log.trace('received remote media');
+        log.debug('received remote media', evt);
 
         for (var i = 0; (i < remoteVideoElements.length && videoRemoteElement === null); i += 1) {
             if (remoteVideoElements[i].tagName === 'VIDEO' && !remoteVideoElements[i].used) {
@@ -529,10 +638,10 @@ brightstream.Call = function (params) {
             videoRemoteElement = document.createElement('video');
         }
 
+        attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
         videoRemoteElement.play();
-        attachMediaStream(videoRemoteElement, evt.stream);
         /**
          * @event brightstream.Call#remote-stream-received
          * @type {brightstream.Event}
@@ -541,138 +650,6 @@ brightstream.Call = function (params) {
         that.fire('remote-stream-received', {
             element: videoRemoteElement
         });
-
-        mediaStreams.push(brightstream.MediaStream({
-            'stream': evt.stream,
-            'isLocal': false
-        }));
-    }
-
-    /**
-     * Process a local ICE Candidate
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onIceCandidate
-     * @private
-     * @param {RTCICECandidate}
-     */
-    function onIceCandidate(oCan) {
-        if (!oCan.candidate || !oCan.candidate.candidate) {
-            return;
-        }
-
-        if (forceTurn === true && oCan.candidate.candidate.indexOf("typ relay") === -1) {
-            return;
-        }
-
-        log.debug("local candidate", oCan.candidate);
-        if (that.initiator && that.state < ST_ANSWERED) {
-            candidateSendingQueue.push(oCan.candidate);
-        } else {
-            signalCandidate(oCan.candidate);
-        }
-    }
-
-    /**
-     * Handle renegotiation
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onNegotiationNeeded
-     * @private
-     */
-    function onNegotiationNeeded() {
-        log.warn("Negotiation needed.");
-    }
-
-    /**
-     * Process any ICE candidates that we received either from the browser or the other side while
-     * we were trying to set up our RTCPeerConnection to handle them.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.processQueues
-     * @private
-     */
-    function processQueues() {
-        /* We only need to queue (and thus process queues) if
-         * we are the initiator. The person receiving the call
-         * never has a valid PeerConnection at a time when we don't
-         * have one. */
-        var can = null;
-        for (var i = 0; i < candidateSendingQueue.length; i += 1) {
-            signalCandidate(candidateSendingQueue[i]);
-        }
-        candidateSendingQueue = [];
-        for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            that.addRemoteCandidate(candidateReceivingQueue[i]);
-        }
-        candidateReceivingQueue = [];
-    }
-
-    /**
-     * Save an SDP we've gotten from the browser which will be an offer and send it to the other
-     * side.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.saveOfferAndSend
-     * @param {RTCSessionDescription}
-     * @private
-     */
-    function saveOfferAndSend(oSession) {
-        oSession.type = 'offer';
-        if (that.state < ST_OFFERED) {
-            that.state = ST_OFFERED;
-        }
-        log.debug('setting and sending offer', oSession);
-        report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function successHandler(p) {
-            oSession.type = 'offer';
-            signalOffer({sdp: oSession});
-            defOffer.resolve(oSession);
-        }, function errorHandler(p) {
-            log.error('setLocalDescription failed');
-            log.error(p);
-        });
-    }
-
-    /**
-     * Save our SDP we've gotten from the browser which will be an answer and send it to the
-     * other side.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.saveAnswerAndSend
-     * @param {RTCSessionDescription}
-     * @private
-     */
-    function saveAnswerAndSend(oSession) {
-        oSession.type = 'answer';
-        if (that.state < ST_ANSWERED) {
-            that.state = ST_ANSWERED;
-        }
-        log.debug('setting and sending answer', oSession);
-        report.sdpsSent.push(oSession);
-        pc.setLocalDescription(oSession, function successHandler(p) {
-            oSession.type = 'answer';
-            signalAnswer({
-                sdp: oSession,
-                connectionId: that.connectionId
-            });
-            defAnswer.resolve(oSession);
-        }, function errorHandler(p) {
-            log.error('setLocalDescription failed');
-            log.error(p);
-        });
-    }
-
-    /**
-     * Handle shutting the session down if the other side hangs up.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.onRemoteHangup
-     * @private
-     */
-    function onRemoteHangup() {
-        if (pc && pc.readyState !== 'active') {
-            report.callStoppedReason = report.byeReasonReceived ||
-                'Remote side did not confirm media.';
-        } else {
-            report.callStoppedReason = 'Remote side hung up.';
-        }
-        log.info('Callee busy or or call rejected:' + report.callStoppedReason);
-        that.hangup({signal: false});
     }
 
     /**
@@ -681,43 +658,39 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.hangup
      * @fires brightstream.Call#hangup
-     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
+     * @param {object} params
+     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     that.hangup = function (params) {
         params = params || {};
+        var toHangup = false;
+
         if (that.state === ST_ENDED) {
             log.trace("Call.hangup got called twice.");
             return;
         }
         that.state = ST_ENDED;
 
-        log.trace("at hangup, call state is " + that.state);
-        if (that.initiator === true) {
-            if (that.state < ST_OFFERED) {
-                // Never send bye if we are the initiator but we haven't sent any other signal yet.
-                params.signal = false;
-            }
-        } else {
-            if (defApproved.promise.isPending()) {
-                defApproved.reject(new Error("Call hung up before approval."));
-            }
+        if (!that.initiator && defApproved.promise.isPending()) {
+            defApproved.reject(new Error("Call hung up before approval."));
         }
 
         clientObj.updateTurnCredentials();
         log.debug('hanging up');
 
-        params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
-        if (params.signal) {
-            log.info('sending bye');
-            signalTerminate({connectionId: that.connectionId});
+        if (pc) {
+            if (pc.getLocalStreams) {
+                pc.getLocalStreams().forEach(function (stream) {
+                    stream.numPc -= 1;
+                    if (stream.numPc === 0) {
+                        stream.stop();
+                        delete brightstream.streams[callSettings.constraints];
+                    }
+                });
+            }
+            toHangup = pc.close(params);
         }
-
-        report.callStopped = new Date().getTime();
-        signalReport({
-            report: report,
-            connectionId: that.connectionId
-        });
 
         /**
          * @event brightstream.Call#hangup
@@ -725,24 +698,9 @@ brightstream.Call = function (params) {
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
          */
         that.fire('hangup', {
-            sentSignal: params.signal
+            sentSignal: toHangup
         });
         that.ignore();
-
-        mediaStreams.forEach(function stopEach(mediaStream) {
-            var stream = mediaStream.getStream();
-            stream.numPc -= 1;
-            if (stream.numPc === 0) {
-                stream.stop();
-                delete brightstream.streams[callSettings.constraints];
-            }
-        });
-
-        if (pc) {
-            pc.close();
-        }
-
-        mediaStreams = [];
         pc = null;
     };
 
@@ -761,9 +719,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.isActive
      * @returns {boolean}
      */
-    that.isActive = function () {
-        return (pc && pc.iceConnectionState === 'connected' && that.state === ST_FLOWING);
-    };
+    that.isActive = pc.isActive;
 
     /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
@@ -773,25 +729,16 @@ brightstream.Call = function (params) {
      * @todo TODO Make this listen to events and be private.
      */
     that.setOffer = function (params) {
-        log.debug('got offer', params.sdp);
-
-        if (!that.initiator) {
-            report.sdpsReceived.push(params.sdp);
-            report.lastSDPString = params.sdp.sdp;
-            defOffer.resolve(params.sdp);
-        } else {
-            defOffer.reject(new Error("Received offer in a bad state."));
-            log.warn('Got offer in precall state.');
-            signalTerminate({connectionId: that.connectionId});
-        }
+        defOffer.resolve(params);
     };
 
     /**
      * Save the answer and tell the browser about it.
      * @memberof! brightstream.Call
      * @method brightstream.Call.setAnswer
-     * @param {RTCSessionDescription} sdp - The remote SDP.
-     * @param {string} connectionId - The connectionId of the endpoint who answered the call.
+     * @param {object} params
+     * @param {RTCSessionDescription} params.sdp - The remote SDP.
+     * @param {string} params.connectionId - The connectionId of the endpoint who answered the call.
      * @todo TODO Make this listen to events and be private.
      */
     that.setAnswer = function (params) {
@@ -799,29 +746,10 @@ brightstream.Call = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-
         if (that.state < ST_ANSWERED) {
             that.state = ST_ANSWERED;
         }
-        log.debug('got answer', params);
-
-        report.sdpsReceived.push(params.sdp);
-        report.lastSDPString = params.sdp.sdp;
-        that.connectionId = params.connectionId;
-        delete params.connectionId;
-        signalConnected({connectionId: that.connectionId});
-
-        pc.setRemoteDescription(
-            new RTCSessionDescription(params.sdp),
-            function successHandler() {
-                processQueues();
-                defAnswer.resolve(params.sdp);
-            }, function errorHandler(p) {
-                log.error('set remote desc of answer failed', params.sdp);
-                report.callStoppedReason = 'setRemoteDescription failed at answer.';
-                that.hangup();
-            }
-        );
+        pc.setAnswer(params);
     };
 
     /**
@@ -832,9 +760,9 @@ brightstream.Call = function (params) {
      * @todo TODO Make this listen to events and be private.
      */
     that.setConnected = function (signal) {
-        if (signal.connectionId !== clientObj.user.id) {
+        pc.setConnected(signal, function endCall() {
             that.hangup(false);
-        }
+        });
     };
 
     /**
@@ -845,28 +773,7 @@ brightstream.Call = function (params) {
      * @param {RTCIceCandidate} candidate The ICE candidate.
      * @todo TODO Make this listen to events and be private.
      */
-    that.addRemoteCandidate = function (params) {
-        if (!params || params.candidate === null) {
-            return;
-        }
-        if (!params.candidate.hasOwnProperty('sdpMLineIndex') || !params.candidate) {
-            log.warn("addRemoteCandidate got wrong format!", params);
-            return;
-        }
-        if (that.initiator && that.state < ST_ANSWERED) {
-            candidateReceivingQueue.push(params);
-            log.debug('Queueing a candidate.');
-            return;
-        }
-        try {
-            pc.addIceCandidate(new RTCIceCandidate(params.candidate));
-        } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
-            return;
-        }
-        log.debug('Got a remote candidate.', params.candidate);
-        report.candidatesReceived.push(params.candidate);
-    };
+    that.addRemoteCandidate = pc.addRemoteCandidate;
 
     /**
      * Get the state of the Call
@@ -875,63 +782,7 @@ brightstream.Call = function (params) {
      * @returns {string}
      */
     that.getState = function () {
-        return pc ? that.state : "before";
-    };
-
-    /**
-     * Indicate whether the logged-in User initated the Call.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.isInitiator
-     * @returns {boolean}
-     */
-    that.isInitiator = function () {
-        return that.initiator;
-    };
-
-    /**
-     * Return all MediaStreams
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getStreams
-     * @returns {brightstream.MediaStream[]}
-     */
-    that.getStreams = function () {
-        return mediaStreams;
-    };
-
-    /**
-     * Return all local MediaStreams
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getLocalStreams
-     * @returns {brightstream.MediaStream[]}
-     */
-    that.getLocalStreams = function () {
-        var streams = [];
-
-        mediaStreams.forEach(function addLocal(stream) {
-            if (stream.isLocal()) {
-                streams.push(stream);
-            }
-        });
-
-        return streams;
-    };
-
-    /**
-     * Return all remote MediaStreams
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getRemoteStreams
-     * @returns {brightstream.MediaStream[]}
-     */
-    that.getRemoteStreams = function () {
-        var streams = [];
-
-        mediaStreams.forEach(function addRemote(stream) {
-            if (!stream.isLocal()) {
-                streams.push(stream);
-            }
-        });
-
-        return streams;
+        return pc.getState();
     };
 
     /**
@@ -1057,142 +908,14 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.setBye
      * @todo TODO Make this listen to events and be private.
+     * @params {object} params
+     * @params {string} [params.reason] - An optional reason for a hangup.
      */
     that.setBye = function (params) {
         params = params || {};
-        report.callStoppedReason = params.reason || "Remote side hung up";
+        pc.report.callStoppedReason = params.reason || "Remote side hung up";
         that.hangup({signal: false});
     };
 
     return that;
 }; // End brightstream.Call
-
-/**
- * Create a new MediaStream.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.MediaStream
- * @constructor
- * @augments brightstream.EventEmitter
- * @classdesc Manage native MediaStreams.
- * @returns {brightstream.MediaStream}
- * @property {object} stream - The native MediaStream we are managing.
- * @property {boolean} islocal - whether the stream is local or remote.
- * @property {brightstream.Endpoint} stream The Endpoint to whom this stream belongs.
- */
-brightstream.MediaStream = function (params) {
-    "use strict";
-    params = params || {};
-    var that = brightstream.EventEmitter(params);
-    that.className = 'brightstream.MediaStream';
-
-    var stream = params.stream;
-    var local = params.isLocal;
-
-    /**
-     * Stop this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.stop
-     */
-    that.stop = function () {
-        stream.stop();
-    };
-
-    /**
-     * Mute the audio on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.muteAudio
-     * @fires brightstream.MediaStream#audio-muted
-     */
-    that.muteAudio = function () {
-        stream.audioTracks[0].enabled = false;
-        /**
-         * @event brightstream.MediaStream#audio-muted
-         */
-        that.fire('audio-muted');
-    };
-
-    /**
-     * Mute the video on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.muteVideo
-     * @fires brightstream.MediaStream#video-muted
-     */
-    that.muteVideo = function () {
-        stream.videoTracks[0].enabled = false;
-        /**
-         * @event brightstream.MediaStream#video-muted
-         */
-        that.fire('video-muted');
-    };
-
-    /**
-     * Unmute the audio on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.unmuteAudio
-     * @fires brightstream.MediaStream#audio-unmuted
-     */
-    that.unmuteAudio = function () {
-        stream.audioTracks[0].enabled = true;
-        /**
-         * @event brightstream.MediaStream#audio-unmuted
-         */
-        that.fire('audio-unmuted');
-    };
-
-    /**
-     * Unmute the video on this MediaStream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.unmuteVideo
-     * @fires brightstream.MediaStream#video-unmuted
-     */
-    that.unmuteVideo = function () {
-        stream.videoTracks[0].enabled = true;
-        /**
-         * @event brightstream.MediaStream#video-unmuted
-         */
-        that.fire('video-unmuted');
-    };
-
-    /**
-     * Indicate whether the MediaStream is the local User's stream.
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.isLocal
-     * @return {boolean}
-     */
-    that.isLocal = function () {
-        return !!local;
-    };
-
-    /**
-     * Indicate whether the MediaStream is a Endpoint's stream. Do we need this if we
-     * have MediaStream.isLocal()?
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.isRemote
-     * @return {boolean}
-     */
-    that.isRemote = function () {
-        return !that.isLocal();
-    };
-
-    /**
-     * Get the media stream's unique id.
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.getID
-     * @return {string}
-     */
-    that.getID = function () {
-        return stream.id;
-    };
-
-    /**
-     * Get the stream
-     * @memberof! brightstream.MediaStream
-     * @method brightstream.MediaStream.getStream
-     * @return {MediaStream}
-     */
-    that.getStream = function () {
-        return stream;
-    };
-
-    return that;
-}; // End brightstream.MediaStream

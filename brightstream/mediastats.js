@@ -7,12 +7,13 @@
  */
 
 /**
- * Create a new set of stats.
+ * A handler for WebRTC statistics. This class takes an `onStats` callback which it calls every `interval` seconds
+ * with the latest live statistics.
  * @author Tim Panton <tpanton@digium.com>
+ * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.MediaStats
  * @constructor
  * @augments brightstream.EventEmitter
- * @classdesc WebRTC Call stats
  * @param {RTCPeerConnection} peerConnection
  */
 /*global brightstream: false */
@@ -20,10 +21,41 @@ brightstream.MediaStats = function (params) {
     "use strict";
     params = params || {};
     var that = brightstream.EventEmitter(params);
+    /**
+     * @memberof! brightstream.MediaStats
+     * @name className
+     * @type {string}
+     */
     that.className = 'brightstream.MediaStats';
+    /**
+     * @memberof! brightstream.MediaStats
+     * @private
+     * @name oldStats
+     * @type {boolean}
+     */
     var oldStats = false;
+    /**
+     * @memberof! brightstream.MediaStats
+     * @private
+     * @name pc
+     * @type RTCPeerConnection
+     */
     var pc = params.peerConnection;
+    /**
+     * @memberof! brightstream.MediaStats
+     * @private
+     * @name timer
+     * @type {number}
+     * @desc The timer for calling the onStats callback; the output of setInterval.
+     */
     var timer = 0;
+    /**
+     * @memberof! brightstream.MediaStats
+     * @private
+     * @name statsInterval
+     * @type {number}
+     * @desc The millisecond interval on which we call the onStats callback.
+     */
     var statsInterval = params.interval || 5000;
 
     /*
@@ -40,9 +72,14 @@ brightstream.MediaStats = function (params) {
      *
      * An added complication is that the standards are in flux so google add
      * data in chrome (some of it useful) that isn;t in the draft standard.
-     *
      */
 
+    /**
+     * @memberof! brightstream.MediaStats
+     * @private
+     * @name interestingStats
+     * @type {object}
+     */
     var interestingStats = {
         cons: {
             type: "googCandidatePair",
@@ -78,6 +115,12 @@ brightstream.MediaStats = function (params) {
         }
     };
 
+    /**
+     * @memberof! brightstream.MediaStats
+     * @private
+     * @name deltas
+     * @type {object}
+     */
     var deltas = {
         packetsSent: true,
         bytesSent: true,
@@ -87,8 +130,8 @@ brightstream.MediaStats = function (params) {
 
     /**
      * Determine if a string starts with the given value.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.startsWith
+     * @memberof! brightstream.MediaStats
+     * @method brightstream.MediaStats.startsWith
      * @param {string} string
      * @param {string} value
      * @returns {boolean}
@@ -100,8 +143,8 @@ brightstream.MediaStats = function (params) {
 
     /**
      * Parse the SDPs. Kick off continuous calling of getStats() every `interval` milliseconds.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.initStats
+     * @memberof! brightstream.MediaStats
+     * @method brightstream.MediaStats.initStats
      * @private
      */
     function initStats() {
@@ -195,8 +238,8 @@ brightstream.MediaStats = function (params) {
 
     /**
      * Stop fetching and processing of call stats.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.stopStats
+     * @memberof! brightstream.MediaStats
+     * @method brightstream.MediaStats.stopStats
      */
     that.stopStats = function () {
         clearInterval(timer);
@@ -204,8 +247,8 @@ brightstream.MediaStats = function (params) {
 
     /**
      * Receive raw stats and parse them.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.buildStats
+     * @memberof! brightstream.MediaStats
+     * @method brightstream.MediaStats.buildStats
      * @param {object} rawStats
      * @private
      */

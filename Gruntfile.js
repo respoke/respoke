@@ -23,6 +23,7 @@ module.exports = function(grunt) {
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
                         'brightstream/directConnection.js'
+                        'brightstream/peerConnection.js'
                     ]
                 }
             },
