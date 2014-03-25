@@ -17,9 +17,11 @@
  * @param {boolean} params.initiator - whether or not we initiated the call
  * @param {boolean} params.receiveOnly - whether or not we accept media
  * @param {boolean} params.sendOnly - whether or not we send media
- * @param {boolean} params.forceTurn - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
- * candidates.
- * @param {brightstream.Endpoint} params.remoteEndpoint
+ * @param {boolean} params.forceTurn - If true, media is not allowed to flow peer-to-peer and must flow through
+ * relay servers. If it cannot flow through relay servers, the call will fail.
+ * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+ * required to flow peer-to-peer. If it cannot, the call will fail.
+ * @param {brightstream.Endpoint} params.remoteEndpoint - The endpoint who is being called.
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
  * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action between
  * local media becoming available and calling approve().
@@ -51,12 +53,14 @@ brightstream.Call = function (params) {
     var that = brightstream.EventEmitter(params);
     delete that.client;
     /**
+     * A name to identify the type of object.
      * @memberof! brightstream.Call
      * @name className
      * @type {string}
      */
     that.className = 'brightstream.Call';
     /**
+     * The call ID.
      * @memberof! brightstream.Call
      * @name id
      * @type {string}
@@ -65,6 +69,7 @@ brightstream.Call = function (params) {
 
     if (!that.initiator) {
         /**
+         * Whether or not the currently logged-in user is the initiator of the call.
          * @memberof! brightstream.Call
          * @name initiator
          * @type {boolean}
@@ -347,6 +352,8 @@ brightstream.Call = function (params) {
         pc.sendOnly = sendOnly;
         pc.listen('stats', function fireStats(evt) {
             /**
+             * This event is fired every time statistical information about audio and/or video on a call
+             * becomes available.
              * @event brightstream.Call#stats
              * @type {brightstream.Event}
              * @property {object} stats - an object with stats in it.
@@ -379,15 +386,17 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.answer
      * @fires brightstream.Call#answer
      * @param {object} [params]
-     * @param {function} [params.previewLocalMedia]
-     * @param {function} [params.onLocalVideo]
-     * @param {function} [params.onRemoteVideo]
-     * @param {function} [params.onHangup]
-     * @param {boolean} [params.disableTurn]
-     * @param {boolean} [params.receiveOnly]
-     * @param {boolean} [params.sendOnly]
-     * @param {object} [params.constraints]
-     * @param {array} [params.servers]
+     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
+     * between local media becoming available and calling approve().
+     * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
+     * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
+     * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
+     * @param {boolean} [params.sendOnly] - Whether or not we send media.
+     * @param {object} [params.constraints] - Information about the media for this call.
+     * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      */
     that.answer = function (params) {
         that.state = ST_STARTED;

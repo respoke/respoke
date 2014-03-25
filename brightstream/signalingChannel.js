@@ -19,6 +19,7 @@
  * @augments brightstream.EventEmitter
  * @param {object} params
  * @param {string} params.client - client id
+ * @private
  * @returns {brightstream.SignalingChannel}
  */
  /*global brightstream: false */
