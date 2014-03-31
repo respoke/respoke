@@ -22,7 +22,7 @@ module.exports = function(grunt) {
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
-                        'brightstream/directConnection.js'
+                        'brightstream/directConnection.js',
                         'brightstream/peerConnection.js'
                     ]
                 }
@@ -55,7 +55,8 @@ module.exports = function(grunt) {
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
-                        'brightstream/directConnection.js'
+                        'brightstream/directConnection.js',
+                        'brightstream/peerConnection.js'
                     ]
                 }
             },
