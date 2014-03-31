@@ -39,14 +39,35 @@ Q.longStackJumpLimit = 20;
 Q.stopUnhandledRejectionTracking();
 
 /**
+ * This is one of two possible entry points for interating with the library. This method creates a new Client object
+ * which represence your app's connection to the cloud infrastructure.  This method automatically calls the
+ * client.connect() method after the client is created.
  * @static
  * @member brightstream
+ * @param {object} params
+ * @param {string} [params.appId]
+ * @param {string} [params.baseURL]
+ * @param {string} [params.authToken]
+ * @param {RTCConstraints} [params.constraints]
+ * @param {RTCICEServers} [params.servers]
+ * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+ * @param {function} [params.onError] - Error handler for this invocation of this method only.
+ * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
+ * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
+ * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+ * @param {function} [params.onDisconnect] - Callback for Client disconnect.
+ * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+ * @param {function} [params.onCall] - Callback for when this client's user receives a call.
+ * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
+ * direct connection.
  * @returns {brightstream.Client}
  * @param {object} Parameters to the brightstream.Client constructor.
  */
 brightstream.connect = function (params) {
     "use strict";
-    return brightstream.Client(params);
+    var client = brightstream.Client(params);
+    client.connect(params);
+    return client;
 };
 
 /**
@@ -67,8 +88,18 @@ brightstream.getClient = function (id) {
 };
 
 /**
+ * This is one of two possible entry points for interating with the library. This method creates a new Client object
+ * which represence your app's connection to the cloud infrastructure.  This method does NOT automatically call the
+ * client.connect() method after the client is created, so your app will need to call it when it is ready to
+ * connect.
  * @static
  * @member brightstream
+ * @param {object} params
+ * @param {string} [params.appId]
+ * @param {string} [params.baseURL]
+ * @param {string} [params.authToken]
+ * @param {RTCConstraints} [params.constraints]
+ * @param {RTCICEServers} [params.servers]
  * @returns {brightstream.Client}
  * @param {object} Parameters to the Client constructor
  */
@@ -79,6 +110,7 @@ brightstream.createClient = function (params) {
 
 /**
  * @static
+ * @private
  * @member brightstream
  * @returns {number}
  */
@@ -88,6 +120,9 @@ brightstream.makeUniqueID = function () {
 };
 
 /**
+ * This method is used internally to attach handlers to promises that are returned by many methods in the library.
+ * It's not recommended that this method be used by developers and apps.
+ * @private
  * @static
  * @member brightstream
  * @returns {number}
@@ -108,6 +143,7 @@ brightstream.makeDeferred = function (onSuccess, onError) {
  * @param {object} number An object to test.
  * @returns {boolean}
  * @static
+ * @private
  */
 Object.defineProperty(Object.prototype, 'isNumber', {
     value: function (number) {
@@ -124,6 +160,7 @@ Object.defineProperty(Object.prototype, 'isNumber', {
  * @class brightstream.Class
  * @classdesc Empty base class.
  * @constructor
+ * @private
  * @author Erin Spiceland <espiceland@digium.com>
  */
 brightstream.Class = function (params) {

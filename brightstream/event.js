@@ -15,7 +15,6 @@
  * @augments brightstream.Class
  * @constructor
  * @param {object} params
- * @param {string} params.client
  * @returns {brightstream.EventEmitter}
  */
 /*global brightstream: false */
@@ -32,6 +31,7 @@ brightstream.EventEmitter = function (params) {
     var that = brightstream.Class(params);
     delete that.client;
     /**
+     * A name to identify the type of this object.
      * @memberof! brightstream.EventEmitter
      * @name className
      * @type {string}
@@ -152,6 +152,7 @@ brightstream.EventEmitter = function (params) {
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.hasListeners
      * @param {string} eventType - The name of the event
+     * @returns {boolean} Whether this event has any listeners that are external to this library.
      */
     that.hasListeners = function (eventType) {
         if (eventType === undefined) {
@@ -179,6 +180,7 @@ brightstream.EventEmitter = function (params) {
  * @property {string} name
  * @property {brightstream.Class} target
  * @constructor
+ * @private
  * @returns {brightstream.Event}
  */
 brightstream.Event = function (that) {

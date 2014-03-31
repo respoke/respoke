@@ -19,6 +19,7 @@
  * @augments brightstream.EventEmitter
  * @param {object} params
  * @param {string} params.client - client id
+ * @private
  * @returns {brightstream.SignalingChannel}
  */
  /*global brightstream: false */
@@ -146,7 +147,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {string} params.token - The Endpoint's auth token
      * @param {string} params.appId - The App's id
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.open = function (params) {
         params = params || {};
@@ -183,7 +184,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.close = function (params) {
         params = params || {};
@@ -300,7 +301,7 @@ brightstream.SignalingChannel = function (params) {
      * Join a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.leaveGroup
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
@@ -327,7 +328,7 @@ brightstream.SignalingChannel = function (params) {
      * Join a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.joinGroup
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
@@ -354,7 +355,7 @@ brightstream.SignalingChannel = function (params) {
      * Publish a message to a group.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.publish
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -433,7 +434,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendMessage = function (params) {
         params = params || {};
@@ -466,7 +467,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendSignal = function (params) {
         params = params || {};
@@ -501,7 +502,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCIceCandidate} params.candObj - An ICE candidate to JSONify and send.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendCandidate = function (params) {
         params = params || {};
@@ -536,7 +537,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {RTCSessionDescription} params.sdpObj - An SDP to JSONify and send.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendSDP = function (params) {
         params = params || {};
@@ -571,7 +572,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} params.reason - The reason the session is being terminated.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendBye = function (params) {
         params = params || {};
@@ -605,7 +606,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.sendConnected = function (params) {
         params = params || {};
@@ -1221,7 +1222,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {function} params.onStatusChange - A function to which to call on every state change.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      */
     that.authenticate = function (params) {
         params = params || {};
@@ -1606,6 +1607,7 @@ brightstream.SignalingChannel = function (params) {
  * @param {string} [params.connectionId] - If sending, connection ID of the thing we're sending a message to.
  * @param {string} [params.message] - If sending, a message to send
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
+ * @private
  * @returns {brightstream.TextMessage}
  */
 brightstream.TextMessage = function (params) {
@@ -1657,6 +1659,7 @@ brightstream.TextMessage = function (params) {
  * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
  * @param {string} [params.signal] - If sending, a message to send
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
+ * @private
  * @returns {brightstream.SignalingMessage}
  */
 brightstream.SignalingMessage = function (params) {
@@ -1700,11 +1703,11 @@ brightstream.SignalingMessage = function (params) {
  * @class brightstream.Group
  * @constructor
  * @param {object} params
- * @param {string} params.client
- * @param {function} params.onJoin
- * @param {function} params.onMessage
- * @param {function} params.onLeave
- * @param {function} params.onPresence
+ * @param {function} params.onJoin - A callback to receive notifications every time a new endpoint has joined
+ * the group. This callback does not get called when the currently logged-in user joins the group.
+ * @param {function} params.onMessage - A callback to receive messages sent to the group from remote endpoints.
+ * @param {function} params.onLeave - A callback to receive notifications every time a new endpoint has left
+ * the group. This callback does not get called when the currently logged-in user leaves the group.
  * @returns {brightstream.Group}
  */
 brightstream.Group = function (params) {
@@ -1739,6 +1742,7 @@ brightstream.Group = function (params) {
      */
     group.endpoints = [];
     /**
+     * A name to identify the type of this object.
      * @memberof! brightstream.group
      * @name className
      * @type {string}
@@ -1755,32 +1759,32 @@ brightstream.Group = function (params) {
     delete group.onLeave;
 
     /**
-     * Get the ID of the group
+     * Get the ID of the group.
      * @memberof! brightstream.Group
      * @method brightstream.Group.getID
-     * @return {string}
+     * @return {string} The group ID.
      */
     group.getID = function () {
         return group.id;
     };
 
     /**
-     * Get the name of the group
+     * Get the name of the group.
      * @memberof! brightstream.Group
      * @method brightstream.Group.getName
-     * @return {string}
+     * @return {string} The group name.
      * @todo TODO maybe one day we will have separate group names and ids
      */
     group.getName = group.getID;
 
     /**
-     * Leave a group
+     * Leave this group.
      * @memberof! brightstream.Group
      * @method brightstream.Group.leave
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @return {Promise<undefined>}
+     * @return {Promise}
      * @fires brightstream.User#leave
      */
     group.leave = function (params) {
@@ -1791,6 +1795,7 @@ brightstream.Group = function (params) {
             id: group.id
         }).done(function () {
             /**
+             * This event is fired when the currently logged-in user leaves a group.
              * @event brightstream.User#leave
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
@@ -1806,11 +1811,14 @@ brightstream.Group = function (params) {
     };
 
     /**
-     * Remove an endpoint from a group
+     * Remove an endpoint from a group. This does not change the status of the remote endpoint, it only changes the
+     * internal representation of the group membership. This method should only be used internally.
+     * @private
      * @memberof! brightstream.Group
      * @method brightstream.Group.removeEndpoint
-     * @param {string} [name] Endpoint name
-     * @param {string} [id] Endpoint id
+     * @param {object} params
+     * @param {string} [params.name] Endpoint name
+     * @param {string} [params.id] Endpoint id
      * @fires brightstream.Group#leave
      */
     group.removeEndpoint = function (newEndpoint) {
@@ -1823,6 +1831,7 @@ brightstream.Group = function (params) {
                     (newEndpoint.name && endpoint.getName() === newEndpoint.name)) {
                 group.endpoints.splice(i, 1);
                 /**
+                 * This event is fired when an endpoint leaves a group the currently logged-in user is a member of.
                  * @event brightstream.Group#leave
                  * @type {brightstream.Event}
                  * @property {brightstream.Endpoint} endpoint
@@ -1835,11 +1844,14 @@ brightstream.Group = function (params) {
     };
 
     /**
-     * Add an endpoint to a group
+     * Add an endpoint to a group. This does not change the status of the remote endpoint, it only changes the
+     * internal representation of the group membership. This method should only be used internally.
      * @memberof! brightstream.Group
+     * @private
      * @method brightstream.Group.addEndpoint
-     * @param {string} [name] Endpoint name
-     * @param {string} [id] Endpoint id
+     * @param {object} params
+     * @param {string} [params.name] Endpoint name
+     * @param {string} [params.id] Endpoint id
      * @fires brightstream.Group#join
      */
     group.addEndpoint = function (newEndpoint) {
@@ -1858,6 +1870,8 @@ brightstream.Group = function (params) {
         if (!exists) {
             group.endpoints.push(newEndpoint);
             /**
+             * This event is fired when an endpoint joins a group that the currently logged-in endpoint is a member
+             * of.
              * @event brightstream.Group#join
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
@@ -1871,14 +1885,14 @@ brightstream.Group = function (params) {
     };
 
     /**
-     * Send a message to the entire group
+     * Send a message to the entire group.
      * @memberof! brightstream.Group
      * @method brightstream.Group.sendMessage
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @param {string} params.message
-     * @returns {Promise<undefined>}
+     * @param {string} params.message - The message.
+     * @returns {Promise}
      */
     group.sendMessage = function (params) {
         params.id = group.id;
@@ -1886,7 +1900,7 @@ brightstream.Group = function (params) {
     };
 
     /**
-     * Get an array of subscribers of the group
+     * Get an array of subscribers of the group.
      * @memberof! brightstream.Group
      * @method brightstream.Group.getEndpoints
      * @returns {Promise<Array>} A promise to an array of endpoints.
@@ -1916,6 +1930,7 @@ brightstream.Group = function (params) {
                 delete endpoint.endpointId;
                 endpoint = clientObj.getEndpoint(endpoint);
                 /**
+                 * This event is fired when an endpoint joins a group the currently logged-in user is a member of.
                  * @event brightstream.Group#join
                  * @type {brightstream.Event}
                  * @property {brightstream.Group} group

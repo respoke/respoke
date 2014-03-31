@@ -174,6 +174,47 @@
         }
       }
     },
+    "grunt-aws-s3": {
+      "version": "0.8.1",
+      "from": "grunt-aws-s3@",
+      "resolved": "https://registry.npmjs.org/grunt-aws-s3/-/grunt-aws-s3-0.8.1.tgz",
+      "dependencies": {
+        "aws-sdk": {
+          "version": "1.15.0",
+          "from": "aws-sdk@~1.15.x",
+          "resolved": "https://registry.npmjs.org/aws-sdk/-/aws-sdk-1.15.0.tgz",
+          "dependencies": {
+            "xml2js": {
+              "version": "0.2.4",
+              "from": "xml2js@0.2.4",
+              "resolved": "https://registry.npmjs.org/xml2js/-/xml2js-0.2.4.tgz",
+              "dependencies": {
+                "sax": {
+                  "version": "0.6.0",
+                  "from": "sax@>=0.4.2"
+                }
+              }
+            },
+            "xmlbuilder": {
+              "version": "0.4.2",
+              "from": "xmlbuilder@0.4.2"
+            }
+          }
+        },
+        "mime": {
+          "version": "1.2.11",
+          "from": "mime@~1.2.9"
+        },
+        "lodash": {
+          "version": "2.4.1",
+          "from": "lodash@~2.4.0"
+        },
+        "async": {
+          "version": "0.2.10",
+          "from": "async@~0.2.9"
+        }
+      }
+    },
     "grunt-contrib-uglify": {
       "version": "0.4.0",
       "from": "grunt-contrib-uglify@0.4.0",

@@ -334,7 +334,7 @@ brightstream.PeerConnection = function (params) {
     /**
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.initOffer.
+     * @method brightstream.PeerConnection.initOffer
      * @fires brightstream.PeerConnection#initOffer
      */
     that.initOffer = function () {
@@ -349,7 +349,7 @@ brightstream.PeerConnection = function (params) {
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
         log.debug('got offer', oOffer);
@@ -712,7 +712,7 @@ brightstream.PeerConnection = function (params) {
      * @param {function} [params.onSuccess]
      * @param {function} [params.onError]
      * @todo TODO Make this listen to events and be private.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.setAnswer = function (params) {
         params = params || {};
@@ -797,10 +797,10 @@ brightstream.PeerConnection = function (params) {
      * Get the state of the Call
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.getState
-     * @returns {string}
+     * @returns {number}
      */
     that.getState = function () {
-        return pc ? that.state : "before";
+        return pc ? that.state : 0;
     };
 
     /**

@@ -14,6 +14,17 @@
  * @augments brightstream.EventEmitter
  * @param {string} params
  * @param {string} params.client - client id
+ * @param {boolean} params.initiator - whether or not we initiated the connection
+ * @param {brightstream.Endpoint} params.remoteEndpoint - The endpoint with whom we will be connected.
+ * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
+ * it to flow peer-to-peer. The relay acts like a blind proxy.
+ * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
+ * @param {function} params.signalOffer - Signaling action from SignalingChannel.
+ * @param {function} params.signalConnected - Signaling action from SignalingChannel.
+ * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
+ * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalReport - Signaling action from SignalingChannel.
+ * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
  * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
  * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages. Not usually
@@ -48,10 +59,13 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.saveParameters
      * @param {function} params
-     * @param {function} [params.onOpen]
-     * @param {function} [params.onClose]
-     * @param {function} [params.onMessage]
-     * @param {array} [params.servers]
+     * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
+     * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
+     * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages.
+     * @param {array} [params.servers] - Additional resources for determining network connectivity between two
+     * endpoints.
+     * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
+     * it to flow peer-to-peer. The relay acts like a blind proxy.
      * @private
      */
     function saveParameters(params) {
@@ -127,7 +141,7 @@ brightstream.DirectConnection = function (params) {
          * @event brightstream.Endpoint#message
          * @type {brightstream.Event}
          * @property {object} message
-         * @property {brightstream.DirectConnection) directConnection
+         * @property {brightstream.DirectConnection} directConnection
          */
         that.remoteEndpoint.fire('message', {
             message: message,
@@ -250,7 +264,7 @@ brightstream.DirectConnection = function (params) {
      * @param {object} [params.object] - An object to send.
      * @param [function] [params.onSuccess] - Success handler.
      * @param [function] [params.onError] - Error handler.
-     * @returns {Promise<undefined>}
+     * @returns {Promise}
      */
     that.sendMessage = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
