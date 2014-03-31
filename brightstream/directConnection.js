@@ -279,7 +279,7 @@ brightstream.DirectConnection = function (params) {
          * @event brightstream.Endpoint#message
          * @type {brightstream.Event}
          * @property {object} message
-         * @property {brightstream.DirectConnection) directConnection
+         * @property {brightstream.DirectConnection} directConnection
          */
         that.remoteEndpoint.fire('message', {
             message: message,
@@ -472,6 +472,7 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.setOffer
      * @param {RTCSessionDescription} sdp - The remote SDP.
+     * @private
      * @todo TODO Make this listen to events and be private.
      */
     that.setOffer = function (params) {
@@ -485,6 +486,7 @@ brightstream.DirectConnection = function (params) {
      * @param {RTCSessionDescription} sdp - The remote SDP.
      * @param {string} connectionId - The connectionId of the endpoint who answered the call.
      * @todo TODO Make this listen to events and be private.
+     * @private
      */
     that.setAnswer = function (params) {
         if (defAnswer.promise.isFulfilled()) {
@@ -503,6 +505,7 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.setConnected
      * @param {RTCSessionDescription} oSession The remote SDP.
      * @todo TODO Make this listen to events and be private.
+     * @private
      */
     that.setConnected = function (signal) {
         pc.setConnected(signal, function endCall() {
@@ -516,6 +519,7 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.addRemoteCandidate
      * @param {RTCIceCandidate} candidate The ICE candidate.
+     * @private
      * @todo TODO Make this listen to events and be private.
      */
     that.addRemoteCandidate = pc.addRemoteCandidate;
@@ -535,6 +539,7 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.setBye
      * @todo TODO Make this listen to events and be private.
+     * @private
      * @param {object} params
      * @param {string} [params.reason] - An optional reason for the hangup.
      */
