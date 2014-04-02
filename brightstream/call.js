@@ -250,60 +250,11 @@ brightstream.Call = function (params) {
     };
     /**
      * @memberof! brightstream.Call
-     * @name ST_STARTED
+     * @name toSendBye
      * @private
-     * @type {number}
+     * @type {boolean}
      */
-    var ST_STARTED = 0;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_INREVIEW
-     * @private
-     * @type {number}
-     */
-    var ST_INREVIEW = 1;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_APPROVED
-     * @private
-     * @type {number}
-     */
-    var ST_APPROVED = 2;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_OFFERED
-     * @private
-     * @type {number}
-     */
-    var ST_OFFERED = 3;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_ANSWERED
-     * @private
-     * @type {number}
-     */
-    var ST_ANSWERED = 4;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_FLOWING
-     * @private
-     * @type {number}
-     */
-    var ST_FLOWING = 5;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_ENDED
-     * @private
-     * @type {number}
-     */
-    var ST_ENDED = 6;
-    /**
-     * @memberof! brightstream.Call
-     * @name ST_MEDIA_ERROR
-     * @private
-     * @type {number}
-     */
-    var ST_MEDIA_ERROR = 7;
+    var toSendBye = null;
     /**
      * @memberof! brightstream.Call
      * @name pc
@@ -344,7 +295,6 @@ brightstream.Call = function (params) {
             Q.all([defApproved.promise, defOffer.promise]).spread(function (approved, oOffer) {
                 if (approved === true && oOffer && oOffer.sdp) {
                     pc.processOffer(oOffer.sdp).done(function () {
-                        that.state = ST_OFFERED;
                     }, function () {
                         that.hangup({signal: !that.initiator});
                     });
@@ -447,7 +397,6 @@ brightstream.Call = function (params) {
      * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      */
     that.answer = function (params) {
-        that.state = ST_STARTED;
         params = params || {};
         log.trace('answer');
         /**
@@ -493,8 +442,8 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#approve
      */
     that.approve = function () {
-        if (that.state < ST_APPROVED) {
-            that.state = ST_APPROVED;
+        if (!defApproved.promise.isPending()) {
+            return;
         }
         log.trace('Call.approve');
         /**
@@ -525,9 +474,6 @@ brightstream.Call = function (params) {
      * @fires brightstream.Call#remote-stream-received
      */
     function onRemoteStreamAdded(evt) {
-        if (that.state < ST_FLOWING) {
-            that.state = ST_FLOWING;
-        }
         log.debug('received remote media', evt);
 
         videoRemoteElement = document.createElement('video');
@@ -829,12 +775,12 @@ brightstream.Call = function (params) {
      */
     that.hangup = function (params) {
         params = params || {};
-        var toHangup = false;
 
-        if (that.state === ST_ENDED) {
+        if (toSendBye !== null) {
+            log.info("call.hangup() called when call is already hung up.");
             return;
         }
-        that.state = ST_ENDED;
+        toSendBye = false;
 
         if (!that.initiator && defApproved.promise.isPending()) {
             defApproved.reject(new Error("Call hung up before approval."));
@@ -851,11 +797,10 @@ brightstream.Call = function (params) {
             if (directConnection.isActive()) {
                 directConnection.close();
             }
-            directConnection.ignore();
         }
 
         if (pc) {
-            toHangup = pc.close(params);
+            toSendBye = pc.close(params);
         }
 
         /**
@@ -865,7 +810,7 @@ brightstream.Call = function (params) {
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
          */
         that.fire('hangup', {
-            sentSignal: toHangup
+            sentSignal: toSendBye
         });
 
         that.ignore();
@@ -922,9 +867,6 @@ brightstream.Call = function (params) {
         if (defAnswer.promise.isFulfilled()) {
             log.debug("Ignoring duplicate answer.");
             return;
-        }
-        if (that.state < ST_ANSWERED) {
-            that.state = ST_ANSWERED;
         }
         pc.setAnswer(params);
     };

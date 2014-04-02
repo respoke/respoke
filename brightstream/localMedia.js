@@ -321,36 +321,6 @@ brightstream.LocalMedia = function (params) {
     }
 
     /**
-     * If video is muted, unmute. If not muted, mute.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.toggleVideo
-     */
-    that.toggleVideo = function () {
-        if (that.isActive()) {
-            if (!videoIsMuted) {
-                that.muteVideo();
-            } else {
-                that.unmuteVideo();
-            }
-        }
-    };
-
-    /**
-     * If video is muted, unmute. If not muted, mute.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.toggleAudio
-     */
-    that.toggleAudio = function () {
-        if (that.isActive()) {
-            if (!audioIsMuted) {
-                that.muteAudio();
-            } else {
-                that.unmuteAudio();
-            }
-        }
-    };
-
-    /**
      * Mute local video stream.
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.muteVideo
@@ -437,6 +407,11 @@ brightstream.LocalMedia = function (params) {
      * @fires brightstream.LocalMedia#stop
      */
     that.stop = function () {
+        if (stream === null) {
+            console.log("LocalMedia.stop stream is null");
+            return;
+        }
+
         stream.numPc -= 1;
         if (stream.numPc === 0) {
             stream.stop();

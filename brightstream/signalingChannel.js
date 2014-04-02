@@ -163,7 +163,8 @@ brightstream.SignalingChannel = function (params) {
                 tokenId: params.token
             },
             responseHandler: function (response) {
-                if (!response.error) {
+                console.log(response);
+                if (response.code === 200) {
                     appToken = response.result.token;
                     deferred.resolve();
                     log.trace("Signaling connection open to", baseURL);
@@ -1261,7 +1262,7 @@ brightstream.SignalingChannel = function (params) {
             query: 'app-token=' + appToken
         };
 
-        socket = io.connect(baseURL, connectParams);
+        socket = io.connect(baseURL + '?app-token=' + appToken, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess(user) {
             deferred.resolve(user);

@@ -67,6 +67,13 @@ brightstream.PeerConnection = function (params) {
     }
 
     /**
+     * Whether or not we will send a 'bye' signal to the other side during hangup.
+     * @memberof! brightstream.PeerConnection
+     * @name toSendBye
+     * @type {brightstream.Endpoint}
+     */
+    var toSendBye;
+    /**
      * @memberof! brightstream.PeerConnection
      * @name remoteEndpoint
      * @type {brightstream.Endpoint}
@@ -283,55 +290,6 @@ brightstream.PeerConnection = function (params) {
     };
 
     /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_STARTED = 0;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_INREVIEW = 1;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_APPROVED = 2;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_OFFERED = 3;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_ANSWERED = 4;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_FLOWING = 5;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_ENDED = 6;
-    /**
-     * @private
-     * @constant
-     * @type {number}
-     */
-    var ST_MEDIA_ERROR = 7;
-
-    /**
      * Start the process of network and media negotiation. Called after local video approved.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.initOffer
@@ -353,13 +311,12 @@ brightstream.PeerConnection = function (params) {
      */
     that.processOffer = function (oOffer) {
         log.debug('got offer', oOffer);
-        var deferred = brightstream.makeDeferred();
 
         if (that.initiator) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
             signalTerminate({connectionId: that.connectionId});
-            deferred.reject();
+            defOffer.reject();
             return;
         }
         that.report.sdpsReceived.push(oOffer);
@@ -371,7 +328,7 @@ brightstream.PeerConnection = function (params) {
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
                         saveAnswerAndSend(oSession);
-                        deferred.resolve();
+                        defOffer.resolve();
                         processQueues();
                     }, function errorHandler(err) {
                         log.error("Error creating SDP answer.", err);
@@ -380,16 +337,15 @@ brightstream.PeerConnection = function (params) {
                 }, function errorHandler(err) {
                     log.error('set remote desc of offer failed', err);
                     that.report.callStoppedReason = 'setLocalDescr failed at offer.';
-                    deferred.reject();
+                    defOffer.reject();
                 }
             );
-            that.state = ST_OFFERED;
         } catch (err) {
             log.error("error processing offer: ", err);
             that.report.callStoppedReason = 'error processing offer. ' + err.message;
-            deferred.reject();
+            defOffer.reject();
         }
-        return deferred.promise;
+        return defOffer.promise;
     };
 
     /**
@@ -532,7 +488,7 @@ brightstream.PeerConnection = function (params) {
             return;
         }
 
-        if (that.initiator && that.state < ST_ANSWERED) {
+        if (that.initiator && defAnswer.promise.isPending()) {
             candidateSendingQueue.push(oCan.candidate);
         } else {
             signalCandidate(oCan.candidate);
@@ -582,8 +538,8 @@ brightstream.PeerConnection = function (params) {
      */
     function saveOfferAndSend(oSession) {
         oSession.type = 'offer';
-        if (that.state < ST_OFFERED) {
-            that.state = ST_OFFERED;
+        if (!defOffer.promise.isPending()) {
+            return;
         }
         log.debug('setting and sending offer', oSession);
         that.report.sdpsSent.push(oSession);
@@ -608,9 +564,6 @@ brightstream.PeerConnection = function (params) {
      */
     function saveAnswerAndSend(oSession) {
         oSession.type = 'answer';
-        if (that.state < ST_ANSWERED) {
-            that.state = ST_ANSWERED;
-        }
         log.debug('setting and sending answer', oSession);
         that.report.sdpsSent.push(oSession);
         pc.setLocalDescription(oSession, function successHandler(p) {
@@ -641,17 +594,16 @@ brightstream.PeerConnection = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        if (that.state === ST_ENDED) {
+        if (toSendBye !== undefined) {
             log.trace("PeerConnection.close got called twice.");
             return;
         }
-        that.state = ST_ENDED;
+        toSendBye = true;
 
-        log.trace("at close, call state is " + that.state);
         if (that.initiator === true) {
-            if (that.state < ST_OFFERED) {
+            if (!defOffer.promise.isPending()) {
                 // Never send bye if we are the initiator but we haven't sent any other signal yet.
-                params.signal = false;
+                toSendBye = false;
             }
         } else {
             if (defApproved.promise.isPending()) {
@@ -660,10 +612,9 @@ brightstream.PeerConnection = function (params) {
         }
 
         clientObj.updateTurnCredentials();
-        log.debug('hanging up');
 
-        params.signal = (typeof params.signal === 'boolean' ? params.signal : true);
-        if (params.signal) {
+        toSendBye = (typeof params.signal === 'boolean' ? params.signal : toSendBye);
+        if (toSendBye) {
             log.info('sending bye');
             signalTerminate({connectionId: that.connectionId});
         }
@@ -680,7 +631,7 @@ brightstream.PeerConnection = function (params) {
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
          */
         that.fire('close', {
-            sentSignal: params.signal
+            sentSignal: toSendBye
         });
         that.ignore();
 
@@ -716,15 +667,16 @@ brightstream.PeerConnection = function (params) {
      */
     that.setAnswer = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        if (defAnswer.promise.isFulfilled()) {
+        if (!defAnswer.promise.isPending()) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-
-        if (that.state < ST_ANSWERED) {
-            that.state = ST_ANSWERED;
-        }
+        defAnswer.promise.done(params.onSuccess, params.onError);
+        defAnswer.promise.done(processQueues, function () {
+            log.error('set remote desc of answer failed', params.sdp);
+            that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+            that.close();
+        });
         log.debug('got answer', params);
 
         that.report.sdpsReceived.push(params.sdp);
@@ -735,17 +687,12 @@ brightstream.PeerConnection = function (params) {
         pc.setRemoteDescription(
             new RTCSessionDescription(params.sdp),
             function successHandler() {
-                processQueues();
                 defAnswer.resolve(params.sdp);
-                deferred.resolve();
             }, function errorHandler(p) {
-                log.error('set remote desc of answer failed', params.sdp);
-                that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
-                that.close();
-                deferred.reject();
+                defAnswer.reject();
             }
         );
-        return deferred.promise;
+        return defAnswer.promise;
     };
 
     /**
@@ -778,7 +725,7 @@ brightstream.PeerConnection = function (params) {
             log.warn("addRemoteCandidate got wrong format!", candidate);
             return;
         }
-        if (!pc || that.initiator && that.state < ST_ANSWERED) {
+        if (!pc || that.initiator && defAnswer.promise.isPending()) {
             candidateReceivingQueue.push(candidate);
             log.debug('Queueing a candidate.');
             return;
