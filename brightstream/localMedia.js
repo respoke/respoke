@@ -408,7 +408,6 @@ brightstream.LocalMedia = function (params) {
      */
     that.stop = function () {
         if (stream === null) {
-            console.log("LocalMedia.stop stream is null");
             return;
         }
 

@@ -634,6 +634,8 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
+     * @param {function} [onMessage] TODO
+     * @param {function} [onPresence] TODO
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {

@@ -163,7 +163,6 @@ brightstream.SignalingChannel = function (params) {
                 tokenId: params.token
             },
             responseHandler: function (response) {
-                console.log(response);
                 if (response.code === 200) {
                     appToken = response.result.token;
                     deferred.resolve();
@@ -464,7 +463,6 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendSignal
      * @param {object} params
      * @param {brightstream.SignalingMessage} params.signal
-     * @param {brightstream.Endpoint} params.recipient
      * @param {string} [params.connectionId]
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -500,7 +498,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
-     * @param {RTCIceCandidate} params.candObj - An ICE candidate to JSONify and send.
+     * @param {RTCIceCandidate} params.candidate - An ICE candidate to JSONify and send.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {Promise}
@@ -508,17 +506,21 @@ brightstream.SignalingChannel = function (params) {
     that.sendCandidate = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        delete params.onSuccess;
+        delete params.onError;
+
+        var signalingMessage = {
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId
+        };
+        delete params.recipient;
+        delete params.connectionId;
+
+        params.type = 'candidate';
+        signalingMessage.signal = JSON.stringify(params);
 
         that.sendSignal({
-            signal: brightstream.SignalingMessage({
-                endpointId: params.recipient.getID(),
-                connectionId: params.connectionId,
-                signal: JSON.stringify({
-                    candidate: params.candObj,
-                    target: params.target,
-                    type: 'candidate'
-                })
-            })
+            signal: brightstream.SignalingMessage(signalingMessage)
         }).then(function () {
             deferred.resolve();
         }, function (err) {
@@ -535,7 +537,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
-     * @param {RTCSessionDescription} params.sdpObj - An SDP to JSONify and send.
+     * @param {RTCSessionDescription} params.sdp - An SDP to JSONify and send.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {Promise}
@@ -543,17 +545,20 @@ brightstream.SignalingChannel = function (params) {
     that.sendSDP = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        delete params.onSuccess;
+        delete params.onError;
+
+        var signalingMessage = {
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId
+        };
+        delete params.recipient;
+        delete params.connectionId;
+
+        signalingMessage.signal = JSON.stringify(params);
 
         that.sendSignal({
-            signal: brightstream.SignalingMessage({
-                endpointId: params.recipient.getID(),
-                connectionId: params.connectionId,
-                signal: JSON.stringify({
-                    sdp: params.sdpObj,
-                    target: params.target,
-                    type: params.type
-                })
-            })
+            signal: brightstream.SignalingMessage(signalingMessage)
         }).then(function () {
             deferred.resolve();
         }, function (err) {
@@ -577,19 +582,23 @@ brightstream.SignalingChannel = function (params) {
      */
     that.sendBye = function (params) {
         params = params || {};
-        params.signal = params.signal || {};
+        //params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        delete params.onSuccess;
+        delete params.onError;
+
+        var signalingMessage = {
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId
+        };
+        delete params.recipient;
+        delete params.connectionId;
+
+        params.type = 'bye';
+        signalingMessage.signal = JSON.stringify(params);
 
         that.sendSignal({
-            signal: brightstream.SignalingMessage({
-                endpointId: params.recipient.getID(),
-                connectionId: params.connectionId,
-                signal: JSON.stringify({
-                    type: 'bye',
-                    reason: params.reason,
-                    target: params.target
-                })
-            })
+            signal: brightstream.SignalingMessage(signalingMessage)
         }).then(function () {
             deferred.resolve();
         }, function (err) {
@@ -611,18 +620,61 @@ brightstream.SignalingChannel = function (params) {
      */
     that.sendConnected = function (params) {
         params = params || {};
-        params.signal = params.signal || {};
+        //params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        delete params.onSuccess;
+        delete params.onError;
+
+        var signalingMessage = {
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId
+        };
+        delete params.recipient;
+
+        params.type = 'connected';
+        signalingMessage.signal = JSON.stringify(params);
 
         that.sendSignal({
-            signal: brightstream.SignalingMessage({
-                endpointId: params.recipient.getID(),
-                signal: JSON.stringify({
-                    connectionId: params.connectionId,
-                    type: 'connected',
-                    target: params.target
-                })
-            })
+            signal: brightstream.SignalingMessage(signalingMessage)
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    };
+
+    /**
+     * Send a message to the remote party indicating a desire to renegotiate media.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendModify
+     * @param {object} params
+     * @param {brightstream.Endpoint} params.recipient - The recipient.
+     * @param {string} params.action - The state of the modify request, one of: 'initiate', 'accept', 'reject'
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @return {Promise}
+     */
+    that.sendModify = function (params) {
+        params = params || {};
+        //params.signal = params.signal || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        delete params.onSuccess;
+        delete params.onError;
+
+        var signalingMessage = {
+            endpointId: params.recipient.getID(),
+            connectionId: params.connectionId
+        };
+        delete params.recipient;
+        delete params.connectionId;
+
+        params.type = 'modify';
+        signalingMessage.signal = JSON.stringify(params);
+
+        that.sendSignal({
+            signal: brightstream.SignalingMessage(signalingMessage)
         }).then(function () {
             deferred.resolve();
         }, function (err) {
@@ -665,10 +717,14 @@ brightstream.SignalingChannel = function (params) {
         var toCreate = false;
         var method = 'do';
         var endpoint;
-        var knownSignals = ['offer', 'answer', 'connected', 'candidate', 'bye'];
+        var knownSignals = ['offer', 'answer', 'connected', 'modify', 'candidate', 'bye'];
 
         if (signal.type !== 'candidate') { // Too many of these!
             log.debug(signal.type, signal);
+        }
+
+        if (signal.type === 'modify') {
+            signal.target = 'call';
         }
 
         if (!signal.target || !signal.type || knownSignals.indexOf(signal.type) === -1) {
@@ -683,7 +739,8 @@ brightstream.SignalingChannel = function (params) {
 
         if (signal.target === 'call') {
             target = clientObj.user.getCall({
-                id: message.endpointId,
+                id: signal.callId,
+                endpointId: message.endpointId,
                 create: toCreate
             });
             if (!toCreate && !target) {
@@ -757,6 +814,26 @@ brightstream.SignalingChannel = function (params) {
         params.call.setConnected(params.signal);
         /**
          * @event brightstream.Call#connected
+         * @type {brightstream.Event}
+         * @property {object} signal
+         */
+        params.call.fire('connected', {
+            signal: params.signal
+        });
+    };
+
+    /**
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.routingMethods.doCallModify
+     * @private
+     * @params {object} params
+     * @params {object} params.signal
+     * @fires brightstream.Call#modify
+     */
+    routingMethods.doCallModify = function (params) {
+        params.call.setModify(params.signal);
+        /**
+         * @event brightstream.Call#modify
          * @type {brightstream.Event}
          * @property {object} signal
          */
@@ -1908,6 +1985,8 @@ brightstream.Group = function (params) {
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {function} [onMessage] TODO
+     * @param {function} [onPresence] TODO
      * @fires brightstream.Group#join
      */
     group.getEndpoints = function (params) {

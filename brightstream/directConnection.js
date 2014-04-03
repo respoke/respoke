@@ -55,6 +55,21 @@ brightstream.DirectConnection = function (params) {
     delete params.pc;
 
     /**
+     * When the datachannel is availble, we need to attach the callbacks. The event this function is attached to
+     * only fires for the non-initiator.
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.catchDataChannel
+     * @param {brightstream.Event} evt
+     * @private
+     */
+    function catchDataChannel(evt) {
+        dataChannel = evt.channel;
+        dataChannel.onerror = onDataChannelError;
+        dataChannel.onmessage = onDataChannelMessage;
+        dataChannel.onopen = onDataChannelOpen;
+    }
+
+    /**
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.saveParameters
@@ -72,6 +87,7 @@ brightstream.DirectConnection = function (params) {
         that.listen('open', params.onOpen);
         that.listen('close', params.onClose);
         that.listen('message', params.onMessage);
+        pc.listen('direct-connection', catchDataChannel, true);
     }
     saveParameters(params);
 
@@ -162,17 +178,33 @@ brightstream.DirectConnection = function (params) {
     /**
      * Detect when the channel is open.
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.onDataChannelMessage
+     * @method brightstream.DirectConnection.onDataChannelOpen
      * @param {MessageEvent}
      * @fires brightstream.DirectConnection#open
      */
     function onDataChannelOpen(evt) {
-        dataChannel = evt.target || evt.channel;
+        //dataChannel = evt.target || evt.channel;
         /**
          * @event brightstream.DirectConnection#open
          * @type {brightstream.Event}
          */
         that.fire('open');
+    }
+
+    /**
+     * Detect when the channel is closed.
+     * @memberof! brightstream.DirectConnection
+     * @method brightstream.DirectConnection.onDataChannelClose
+     * @param {MessageEvent}
+     * @fires brightstream.DirectConnection#close
+     */
+    function onDataChannelClose(evt) {
+        //dataChannel = evt.target || evt.channel;
+        /**
+         * @event brightstream.DirectConnection#close
+         * @type {brightstream.Event}
+         */
+        that.fire('close');
     }
 
     /**
@@ -183,21 +215,15 @@ brightstream.DirectConnection = function (params) {
      * @private
      */
     function createDataChannel() {
-        pc.listen('direct-connection', function (evt) {
-            dataChannel = evt.channel;
-            dataChannel.onerror = onDataChannelError;
-            dataChannel.onmessage = onDataChannelMessage;
-            dataChannel.onopen = onDataChannelOpen;
-        }, true);
         dataChannel = pc.createDataChannel("brightstreamDataChannel");
-        window.dc = dataChannel;
         dataChannel.binaryType = 'arraybuffer';
-
         dataChannel.onerror = onDataChannelError;
         dataChannel.onmessage = onDataChannelMessage;
         dataChannel.onopen = onDataChannelOpen;
+
         /**
-         * The direct connection setup has begun.
+         * The direct connection setup has begun. This does NOT mean it's ready to send messages yet. Listen to
+         * DirectConnection#open for that notification.
          * @event brightstream.DirectConnection#started
          * @type {brightstream.Event}
          */
@@ -223,13 +249,15 @@ brightstream.DirectConnection = function (params) {
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
+        if (that.initiator === true) {
+            createDataChannel();
+        }
+
         /**
          * @event brightstream.DirectConnection#answer
          * @type {brightstream.Event}
          */
         that.fire('accept');
-
-        createDataChannel();
     };
 
     /**
@@ -238,7 +266,8 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.close
      * @fires brightstream.DirectConnection#close
      */
-    that.close = function () {
+    that.close = function (params) {
+        params = params || {};
         log.trace("DirectConnection.close");
         if (dataChannel) {
             dataChannel.close();
@@ -251,7 +280,14 @@ brightstream.DirectConnection = function (params) {
         that.fire('close');
 
         that.ignore();
-        dataChannel =  null;
+        dataChannel = null;
+        that.remoteEndpoint.directConnection = null;
+
+        if (params.skipRemove === true) {
+            return;
+        }
+
+        that.call.removeDirectConnection();
     };
 
     /*
@@ -268,7 +304,7 @@ brightstream.DirectConnection = function (params) {
      */
     that.sendMessage = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        if (dataChannel && dataChannel.readyState === 'open') {
+        if (that.isActive()) {
             dataChannel.send(JSON.stringify(params.object || {
                 message: params.message
             }));
@@ -295,7 +331,9 @@ brightstream.DirectConnection = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        return (pc && pc.isActive() && dataChannel && dataChannel.readyState === 'open');
+        // Why does pc.iceConnectionState not transition into 'connected' even though media is flowing?
+        //return (pc && pc.isActive() && dataChannel && dataChannel.readyState === 'open');
+        return (dataChannel && dataChannel.readyState === 'open');
     };
 
     /**
