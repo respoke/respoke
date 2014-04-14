@@ -984,6 +984,7 @@ brightstream.Call = function (params) {
 
         if (directConnection && directConnection.isActive()) {
             directConnection.close();
+            that.remoteEndpoint.directConnection = null;
         }
 
         if (pc) {
@@ -1001,7 +1002,6 @@ brightstream.Call = function (params) {
         });
 
         that.ignore();
-        that.remoteEndpoint.directConnection = null;
         directConnection = null;
         pc = null;
     };
