@@ -361,7 +361,7 @@ brightstream.Endpoint = function (params) {
         var user = clientObj.user;
         var call;
 
-        log.trace('Endpoint.getDirectConnection');
+        log.trace('Endpoint.getDirectConnection', params);
 
         if (that.directConnection) {
             deferred.resolve(that.directConnection);
@@ -552,8 +552,8 @@ brightstream.User = function (params) {
      * @memberof! brightstream.User
      * @method brightstream.User.getCall
      * @param {object} params
-     * @param {string} params.id - Call ID.
-     * @param {string} params.endpointId - Endpoint ID. Warning: don't use this method if you are placing multiple
+     * @param {string} [params.id] - Call ID.
+     * @param {string} [params.endpointId] - Endpoint ID. Warning: don't use this method if you are placing multiple
      * calls to the same endpoint. Use user.getCalls instead.
      * @param {boolean} params.create - whether or not to create a new call if the specified endpointId isn't found
      * @returns {brightstream.Call}
@@ -570,7 +570,7 @@ brightstream.User = function (params) {
                 return false;
             }
 
-            if (params.endpointId && one.remoteEndpoint.id === params.endpointId) {
+            if (!params.id && params.endpointId && one.remoteEndpoint.id === params.endpointId) {
                 call = one;
                 return false;
             }

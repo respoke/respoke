@@ -711,7 +711,7 @@ brightstream.SignalingChannel = function (params) {
     that.routeSignal = function (message) {
         var signal = message.signal;
         var target = null;
-        var toCreate = false;
+        var toCreate;
         var method = 'do';
         var endpoint;
         var knownSignals = ['offer', 'answer', 'connected', 'modify', 'candidate', 'bye'];
@@ -726,45 +726,38 @@ brightstream.SignalingChannel = function (params) {
         }
 
         // Only create if this signal is an offer.
-        if (signal.type === 'offer') {
-            toCreate = true;
-        }
 
-        if (signal.target === 'call') {
-            target = clientObj.user.getCall({
-                id: signal.callId,
-                endpointId: message.endpointId,
-                create: toCreate
+        toCreate = (signal.type === 'offer' && signal.target === 'call');
+        target = clientObj.user.getCall({
+            id: signal.callId,
+            endpointId: message.endpointId,
+            create: toCreate
+        });
+
+        if (!target) {
+            toCreate = (signal.type === 'offer' && signal.target === 'directConnection');
+            endpoint = clientObj.getEndpoint({
+                id: message.endpointId
             });
-            if (!toCreate && !target) {
-                return;
-            }
 
-            method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
-        } else if (signal.target === 'directConnection') {
-            try {
-                endpoint = clientObj.getEndpoint({
-                    id: message.endpointId
+            endpoint.getDirectConnection({
+                create: toCreate,
+                initiator: !toCreate
+            }).done(function (directConnection) {
+                target = directConnection.call;
+                method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
+                routingMethods[method]({
+                    call: target,
+                    message: message,
+                    signal: signal
                 });
-                endpoint.getDirectConnection({
-                    create: toCreate,
-                    initiator: !toCreate
-                }).done(function (target) {
-                    method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
-                    routingMethods[method]({
-                        call: target.call,
-                        message: message,
-                        signal: signal
-                    });
-                }, function (err) {
-                    throw new Error(err.message);
-                });
-                return;
-            } catch (e) {
-                log.error("Can't get direct connection.", e);
-            }
+            }, function (err) {
+                throw new Error(err.message);
+            });
+            return;
         }
 
+        method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
         routingMethods[method]({
             call: target,
             message: message,

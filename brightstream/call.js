@@ -319,8 +319,6 @@ brightstream.Call = function (params) {
             defApproved = Q.defer();
             defAnswered = Q.defer();
             defMedia = Q.defer();
-        } else {
-            console.log('skipping resetting all the promises');
         }
 
         if (that.initiator !== true) {
@@ -513,7 +511,6 @@ brightstream.Call = function (params) {
          */
         that.fire('approve');
 
-        console.log('defApproved.resolve');
         defApproved.resolve(true);
         if (defModify && defModify.promise.isPending()) {
             defModify.resolve(true);
@@ -881,7 +878,6 @@ brightstream.Call = function (params) {
                 }
             } else {
                 if (defApproved.promise.isPending()) { // This happens on modify
-                    console.log('defApproved.resolve');
                     defApproved.resolve(true);
                 }
                 defMedia.resolve(directConnection);
@@ -966,7 +962,6 @@ brightstream.Call = function (params) {
         toSendBye = false;
 
         if (!that.initiator && defApproved.promise.isPending()) {
-            console.log('defApproved.reject');
             defApproved.reject(new Error("Call hung up before approval."));
         }
 
@@ -1064,7 +1059,6 @@ brightstream.Call = function (params) {
              */
             that.fire('modify', info);
         }
-        console.log('defSDPOffer.resolve', evt.signal);
         defSDPOffer.resolve(evt.signal);
     }
 
@@ -1122,7 +1116,6 @@ brightstream.Call = function (params) {
         // audio or video right now.
         if (evt.signal.directConnection === true) {
             actuallyAddDirectConnection().done(function (dc) {
-                console.log('actuallyAddDirectConnection finished', dc);
                 directConnection = dc;
                 directConnection.accept();
             }, function (err) {
@@ -1132,7 +1125,6 @@ brightstream.Call = function (params) {
             if (directConnection) {
                 that.removeDirectConnection({skipModify: true});
                 defMedia.resolve(false);
-                console.log('defApproved.resolve');
                 defApproved.resolve(false);
             }
         }
