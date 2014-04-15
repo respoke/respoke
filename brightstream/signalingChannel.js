@@ -582,7 +582,6 @@ brightstream.SignalingChannel = function (params) {
      */
     that.sendBye = function (params) {
         params = params || {};
-        //params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         delete params.onSuccess;
         delete params.onError;
@@ -620,7 +619,6 @@ brightstream.SignalingChannel = function (params) {
      */
     that.sendConnected = function (params) {
         params = params || {};
-        //params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         delete params.onSuccess;
         delete params.onError;
@@ -658,7 +656,6 @@ brightstream.SignalingChannel = function (params) {
      */
     that.sendModify = function (params) {
         params = params || {};
-        //params.signal = params.signal || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         delete params.onSuccess;
         delete params.onError;
@@ -723,10 +720,6 @@ brightstream.SignalingChannel = function (params) {
             log.debug(signal.type, signal);
         }
 
-        if (signal.type === 'modify') {
-            signal.target = 'call';
-        }
-
         if (!signal.target || !signal.type || knownSignals.indexOf(signal.type) === -1) {
             log.error("Got malformed signal.", signal);
             throw new Error("Can't route signal without target or type.");
@@ -747,7 +740,6 @@ brightstream.SignalingChannel = function (params) {
                 return;
             }
 
-            method += firstUpper(signal.target);
             method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
         } else if (signal.target === 'directConnection') {
             try {
@@ -758,10 +750,9 @@ brightstream.SignalingChannel = function (params) {
                     create: toCreate,
                     initiator: !toCreate
                 }).done(function (target) {
-                    method += firstUpper(signal.target);
                     method += firstUpper((knownSignals.indexOf(signal.type) === -1) ? 'unknown' : signal.type);
                     routingMethods[method]({
-                        call: target,
+                        call: target.call,
                         message: message,
                         signal: signal
                     });
@@ -783,255 +774,132 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallOffer
+     * @method brightstream.SignalingChannel.routingMethods.doOffer
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#offer
+     * @fires brightstream.Call#signal-offer
      */
-    routingMethods.doCallOffer = function (params) {
+    routingMethods.doOffer = function (params) {
         params.call.connectionId = params.message.connectionId;
-        params.call.setOffer(params.signal);
         /**
-         * @event brightstream.Call#offer
+         * @event brightstream.Call#signal-offer
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        params.call.fire('offer', {
+        params.call.fire('signal-offer', {
             signal: params.signal
         });
     };
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallConnected
+     * @method brightstream.SignalingChannel.routingMethods.doConnected
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#connected
+     * @fires brightstream.Call#signal-connected
      */
-    routingMethods.doCallConnected = function (params) {
-        params.call.setConnected(params.signal);
+    routingMethods.doConnected = function (params) {
         /**
-         * @event brightstream.Call#connected
+         * @event brightstream.Call#signal-connected
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        params.call.fire('connected', {
+        params.call.fire('signal-connected', {
             signal: params.signal
         });
     };
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallModify
+     * @method brightstream.SignalingChannel.routingMethods.dModify
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#modify
+     * @fires brightstream.Call#signal-modify
      */
-    routingMethods.doCallModify = function (params) {
-        params.call.setModify(params.signal);
+    routingMethods.doModify = function (params) {
         /**
-         * @event brightstream.Call#modify
+         * @event brightstream.Call#signal-modify
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        params.call.fire('connected', {
+        params.call.fire('signal-modify', {
             signal: params.signal
         });
     };
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallAnswer
+     * @method brightstream.SignalingChannel.routingMethods.doAnswer
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#answer
+     * @fires brightstream.Call#signal-answer
      */
-    routingMethods.doCallAnswer = function (params) {
+    routingMethods.doAnswer = function (params) {
         params.signal.connectionId = params.message.connectionId;
-        params.call.setAnswer(params.signal);
         /**
-         * @event brightstream.Call#answer
+         * @event brightstream.Call#signal-answer
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        params.call.fire('answer', {
+        params.call.fire('signal-answer', {
             signal: params.signal
         });
     };
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallCandidate
+     * @method brightstream.SignalingChannel.routingMethods.doCandidate
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#candidate
+     * @fires brightstream.Call#signal-candidate
      */
-    routingMethods.doCallCandidate = function (params) {
-        params.call.addRemoteCandidate(params.signal);
+    routingMethods.doCandidate = function (params) {
         /**
-         * @event brightstream.Call#candidate
+         * @event brightstream.Call#signal-candidate
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        params.call.fire('candidate', {
+        params.call.fire('signal-candidate', {
             signal: params.signal
         });
     };
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallBye
+     * @method brightstream.SignalingChannel.routingMethods.doBye
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#bye
+     * @fires brightstream.Call#signal-bye
      */
-    routingMethods.doCallBye = function (params) {
+    routingMethods.doBye = function (params) {
         // we may receive bye before connectionId is set if the call is rejected
         if (params.call.connectionId && params.call.connectionId !== params.message.connectionId) {
             return;
         }
-        params.call.setBye(params.signal);
         /**
-         * @event brightstream.Call#bye
+         * @event brightstream.Call#signal-bye
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        params.call.fire('bye', {
+        params.call.fire('signal-bye', {
             signal: params.signal
         });
     };
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCallUnknown
+     * @method brightstream.SignalingChannel.routingMethods.doUnknown
      * @private
      * @params {object} params
      * @params {object} params.signal
      */
-    routingMethods.doCallUnknown = function (params) {
-        log.error("Don't know what to do with", params.signal.target, "msg of unknown type", params.signal.type);
-    };
-
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doDirectConnectionOffer
-     * @private
-     * @params {object} params
-     * @params {object} params.signal
-     * @fires brightstream.DirectConnection#offer
-     */
-    routingMethods.doDirectConnectionOffer = function (params) {
-        params.call.connectionId = params.message.connectionId;
-        params.call.setOffer(params.signal);
-        /**
-         * @event brightstream.DirectConnection#offer
-         * @type {brightstream.Event}
-         * @property {object} signal
-         */
-        params.call.fire('offer', {
-            signal: params.signal
-        });
-    };
-
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doDirectConnectionConnected
-     * @private
-     * @params {object} params
-     * @params {object} params.signal
-     * @fires brightstream.DirectConnection#connected
-     */
-    routingMethods.doDirectConnectionConnected = function (params) {
-        params.call.setConnected(params.signal);
-        /**
-         * @event brightstream.DirectConnection#connected
-         * @type {brightstream.Event}
-         * @property {object} signal
-         */
-        params.call.fire('connected', {
-            signal: params.signal
-        });
-    };
-
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doDirectConnectionAnswer
-     * @private
-     * @params {object} params
-     * @params {object} params.signal
-     * @fires brightstream.DirectConnection#answer
-     */
-    routingMethods.doDirectConnectionAnswer = function (params) {
-        params.signal.connectionId = params.message.connectionId;
-        params.call.setAnswer(params.signal);
-        /**
-         * @event brightstream.DirectConnection#answer
-         * @type {brightstream.Event}
-         * @property {object} signal
-         */
-        params.call.fire('answer', {
-            signal: params.signal
-        });
-    };
-
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doDirectConnectionCandidate
-     * @private
-     * @params {object} params
-     * @params {object} params.signal
-     * @fires brightstream.DirectConnection#candidate
-     */
-    routingMethods.doDirectConnectionCandidate = function (params) {
-        params.call.addRemoteCandidate(params.signal);
-        /**
-         * @event brightstream.DirectConnection#candidate
-         * @type {brightstream.Event}
-         * @property {object} signal
-         */
-        params.call.fire('candidate', {
-            signal: params.signal
-        });
-    };
-
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doDirectConnectionBye
-     * @private
-     * @params {object} params
-     * @params {object} params.signal
-     * @fires brightstream.DirectConnection#bye
-     */
-    routingMethods.doDirectConnectionBye = function (params) {
-        // we may receive bye before connectionId is set if the call is rejected
-        if (params.call.connectionId && params.call.connectionId !== params.message.connectionId) {
-            return;
-        }
-        params.call.setBye(params.signal);
-        /**
-         * @event brightstream.DirectConnection#bye
-         * @type {brightstream.Event}
-         * @property {object} signal
-         */
-        params.call.fire('bye', {
-            signal: params.signal
-        });
-    };
-
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doDirectConnectionUnknown
-     * @private
-     * @params {object} params
-     * @params {object} params.signal
-     */
-    routingMethods.doDirectConnectionUnknown = function (params) {
+    routingMethods.doUnknown = function (params) {
         log.error("Don't know what to do with", params.signal.target, "msg of unknown type", params.signal.type);
     };
 

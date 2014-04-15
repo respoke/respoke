@@ -263,7 +263,6 @@ brightstream.LocalMedia = function (params) {
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.requestMedia
-     * @todo Find out when we can stop deleting TURN servers
      * @private
      */
     function requestMedia() {

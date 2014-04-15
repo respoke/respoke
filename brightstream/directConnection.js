@@ -14,8 +14,7 @@
  * @augments brightstream.EventEmitter
  * @param {string} params
  * @param {string} params.client - client id
- * @param {boolean} params.initiator - whether or not we initiated the connection
- * @param {brightstream.Endpoint} params.remoteEndpoint - The endpoint with whom we will be connected.
+ * @param {brightstream.Call} params.call - The call that is handling state for this direct connection.
  * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
  * it to flow peer-to-peer. The relay acts like a blind proxy.
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
@@ -41,8 +40,8 @@ brightstream.DirectConnection = function (params) {
     that.className = 'brightstream.DirectConnection';
     that.id = brightstream.makeUniqueID().toString();
 
-    if (!that.initiator) {
-        that.initiator = false;
+    if (!that.call.initiator) {
+        that.call.initiator = false;
     }
 
     var dataChannel = null;
@@ -58,11 +57,11 @@ brightstream.DirectConnection = function (params) {
      * When the datachannel is availble, we need to attach the callbacks. The event this function is attached to
      * only fires for the non-initiator.
      * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.catchDataChannel
+     * @method brightstream.DirectConnection.listenDataChannel
      * @param {brightstream.Event} evt
      * @private
      */
-    function catchDataChannel(evt) {
+    function listenDataChannel(evt) {
         dataChannel = evt.channel;
         dataChannel.onerror = onDataChannelError;
         dataChannel.onmessage = onDataChannelMessage;
@@ -87,7 +86,7 @@ brightstream.DirectConnection = function (params) {
         that.listen('open', params.onOpen);
         that.listen('close', params.onClose);
         that.listen('message', params.onMessage);
-        pc.listen('direct-connection', catchDataChannel, true);
+        pc.listen('direct-connection', listenDataChannel, true);
     }
     saveParameters(params);
 
@@ -159,7 +158,7 @@ brightstream.DirectConnection = function (params) {
          * @property {object} message
          * @property {brightstream.DirectConnection} directConnection
          */
-        that.remoteEndpoint.fire('message', {
+        that.call.remoteEndpoint.fire('message', {
             message: message,
             directConnection: that
         });
@@ -171,7 +170,7 @@ brightstream.DirectConnection = function (params) {
          */
         that.fire('message', {
             message: message,
-            endpoint: that.remoteEndpoint
+            endpoint: that.call.remoteEndpoint
         });
     }
 
@@ -247,14 +246,14 @@ brightstream.DirectConnection = function (params) {
         log.trace('DirectConnection.accept');
         saveParameters(params);
 
-        log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
+        log.debug("I am " + (that.call.initiator ? '' : 'not ') + "the initiator.");
 
-        if (that.initiator === true) {
+        if (that.call.initiator === true) {
             createDataChannel();
         }
 
         /**
-         * @event brightstream.DirectConnection#answer
+         * @event brightstream.DirectConnection#accept
          * @type {brightstream.Event}
          */
         that.fire('accept');
@@ -280,14 +279,15 @@ brightstream.DirectConnection = function (params) {
         that.fire('close');
 
         that.ignore();
-        dataChannel = null;
-        that.remoteEndpoint.directConnection = null;
 
-        if (params.skipRemove === true) {
-            return;
+        if (params.skipRemove !== true) {
+            that.call.removeDirectConnection();
         }
 
-        that.call.removeDirectConnection();
+        dataChannel = null;
+        that.call.remoteEndpoint.directConnection = null;
+        that.call = null;
+        pc = null;
     };
 
     /*
