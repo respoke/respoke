@@ -38,11 +38,10 @@ brightstream.Presentable = function (params) {
     that.className = 'brightstream.Presentable';
     /**
      * @memberof! brightstream.Presentable
-     * @name sessions
-     * @private
+     * @name connectionIds
      * @type {Array}
      */
-    var sessions = [];
+    that.connectionIds = {};
     /**
      * @memberof! brightstream.Presentable
      * @name presence
@@ -83,15 +82,16 @@ brightstream.Presentable = function (params) {
     that.setPresence = function (params) {
         params = params || {};
         params.presence = params.presence || 'available';
-        params.connectionId = params.connectionId || 'local';
+        params.connectionId = params.connectionId || that.connectionId;
+        log.debug('Presentable.setPresence', params);
 
-        sessions[params.connectionId] = {
+        that.connectionIds[params.connectionId] = {
             connectionId: params.connectionId,
             presence: params.presence
         };
 
         if (typeof that.resolvePresence === 'function') {
-            presence = that.resolvePresence({sessions: sessions});
+            presence = that.resolvePresence();
         } else {
             presence = params.presence;
         }
@@ -143,6 +143,7 @@ brightstream.Endpoint = function (params) {
     var client = params.client;
     var that = brightstream.Presentable(params);
     delete that.client;
+    delete that.connectionId;
     /**
      * A name to identify the type of this object.
      * @memberof! brightstream.Endpoint
@@ -157,13 +158,6 @@ brightstream.Endpoint = function (params) {
      * @type {brightstream.DirectConnection}
      */
     that.directConnection = null;
-    /**
-     * @memberof! brightstream.Endpoint
-     * @name sessions
-     * @private
-     * @type {object}
-     */
-    var sessions = {};
     /**
      * @memberof! brightstream.Endpoint
      * @name signalingChannel
@@ -447,35 +441,37 @@ brightstream.Endpoint = function (params) {
      * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
      * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.setPresence
-     * @param {object} params
-     * @param {array} params.sessions - Endpoint's sessions
+     * @method brightstream.Endpoint.resolvePresence
+     * logged in on.
      * @private
      * @returns {string}
      */
-    that.resolvePresence = function (params) {
+    that.resolvePresence = function () {
         var presence;
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
-        params = params || {};
-        var connectionIds = Object.keys(params.sessions);
+        var idList = Object.keys(that.connectionIds);
 
         /**
          * Sort the connectionIds array by the priority of the value of the presence of that
-         * connectionId. This will cause the first element in the sessionsId to be the id of the
+         * connectionId. This will cause the first element in the connectionIdsId to be the id of the
          * session with the highest priority presence so we can access it by the 0 index.
          * TODO: If we don't really care about the sorting and only about the highest priority
          * we could use Array.prototype.every to improve this algorithm.
          */
-        connectionIds = connectionIds.sort(function sorter(a, b) {
-            var indexA = options.indexOf(params.sessions[a].presence);
-            var indexB = options.indexOf(params.sessions[b].presence);
+        idList = idList.sort(function sorter(a, b) {
+            var indexA = options.indexOf(that.connectionIds[a].presence);
+            var indexB = options.indexOf(that.connectionIds[b].presence);
             // Move it to the end of the list if it isn't one of our accepted presence values
             indexA = indexA === -1 ? 1000 : indexA;
             indexB = indexB === -1 ? 1000 : indexB;
             return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
         });
 
-        presence = connectionIds[0] ? params.sessions[connectionIds[0]].presence : 'unavailable';
+        if (idList && idList[0] && that.connectionIds && that.connectionIds[idList[0]]) {
+            presence = that.connectionIds[idList[0]].presence;
+        } else {
+            presence = 'unavailable';
+        }
 
         return presence;
     };
