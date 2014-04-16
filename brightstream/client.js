@@ -19,7 +19,7 @@
  * @param {object} params
  * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
  * brightstream.connect, brightstream.createClient, or to client.connect.
- * @param {string} [params.authToken] - The endpoint's authentication token.
+ * @param {string} [params.token] - The endpoint's authentication token.
  * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
  * different paramters than the built-in defaults.
  * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
@@ -67,22 +67,24 @@ brightstream.Client = function (params) {
      */
     var connected = false;
     /**
-     * A container for baseURL, authToken, and appId so they won't be accessble on the console.
+     * A container for baseURL, token, and appId so they won't be accessble on the console.
      * @memberof! brightstream.Client
      * @name app
      * @type {object}
      * @private
-     * @property {string} baseURL - the URL of the cloud infrastructure's REST API.
-     * @property {string} authToken - The endpoint's authentication token.
-     * @property {string} appId - The id of your BrightStream app.
+     * @property {string} [baseURL] - the URL of the cloud infrastructure's REST API.
+     * @property {string} [token] - The endpoint's authentication token.
+     * @property {string} [appId] - The id of your BrightStream app.
      */
     var app = {
         baseURL: params.baseURL,
-        authToken: params.authToken,
-        appId: params.appId
+        token: params.token,
+        appId: params.appId,
+        developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false
     };
     delete that.appId;
     delete that.baseURL;
+    delete that.developmentMode;
     /**
      * @memberof! brightstream.Client
      * @name user - The currently logged-in endpoint.
@@ -138,7 +140,7 @@ brightstream.Client = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = brightstream.SignalingChannel({'client': client});
+    var signalingChannel = brightstream.SignalingChannel({'client': client, baseURL: app.baseURL});
 
     /**
      * Connect to the Digium infrastructure and authenticate using the appkey.  Store a token to be used in API
@@ -147,7 +149,14 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {object} params
-     * @param {string} params.authToken
+     * @param {string} [params.token] - An authentication token to use for this endpoint.
+     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @param {string} [params.appId] - An appId to use to obtain an authentication token if this app is in
+     * developer mode and the `developmentMode` parameter is also set to `true`.
+     * @param {boolean} [params.developmentMode] - Indication to obtain an authentication token from the service.
+     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+     * operation and will limit the services you will be able to use.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
@@ -164,17 +173,23 @@ brightstream.Client = function (params) {
     that.connect = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        log.trace('Client.connect', params);
 
-        app.authToken = params.authToken;
+        app.token = params.token;
         app.appId = params.appId || app.appId;
+        app.developmentMode = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
+        that.endpointId = params.endpointId || that.endpointId;
 
-        if (!app.authToken || !app.appId) {
-            deferred.reject(new Error("Can't connect without appId and authToken"));
+        if (!app.token && !app.appId) {
+            deferred.reject(new Error("Can't connect without either an appId, in which case developmentMode " +
+                "must be set to true, or an token"));
         }
 
         signalingChannel.open({
             appId: app.appId,
-            token: app.authToken
+            developmentMode: app.developmentMode,
+            endpointId: that.endpointId,
+            token: app.token
         }).then(function () {
             return signalingChannel.authenticate({
                 appId: app.appId

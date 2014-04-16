@@ -76,7 +76,8 @@ brightstream.SignalingChannel = function (params) {
      * @private
      * @type {string}
      */
-    var baseURL = null;
+    var baseURL = that.baseURL || 'https://collective.brightstream.io';
+    delete that.baseURL;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name appId
@@ -91,6 +92,13 @@ brightstream.SignalingChannel = function (params) {
      * @type {string}
      */
     var endpointId = null;
+    /**
+     * @memberof! brightstream.SignalingChannel
+     * @name token
+     * @private
+     * @type {string}
+     */
+    var token = null;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name appToken
@@ -140,26 +148,117 @@ brightstream.SignalingChannel = function (params) {
         409: "Can't perform this action: item in the wrong state.",
         500: "Can't perform this action: server problem."
     };
+
     /**
      * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.open
      * @param {object} params
-     * @param {string} params.token - The Endpoint's auth token
-     * @param {string} params.appId - The App's id
+     * @param {string} [params.token] - The Endpoint's auth token
+     * @param {string} [params.appId] - The App's id
+     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @param {string} [params.developmentMode] - Indicates the library should request a token from the service.
+     * App must be set to development mode in your developer portal, and you must pass in your appId & endpointId.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {Promise}
      */
     that.open = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        clientSettings = brightstream.getClient(client).getClientSettings();
-        baseURL = clientSettings.baseURL || 'https://collective.brightstream.io';
+        log.trace('SignalingChannel.open', params);
+        token = params.token || token;
+
+        if (params.developmentMode === true && params.appId && params.endpointId) {
+            that.getToken({
+                appId: params.appId,
+                endpointId: params.endpointId
+            }).then(function (newToken) {
+                token = newToken || token;
+                return doOpen({token: token});
+            }, function (err) {
+                deferred.reject(err);
+            }).done(function () {
+                deferred.resolve();
+            }, function (err) {
+                deferred.reject(err);
+            });
+        } else if (params.token) {
+            doOpen({token: token}).done(function () {
+                deferred.resolve();
+            }, function (err) {
+                deferred.reject(err);
+            });
+        } else {
+            deferred.reject(new Error("Must pass either endpointId & appId & developmentMode=true or token" +
+                " to client.connect()."));
+        }
+        return deferred.promise;
+    };
+
+    /**
+     * Get a developer mode token for an endpoint. App must be in developer mode.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.getToken
+     * @param {object} params
+     * @param {string} [params.appId] - The App's id
+     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * be set to development mode in your developer portal, and you must pass in your appId.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @return {Promise<String>}
+     */
+    that.getToken = function (params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        log.trace('SignalingChannel.getToken', params);
+
+        call({
+            path: '/v1/tokens',
+            httpMethod: 'POST',
+            parameters: {
+                appId: params.appId,
+                endpointId: params.endpointId,
+                ttl: 3600
+            },
+            responseHandler: function (response) {
+                if (response.code === 200) {
+                    if (response.result && response.result.tokenId) {
+                        token = response.result.tokenId;
+                        deferred.resolve(response.result.tokenId);
+                        return;
+                    }
+                }
+                log.error("Couldn't get a developer mode token.", response);
+                deferred.reject(new Error("Couldn't authenticate app."));
+            }
+        });
+        return deferred.promise;
+    };
+
+    /**
+     * Open a connection to the REST API and validate the app, creating an appauthsession.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.doOpen
+     * @param {object} params
+     * @param {string} [params.token] - The Endpoint's auth token
+     * @param {string} [params.appId] - The App's id
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @return {Promise}
+     * @private
+     */
+    function doOpen(params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        log.trace('SignalingChannel.doOpen', params);
 
         call({
             path: '/v1/appauthsessions',
             httpMethod: 'POST',
             parameters: {
-                appId: params.appId,
                 tokenId: params.token
             },
             responseHandler: function (response) {
@@ -175,7 +274,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    };
+    }
 
     /**
      * Close a connection to the REST API. Invalidate the appauthsession.
@@ -1465,7 +1564,7 @@ brightstream.SignalingChannel = function (params) {
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
             throw new Error('Illegal HTTP request method ' + params.httpMethod);
         }
-        log.debug('calling ' + params.httpMethod + " " + uri + " with params " + paramString);
+        log.debug('calling', params.httpMethod, uri, "with params", paramString);
 
         try {
             xhr.send(paramString);
