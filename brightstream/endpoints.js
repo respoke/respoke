@@ -453,7 +453,7 @@ brightstream.Endpoint = function (params) {
 
         /**
          * Sort the connectionIds array by the priority of the value of the presence of that
-         * connectionId. This will cause the first element in the connectionIdsId to be the id of the
+         * connectionId. This will cause the first element in the connectionIds to be the id of the
          * session with the highest priority presence so we can access it by the 0 index.
          * TODO: If we don't really care about the sorting and only about the highest priority
          * we could use Array.prototype.every to improve this algorithm.
