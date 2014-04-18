@@ -84,6 +84,9 @@ brightstream.Presentable = function (params) {
 
         if (that.className === 'brightstream.User' || that.className === 'brightstream.Connection') {
             that.presence = params.presence;
+            if (that.className === 'brightstream.Connection') {
+                that.getEndpoint().resolvePresence();
+            }
         } else if (!params.connectionId) {
             throw new Error("Can't set Endpoint presence without a connectionId.");
         } else {
@@ -525,7 +528,7 @@ brightstream.Endpoint = function (params) {
  * with connections by calling them or sending them messages.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments brightstream.Endpoint
+ * @augments brightstream.Presentable
  * @param {object} params
  * @param {string} params.id
  * @returns {brightstream.Connection}
@@ -540,17 +543,15 @@ brightstream.Connection = function (params) {
      * @type {string}
      */
     var client = params.client;
-    var that = brightstream.Endpoint(params);
-    var superClass = {
-        call: that.call,
-        sendMessage: that.sendMessage,
-        sendSignal: that.sendSignal
-    };
+    var that = brightstream.Presentable(params);
+    var clientObj = brightstream.getClient(client);
 
+    that.id = that.id || that.connectionId;
+    if (!that.id) {
+        throw new Error("Can't make a connection without an id.");
+    }
     delete that.client;
     delete that.connectionId;
-    delete that.resolvePresence;
-    delete that.getConnection;
 
     /**
      * A name to identify the type of this object.
@@ -573,7 +574,7 @@ brightstream.Connection = function (params) {
     that.sendMessage = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return superClass.sendMessage(params);
+        return that.getEndpoint().sendMessage(params);
     };
 
     /**
@@ -590,7 +591,7 @@ brightstream.Connection = function (params) {
     that.sendSignal = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return superClass.sendSignal(params);
+        return that.getEndpoint().sendSignal(params);
     };
 
     /**
@@ -613,7 +614,7 @@ brightstream.Connection = function (params) {
     that.call = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return superClass.call(params);
+        return that.getEndpoint().call(params);
     };
 
     /**
@@ -639,7 +640,17 @@ brightstream.Connection = function (params) {
     that.getDirectConnection = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return superClass.getDirectConnection(params);
+        return that.getEndpoint().getDirectConnection(params);
+    };
+
+    /**
+     * Get the Endpoint that this Connection belongs to.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.getEndpoint
+     * @returns {brightstream.Endpoint}
+     */
+    that.getEndpoint = function () {
+        return clientObj.getEndpoint({id: that.endpointId});
     };
 
     return that;
@@ -662,12 +673,26 @@ brightstream.User = function (params) {
     params = params || {};
     var client = params.client;
     var that = brightstream.Presentable(params);
+    /**
+     * A simple POJO to store some methods we will want to override but reference later.
+     * @memberof! brightstream.User
+     * @name superClass
+     * @private
+     * @type {object}
+     */
     var superClass = {
         setPresence: that.setPresence
     };
     delete that.client;
     that.className = 'brightstream.User';
 
+    /**
+     * Array of calls in progress.
+     * @memberof! brightstream.User
+     * @name calls
+     * @private
+     * @type {array}
+     */
     var calls = [];
     var presenceQueue = [];
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
