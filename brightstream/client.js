@@ -649,6 +649,8 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
+     * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
+     * know about this Endpoint.
      * @param {function} [onMessage] TODO
      * @param {function} [onPresence] TODO
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
@@ -674,6 +676,80 @@ brightstream.Client = function (params) {
         }
 
         return endpoint;
+    };
+
+    /**
+     * Find a Connection by id and return it. In most cases, if we don't find it we will create it. This is useful
+     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true to return undefined
+     * if the Connection is not already known.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getConnection
+     * @param {object} params
+     * @param {string} params.connectionId
+     * @param {string} params.[endpointId] - An endpointId to use in the creation of this connection.
+     * @param {function} [onMessage] TODO
+     * @param {function} [onPresence] TODO
+     * @returns {brightstream.Connection} The connection whose ID was specified.
+     */
+    that.getConnection = function (params) {
+        params = params || {};
+        var connection;
+        var endpoint;
+        log.debug("getConnection", params);
+
+        if (!params || !params.connectionId) {
+            throw new Error("Can't get a connection without connection id.");
+        }
+
+        if (params.endpointId) {
+            endpoint = that.getEndpoint({
+                id: params.endpointId,
+                skipCreate: params.skipCreate
+            });
+        }
+
+        if (!endpoint) {
+            endpoints.every(function (ept) {
+                if (params.endpointId) {
+                    console.log("ept checking to see if", ept.id, "is", params.endpointId);
+                    if (params.endpointId !== ept.id) {
+                        console.log("found");
+                        return false;
+                    } else {
+                        endpoint = ept;
+                    }
+                }
+
+                ept.connections.every(function (conn) {
+                    console.log("conn checking to see if", conn.id, "is", params.connectionId);
+                    if (conn.id === params.connectionId) {
+                        connection = conn;
+                        console.log("found");
+                        return false;
+                    }
+                    return true;
+                });
+                return connection === undefined;
+            });
+        }
+
+        if (!connection && !params.skipCreate) {
+            console.log("after searching, haven't found a connection yet.");
+            if (!params.endpointId || !endpoint) {
+                throw new Error("Couldn't find an endpoint for this connection. Did you pass in the endpointId?");
+            }
+
+            params.client = client;
+            console.log('instantiating with', params);
+            connection = brightstream.Connection(params);
+            console.log('got', connection);
+            endpoint.connections.push(connection);
+        } else {
+            console.log('getConnection ended up with', connection, params);
+        }
+
+        console.log('in the end, got', connection);
+        return connection;
     };
 
     /**

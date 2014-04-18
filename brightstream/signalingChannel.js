@@ -1070,18 +1070,18 @@ brightstream.SignalingChannel = function (params) {
         endpoint = clientObj.getEndpoint({
             id: message.endpoint,
             client: client,
-            name: message.endpoint,
-            connection: message.connectionId
+            name: message.endpoint
         });
 
 
         // Handle presence not associated with a channel
-        if (message.header.channel.indexOf('system') > -1 || !endpoint.connectionIds[message.connectionId]) {
+        if (message.header.channel.indexOf('system') > -1 ||
+                !endpoint.getConnection({connectionId: message.connectionId})) {
             endpoint.setPresence({
-                connectionId: message.connectionId,
-                presence: 'available'
+                connectionId: message.connectionId
             });
             if (message.header.channel.indexOf('system') > -1) {
+                log.error("Still getting these weird join presence messages.", message);
                 return;
             }
         }
@@ -1115,9 +1115,15 @@ brightstream.SignalingChannel = function (params) {
             id: message.endpointId
         });
 
-        delete endpoint.connectionIds[message.connectionId];
+        endpoint.connections.every(function (conn, index) {
+            if (conn.id === message.connectionId) {
+                endpoint.connections.splice(index, 1);
+                return false;
+            }
+            return true;
+        });
 
-        if (Object.keys(endpoint.connectionIds) === 0) {
+        if (endpoint.connections.length === 0) {
             group = clientObj.getGroup({id: message.header.channel});
             group.removeEndpoint({endpointId: message.endpointId});
         }
