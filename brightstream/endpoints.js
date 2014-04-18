@@ -82,7 +82,6 @@ brightstream.Presentable = function (params) {
         params.connectionId = params.connectionId || that.connectionId;
         log.debug('Presentable.setPresence', params);
 
-        console.log("thing is a", that.className);
         if (that.className === 'brightstream.User' || that.className === 'brightstream.Connection') {
             that.presence = params.presence;
         } else if (!params.connectionId) {
@@ -99,7 +98,6 @@ brightstream.Presentable = function (params) {
                 });
                 connection.presence = params.presence;
             }
-            console.log("resolving");
             that.resolvePresence();
         }
 

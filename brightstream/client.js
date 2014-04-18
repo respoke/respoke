@@ -695,7 +695,6 @@ brightstream.Client = function (params) {
         params = params || {};
         var connection;
         var endpoint;
-        log.debug("getConnection", params);
 
         if (!params || !params.connectionId) {
             throw new Error("Can't get a connection without connection id.");
@@ -711,9 +710,7 @@ brightstream.Client = function (params) {
         if (!endpoint) {
             endpoints.every(function (ept) {
                 if (params.endpointId) {
-                    console.log("ept checking to see if", ept.id, "is", params.endpointId);
                     if (params.endpointId !== ept.id) {
-                        console.log("found");
                         return false;
                     } else {
                         endpoint = ept;
@@ -721,10 +718,8 @@ brightstream.Client = function (params) {
                 }
 
                 ept.connections.every(function (conn) {
-                    console.log("conn checking to see if", conn.id, "is", params.connectionId);
                     if (conn.id === params.connectionId) {
                         connection = conn;
-                        console.log("found");
                         return false;
                     }
                     return true;
@@ -734,21 +729,15 @@ brightstream.Client = function (params) {
         }
 
         if (!connection && !params.skipCreate) {
-            console.log("after searching, haven't found a connection yet.");
             if (!params.endpointId || !endpoint) {
                 throw new Error("Couldn't find an endpoint for this connection. Did you pass in the endpointId?");
             }
 
             params.client = client;
-            console.log('instantiating with', params);
             connection = brightstream.Connection(params);
-            console.log('got', connection);
             endpoint.connections.push(connection);
-        } else {
-            console.log('getConnection ended up with', connection, params);
         }
 
-        console.log('in the end, got', connection);
         return connection;
     };
 

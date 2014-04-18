@@ -71,6 +71,14 @@ brightstream.SignalingChannel = function (params) {
      */
     var clientSettings = null;
     /**
+     * A map to avoid duplicate endpoint subscriptions.
+     * @memberof! brightstream.SignalingChannel
+     * @name subscriptions
+     * @private
+     * @type {object}
+     */
+    var subscriptions = {};
+    /**
      * @memberof! brightstream.SignalingChannel
      * @name baseURL
      * @private
@@ -490,6 +498,10 @@ brightstream.SignalingChannel = function (params) {
             parameters: {
                 endpointList: params.endpointList
             }
+        }).done(function () {
+            params.endpointList.forEach(function (id) {
+                subscriptions[id] = true;
+            });
         });
     };
 
@@ -505,16 +517,27 @@ brightstream.SignalingChannel = function (params) {
      */
     that.getGroupMembers = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var promise;
+
         if (!params.id) {
             deferred.reject(new Error("Can't get group's endpoints without group ID."));
             return deferred.promise;
         }
 
-        return wsCall({
+        promise = wsCall({
             path: '/v1/channels/%s/subscribers/',
             objectId: params.id,
             httpMethod: 'GET'
         });
+
+        promise.done(function (list) {
+            console.log('getGroupMembers promise resolved');
+            list.forEach(function (params) {
+                console.log('adding', params.endpointId, 'to the subscriptions map');
+                subscriptions[params.endpointId] = true;
+            });
+        });
+        return promise;
     };
 
     /**
@@ -1063,6 +1086,7 @@ brightstream.SignalingChannel = function (params) {
         var presenceMessage;
         var endpoint;
 
+        console.log('onJoin', message);
         if (message.endpoint === endpointId) {
             return;
         }
@@ -1086,7 +1110,9 @@ brightstream.SignalingChannel = function (params) {
             }
         }
 
-        that.registerPresence({endpointList: [message.endpoint]});
+        if (!subscriptions[message.endpoint]) {
+            that.registerPresence({endpointList: [message.endpoint]});
+        }
         group = clientObj.getGroup({id: message.header.channel});
 
         if (group) {
@@ -1241,7 +1267,7 @@ brightstream.SignalingChannel = function (params) {
                 groups.forEach(function (group) {
                     group.getEndpoints().done(function (endpoints) {
                         endpoints.forEach(function (eachEndpoint) {
-                            if (eachEndpoint.getName() === message.header.from) {
+                            if (eachEndpoint.id === message.header.from) {
                                 group.removeEndpoint({endpointId: eachEndpoint.id});
                             }
                         });
