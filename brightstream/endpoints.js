@@ -38,18 +38,10 @@ brightstream.Presentable = function (params) {
     that.className = 'brightstream.Presentable';
     /**
      * @memberof! brightstream.Presentable
-     * @name sessions
-     * @private
-     * @type {Array}
-     */
-    var sessions = [];
-    /**
-     * @memberof! brightstream.Presentable
      * @name presence
-     * @private
      * @type {string}
      */
-    var presence = 'unavailable';
+    that.presence = 'unavailable';
     /**
      * Return the endpoint ID.
      * @memberof! brightstream.Presentable
@@ -71,6 +63,8 @@ brightstream.Presentable = function (params) {
         return that.name;
     };
 
+    var clientObj = brightstream.getClient(client);
+
     /**
      * Set the presence on the object and the session
      * @memberof! brightstream.Presentable
@@ -79,21 +73,35 @@ brightstream.Presentable = function (params) {
      * @param {string} params.presence
      * @param {string} params.connectionId
      * @fires brightstream.Presentable#presence
+     * @private
      */
     that.setPresence = function (params) {
+        var connection;
         params = params || {};
         params.presence = params.presence || 'available';
-        params.connectionId = params.connectionId || 'local';
+        params.connectionId = params.connectionId || that.connectionId;
+        log.debug('Presentable.setPresence', params);
 
-        sessions[params.connectionId] = {
-            connectionId: params.connectionId,
-            presence: params.presence
-        };
-
-        if (typeof that.resolvePresence === 'function') {
-            presence = that.resolvePresence({sessions: sessions});
+        if (that.className === 'brightstream.User' || that.className === 'brightstream.Connection') {
+            that.presence = params.presence;
+            if (that.className === 'brightstream.Connection') {
+                that.getEndpoint().resolvePresence();
+            }
+        } else if (!params.connectionId) {
+            throw new Error("Can't set Endpoint presence without a connectionId.");
         } else {
-            presence = params.presence;
+            connection = that.getConnection({connectionId: params.connectionId});
+            if (connection) {
+                connection.presence = params.presence;
+            } else {
+                connection = clientObj.getConnection({
+                    connectionId: params.connectionId,
+                    skipCreate: false,
+                    endpointId: that.id
+                });
+                connection.presence = params.presence;
+            }
+            that.resolvePresence();
         }
 
         /**
@@ -103,7 +111,7 @@ brightstream.Presentable = function (params) {
          * @property {string} presence
          */
         that.fire('presence', {
-            presence: presence
+            presence: that.presence
         });
     };
 
@@ -114,7 +122,7 @@ brightstream.Presentable = function (params) {
      * @returns {string} A string representing the current presence of this endpoint.
      */
     that.getPresence = function () {
-        return presence;
+        return that.presence;
     };
 
     return that;
@@ -122,7 +130,8 @@ brightstream.Presentable = function (params) {
 
 /**
  * Represents remote Endpoints. Endpoints are users of this application that are not the one logged into this
- * instance of the application.  The currently logged-in user can interact with endpoints by calling them or
+ * instance of the application. An Endpoint could be logged in from multiple other instances of this app, each of
+ * which is represented by a Connection. The currently logged-in user can interact with endpoints by calling them or
  * sending them messages.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
@@ -143,6 +152,7 @@ brightstream.Endpoint = function (params) {
     var client = params.client;
     var that = brightstream.Presentable(params);
     delete that.client;
+    delete that.connectionId;
     /**
      * A name to identify the type of this object.
      * @memberof! brightstream.Endpoint
@@ -157,13 +167,14 @@ brightstream.Endpoint = function (params) {
      * @type {brightstream.DirectConnection}
      */
     that.directConnection = null;
+
     /**
-     * @memberof! brightstream.Endpoint
-     * @name sessions
-     * @private
-     * @type {object}
+     * @memberof! brightstream.Presentable
+     * @name connections
+     * @type {Array}
      */
-    var sessions = {};
+    that.connections = [];
+
     /**
      * @memberof! brightstream.Endpoint
      * @name signalingChannel
@@ -277,43 +288,37 @@ brightstream.Endpoint = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
-            signalingChannel.sendSDP({
-                type: 'offer',
-                target: 'call',
-                recipient: that,
-                sdpObj: signalParams.sdp
-            });
-        };
-        params.signalConnected = function (signalParams) {
-            signalingChannel.sendConnected({
-                target: 'call',
-                connectionId: signalParams.connectionId,
-                recipient: that
-            });
+            signalParams.type = 'offer';
+            signalParams.target = 'call';
+            signalParams.recipient = that;
+            signalingChannel.sendSDP(signalParams);
         };
         params.signalAnswer = function (signalParams) {
-            signalingChannel.sendSDP({
-                type: 'answer',
-                target: 'call',
-                connectionId: signalParams.connectionId,
-                recipient: that,
-                sdpObj: signalParams.sdp
-            });
+            signalParams.type = 'answer';
+            signalParams.target = 'call';
+            signalParams.recipient = that;
+            signalingChannel.sendSDP(signalParams);
+        };
+        params.signalConnected = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.connectionId = signalParams.connectionId;
+            signalParams.recipient = that;
+            signalingChannel.sendConnected(signalParams);
+        };
+        params.signalModify = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = that;
+            signalingChannel.sendModify(signalParams);
         };
         params.signalCandidate = function (signalParams) {
-            signalingChannel.sendCandidate({
-                target: 'call',
-                connectionId: signalParams.connectionId,
-                recipient: that,
-                candObj: signalParams.candidate
-            });
+            signalParams.target = 'call';
+            signalParams.recipient = that;
+            signalingChannel.sendCandidate(signalParams);
         };
         params.signalTerminate = function (signalParams) {
-            signalingChannel.sendBye({
-                target: 'call',
-                connectionId: signalParams.connectionId,
-                recipient: that
-            });
+            signalParams.target = 'call';
+            signalParams.recipient = that;
+            signalingChannel.sendBye(signalParams);
         };
         params.signalReport = function (signalParams) {
             signalParams.report.target = 'call';
@@ -344,6 +349,8 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.getDirectConnection
      * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @param {function} [params.onOpen] - A callback for receiving notification of when the DirectConnection is
      * open and ready to be used.
      * @param {function} [params.onClose] - A callback for receiving notification of when the DirectConnection
@@ -358,15 +365,18 @@ brightstream.Endpoint = function (params) {
      * directly to the other endpoint.
      */
     that.getDirectConnection = function (params) {
+        params = params || {};
         var clientObj = brightstream.getClient(client);
         var combinedConnectionSettings = clientObj.getCallSettings();
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var user = clientObj.user;
-        params = params || {};
+        var call;
 
-        log.trace('Endpoint.getDirectConnection');
+        log.trace('Endpoint.getDirectConnection', params);
 
         if (that.directConnection) {
-            return that.directConnection;
+            deferred.resolve(that.directConnection);
+            return deferred.promise;
         }
 
         if (params.initiator === undefined) {
@@ -374,8 +384,8 @@ brightstream.Endpoint = function (params) {
         }
 
         if (!that.id) {
-            log.error("Can't start a direct connection without endpoint ID!");
-            return;
+            deferred.reject(new Error("Can't start a direct connection without endpoint ID!"));
+            return deferred.promise;
         }
 
         // Apply connection-specific callSettings to the app's defaults
@@ -386,123 +396,265 @@ brightstream.Endpoint = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
-            signalingChannel.sendSDP({
-                type: 'offer',
-                target: 'directConnection',
-                recipient: that,
-                sdpObj: signalParams.sdp
-            });
+            signalParams.type = 'offer';
+            signalParams.target = 'directConnection';
+            signalParams.recipient = that;
+            signalingChannel.sendSDP(signalParams);
         };
         params.signalConnected = function (signalParams) {
-            signalingChannel.sendConnected({
-                target: 'directConnection',
-                connectionId: signalParams.connectionId,
-                recipient: that
-            });
+            signalParams.target = 'directConnection';
+            signalParams.recipient = that;
+            signalingChannel.sendConnected(signalParams);
         };
         params.signalAnswer = function (signalParams) {
-            signalingChannel.sendSDP({
-                target: 'directConnection',
-                type: 'answer',
-                connectionId: signalParams.connectionId,
-                recipient: that,
-                sdpObj: signalParams.sdp
-            });
+            signalParams.target = 'directConnection';
+            signalParams.recipient = that;
+            signalParams.type = 'answer';
+            signalingChannel.sendSDP(signalParams);
         };
         params.signalCandidate = function (signalParams) {
-            signalingChannel.sendCandidate({
-                target: 'directConnection',
-                connectionId: signalParams.connectionId,
-                recipient: that,
-                candObj: signalParams.candidate
-            });
+            signalParams.target = 'directConnection';
+            signalParams.recipient = that;
+            signalingChannel.sendCandidate(signalParams);
         };
         params.signalTerminate = function (signalParams) {
-            signalingChannel.sendBye({
-                target: 'directConnection',
-                connectionId: signalParams.connectionId,
-                recipient: that
-            });
+            signalParams.target = 'directConnection';
+            signalParams.recipient = that;
+            signalingChannel.sendBye(signalParams);
         };
         params.signalReport = function (signalParams) {
             signalParams.report.target = 'directConnection';
             log.debug("Not sending report");
             log.debug(signalParams.report);
         };
-        that.directConnection = brightstream.DirectConnection(params);
+        params.directConnectionOnly = true;
 
-        if (params.initiator === true) {
-            that.directConnection.accept({
-                onOpen: params.onOpen,
-                onClose: params.onClose,
-                onMessage: params.onMessage
-            });
-        } else {
-            /**
-             * This event is fired when the logged-in endpoint is receiving a request to open a direct connection
-             * to another endpoint.  If the user wishes to allow the direct connection, calling
-             * evt.directConnection.accept() will allow the connection to be set up.
-             * @event brightstream.User#direct-connection
-             * @type {brightstream.Event}
-             * @property {brightstream.DirectConnection}
-             */
-            clientObj.user.fire('direct-connection', {
-                directConnection: that.directConnection,
-                endpoint: that
-            });
-            if (!clientObj.user.hasListeners('direct-connection')) {
-                log.warn("Got an incoming direct connection with no handlers to accept it!");
-                that.directConnection.reject();
+        call = brightstream.Call(params);
+        call.listen('direct-connection', function (evt) {
+            that.directConnection = evt.directConnection;
+            if (params.initiator !== true) {
+                if (!clientObj.user.hasListeners('direct-connection') &&
+                        !clientObj.hasListeners('direct-connection') &&
+                        !call.hasListeners('direct-connection')) {
+                    that.directConnection.reject();
+                    deferred.reject(new Error("Got an incoming direct connection with no handlers to accept it!"));
+                    return deferred.promise;
+                }
+
+                deferred.resolve(that.directConnection);
+                that.directConnection.listen('close', function (evt) {
+                    that.directConnection = undefined;
+                }, true);
             }
-        }
-
-        that.directConnection.listen('close', function (evt) {
-            that.directConnection.ignore();
-            that.directConnection = undefined;
         }, true);
 
-        return that.directConnection;
+        if (params.initiator === true) {
+            call.answer(params);
+        }
+        return deferred.promise;
     };
 
     /**
      * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
      * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.setPresence
-     * @param {object} params
-     * @param {array} params.sessions - Endpoint's sessions
+     * @method brightstream.Endpoint.resolvePresence
+     * logged in on.
      * @private
-     * @returns {string}
      */
-    that.resolvePresence = function (params) {
-        var presence;
+    that.resolvePresence = function () {
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
-        params = params || {};
-        var connectionIds = Object.keys(params.sessions);
+        var idList;
 
         /**
-         * Sort the connectionIds array by the priority of the value of the presence of that
-         * connectionId. This will cause the first element in the sessionsId to be the id of the
+         * Sort the connections array by the priority of the value of the presence of that
+         * connectionId. This will cause the first element in the list to be the id of the
          * session with the highest priority presence so we can access it by the 0 index.
          * TODO: If we don't really care about the sorting and only about the highest priority
          * we could use Array.prototype.every to improve this algorithm.
          */
-        connectionIds = connectionIds.sort(function sorter(a, b) {
-            var indexA = options.indexOf(params.sessions[a].presence);
-            var indexB = options.indexOf(params.sessions[b].presence);
+        idList = that.connections.sort(function sorter(a, b) {
+            var indexA = options.indexOf(a.presence);
+            var indexB = options.indexOf(b.presence);
             // Move it to the end of the list if it isn't one of our accepted presence values
             indexA = indexA === -1 ? 1000 : indexA;
             indexB = indexB === -1 ? 1000 : indexB;
             return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
         });
 
-        presence = connectionIds[0] ? params.sessions[connectionIds[0]].presence : 'unavailable';
+        if (idList[0]) {
+            that.presence = idList[0].presence;
+        } else {
+            that.presence = 'unavailable';
+        }
+    };
 
-        return presence;
+    /**
+     * Get the Connection with the specified id. The connection ID is optional if only one connection exists.
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.getConnection
+     * @private
+     * @param {object} params
+     * @param {string} [params.connectionId]
+     * @return {brightstream.Connection}
+     */
+    that.getConnection = function (params) {
+        var connection;
+        if (that.connections.length === 1) {
+            return that.connections[0];
+        }
+
+        if (!params || !params.connectionId) {
+            throw new Error("Can't find a connection without the connectionId.");
+        }
+
+        that.connections.every(function (conn) {
+            if (conn.id === params.connectionId) {
+                connection = conn;
+                return false;
+            }
+            return true;
+        });
+
+        return connection;
     };
 
     return that;
 }; // End brightstream.Endpoint
+
+/**
+ * Represents remote Connections which belong to an endpoint. An Endpoint can be authenticated from multiple devices,
+ * browsers, or tabs. Each of these separate authentications is a Connection. The currently logged-in user can interact
+ * with connections by calling them or sending them messages.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @constructor
+ * @augments brightstream.Presentable
+ * @param {object} params
+ * @param {string} params.id
+ * @returns {brightstream.Connection}
+ */
+brightstream.Connection = function (params) {
+    "use strict";
+    params = params || {};
+    /**
+     * @memberof! brightstream.Connection
+     * @name client
+     * @private
+     * @type {string}
+     */
+    var client = params.client;
+    var that = brightstream.Presentable(params);
+    var clientObj = brightstream.getClient(client);
+
+    that.id = that.id || that.connectionId;
+    if (!that.id) {
+        throw new Error("Can't make a connection without an id.");
+    }
+    delete that.client;
+    delete that.connectionId;
+
+    /**
+     * A name to identify the type of this object.
+     * @memberof! brightstream.Connection
+     * @name className
+     * @type {string}
+     */
+    that.className = 'brightstream.Connection';
+
+    /**
+     * Send a message to this connection of an endpoint only through the infrastructure.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.sendMessage
+     * @param {object} params
+     * @param {string} params.message
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @returns {Promise}
+     */
+    that.sendMessage = function (params) {
+        params = params || {};
+        params.connectionId = that.id;
+        return that.getEndpoint().sendMessage(params);
+    };
+
+    /**
+     * Send a signal to this connection of an Endpoint only.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.sendSignal
+     * @param {object} params
+     * @param {object|string} params.signal
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @private
+     * @returns {Promise}
+     */
+    that.sendSignal = function (params) {
+        params = params || {};
+        params.connectionId = that.id;
+        return that.getEndpoint().sendSignal(params);
+    };
+
+    /**
+     * Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered
+     * by another connection of this Endpoint. If initiator is set to true, the Call will be answered immediately.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.call
+     * @param {object} params
+     * @param {RTCServers} [params.servers]
+     * @param {RTCConstraints} [params.constraints]
+     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
+     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * audio and/or video attached.
+     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
+     * audio and/or video attached.
+     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
+     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @returns {brightstream.Call}
+     */
+    that.call = function (params) {
+        params = params || {};
+        params.connectionId = that.id;
+        return that.getEndpoint().call(params);
+    };
+
+    /**
+     * Create a new DirectConnection with this particular connection, only. The DirectConnection cannot be answered
+     * by another connection of this Endpoint.  This method creates a new Call as well, attaching this
+     * DirectConnection to it for the purposes of creating a peer-to-peer link for sending data such as messages to
+     * the other endpoint. Information sent through a DirectConnection is not handled by the cloud infrastructure.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.getDirectConnection
+     * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {function} [params.onOpen] - A callback for receiving notification of when the DirectConnection is
+     * open and ready to be used.
+     * @param {function} [params.onClose] - A callback for receiving notification of when the DirectConnection
+     * is closed and the two Endpoints are disconnected.
+     * @param {function} [params.onMessage] - A callback for receiving messages sent through the DirectConnection.
+     * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
+     * @param {boolean} [params.initiator] - Whether the logged-in user initiated the DirectConnection.
+     * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
+     * directly to the other endpoint.
+     */
+    that.getDirectConnection = function (params) {
+        params = params || {};
+        params.connectionId = that.id;
+        return that.getEndpoint().getDirectConnection(params);
+    };
+
+    /**
+     * Get the Endpoint that this Connection belongs to.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.getEndpoint
+     * @returns {brightstream.Endpoint}
+     */
+    that.getEndpoint = function () {
+        return clientObj.getEndpoint({id: that.endpointId});
+    };
+
+    return that;
+}; // End brightstream.Connection
 
 /**
  * Represents the currently logged-in Endpoint.
@@ -521,12 +673,26 @@ brightstream.User = function (params) {
     params = params || {};
     var client = params.client;
     var that = brightstream.Presentable(params);
+    /**
+     * A simple POJO to store some methods we will want to override but reference later.
+     * @memberof! brightstream.User
+     * @name superClass
+     * @private
+     * @type {object}
+     */
     var superClass = {
         setPresence: that.setPresence
     };
     delete that.client;
     that.className = 'brightstream.User';
 
+    /**
+     * Array of calls in progress.
+     * @memberof! brightstream.User
+     * @name calls
+     * @private
+     * @type {array}
+     */
     var calls = [];
     var presenceQueue = [];
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
@@ -573,7 +739,9 @@ brightstream.User = function (params) {
      * @memberof! brightstream.User
      * @method brightstream.User.getCall
      * @param {object} params
-     * @param {string} params.id - Endpoint ID
+     * @param {string} [params.id] - Call ID.
+     * @param {string} [params.endpointId] - Endpoint ID. Warning: don't use this method if you are placing multiple
+     * calls to the same endpoint. Use user.getCalls instead.
      * @param {boolean} params.create - whether or not to create a new call if the specified endpointId isn't found
      * @returns {brightstream.Call}
      */
@@ -583,21 +751,26 @@ brightstream.User = function (params) {
         var callSettings = null;
         var clientObj = brightstream.getClient(client);
 
-        calls.forEach(function findCall(one) {
-            if (one.remoteEndpoint.getID() === params.id) {
-                if (one.getState() >= 6) { // ended or media error
-                    return null;
-                }
+        calls.every(function findCall(one) {
+            if (params.id && one.id === params.id) {
                 call = one;
+                return false;
             }
+
+            if (!params.id && params.endpointId && one.remoteEndpoint.id === params.endpointId) {
+                call = one;
+                return false;
+            }
+            return true;
         });
 
         if (call === null && params.create === true) {
-            endpoint = clientObj.getEndpoint({id: params.id});
+            endpoint = clientObj.getEndpoint({id: params.endpointId});
             try {
                 callSettings = clientObj.getCallSettings();
                 call = endpoint.call({
                     callSettings: callSettings,
+                    id: params.id,
                     initiator: false
                 });
             } catch (e) {
