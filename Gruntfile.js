@@ -7,6 +7,7 @@ module.exports = function(grunt) {
             brightstream: {
                 options: {
                     compress: true,
+                    //mangle: true,
                     sourceMap: true
                 },
                 files: {
@@ -18,29 +19,37 @@ module.exports = function(grunt) {
                         'brightstream.js',
                         'brightstream/event.js',
                         'brightstream/client.js',
-                        'brightstream/identity.js',
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
                         'brightstream/directConnection.js',
-                        'brightstream/peerConnection.js'
+                        'brightstream/peerConnection.js',
+                        'brightstream/localMedia.js'
                     ]
                 }
             },
             'brightstream-stats': {
                 options: {
                     compress: true,
+                    /*mangle: {
+                        except: [
+                            'brightstream', 'RTCPeerConnection', 'createPeerConnection', 'getUserMedia',
+                            'attachMediaStream', 'reattachMediaStream', 'webrtcDetectedBrowser',
+                            'webrtcDetectedVersion', 'Q'
+                        ],
+                    },*/
                     sourceMap: true
                 },
                 files: {
                     'brightstream-stats.min.js': [
-                        'brightstream/mediastats.js'
+                        'brightstream/mediaStats.js'
                     ]
                 }
             },
             'brightstream-beautify': {
                 options: {
-                    sourceMap: true
+                    beautify: true,
+                    mangle: false
                 },
                 files: {
                     'brightstream.combine.js': [
@@ -51,22 +60,23 @@ module.exports = function(grunt) {
                         'brightstream.js',
                         'brightstream/event.js',
                         'brightstream/client.js',
-                        'brightstream/identity.js',
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
                         'brightstream/directConnection.js',
-                        'brightstream/peerConnection.js'
+                        'brightstream/peerConnection.js',
+                        'brightstream/localMedia.js'
                     ]
                 }
             },
             'brightstream-beautify-stats': {
                 options: {
-                    sourceMap: true
+                    beautify: true,
+                    mangle: false
                 },
                 files: {
                     'brightstream-stats.combine.js': [
-                        'brightstream/mediastats.js'
+                        'brightstream/mediaStats.js'
                     ]
                 }
             }
