@@ -135,7 +135,7 @@ brightstream.EventEmitter = function (params) {
                     listener.call(that, evt);
                     count += 1;
                 } catch (e) {
-                    log.error('Error in ' + that.className + "#" + eventType, e);
+                    log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
                 }
             }
         });
