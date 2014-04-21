@@ -7,6 +7,7 @@ module.exports = function(grunt) {
             brightstream: {
                 options: {
                     compress: true,
+                    //mangle: true,
                     sourceMap: true
                 },
                 files: {
@@ -30,6 +31,13 @@ module.exports = function(grunt) {
             'brightstream-stats': {
                 options: {
                     compress: true,
+                    /*mangle: {
+                        except: [
+                            'brightstream', 'RTCPeerConnection', 'createPeerConnection', 'getUserMedia',
+                            'attachMediaStream', 'reattachMediaStream', 'webrtcDetectedBrowser',
+                            'webrtcDetectedVersion', 'Q'
+                        ],
+                    },*/
                     sourceMap: true
                 },
                 files: {
