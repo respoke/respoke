@@ -6,4 +6,10 @@ if [ "$JSHINT_OUTPUT" != "" ]; then
 	echo JSHINT_OUTPUT is $JSHINT_OUTPUT
 	exit 1
 fi
-./minimize.sh
+
+# library minification
+grunt combine
+grunt dist
+
+# Upgrade the pre-commit hook.
+cp githooks/pre-commit .git/hooks/pre-commit  || cp githooks/pre-commit ../../.git/modules/javascript/transporter/hooks/pre-commit
