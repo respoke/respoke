@@ -471,7 +471,7 @@ brightstream.Client = function (params) {
             });
             addGroup(group);
             group.listen('leave', function (evt) {
-                checkEndpointForRemoval(evt.endpoint);
+                checkEndpointForRemoval(evt.connection.getEndpoint());
             });
             deferred.resolve(group);
         }, function (err) {
@@ -502,7 +502,7 @@ brightstream.Client = function (params) {
 
         if (!group) {
             newGroup.listen('leave', function (evt) {
-                checkEndpointForRemoval(evt.endpoint);
+                checkEndpointForRemoval(evt.connection.getEndpoint());
             }, true);
             groups.push(newGroup);
         }
@@ -517,7 +517,6 @@ brightstream.Client = function (params) {
      */
     function removeGroup(newGroup) {
         var index;
-        var endpoints;
         if (!newGroup || newGroup.className === 'brightstream.Group') {
             throw new Error("Can't remove group to internal tracking without a group.");
         }
@@ -530,12 +529,12 @@ brightstream.Client = function (params) {
             return true;
         });
 
-        if (index > -1) {
-            groups[index].getEndpoints().done(function (list) {
-                endpoints = list;
+        if (index !== undefined && index > -1) {
+            groups[index].getMembers().done(function (list) {
+                groups[index].ignore();
                 groups.splice(index, 1);
-                endpoints.forEach(function (endpoint) {
-                    checkEndpointForRemoval(endpoint);
+                list.forEach(function (connection) {
+                    checkEndpointForRemoval(connection.getEndpoint());
                 });
             });
         }
@@ -606,37 +605,34 @@ brightstream.Client = function (params) {
      * deleted based on group membership.
      * @memberof! brightstream.Client
      * @method brightstream.Client.checkEndpointForRemoval
-     * @param {brightstream.Endpoint}
+     * @param {object} params
+     * @param {string} params.id - The ID of the Endpoint to check for removal.
      * @private
      */
-    function checkEndpointForRemoval(theEndpoint) {
-        var inAGroup;
-        var index;
-        if (!theEndpoint || theEndpoint.className !== 'brightstream.Endpoint') {
+    function checkEndpointForRemoval(params) {
+        params = params || {};
+        if (!params.id) {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
         Q.all(groups.map(function (group) {
-            return group.getEndpoints();
-        })).done(function (groupEndpoints) {
-            groupEndpoints.forEach(function (endpoints) {
-                endpoints.forEach(function (endpoint) {
-                    if (endpoint.id === theEndpoint.id) {
-                        inAGroup = true;
-                    }
+            return group.getMembers();
+        })).done(function (connectionsByGroup) {
+            // connectionsByGroup is a two-dimensional array where the first dimension is a group
+            // and the second dimension is a connection.
+            var absent = connectionsByGroup.every(function (connectionList) {
+                return connectionList.every(function (conn) {
+                    return (conn.endpointId !== params.id);
                 });
             });
-            if (inAGroup) {
-                endpoints.every(function (ept, i) {
-                    if (ept.id === theEndpoint.id) {
-                        index = i;
+            if (absent) {
+                endpoints.every(function (ept, index) {
+                    if (ept.id === params.id) {
+                        endpoints.splice(index, 1);
                         return false;
                     }
                     return true;
                 });
-                if (index > -1) {
-                    endpoints.splice(index, 1);
-                }
             }
         });
     }
@@ -649,6 +645,8 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
+     * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
+     * know about this Endpoint.
      * @param {function} [onMessage] TODO
      * @param {function} [onPresence] TODO
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
@@ -674,6 +672,69 @@ brightstream.Client = function (params) {
         }
 
         return endpoint;
+    };
+
+    /**
+     * Find a Connection by id and return it. In most cases, if we don't find it we will create it. This is useful
+     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true to return undefined
+     * if the Connection is not already known.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getConnection
+     * @param {object} params
+     * @param {string} params.connectionId
+     * @param {string} params.[endpointId] - An endpointId to use in the creation of this connection.
+     * @param {function} [onMessage] TODO
+     * @param {function} [onPresence] TODO
+     * @returns {brightstream.Connection} The connection whose ID was specified.
+     */
+    that.getConnection = function (params) {
+        params = params || {};
+        var connection;
+        var endpoint;
+
+        if (!params || !params.connectionId) {
+            throw new Error("Can't get a connection without connection id.");
+        }
+
+        if (params.endpointId) {
+            endpoint = that.getEndpoint({
+                id: params.endpointId,
+                skipCreate: params.skipCreate
+            });
+        }
+
+        if (!endpoint) {
+            endpoints.every(function (ept) {
+                if (params.endpointId) {
+                    if (params.endpointId !== ept.id) {
+                        return false;
+                    } else {
+                        endpoint = ept;
+                    }
+                }
+
+                ept.connections.every(function (conn) {
+                    if (conn.id === params.connectionId) {
+                        connection = conn;
+                        return false;
+                    }
+                    return true;
+                });
+                return connection === undefined;
+            });
+        }
+
+        if (!connection && !params.skipCreate) {
+            if (!params.endpointId || !endpoint) {
+                throw new Error("Couldn't find an endpoint for this connection. Did you pass in the endpointId?");
+            }
+
+            params.client = client;
+            connection = brightstream.Connection(params);
+            endpoint.connections.push(connection);
+        }
+
+        return connection;
     };
 
     /**
