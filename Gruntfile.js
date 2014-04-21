@@ -18,12 +18,12 @@ module.exports = function(grunt) {
                         'brightstream.js',
                         'brightstream/event.js',
                         'brightstream/client.js',
-                        'brightstream/identity.js',
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
                         'brightstream/directConnection.js',
-                        'brightstream/peerConnection.js'
+                        'brightstream/peerConnection.js',
+                        'brightstream/localMedia.js'
                     ]
                 }
             },
@@ -34,13 +34,14 @@ module.exports = function(grunt) {
                 },
                 files: {
                     'brightstream-stats.min.js': [
-                        'brightstream/mediastats.js'
+                        'brightstream/mediaStats.js'
                     ]
                 }
             },
             'brightstream-beautify': {
                 options: {
-                    sourceMap: true
+                    beautify: true,
+                    mangle: false
                 },
                 files: {
                     'brightstream.combine.js': [
@@ -51,22 +52,23 @@ module.exports = function(grunt) {
                         'brightstream.js',
                         'brightstream/event.js',
                         'brightstream/client.js',
-                        'brightstream/identity.js',
                         'brightstream/endpoints.js',
                         'brightstream/signalingChannel.js',
                         'brightstream/call.js',
                         'brightstream/directConnection.js',
-                        'brightstream/peerConnection.js'
+                        'brightstream/peerConnection.js',
+                        'brightstream/localMedia.js'
                     ]
                 }
             },
             'brightstream-beautify-stats': {
                 options: {
-                    sourceMap: true
+                    beautify: true,
+                    mangle: false
                 },
                 files: {
                     'brightstream-stats.combine.js': [
-                        'brightstream/mediastats.js'
+                        'brightstream/mediaStats.js'
                     ]
                 }
             }
