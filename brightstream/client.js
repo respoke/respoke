@@ -471,7 +471,7 @@ brightstream.Client = function (params) {
             });
             addGroup(group);
             group.listen('leave', function (evt) {
-                checkEndpointForRemoval(evt.endpoint);
+                checkEndpointForRemoval(evt.connection.getEndpoint());
             });
             deferred.resolve(group);
         }, function (err) {
@@ -502,7 +502,7 @@ brightstream.Client = function (params) {
 
         if (!group) {
             newGroup.listen('leave', function (evt) {
-                checkEndpointForRemoval(evt.endpoint);
+                checkEndpointForRemoval(evt.connection.getEndpoint());
             }, true);
             groups.push(newGroup);
         }
@@ -517,7 +517,6 @@ brightstream.Client = function (params) {
      */
     function removeGroup(newGroup) {
         var index;
-        var endpoints;
         if (!newGroup || newGroup.className === 'brightstream.Group') {
             throw new Error("Can't remove group to internal tracking without a group.");
         }
@@ -530,12 +529,12 @@ brightstream.Client = function (params) {
             return true;
         });
 
-        if (index > -1) {
-            groups[index].getEndpoints().done(function (list) {
-                endpoints = list;
+        if (index !== undefined && index > -1) {
+            groups[index].getMembers().done(function (list) {
+                groups[index].ignore();
                 groups.splice(index, 1);
-                endpoints.forEach(function (endpoint) {
-                    checkEndpointForRemoval(endpoint);
+                list.forEach(function (connection) {
+                    checkEndpointForRemoval(connection.getEndpoint());
                 });
             });
         }
@@ -606,37 +605,34 @@ brightstream.Client = function (params) {
      * deleted based on group membership.
      * @memberof! brightstream.Client
      * @method brightstream.Client.checkEndpointForRemoval
-     * @param {brightstream.Endpoint}
+     * @param {object} params
+     * @param {string} params.id - The ID of the Endpoint to check for removal.
      * @private
      */
-    function checkEndpointForRemoval(theEndpoint) {
-        var inAGroup;
-        var index;
-        if (!theEndpoint || theEndpoint.className !== 'brightstream.Endpoint') {
+    function checkEndpointForRemoval(params) {
+        params = params || {};
+        if (!params.id) {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
         Q.all(groups.map(function (group) {
-            return group.getEndpoints();
-        })).done(function (groupEndpoints) {
-            groupEndpoints.forEach(function (endpoints) {
-                endpoints.forEach(function (endpoint) {
-                    if (endpoint.id === theEndpoint.id) {
-                        inAGroup = true;
-                    }
+            return group.getMembers();
+        })).done(function (connectionsByGroup) {
+            // connectionsByGroup is a two-dimensional array where the first dimension is a group
+            // and the second dimension is a connection.
+            var absent = connectionsByGroup.every(function (connectionList) {
+                return connectionList.every(function (conn) {
+                    return (conn.endpointId !== params.id);
                 });
             });
-            if (inAGroup) {
-                endpoints.every(function (ept, i) {
-                    if (ept.id === theEndpoint.id) {
-                        index = i;
+            if (absent) {
+                endpoints.every(function (ept, index) {
+                    if (ept.id === params.id) {
+                        endpoints.splice(index, 1);
                         return false;
                     }
                     return true;
                 });
-                if (index > -1) {
-                    endpoints.splice(index, 1);
-                }
             }
         });
     }

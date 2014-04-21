@@ -71,13 +71,13 @@ brightstream.SignalingChannel = function (params) {
      */
     var clientSettings = null;
     /**
-     * A map to avoid duplicate endpoint subscriptions.
+     * A map to avoid duplicate endpoint presence registrations.
      * @memberof! brightstream.SignalingChannel
-     * @name subscriptions
+     * @name presenceRegistered
      * @private
      * @type {object}
      */
-    var subscriptions = {};
+    var presenceRegistered = {};
     /**
      * @memberof! brightstream.SignalingChannel
      * @name baseURL
@@ -500,7 +500,7 @@ brightstream.SignalingChannel = function (params) {
             }
         }).done(function () {
             params.endpointList.forEach(function (id) {
-                subscriptions[id] = true;
+                presenceRegistered[id] = true;
             });
         });
     };
@@ -531,10 +531,8 @@ brightstream.SignalingChannel = function (params) {
         });
 
         promise.done(function (list) {
-            console.log('getGroupMembers promise resolved');
             list.forEach(function (params) {
-                console.log('adding', params.endpointId, 'to the subscriptions map');
-                subscriptions[params.endpointId] = true;
+                presenceRegistered[params.endpointId] = true;
             });
         });
         return promise;
@@ -1085,8 +1083,8 @@ brightstream.SignalingChannel = function (params) {
         var group;
         var presenceMessage;
         var endpoint;
+        var connection;
 
-        console.log('onJoin', message);
         if (message.endpoint === endpointId) {
             return;
         }
@@ -1097,12 +1095,16 @@ brightstream.SignalingChannel = function (params) {
             name: message.endpoint
         });
 
+        connection = endpoint.getConnection({connectionId: message.connectionId});
 
         // Handle presence not associated with a channel
-        if (message.header.channel.indexOf('system') > -1 ||
-                !endpoint.getConnection({connectionId: message.connectionId})) {
+        if (message.header.channel.indexOf('system') > -1 || !connection) {
             endpoint.setPresence({
                 connectionId: message.connectionId
+            });
+            connection = clientObj.getConnection({
+                connectionId: message.connectionId,
+                endpointId: message.endpoint
             });
             if (message.header.channel.indexOf('system') > -1) {
                 log.error("Still getting these weird join presence messages.", message);
@@ -1110,15 +1112,15 @@ brightstream.SignalingChannel = function (params) {
             }
         }
 
-        if (!subscriptions[message.endpoint]) {
+        if (!presenceRegistered[message.endpoint]) {
             that.registerPresence({endpointList: [message.endpoint]});
         }
         group = clientObj.getGroup({id: message.header.channel});
 
-        if (group) {
-            group.addEndpoint({endpoint: endpoint});
+        if (group && connection) {
+            group.addMember({connection: connection});
         } else {
-            log.error("Can't add endpoint to group:", message, group, endpoint);
+            log.error("Can't add endpoint to group:", message, group, endpoint, connection);
         }
     };
 
@@ -1149,10 +1151,8 @@ brightstream.SignalingChannel = function (params) {
             return true;
         });
 
-        if (endpoint.connections.length === 0) {
-            group = clientObj.getGroup({id: message.header.channel});
-            group.removeEndpoint({endpointId: message.endpointId});
-        }
+        group = clientObj.getGroup({id: message.header.channel});
+        group.removeMember({connectionId: message.connectionId});
     };
 
     /**
@@ -1261,25 +1261,19 @@ brightstream.SignalingChannel = function (params) {
             connection: message.header.fromConnection
         });
 
-        if (message.type === 'unavailable') {
-            var groups = clientObj.getGroups();
-            if (groups) {
-                groups.forEach(function (group) {
-                    group.getEndpoints().done(function (endpoints) {
-                        endpoints.forEach(function (eachEndpoint) {
-                            if (eachEndpoint.id === message.header.from) {
-                                group.removeEndpoint({endpointId: eachEndpoint.id});
-                            }
-                        });
-                    });
-                });
-            }
-        }
-
         endpoint.setPresence({
             connectionId: message.header.fromConnection,
             presence: message.type
         });
+
+        if (endpoint.getPresence() === 'unavailable') {
+            var groups = clientObj.getGroups();
+            if (groups) {
+                groups.forEach(function (group) {
+                    group.removeMember({connectionId: message.header.fromConnection});
+                });
+            }
+        }
     }
 
     /**
@@ -1808,7 +1802,7 @@ brightstream.Group = function (params) {
      * @type {array<brightstream.Endpoint>}
      * @desc A list of the members of this group.
      */
-    group.endpoints = [];
+    group.connections = [];
     /**
      * A name to identify the type of this object.
      * @memberof! brightstream.group
@@ -1879,72 +1873,75 @@ brightstream.Group = function (params) {
     };
 
     /**
-     * Remove an endpoint from a group. This does not change the status of the remote endpoint, it only changes the
-     * internal representation of the group membership. This method should only be used internally. Make sure the
-     * endpoint doesn't have any connections who are still members!
+     * Remove a Connection from a Group. This does not change the status of the remote Endpoint, it only changes the
+     * internal representation of the Group membership. This method should only be used internally.
      * @private
      * @memberof! brightstream.Group
-     * @method brightstream.Group.removeEndpoint
+     * @method brightstream.Group.removeMember
      * @param {object} params
-     * @param {string} [params.endpointId] - Endpoint's id
+     * @param {string} [params.connectionId] - Endpoint's connection id
      * @fires brightstream.Group#leave
      */
-    group.removeEndpoint = function (params) {
-        if (!params.endpointId) {
-            throw new Error("Can't remove endpoint from a group without an id.");
+    group.removeMember = function (params) {
+        params = params || {};
+        if (!params.connectionId) {
+            throw new Error("Can't remove a Connection from a group without an id.");
         }
-        for (var i = (group.endpoints.length - 1); i >= 0; i -= 1) {
-            var endpoint = group.endpoints[i];
-            if (params.endpointId && endpoint.getID() === params.endpointId) {
-                group.endpoints.splice(i, 1);
+        group.connections.every(function (conn, index) {
+            if (conn.id === params.connectionId) {
+                group.connections.splice(index, 1);
+
                 /**
-                 * This event is fired when an endpoint leaves a group the currently logged-in user is a member of.
+                 * This event is fired when a member leaves a group the currently logged-in user is a member of.
                  * @event brightstream.Group#leave
                  * @type {brightstream.Event}
-                 * @property {brightstream.Endpoint} endpoint
+                 * @property {brightstream.Connection} connection
                  */
                 group.fire('leave', {
-                    endpoint: endpoint
+                    connection: conn
                 });
+                return false;
             }
-        }
+            return true;
+        });
     };
 
     /**
-     * Add an endpoint to a group. This does not change the status of the remote endpoint, it only changes the
-     * internal representation of the group membership. This method should only be used internally.
+     * Add a Connection to a group. This does not change the status of the remote Endpoint, it only changes the
+     * internal representation of the Group membership. This method should only be used internally.
      * @memberof! brightstream.Group
      * @private
-     * @method brightstream.Group.addEndpoint
+     * @method brightstream.Group.addMember
      * @param {object} params
-     * @param {brightstream.Endpoint} params.endpoint - Endpoint
+     * @param {brightstream.Connection} params.connection
      * @fires brightstream.Group#join
      */
-    group.addEndpoint = function (params) {
-        var foundEndpoint;
+    group.addMember = function (params) {
+        params = params || {};
+        var foundConn;
         var absent;
 
-        if (!params.endpoint) {
-            throw new Error("Can't add endpoint to a group without an endpoint.");
+        if (!params.connection) {
+            throw new Error("Can't add member to a group without a connection.");
         }
 
-        absent = group.endpoints.every(function (ept) {
-            return (ept.id !== params.endpoint.id);
+        absent = group.connections.every(function (conn) {
+            return (conn.id !== params.connection.id);
         });
 
         if (absent) {
-            group.endpoints.push(params.endpoint);
+            group.connections.push(params.connection);
             /**
-             * This event is fired when an endpoint joins a group that the currently logged-in endpoint is a member
+             * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
              * of.
              * @event brightstream.Group#join
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
-             * @property {brightstream.Endpoint} endpoint
+             * @property {brightstream.Connection} connection
              */
             group.fire('join', {
                 group: group,
-                endpoint: params.endpoint
+                connection: params.connection
             });
         }
     };
@@ -1960,15 +1957,16 @@ brightstream.Group = function (params) {
      * @returns {Promise}
      */
     group.sendMessage = function (params) {
+        params = params || {};
         params.id = group.id;
         return signalingChannel.publish(params);
     };
 
     /**
-     * Get an array of subscribers of the group.
+     * Get an array containing the members of the group.
      * @memberof! brightstream.Group
-     * @method brightstream.Group.getEndpoints
-     * @returns {Promise<Array>} A promise to an array of endpoints.
+     * @method brightstream.Group.getMembers
+     * @returns {Promise<Array>} A promise to an array of Connections.
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -1976,13 +1974,13 @@ brightstream.Group = function (params) {
      * @param {function} [onPresence] TODO
      * @fires brightstream.Group#join
      */
-    group.getEndpoints = function (params) {
+    group.getMembers = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var clientObj = brightstream.getClient(client);
 
-        if (group.endpoints.length > 0) {
-            deferred.resolve(group.endpoints);
+        if (group.connections.length > 0) {
+            deferred.resolve(group.connections);
             return deferred.promise;
         }
 
@@ -1991,32 +1989,26 @@ brightstream.Group = function (params) {
         }).done(function (list) {
             var endpointList = [];
             list.forEach(function (params) {
-                var endpoint = clientObj.getEndpoint({
-                    client: client,
-                    id: params.endpointId,
-                    name: params.endpointId
+                var connection = clientObj.getConnection({
+                    endpointId: params.endpointId,
+                    connectionId: params.connectionId
                 });
                 /**
-                 * This event is fired when an endpoint joins a group the currently logged-in user is a member of.
+                 * This event is fired when a member joins a group that the currently logged-in user is a member of.
                  * @event brightstream.Group#join
                  * @type {brightstream.Event}
                  * @property {brightstream.Group} group
-                 * @property {brightstream.Endpoint} endpoint
+                 * @property {brightstream.Connection} connection
                  */
                 group.fire('join', {
                     group: group,
-                    endpoint: endpoint
+                    connection: connection
                 });
 
-                if (endpointList.indexOf(endpoint.id) === -1) {
-                    endpointList.push(endpoint.id);
-                    group.addEndpoint({endpoint: endpoint});
+                if (endpointList.indexOf(params.endpointId) === -1) {
+                    endpointList.push(params.endpointId);
                 }
-
-                endpoint.setPresence({
-                    presence: 'available',
-                    connectionId: params.connectionId
-                });
+                group.addMember({connection: connection});
             });
 
             if (endpointList.length > 0) {
@@ -2024,7 +2016,7 @@ brightstream.Group = function (params) {
                     endpointList: endpointList
                 });
             }
-            deferred.resolve(group.endpoints);
+            deferred.resolve(group.connections);
         }, function (err) {
             deferred.reject(err);
         });
