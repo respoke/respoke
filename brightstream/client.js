@@ -213,7 +213,7 @@ brightstream.Client = function (params) {
             that.listen('disconnect', params.onDisconnect);
             that.listen('reconnect', params.onReconnect);
 
-            log.info('logged in as user ' + user.getName());
+            log.info('logged in as user ' + user.id);
             log.debug(user);
             that.updateTurnCredentials();
 

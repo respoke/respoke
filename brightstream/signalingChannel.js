@@ -294,7 +294,7 @@ brightstream.SignalingChannel = function (params) {
         wsCall({
             path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
-            objectId: clientObj.user.getID()
+            objectId: clientObj.user.id
         }).fin(function () {
             call({
                 path: '/v1/appauthsessions',
@@ -554,7 +554,7 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var message = brightstream.TextMessage({
-            endpointId: params.recipient.getID(),
+            endpointId: params.recipient.id,
             connectionId: params.connectionId,
             message: params.message
         });
@@ -624,7 +624,7 @@ brightstream.SignalingChannel = function (params) {
         delete params.onError;
 
         var signalingMessage = {
-            endpointId: params.recipient.getID(),
+            endpointId: params.recipient.id,
             connectionId: params.connectionId
         };
         delete params.recipient;
@@ -663,7 +663,7 @@ brightstream.SignalingChannel = function (params) {
         delete params.onError;
 
         var signalingMessage = {
-            endpointId: params.recipient.getID(),
+            endpointId: params.recipient.id,
             connectionId: params.connectionId
         };
         delete params.recipient;
@@ -701,7 +701,7 @@ brightstream.SignalingChannel = function (params) {
         delete params.onError;
 
         var signalingMessage = {
-            endpointId: params.recipient.getID(),
+            endpointId: params.recipient.id,
             connectionId: params.connectionId
         };
         delete params.recipient;
@@ -738,7 +738,7 @@ brightstream.SignalingChannel = function (params) {
         delete params.onError;
 
         var signalingMessage = {
-            endpointId: params.recipient.getID(),
+            endpointId: params.recipient.id,
             connectionId: params.connectionId
         };
         delete params.recipient;
@@ -775,7 +775,7 @@ brightstream.SignalingChannel = function (params) {
         delete params.onError;
 
         var signalingMessage = {
-            endpointId: params.recipient.getID(),
+            endpointId: params.recipient.id,
             connectionId: params.connectionId
         };
         delete params.recipient;
@@ -1039,7 +1039,7 @@ brightstream.SignalingChannel = function (params) {
         var group;
         var groupMessage;
 
-        if (message.header.from === clientObj.user.getName()) {
+        if (message.header.from === clientObj.user.id) {
             return;
         }
 
@@ -1135,7 +1135,7 @@ brightstream.SignalingChannel = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpointId === clientObj.user.getID()) {
+        if (message.endpointId === clientObj.user.id) {
             return;
         }
 
@@ -1223,8 +1223,8 @@ brightstream.SignalingChannel = function (params) {
                 endpointId = res.endpointId;
                 var user = brightstream.User({
                     client: client,
-                    id: res.id,
-                    name: res.endpointId
+                    connectionId: res.id,
+                    id: res.endpointId
                 });
                 if (onSuccess) {
                     onSuccess(user);
@@ -1819,25 +1819,6 @@ brightstream.Group = function (params) {
     delete group.onPresence;
     delete group.onJoin;
     delete group.onLeave;
-
-    /**
-     * Get the ID of the group.
-     * @memberof! brightstream.Group
-     * @method brightstream.Group.getID
-     * @return {string} The group ID.
-     */
-    group.getID = function () {
-        return group.id;
-    };
-
-    /**
-     * Get the name of the group.
-     * @memberof! brightstream.Group
-     * @method brightstream.Group.getName
-     * @return {string} The group name.
-     * @todo TODO maybe one day we will have separate group names and ids
-     */
-    group.getName = group.getID;
 
     /**
      * Leave this group.

@@ -42,26 +42,6 @@ brightstream.Presentable = function (params) {
      * @type {string}
      */
     that.presence = 'unavailable';
-    /**
-     * Return the endpoint ID.
-     * @memberof! brightstream.Presentable
-     * @method brightstream.Presentable.getID
-     * @return {string}
-     */
-    that.getID = function () {
-        return that.id;
-    };
-
-    /**
-     * Get the name.
-     * @memberof! brightstream.Presentable
-     * @method brightstream.Presentable.getName
-     * @private
-     * @return {string}
-     */
-    that.getName = function () {
-        return that.name;
-    };
 
     var clientObj = brightstream.getClient(client);
 
@@ -372,13 +352,12 @@ brightstream.Endpoint = function (params) {
         var user = clientObj.user;
         var call;
 
-        log.trace('Endpoint.getDirectConnection', params);
-
         if (that.directConnection) {
             deferred.resolve(that.directConnection);
             return deferred.promise;
         }
 
+        log.trace('Endpoint.getDirectConnection', params);
         if (params.initiator === undefined) {
             params.initiator = true;
         }
