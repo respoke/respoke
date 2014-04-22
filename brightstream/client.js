@@ -93,14 +93,6 @@ brightstream.Client = function (params) {
     that.user = null;
     /**
      * @memberof! brightstream.Client
-     * @name turnRefresher
-     * @type {number}
-     * @private
-     * @desc A timer to facilitate refreshing the TURN credentials every 20 hours.
-     */
-    var turnRefresher = null;
-    /**
-     * @memberof! brightstream.Client
      * @name groups
      * @type {Array<brightstream.Group>}
      * @private
@@ -215,7 +207,6 @@ brightstream.Client = function (params) {
 
             log.info('logged in as user ' + user.id);
             log.debug(user);
-            that.updateTurnCredentials();
 
             /**
              * This event is fired the first time the library connects to the cloud infrastructure.
@@ -353,20 +344,26 @@ brightstream.Client = function (params) {
      * Update TURN credentials and set a timeout to do it again in 20 hours.
      * @memberof! brightstream.Client
      * @method brightstream.Client.updateTurnCredentials
+     * @returns {Promise}
+     * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @private
      */
     that.updateTurnCredentials = function () {
+        var promise;
         if (callSettings.disableTurn === true) {
             return;
         }
 
-        clearInterval(turnRefresher);
-        signalingChannel.getTurnCredentials().done(function successHandler(creds) {
+        promise = signalingChannel.getTurnCredentials();
+        promise.done(params.onSuccess, params.onError);
+        promise.done(function successHandler(creds) {
             callSettings.servers.iceServers = creds;
         }, function errorHandler(error) {
             throw error;
         });
-        turnRefresher = setInterval(that.updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
+        return promise;
     };
 
     /**
