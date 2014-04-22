@@ -21,9 +21,9 @@
  * brightstream.connect, brightstream.createClient, or to client.connect.
  * @param {string} [params.token] - The endpoint's authentication token.
  * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
- * different paramters than the built-in defaults.
+ * different parameters than the built-in defaults.
  * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
- * different paramters than the built-in defaults.
+ * different parameters than the built-in defaults.
  * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
  * endpoint. This is only used when `developmentMode` is set to `true`.
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
@@ -180,9 +180,9 @@ brightstream.Client = function (params) {
      * brightstream.connect, brightstream.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
      * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
-     * different paramters than the built-in defaults.
+     * different parameters than the built-in defaults.
      * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
-     * different paramters than the built-in defaults.
+     * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
@@ -204,6 +204,7 @@ brightstream.Client = function (params) {
      */
     that.connect = function (params) {
         var promise;
+        params = params || {};
         log.trace('Client.connect');
 
         Object.keys(params).forEach(function (key) {
@@ -244,6 +245,7 @@ brightstream.Client = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         signalingChannel.open({
+            actuallyConnect: actuallyConnect,
             appId: app.appId,
             developmentMode: app.developmentMode,
             endpointId: that.endpointId,
@@ -256,19 +258,24 @@ brightstream.Client = function (params) {
         }).done(function (user) {
             connected = true;
 
+            that.user = user;
             user.setOnline(); // Initiates presence.
+
+            /*
+             * These rely on the EventEmitter checking for duplicate event listeners in order for these
+             * not to be duplicated on reconnect.
+             */
             user.listen('call', app.onCall);
             user.listen('direct-connection', app.onDirectConnection);
             user.listen('join', app.onJoin);
             user.listen('leave', app.onLeave);
-            that.user = user;
 
             that.listen('message', app.onMessage);
             that.listen('connect', app.onConnect);
             that.listen('disconnect', app.onDisconnect);
-            that.listen('disconnect', function () { connected = false; });
+            that.listen('disconnect', setConnectedOnDisconnect);
             that.listen('reconnect', app.onReconnect);
-            that.listen('reconnect', function () { connected = true; });
+            that.listen('reconnect', setConnectedOnReconnect);
 
             log.info('logged in as user ' + user.id);
             log.debug(user);
@@ -280,6 +287,15 @@ brightstream.Client = function (params) {
             log.error(err.message);
         });
         return deferred.promise;
+    }
+
+    function setConnectedOnDisconnect() {
+        that.user = null;
+        connected = false;
+    }
+
+    function setConnectedOnReconnect() {
+        connected = true;
     }
 
     /**
@@ -305,7 +321,7 @@ brightstream.Client = function (params) {
             Q.all(leaveGroups).then(function () {
                 return signalingChannel.close();
             }, function (err) {
-                // Possibly the socket got closed already and we couldn't leave our groups. Backed will clean this up.
+                // Possibly the socket got closed already and we couldn't leave our groups. Backend will clean this up.
                 disconnectPromise.resolve();
             }).fin(function () {
                 if (!disconnectPromise.promise.isFulfilled()) {
@@ -316,22 +332,28 @@ brightstream.Client = function (params) {
         } else {
             disconnectPromise.resolve();
         }
-
-        function afterDisconnect() {
-            that.user = null;
-            connected = false;
-            endpoints = [];
-            groups = [];
-            /**
-             * This event is fired when the library has disconnected from the cloud infrastructure.
-             * @event brightstream.Client#disconnect
-             */
-            that.fire('disconnect');
-        }
-
         disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
         return disconnectPromise.promise;
     };
+
+    /**
+     * Clean up after an intentional disconnect.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.afterDisconnect
+     * @private
+     */
+    function afterDisconnect() {
+        that.user = null;
+        connected = false;
+        endpoints = [];
+        groups = [];
+        /**
+         * This event is fired when the library has disconnected from the cloud infrastructure.
+         * @event brightstream.Client#disconnect
+         */
+        that.fire('disconnect');
+    }
+
 
     /**
      * Get the client ID. This can be used in the brightstream.getClient static method to obtain a reference

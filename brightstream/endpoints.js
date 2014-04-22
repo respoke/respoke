@@ -131,6 +131,8 @@ brightstream.Endpoint = function (params) {
      */
     var client = params.client;
     var that = brightstream.Presentable(params);
+    var clientObj = brightstream.getClient(client);
+    var signalingChannel = clientObj.getSignalingChannel();
     delete that.client;
     delete that.connectionId;
     /**
@@ -154,14 +156,9 @@ brightstream.Endpoint = function (params) {
      * @type {Array}
      */
     that.connections = [];
-
-    /**
-     * @memberof! brightstream.Endpoint
-     * @name signalingChannel
-     * @private
-     * @type {brightstream.SignalingChannel}
-     */
-    var signalingChannel = brightstream.getClient(client).getSignalingChannel();
+    clientObj.listen('disconnect', function () {
+        that.connections = [];
+    });
 
     /**
      * Send a message to the endpoint through the infrastructure.
@@ -204,7 +201,7 @@ brightstream.Endpoint = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
         if (!params.signal) {
-            deferred.reject(new Error("Can't send a signal without a 'signal' paramter."));
+            deferred.reject(new Error("Can't send a signal without a 'signal' parameter."));
         }
 
         signalingChannel.sendSignal({
