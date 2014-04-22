@@ -24,6 +24,22 @@
  * different paramters than the built-in defaults.
  * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
  * different paramters than the built-in defaults.
+ * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+ * endpoint. This is only used when `developmentMode` is set to `true`.
+ * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
+ * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+ * operation and will limit the services you will be able to use.
+ * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+ * when a disconnect occurs.
+ * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
+ * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
+ * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+ * @param {function} [params.onConnect] - Callback for Client connect.
+ * @param {function} [params.onDisconnect] - Callback for Client disconnect.
+ * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+ * @param {function} [params.onCall] - Callback for when this client's user receives a call.
+ * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
+ * direct connection.
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
@@ -80,11 +96,28 @@ brightstream.Client = function (params) {
         baseURL: params.baseURL,
         token: params.token,
         appId: params.appId,
-        developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false
+        developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false,
+        reconnect: typeof params.developmentMode === 'boolean' ? params.developmentMode : true,
+        endpointId: params.endpointId,
+        onJoin: params.onJoin,
+        onLeave: params.onLeave,
+        onMessage: params.onMessage,
+        onConnect: params.onConnect,
+        onDisconnect: params.onDisconnect,
+        onReconnect: params.onReconnect,
+        onCall: params.onCall,
+        onDirectConnection: params.onDirectConnection
     };
     delete that.appId;
     delete that.baseURL;
     delete that.developmentMode;
+    delete that.token;
+
+    if (!app.token && !app.appId) {
+        throw new Error("Can't connect without either an appId, in which case developmentMode " +
+            "must be set to true, or an token");
+    }
+
     /**
      * @memberof! brightstream.Client
      * @name user - The currently logged-in endpoint.
@@ -141,16 +174,22 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {object} params
-     * @param {string} [params.token] - An authentication token to use for this endpoint.
-     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
-     * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {string} [params.appId] - An appId to use to obtain an authentication token if this app is in
-     * developer mode and the `developmentMode` parameter is also set to `true`.
-     * @param {boolean} [params.developmentMode] - Indication to obtain an authentication token from the service.
-     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
-     * operation and will limit the services you will be able to use.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+     * brightstream.connect, brightstream.createClient, or to client.connect.
+     * @param {string} [params.token] - The endpoint's authentication token.
+     * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
+     * different paramters than the built-in defaults.
+     * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
+     * different paramters than the built-in defaults.
+     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
+     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+     * operation and will limit the services you will be able to use.
+     * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+     * when a disconnect occurs.
      * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
      * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
@@ -164,19 +203,45 @@ brightstream.Client = function (params) {
      * @fires brightstream.Client#connect
      */
     that.connect = function (params) {
+        var promise;
+        log.trace('Client.connect');
+
+        Object.keys(params).forEach(function (key) {
+            if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
+                app[key] = params[key];
+            }
+        });
+        that.endpointId = app.endpointId;
+
+        promise = actuallyConnect(params);
+        promise.done(function (user) {
+            /**
+             * This event is fired the first time the library connects to the cloud infrastructure.
+             * @event brightstream.Client#connect
+             * @type {brightstream.Event}
+             * @property {brightstream.User}
+             */
+            that.fire('connect', {
+                user: user
+            });
+        });
+        return promise;
+    };
+
+    /**
+     * This function contains the meat of the connection, the portions which can be repeated again on reconnect.
+     * When `reconnect` is true, this function will be added in an event listener to the Client#disconnect event.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.actuallyConnect
+     * @private
+     * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<brightstream.User>}
+     */
+    function actuallyConnect(params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        log.trace('Client.connect', params);
-
-        app.token = params.token;
-        app.appId = params.appId || app.appId;
-        app.developmentMode = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
-        that.endpointId = params.endpointId || that.endpointId;
-
-        if (!app.token && !app.appId) {
-            deferred.reject(new Error("Can't connect without either an appId, in which case developmentMode " +
-                "must be set to true, or an token"));
-        }
 
         signalingChannel.open({
             appId: app.appId,
@@ -184,9 +249,7 @@ brightstream.Client = function (params) {
             endpointId: that.endpointId,
             token: app.token
         }).then(function () {
-            return signalingChannel.authenticate({
-                appId: app.appId
-            });
+            return signalingChannel.authenticate();
         }, function (err) {
             log.error(err.message);
             deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
@@ -194,38 +257,30 @@ brightstream.Client = function (params) {
             connected = true;
 
             user.setOnline(); // Initiates presence.
-            user.listen('call', params.onCall);
-            user.listen('direct-connection', params.onDirectConnection);
-            user.listen('join', params.onJoin);
-            user.listen('leave', params.onLeave);
+            user.listen('call', app.onCall);
+            user.listen('direct-connection', app.onDirectConnection);
+            user.listen('join', app.onJoin);
+            user.listen('leave', app.onLeave);
             that.user = user;
 
-            that.listen('join', params.onAutoJoin);
-            that.listen('leave', params.onAutoLeave);
-            that.listen('message', params.onMessage);
-            that.listen('disconnect', params.onDisconnect);
-            that.listen('reconnect', params.onReconnect);
+            that.listen('message', app.onMessage);
+            that.listen('connect', app.onConnect);
+            that.listen('disconnect', app.onDisconnect);
+            that.listen('disconnect', function () { connected = false; });
+            that.listen('reconnect', app.onReconnect);
+            that.listen('reconnect', function () { connected = true; });
 
             log.info('logged in as user ' + user.id);
             log.debug(user);
 
-            /**
-             * This event is fired the first time the library connects to the cloud infrastructure.
-             * @event brightstream.Client#connect
-             * @type {brightstream.Event}
-             * @property {brightstream.User}
-             */
-            that.listen('connect', params.onConnect);
-            that.fire('connect', {
-                user: user
-            });
             deferred.resolve(user);
         }, function (err) {
+            connected = false;
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message);
         });
         return deferred.promise;
-    };
+    }
 
     /**
      * Disconnect from the Digium infrastructure. Invalidates the API token and disconnects the websocket.
