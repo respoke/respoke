@@ -154,6 +154,7 @@ brightstream.Client = function (params) {
      * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
      * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+     * @param {function} [params.onConnect] - Callback for Client connect.
      * @param {function} [params.onDisconnect] - Callback for Client disconnect.
      * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
      * @param {function} [params.onCall] - Callback for when this client's user receives a call.
@@ -214,6 +215,7 @@ brightstream.Client = function (params) {
              * @type {brightstream.Event}
              * @property {brightstream.User}
              */
+            that.listen('connect', params.onConnect);
             that.fire('connect', {
                 user: user
             });
