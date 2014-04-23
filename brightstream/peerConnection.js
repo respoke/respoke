@@ -387,6 +387,8 @@ brightstream.PeerConnection = function (params) {
                          * @event brightstream.PeerConnection#stats
                          * @type {brightstream.Event}
                          * @property {object} stats - an object with stats in it.
+                         * @property {string} name - the event name.
+                         * @property {brightstream.PeerConnection}
                          */
                         that.fire('stats', {
                             stats: stats
@@ -439,6 +441,8 @@ brightstream.PeerConnection = function (params) {
             /**
              * @event brightstream.PeerConnection#remote-stream-received
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('remote-stream-received', {
                 stream: evt.stream
@@ -448,6 +452,8 @@ brightstream.PeerConnection = function (params) {
             /**
              * @event brightstream.PeerConnection#remote-stream-removed
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('remote-stream-removed', {
                 stream: evt.stream
@@ -459,6 +465,8 @@ brightstream.PeerConnection = function (params) {
              * is only called for the non-initiator.
              * @event brightstream.PeerConnection#direct-connection
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('direct-connection', {
                 channel: evt.channel
@@ -647,6 +655,8 @@ brightstream.PeerConnection = function (params) {
          * @event brightstream.PeerConnection#close
          * @type {brightstream.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
+         * @property {string} name - the event name.
+         * @property {brightstream.PeerConnection}
          */
         that.fire('close', {
             sentSignal: toSendBye
@@ -769,6 +779,8 @@ brightstream.PeerConnection = function (params) {
                 /**
                  * @event brightstream.PeerConnection#modify-accept
                  * @type {brightstream.Event}
+                 * @property {string} name - the event name.
+                 * @property {brightstream.PeerConnection}
                  */
                 that.fire('modify-accept', {signal: evt.signal});
             }
@@ -782,6 +794,8 @@ brightstream.PeerConnection = function (params) {
                  * @event brightstream.PeerConnection#modify-reject
                  * @type {brightstream.Event}
                  * @property {Error} err
+                 * @property {string} name - the event name.
+                 * @property {brightstream.PeerConnection}
                  */
                 that.fire('modify-reject', {err: err});
             }
@@ -799,6 +813,8 @@ brightstream.PeerConnection = function (params) {
              * @event brightstream.PeerConnection#modify-reject
              * @type {brightstream.Event}
              * @property {Error} err
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('modify-reject', {err: err});
             signalModify({
@@ -817,6 +833,8 @@ brightstream.PeerConnection = function (params) {
              * @event brightstream.PeerConnection#modify-reject
              * @type {brightstream.Event}
              * @property {Error} err
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('modify-reject', {err: err});
             signalModify({
@@ -839,6 +857,8 @@ brightstream.PeerConnection = function (params) {
          * @event brightstream.PeerConnection#modify-accept
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.PeerConnection}
          */
         that.fire('modify-accept', {signal: evt.signal});
         signalModify({

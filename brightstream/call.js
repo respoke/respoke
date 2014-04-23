@@ -363,6 +363,8 @@ brightstream.Call = function (params) {
              * @event brightstream.Call#stats
              * @type {brightstream.Event}
              * @property {object} stats - an object with stats in it.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
              */
             that.fire('stats', {stats: evt.stats});
         }, true);
@@ -424,6 +426,8 @@ brightstream.Call = function (params) {
         clientObj.updateTurnCredentials().done(function () {
             /**
              * @event brightstream.Call#answer
+             * @property {string} name - the event name.
+             * @property {brightstream.Call} target
              */
             that.fire('answer');
 
@@ -485,6 +489,8 @@ brightstream.Call = function (params) {
         /**
          * @event brightstream.Call#approve
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('approve');
 
@@ -526,6 +532,8 @@ brightstream.Call = function (params) {
          * @event brightstream.LocalMedia#remote-stream-received
          * @type {brightstream.Event}
          * @property {Element} element - the HTML5 Video element with the new stream attached.
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('remote-stream-received', {
             element: videoRemoteElement
@@ -616,6 +624,8 @@ brightstream.Call = function (params) {
              * and approves it.
              * @event brightstream.Call#waiting-for-allow
              * @type {brightstream.Event}
+            * @property {string} name - the event name.
+             * @property {brightstream.Call} target
              */
             that.fire('waiting-for-allow');
         }, true);
@@ -625,6 +635,8 @@ brightstream.Call = function (params) {
              * should be canceled now.
              * @event brightstream.Call#allowed
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.Call} target
              */
             that.fire('allowed');
         }, true);
@@ -642,6 +654,8 @@ brightstream.Call = function (params) {
              * @type {brightstream.Event}
              * @property {Element} element
              * @property {brightstream.LocalMedia} stream
+             * @property {string} name - the event name.
+             * @property {brightstream.Call} target
              */
             that.fire('local-stream-received', {
                 element: evt.element,
@@ -884,6 +898,8 @@ brightstream.Call = function (params) {
          * @type {brightstream.Event}
          * @property {brightstream.DirectConnection} directConnection
          * @property {brightstream.Endpoint} endpoint
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('direct-connection', {
             directConnection: directConnection,
@@ -898,6 +914,8 @@ brightstream.Call = function (params) {
          * @type {brightstream.Event}
          * @property {brightstream.DirectConnection} directConnection
          * @property {brightstream.Endpoint} endpoint
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         clientObj.user.fire('direct-connection', {
             directConnection: directConnection,
@@ -966,6 +984,8 @@ brightstream.Call = function (params) {
          * @event brightstream.Call#hangup
          * @type {brightstream.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('hangup', {
             sentSignal: toSendBye
@@ -1038,6 +1058,8 @@ brightstream.Call = function (params) {
              * @type {brightstream.Event}
              * @property {object} [constraints]
              * @property {boolean} [directConnection]
+             * @property {string} name - the event name.
+             * @property {brightstream.Call} target
              */
             that.fire('modify', info);
         }
@@ -1192,6 +1214,8 @@ brightstream.Call = function (params) {
         /**
          * This event indicates that local video has been muted.
          * @event brightstream.Call#video-muted
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('video-muted');
         videoIsMuted = true;
@@ -1213,6 +1237,8 @@ brightstream.Call = function (params) {
         /**
          * This event indicates that local video has been unmuted.
          * @event brightstream.Call#video-unmuted
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('video-unmuted');
         videoIsMuted = false;
@@ -1234,6 +1260,8 @@ brightstream.Call = function (params) {
         /**
          * This event indicates that local audio has been muted.
          * @event brightstream.Call#audio-muted
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('audio-muted');
         audioIsMuted = true;
@@ -1257,6 +1285,8 @@ brightstream.Call = function (params) {
         /**
          * This event indicates that local audio has been unmuted.
          * @event brightstream.Call#audio-unmuted
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.fire('audio-unmuted');
         audioIsMuted = false;

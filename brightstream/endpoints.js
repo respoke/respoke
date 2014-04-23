@@ -89,6 +89,8 @@ brightstream.Presentable = function (params) {
          * @event brightstream.Presentable#presence
          * @type {brightstream.Event}
          * @property {string} presence
+         * @property {string} name - the event name.
+         * @property {brightstream.Presentable} target
          */
         that.fire('presence', {
             presence: that.presence
@@ -773,20 +775,22 @@ brightstream.User = function (params) {
     that.addCall = function (params) {
         if (calls.indexOf(params.call) === -1) {
             calls.push(params.call);
-            /**
-             * This event provides notification for when an incoming call is being received.  If the user wishes
-             * to allow the call, the app should call evt.call.answer() to answer the call.
-             * @event brightstream.User#call
-             * @type {brightstream.Event}
-             * @property {brightstream.Call} call
-             * @property {brightstream.Endpoint} endpoint
-             */
             if (params.call.className === 'brightstream.Call') {
                 if (!params.call.initiator && !that.hasListeners('call')) {
                     log.warn("Got an incoming call with no handlers to accept it!");
                     params.call.reject();
                     return;
                 }
+                /**
+                 * This event provides notification for when an incoming call is being received.  If the user wishes
+                 * to allow the call, the app should call evt.call.answer() to answer the call.
+                 * @event brightstream.User#call
+                 * @type {brightstream.Event}
+                 * @property {brightstream.Call} call
+                 * @property {brightstream.Endpoint} endpoint
+                 * @property {string} name - the event name.
+                 * @property {brightstream.User} target
+                 */
                 that.fire('call', {
                     endpoint: params.endpoint,
                     call: params.call

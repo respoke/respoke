@@ -916,6 +916,8 @@ brightstream.SignalingChannel = function (params) {
          * @event brightstream.Call#signal-offer
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.Call}
          */
         params.call.fire('signal-offer', {
             signal: params.signal
@@ -935,6 +937,8 @@ brightstream.SignalingChannel = function (params) {
          * @event brightstream.Call#signal-connected
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.Call}
          */
         params.call.fire('signal-connected', {
             signal: params.signal
@@ -954,6 +958,8 @@ brightstream.SignalingChannel = function (params) {
          * @event brightstream.Call#signal-modify
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.Call}
          */
         params.call.fire('signal-modify', {
             signal: params.signal
@@ -974,6 +980,8 @@ brightstream.SignalingChannel = function (params) {
          * @event brightstream.Call#signal-answer
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.Call}
          */
         params.call.fire('signal-answer', {
             signal: params.signal
@@ -993,6 +1001,8 @@ brightstream.SignalingChannel = function (params) {
          * @event brightstream.Call#signal-candidate
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.Call}
          */
         params.call.fire('signal-candidate', {
             signal: params.signal
@@ -1016,6 +1026,8 @@ brightstream.SignalingChannel = function (params) {
          * @event brightstream.Call#signal-bye
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.Call}
          */
         params.call.fire('signal-bye', {
             signal: params.signal
@@ -1076,6 +1088,8 @@ brightstream.SignalingChannel = function (params) {
              * @event brightstream.Group#message
              * @type {brightstream.Event}
              * @property {brightstream.TextMessage} message
+             * @property {string} name - the event name.
+             * @property {brightstream.Group}
              */
             group.fire('message', {
                 message: groupMessage
@@ -1089,6 +1103,8 @@ brightstream.SignalingChannel = function (params) {
          * this will be set. If null, the developer can use client.join({id: evt.message.header.channel}) to join
          * the group. From that point forward, Group#message will fire when a message is received as well. If
          * group is undefined instead of null, the message is not a group message at all.
+         * @property {string} name - the event name.
+         * @property {brightstream.Client}
          */
         clientObj.fire('message', {
             message: groupMessage,
@@ -1198,6 +1214,8 @@ brightstream.SignalingChannel = function (params) {
              * @event brightstream.Endpoint#message
              * @type {brightstream.Event}
              * @property {brightstream.TextMessage} message
+             * @property {string} name - the event name.
+             * @property {brightstream.Endpoint}
              */
             endpoint.fire('message', {
                 message: message
@@ -1210,6 +1228,8 @@ brightstream.SignalingChannel = function (params) {
          * @property {brightstream.Endpoint} [endpoint] - If the message is from an endpoint we already know about,
          * this will be set. If null, the developer can use client.getEndpoint({id: evt.message.endpointId}) to get
          * the Endpoint. From that point forward, Endpoint#message will fire when a message is received as well.
+         * @property {string} name - the event name.
+         * @property {brightstream.Client}
          */
         clientObj.fire('message', {
             endpoint: endpoint || null,
@@ -1387,6 +1407,8 @@ brightstream.SignalingChannel = function (params) {
             var clientSettings = clientObj.getClientSettings();
             /**
              * @event brightstream.Client#disconnect
+             * @property {string} name - the event name.
+             * @property {brightstream.Client}
              */
             clientObj.fire('disconnect');
 
@@ -1411,6 +1433,8 @@ brightstream.SignalingChannel = function (params) {
             }).done(function (user) {
                 /**
                  * @event brightstream.Client#reconnect
+                 * @property {string} name - the event name.
+                 * @property {brightstream.Client}
                  */
                 clientObj.fire('reconnect');
             }, function (err) {
@@ -1871,6 +1895,8 @@ brightstream.Group = function (params) {
              * @event brightstream.User#leave
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
+             * @property {string} name - the event name.
+             * @property {brightstream.User}
              */
             clientObj.user.fire('leave', {
                 group: that
@@ -1906,6 +1932,8 @@ brightstream.Group = function (params) {
                  * @event brightstream.Group#leave
                  * @type {brightstream.Event}
                  * @property {brightstream.Connection} connection
+                 * @property {string} name - the event name.
+                 * @property {brightstream.Group}
                  */
                 that.fire('leave', {
                     connection: conn
@@ -1948,6 +1976,8 @@ brightstream.Group = function (params) {
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
              * @property {brightstream.Connection} connection
+             * @property {string} name - the event name.
+             * @property {brightstream.Group}
              */
             that.fire('join', {
                 group: that,

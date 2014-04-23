@@ -181,6 +181,8 @@ brightstream.LocalMedia = function (params) {
          * should be canceled now.
          * @event brightstream.LocalMedia#allowed
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.LocalMedia} target
          */
         that.fire('allowed');
         log.debug('User gave permission to use media.');
@@ -220,6 +222,8 @@ brightstream.LocalMedia = function (params) {
              * @type {brightstream.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
              * @property {RTCMediaStream} stream - the HTML5 Video stream
+             * @property {string} name - the event name.
+             * @property {brightstream.LocalMedia} target
              */
             that.fire('stream-received', {
                 element: videoLocalElement,
@@ -241,6 +245,8 @@ brightstream.LocalMedia = function (params) {
              * @type {brightstream.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
              * @property {RTCMediaStream} stream - the HTML5 Video stream
+             * @property {string} name - the event name.
+             * @property {brightstream.LocalMedia} target
              */
             that.fire('stream-received', {
                 element: videoLocalElement,
@@ -292,6 +298,8 @@ brightstream.LocalMedia = function (params) {
                  * and approves it.
                  * @event brightstream.LocalMedia#waiting-for-allow
                  * @type {brightstream.Event}
+                 * @property {string} name - the event name.
+                 * @property {brightstream.LocalMedia} target
                  */
                 that.fire('waiting-for-allow');
             }, 500);
@@ -312,9 +320,23 @@ brightstream.LocalMedia = function (params) {
         log.trace('onUserMediaError');
         if (p.code === 1) {
             log.warn("Permission denied.");
+            /**
+             * Indicate there has been an error obtaining media.
+             * @event brightstream.LocalMedia#waiting-for-allow
+             * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.LocalMedia} target
+             */
             that.fire('error', {error: 'Permission denied.'});
         } else {
             log.warn(p);
+            /**
+             * Indicate there has been an error obtaining media.
+             * @event brightstream.LocalMedia#waiting-for-allow
+             * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.LocalMedia} target
+             */
             that.fire('error', {error: p.code});
         }
     }
@@ -334,6 +356,8 @@ brightstream.LocalMedia = function (params) {
         });
         /**
          * @event brightstream.LocalMedia#video-muted
+         * @property {string} name - the event name.
+         * @property {brightstream.LocalMedia} target
          */
         that.fire('video-muted');
         videoIsMuted = true;
@@ -354,6 +378,8 @@ brightstream.LocalMedia = function (params) {
         });
         /**
          * @event brightstream.LocalMedia#video-unmuted
+         * @property {string} name - the event name.
+         * @property {brightstream.LocalMedia} target
          */
         that.fire('video-unmuted');
         videoIsMuted = false;
@@ -374,6 +400,8 @@ brightstream.LocalMedia = function (params) {
         });
         /**
          * @event brightstream.LocalMedia#audio-muted
+         * @property {string} name - the event name.
+         * @property {brightstream.LocalMedia} target
          */
         that.fire('audio-muted');
         audioIsMuted = true;
@@ -394,6 +422,8 @@ brightstream.LocalMedia = function (params) {
         });
         /**
          * @event brightstream.LocalMedia#audio-unmuted
+         * @property {string} name - the event name.
+         * @property {brightstream.LocalMedia} target
          */
         that.fire('audio-unmuted');
         audioIsMuted = false;
@@ -416,6 +446,11 @@ brightstream.LocalMedia = function (params) {
             delete brightstream.streams[that.constraints];
         }
         stream = null;
+        /**
+         * @event brightstream.LocalMedia#stop
+         * @property {string} name - the event name.
+         * @property {brightstream.LocalMedia} target
+         */
         that.fire('stop');
     };
 

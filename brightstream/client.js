@@ -238,6 +238,8 @@ brightstream.Client = function (params) {
              * @event brightstream.Client#connect
              * @type {brightstream.Event}
              * @property {brightstream.User}
+             * @property {string} name - the event name.
+             * @property {brightstream.Client} target
              */
             that.fire('connect', {
                 user: user
@@ -367,6 +369,8 @@ brightstream.Client = function (params) {
         /**
          * This event is fired when the library has disconnected from the cloud infrastructure.
          * @event brightstream.Client#disconnect
+         * @property {string} name - the event name.
+         * @property {brightstream.Client} target
          */
         that.fire('disconnect');
     }
@@ -568,6 +572,8 @@ brightstream.Client = function (params) {
              * @event {brightstream.User#join}
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
+             * @property {string} name - the event name.
+             * @property {brightstream.User} target
              */
             that.user.fire('join', {
                 group: group
