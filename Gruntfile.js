@@ -1,5 +1,24 @@
 /*global module:false*/
 module.exports = function(grunt) {
+    var brightstreamFiles = [
+        'util/socket.io.js',
+        'util/q.js',
+        'util/loglevel.js',
+        'util/adapter.js',
+        'brightstream.js',
+        'brightstream/event.js',
+        'brightstream/client.js',
+        'brightstream/endpoints.js',
+        'brightstream/signalingChannel.js',
+        'brightstream/call.js',
+        'brightstream/directConnection.js',
+        'brightstream/peerConnection.js',
+        'brightstream/localMedia.js'
+    ];
+
+    var brightstreamMediaStatsFiles = [
+        'brightstream/mediaStats.js'
+    ];
 
     // Project configuration.
     grunt.initConfig({
@@ -11,21 +30,7 @@ module.exports = function(grunt) {
                     sourceMap: true
                 },
                 files: {
-                    'brightstream.min.js': [
-                        'util/socket.io.js',
-                        'util/q.js',
-                        'util/loglevel.js',
-                        'util/adapter.js',
-                        'brightstream.js',
-                        'brightstream/event.js',
-                        'brightstream/client.js',
-                        'brightstream/endpoints.js',
-                        'brightstream/signalingChannel.js',
-                        'brightstream/call.js',
-                        'brightstream/directConnection.js',
-                        'brightstream/peerConnection.js',
-                        'brightstream/localMedia.js'
-                    ]
+                    'brightstream.min.js': brightstreamFiles
                 }
             },
             'brightstream-stats': {
@@ -41,9 +46,7 @@ module.exports = function(grunt) {
                     sourceMap: true
                 },
                 files: {
-                    'brightstream-stats.min.js': [
-                        'brightstream/mediaStats.js'
-                    ]
+                    'brightstream-stats.min.js': brightstreamMediaStatsFiles
                 }
             },
             'brightstream-beautify': {
@@ -52,21 +55,7 @@ module.exports = function(grunt) {
                     mangle: false
                 },
                 files: {
-                    'brightstream.combine.js': [
-                        'util/socket.io.js',
-                        'util/q.js',
-                        'util/loglevel.js',
-                        'util/adapter.js',
-                        'brightstream.js',
-                        'brightstream/event.js',
-                        'brightstream/client.js',
-                        'brightstream/endpoints.js',
-                        'brightstream/signalingChannel.js',
-                        'brightstream/call.js',
-                        'brightstream/directConnection.js',
-                        'brightstream/peerConnection.js',
-                        'brightstream/localMedia.js'
-                    ]
+                    'brightstream.combine.js': brightstreamFiles
                 }
             },
             'brightstream-beautify-stats': {
@@ -75,9 +64,7 @@ module.exports = function(grunt) {
                     mangle: false
                 },
                 files: {
-                    'brightstream-stats.combine.js': [
-                        'brightstream/mediaStats.js'
-                    ]
+                    'brightstream-stats.combine.js': brightstreamMediaStatsFiles
                 }
             }
         },
