@@ -639,6 +639,7 @@ brightstream.Call = function (params) {
         stream.listen('stream-received', function (evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
+            videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
             } else {
