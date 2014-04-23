@@ -1812,7 +1812,7 @@ brightstream.Group = function (params) {
     "use strict";
     params = params || {};
 
-    var group = brightstream.EventEmitter(params);
+    var that = brightstream.EventEmitter(params);
     /**
      * @memberof! brightstream.Group
      * @name client
@@ -1823,7 +1823,7 @@ brightstream.Group = function (params) {
     var clientObj = brightstream.getClient(client);
     var signalingChannel = clientObj.getSignalingChannel();
 
-    if (!group.id) {
+    if (!that.id) {
         throw new Error("Can't create a group without an ID.");
     }
 
@@ -1833,26 +1833,26 @@ brightstream.Group = function (params) {
      * @type {array<brightstream.Endpoint>}
      * @desc A list of the members of this group.
      */
-    group.connections = [];
+    that.connections = [];
     /**
      * A name to identify the type of this object.
      * @memberof! brightstream.group
      * @name className
      * @type {string}
      */
-    group.className = 'brightstream.Group';
-    group.listen('join', params.onJoin);
-    group.listen('message', params.onMessage);
-    group.listen('leave', params.onLeave);
+    that.className = 'brightstream.Group';
+    that.listen('join', params.onJoin);
+    that.listen('message', params.onMessage);
+    that.listen('leave', params.onLeave);
     clientObj.listen('disconnect', function () {
-        group.connections = [];
+        that.connections = [];
     });
 
-    delete group.client;
-    delete group.onMessage;
-    delete group.onPresence;
-    delete group.onJoin;
-    delete group.onLeave;
+    delete that.client;
+    delete that.onMessage;
+    delete that.onPresence;
+    delete that.onJoin;
+    delete that.onLeave;
 
     /**
      * Leave this group.
@@ -1864,12 +1864,12 @@ brightstream.Group = function (params) {
      * @return {Promise}
      * @fires brightstream.User#leave
      */
-    group.leave = function (params) {
+    that.leave = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var clientObj = brightstream.getClient(client);
         signalingChannel.leaveGroup({
-            id: group.id
+            id: that.id
         }).done(function () {
             /**
              * This event is fired when the currently logged-in user leaves a group.
@@ -1878,7 +1878,7 @@ brightstream.Group = function (params) {
              * @property {brightstream.Group} group
              */
             clientObj.user.fire('leave', {
-                group: group
+                group: that
             });
             deferred.resolve();
         }, function (err) {
@@ -1897,14 +1897,14 @@ brightstream.Group = function (params) {
      * @param {string} [params.connectionId] - Endpoint's connection id
      * @fires brightstream.Group#leave
      */
-    group.removeMember = function (params) {
+    that.removeMember = function (params) {
         params = params || {};
         if (!params.connectionId) {
             throw new Error("Can't remove a Connection from a group without an id.");
         }
-        group.connections.every(function (conn, index) {
+        that.connections.every(function (conn, index) {
             if (conn.id === params.connectionId) {
-                group.connections.splice(index, 1);
+                that.connections.splice(index, 1);
 
                 /**
                  * This event is fired when a member leaves a group the currently logged-in user is a member of.
@@ -1912,7 +1912,7 @@ brightstream.Group = function (params) {
                  * @type {brightstream.Event}
                  * @property {brightstream.Connection} connection
                  */
-                group.fire('leave', {
+                that.fire('leave', {
                     connection: conn
                 });
                 return false;
@@ -1931,7 +1931,7 @@ brightstream.Group = function (params) {
      * @param {brightstream.Connection} params.connection
      * @fires brightstream.Group#join
      */
-    group.addMember = function (params) {
+    that.addMember = function (params) {
         params = params || {};
         var foundConn;
         var absent;
@@ -1940,12 +1940,12 @@ brightstream.Group = function (params) {
             throw new Error("Can't add member to a group without a connection.");
         }
 
-        absent = group.connections.every(function (conn) {
+        absent = that.connections.every(function (conn) {
             return (conn.id !== params.connection.id);
         });
 
         if (absent) {
-            group.connections.push(params.connection);
+            that.connections.push(params.connection);
             /**
              * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
              * of.
@@ -1954,8 +1954,8 @@ brightstream.Group = function (params) {
              * @property {brightstream.Group} group
              * @property {brightstream.Connection} connection
              */
-            group.fire('join', {
-                group: group,
+            that.fire('join', {
+                group: that,
                 connection: params.connection
             });
         }
@@ -1971,9 +1971,9 @@ brightstream.Group = function (params) {
      * @param {string} params.message - The message.
      * @returns {Promise}
      */
-    group.sendMessage = function (params) {
+    that.sendMessage = function (params) {
         params = params || {};
-        params.id = group.id;
+        params.id = that.id;
         return signalingChannel.publish(params);
     };
 
@@ -1989,18 +1989,18 @@ brightstream.Group = function (params) {
      * @param {function} [onPresence] TODO
      * @fires brightstream.Group#join
      */
-    group.getMembers = function (params) {
+    that.getMembers = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var clientObj = brightstream.getClient(client);
 
-        if (group.connections.length > 0) {
-            deferred.resolve(group.connections);
+        if (that.connections.length > 0) {
+            deferred.resolve(that.connections);
             return deferred.promise;
         }
 
         signalingChannel.getGroupMembers({
-            id: group.id
+            id: that.id
         }).done(function (list) {
             var endpointList = [];
             list.forEach(function (params) {
@@ -2012,7 +2012,7 @@ brightstream.Group = function (params) {
                 if (endpointList.indexOf(params.endpointId) === -1) {
                     endpointList.push(params.endpointId);
                 }
-                group.addMember({connection: connection});
+                that.addMember({connection: connection});
             });
 
             if (endpointList.length > 0) {
@@ -2020,12 +2020,12 @@ brightstream.Group = function (params) {
                     endpointList: endpointList
                 });
             }
-            deferred.resolve(group.connections);
+            deferred.resolve(that.connections);
         }, function (err) {
             deferred.reject(err);
         });
         return deferred.promise;
     };
 
-    return group;
+    return that;
 }; // End brightstream.Group
