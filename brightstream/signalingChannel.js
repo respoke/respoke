@@ -849,7 +849,7 @@ brightstream.SignalingChannel = function (params) {
         var knownSignals = ['offer', 'answer', 'connected', 'modify', 'candidate', 'bye'];
 
         if (signal.type !== 'candidate') { // Too many of these!
-            log.debug(signal.type, signal);
+            log.verbose(signal.type, signal);
         }
 
         if (!signal.target || !signal.type || knownSignals.indexOf(signal.type) === -1) {
@@ -1224,6 +1224,8 @@ brightstream.SignalingChannel = function (params) {
      * @private
      */
     var generateConnectHandler = function generateConnectHandler(onSuccess, onError) {
+        onSuccess = onSuccess || function () {};
+        onError = onError || function () {};
         return function onConnect() {
             Object.keys(handlerQueue).forEach(function addEachHandlerType(category) {
                 if (!handlerQueue[category]) {
@@ -1242,20 +1244,12 @@ brightstream.SignalingChannel = function (params) {
             }).then(function (res) {
                 log.debug('endpointconnections result', res);
                 endpointId = res.endpointId;
-                var user = brightstream.User({
+                onSuccess(brightstream.User({
                     client: client,
                     connectionId: res.id,
                     id: res.endpointId
-                });
-                if (onSuccess) {
-                    onSuccess(user);
-                }
-            }, function (err) {
-                log.debug("Couldn't register endpoint.", err);
-                if (onError) {
-                    onError(err);
-                }
-            });
+                }));
+            }, onError);
         };
     };
 
@@ -1273,7 +1267,7 @@ brightstream.SignalingChannel = function (params) {
             // Skip ourselves
             return;
         }
-        log.debug('socket.on presence', message);
+        log.verbose('socket.on presence', message);
 
         endpoint = clientObj.getEndpoint({
             id: message.header.from,
@@ -1360,7 +1354,6 @@ brightstream.SignalingChannel = function (params) {
                 });
             }, 5000);
         }, function onError(err) {
-            log.debug("Couldn't register endpoint.", err);
             deferred.reject(err);
         }));
 
@@ -1516,7 +1509,7 @@ brightstream.SignalingChannel = function (params) {
 
         // Too many of these!
         if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-            log.debug('socket request', params.httpMethod, params.path, params.parameters);
+            log.verbose('socket request', params.httpMethod, params.path, params.parameters);
         }
 
         if (!socket) {
@@ -1531,7 +1524,7 @@ brightstream.SignalingChannel = function (params) {
         }), function handleResponse(response) {
             // Too many of these!
             if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-                log.debug('socket response', params.httpMethod, params.path, response);
+                log.verbose('socket response', params.httpMethod, params.path, response);
             }
 
             try {
@@ -1600,8 +1593,8 @@ brightstream.SignalingChannel = function (params) {
 
         if (!params.responseHandler) {
             params.responseHandler = function (response, data) {
-                log.debug('default responseHandler');
-                log.debug(response);
+                log.verbose('default responseHandler');
+                log.verbose(response);
             };
         }
 
@@ -1618,13 +1611,13 @@ brightstream.SignalingChannel = function (params) {
                     xhr.setRequestHeader("X-App-Token", appToken);
                 }
             } catch (e) {
-                log.debug("Can't set content-type header in readyState " +
+                throw new Error("Can't set content-type header in readyState " +
                     xhr.readyState + ". " + e.message);
             }
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
             throw new Error('Illegal HTTP request method ' + params.httpMethod);
         }
-        log.debug('calling', params.httpMethod, uri, "with params", paramString);
+        log.verbose('calling', params.httpMethod, uri, "with params", paramString);
 
         try {
             xhr.send(paramString);
@@ -1649,7 +1642,7 @@ brightstream.SignalingChannel = function (params) {
                         response.error = "Invalid JSON.";
                     }
                 }
-                log.debug(response);
+                log.verbose(response);
                 params.responseHandler(response, {
                     'uri' : uri,
                     'params' : params.parameters

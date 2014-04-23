@@ -140,7 +140,7 @@ brightstream.EventEmitter = function (params) {
                 }
             }
         });
-        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
+        log.verbose("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 
     /**

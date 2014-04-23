@@ -41,6 +41,7 @@
 
         var logMethods = [
             "trace",
+            "verbose",
             "debug",
             "info",
             "warn",

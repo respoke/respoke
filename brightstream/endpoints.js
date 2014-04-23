@@ -60,7 +60,6 @@ brightstream.Presentable = function (params) {
         params = params || {};
         params.presence = params.presence || 'available';
         params.connectionId = params.connectionId || that.connectionId;
-        log.debug('Presentable.setPresence', params);
 
         if (that.className === 'brightstream.User' || that.className === 'brightstream.Connection') {
             that.presence = params.presence;
