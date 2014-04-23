@@ -36,8 +36,6 @@
  * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
  * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
  * @param {object} params.callSettings
- * @param {object} [params.localVideoElements]
- * @param {object} [params.remoteVideoElements]
  * @returns {brightstream.Call}
  */
 /*global brightstream: false */
@@ -194,20 +192,6 @@ brightstream.Call = function (params) {
     var clientObj = brightstream.getClient(client);
     /**
      * @memberof! brightstream.Call
-     * @name localVideoElements
-     * @private
-     * @type {Array<Video>}
-     */
-    var localVideoElements = params.localVideoElements || [];
-    /**
-     * @memberof! brightstream.Call
-     * @name remoteVideoElements
-     * @private
-     * @type {Array<Video>}
-     */
-    var remoteVideoElements = params.remoteVideoElements || [];
-    /**
-     * @memberof! brightstream.Call
      * @name videoLocalElement
      * @private
      * @type {Video}
@@ -333,7 +317,7 @@ brightstream.Call = function (params) {
     }
 
     /**
-     * Register any event listeners passed in as callbacks
+     * Register any event listeners passed in as callbacks, save other params to answer() and accept().
      * @memberof! brightstream.Call
      * @method brightstream.Call.saveParameters
      * @param {object} params
@@ -348,6 +332,7 @@ brightstream.Call = function (params) {
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
      * @private
+     * @fires brightstream.Call#stats
      */
     function saveParameters(params) {
         that.listen('local-stream-received', params.onLocalVideo);
@@ -607,6 +592,9 @@ brightstream.Call = function (params) {
      * @param {function} [params.onOpen] - DirectConnection is open callback; requires params.directConnection=true.
      * @param {function} [params.onClose] - DirectConnection is closed callback; requires params.directConnection=true.
      * @param {function} [params.onMessage] - DirectConnection message callback; requires params.directConnection=true.
+     * @fires brightstream.Call#waiting-for-allow
+     * @fires brightstream.Call#allowed
+     * @fires brightstream.Call#local-stream-received
      */
     function doAddVideo(params) {
         var stream;
@@ -826,6 +814,8 @@ brightstream.Call = function (params) {
      * @param {function} [onSuccess]
      * @param {function} [onError]
      * @returns {Promise<brightstream.DirectConnection>}
+     * @fires brightstream.User#direct-connection
+     * @fires brightstream.Call#direct-connection
      */
     function actuallyAddDirectConnection(params) {
         log.trace('Call.actuallyAddDirectConnection', params);
@@ -1021,6 +1011,7 @@ brightstream.Call = function (params) {
      * @param {object} evt
      * @param {object} evt.signal - The offer signal including the sdp
      * @private
+     * @fires brightstream.Call#modify
      */
     function listenOffer(evt) {
         log.trace('listenOffer');

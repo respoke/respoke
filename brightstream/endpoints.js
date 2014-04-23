@@ -8,7 +8,8 @@
 
 /*global brightstream: false */
 /**
- * Superclass used to contain presence.
+ * The purpose of the class is so that User and Endpoint can share the same presence. This will probably be
+ * merged into Endpoint when User is merged into Client.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
@@ -111,7 +112,8 @@ brightstream.Presentable = function (params) {
  * Represents remote Endpoints. Endpoints are users of this application that are not the one logged into this
  * instance of the application. An Endpoint could be logged in from multiple other instances of this app, each of
  * which is represented by a Connection. The currently logged-in user can interact with endpoints by calling them or
- * sending them messages.
+ * sending them messages. An endpoint can be a person using an app from a browser or a script using the APIs on
+ * a server.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @augments brightstream.Presentable
@@ -150,9 +152,9 @@ brightstream.Endpoint = function (params) {
     that.directConnection = null;
 
     /**
-     * @memberof! brightstream.Presentable
+     * @memberof! brightstream.Endpoint
      * @name connections
-     * @type {Array}
+     * @type {Array<brightstream.Connection>}
      */
     that.connections = [];
     clientObj.listen('disconnect', function () {
@@ -195,45 +197,41 @@ brightstream.Endpoint = function (params) {
      * @returns {Promise}
      */
     that.sendSignal = function (params) {
-        log.debug('Endpoint.sendSignal, no support for custom signaling profiles.');
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        if (!params.signal) {
-            deferred.reject(new Error("Can't send a signal without a 'signal' parameter."));
-        }
-
-        signalingChannel.sendSignal({
+        return signalingChannel.sendSignal({
             connectionId: params.connectionId,
             signal: params.signal,
             recipient: that,
             onSuccess: params.onSuccess,
             onError: params.onError
-        }).done(function () {
-            deferred.resolve();
-        }, function (err) {
-            deferred.reject(err);
         });
-
-        return deferred.promise;
     };
 
     /**
-     * Create a new Call for a voice and/or video call. If initiator is set to true,
-     * the Call will start the call.
+     * Create a new Call for a voice and/or video call.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.call
      * @param {object} params
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
-     * @param {string} [params.connectionId]
-     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
      * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
      * audio and/or video attached.
      * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
      * audio and/or video attached.
      * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
      * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
+     * between local media becoming available and calling approve().
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
      * @returns {brightstream.Call}
      */
     that.call = function (params) {
@@ -336,7 +334,6 @@ brightstream.Endpoint = function (params) {
      * @param {string} [params.connectionId] - An optional connection ID to use for this connection. This allows
      * the connection to be made to a specific instance of an endpoint in the case that the same endpoint is logged
      * in from multiple locations.
-     * @param {boolean} [params.initiator] - Whether the logged-in user initiated the DirectConnection.
      * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
@@ -434,7 +431,6 @@ brightstream.Endpoint = function (params) {
      * and set it as the endpoint's resolved presence.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.resolvePresence
-     * logged in on.
      * @private
      */
     that.resolvePresence = function () {
@@ -475,7 +471,8 @@ brightstream.Endpoint = function (params) {
      */
     that.getConnection = function (params) {
         var connection;
-        if (that.connections.length === 1 && !params.connectionId) {
+        if (that.connections.length === 1 &&
+                (!params.connectionId || that.connections[0] === params.connectionId)) {
             return that.connections[0];
         }
 
@@ -521,6 +518,11 @@ brightstream.Connection = function (params) {
     var that = brightstream.Presentable(params);
     var clientObj = brightstream.getClient(client);
 
+    /**
+     * @memberof! brightstream.Connection
+     * @name id
+     * @type {string}
+     */
     that.id = that.id || that.connectionId;
     if (!that.id) {
         throw new Error("Can't make a connection without an id.");
@@ -571,19 +573,27 @@ brightstream.Connection = function (params) {
 
     /**
      * Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered
-     * by another connection of this Endpoint. If initiator is set to true, the Call will be answered immediately.
+     * by another connection of this Endpoint.
      * @memberof! brightstream.Connection
      * @method brightstream.Connection.call
      * @param {object} params
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
-     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
      * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
      * audio and/or video attached.
      * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
      * audio and/or video attached.
      * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
      * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
+     * between local media becoming available and calling approve().
      * @returns {brightstream.Call}
      */
     that.call = function (params) {
@@ -608,7 +618,6 @@ brightstream.Connection = function (params) {
      * is closed and the two Endpoints are disconnected.
      * @param {function} [params.onMessage] - A callback for receiving messages sent through the DirectConnection.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
-     * @param {boolean} [params.initiator] - Whether the logged-in user initiated the DirectConnection.
      * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
@@ -638,8 +647,6 @@ brightstream.Connection = function (params) {
  * @augments brightstream.Presentable
  * @param {object} params
  * @param {string} params.client
- * @param {Date} params.timeLoggedIn
- * @param {boolean} params.loggedIn
  * @param {string} params.token
  * @returns {brightstream.User}
  */
@@ -669,7 +676,6 @@ brightstream.User = function (params) {
      * @type {array}
      */
     var calls = [];
-    var presenceQueue = [];
     var signalingChannel = brightstream.getClient(client).getSignalingChannel();
 
     /**
@@ -796,7 +802,7 @@ brightstream.User = function (params) {
      * @param {object} params
      * @param {string} [params.id] Call or DirectConnection id
      * @param {brightstream.Call} [call] Call or DirectConnection
-     * @todo TODO rename this something else
+     * @todo TODO rename this something else or make it an event listener.
      */
     that.removeCall = function (params) {
         var match = false;

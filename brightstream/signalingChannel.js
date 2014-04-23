@@ -606,8 +606,13 @@ brightstream.SignalingChannel = function (params) {
         params.toConnection = params.connectionId;
         delete params.connectionId;
 
+        if (!params.signal || !params.signal.signal) {
+            deferred.reject(new Error("Can't send signal without signal."));
+            return deferred.promise;
+        }
         if (params.signal.signal.indexOf('target') === -1) {
-            throw new Error("Can't send signal without target", params.signal);
+            deferred.reject(new Error("Can't send signal without target", params.signal));
+            return deferred.promise;
         }
 
         wsCall({

@@ -91,6 +91,21 @@ brightstream.Client = function (params) {
      * @property {string} [baseURL] - the URL of the cloud infrastructure's REST API.
      * @property {string} [token] - The endpoint's authentication token.
      * @property {string} [appId] - The id of your BrightStream app.
+     * @property {string} [endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @property {boolean} [developmentMode=false] - Indication to obtain an authentication token from the service.
+     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+     * operation and will limit the services you will be able to use.
+     * @property {boolean} [reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+     * when a disconnect occurs.
+     * @property {function} [onJoin] - Callback for when this client's endpoint joins a group.
+     * @property {function} [onLeave] - Callback for when this client's endpoint leaves a group.
+     * @property {function} [onMessage] - Callback for when any message is received from anywhere on the system.
+     * @property {function} [onConnect] - Callback for Client connect.
+     * @property {function} [onDisconnect] - Callback for Client disconnect.
+     * @property {function} [onReconnect] - Callback for Client reconnect. Not Implemented.
+     * @property {function} [onCall] - Callback for when this client's user receives a call.
+     * @property {function} [onDirectConnection] - Callback for when this client's user receives a request for a
      */
     var app = {
         baseURL: params.baseURL,
@@ -168,9 +183,11 @@ brightstream.Client = function (params) {
     var signalingChannel = brightstream.SignalingChannel({'client': client, baseURL: app.baseURL});
 
     /**
-     * Connect to the Digium infrastructure and authenticate using the appkey.  Store a token to be used in API
-     * requests. Accept and attach quite a few event listeners for things like group joining and connection
-     * statuses. Get the first set of TURN credentials and store them internally for later use.
+     * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
+     * requests. If no `token` is given and `developmentMode` is set to true, we will attempt to obtain a token
+     * automatically from the Digium infrastructure.  If `reconnect` is set to true, we will attempt to keep
+     * reconnecting each time this token expires. Accept and attach quite a few event listeners for things like group
+     * joining and connection statuses. Get the first set of TURN credentials and store them internally for later use.
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {object} params
@@ -299,7 +316,7 @@ brightstream.Client = function (params) {
     }
 
     /**
-     * Disconnect from the Digium infrastructure. Invalidates the API token and disconnects the websocket.
+     * Disconnect from the Digium infrastructure, leave all groups, invalidate the token, and disconnect the websocket.
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
      * @returns {Promise}
@@ -400,17 +417,27 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.call
      * @param {object} params
-     * @param {string} params.endpointId
+     * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
-     * @param {boolean} [params.initiator] Whether the logged-in user initiated the call.
      * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
      * audio and/or video attached.
      * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
      * audio and/or video attached.
      * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
      * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
+     * between local media becoming available and calling approve().
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
      * @return {brightstream.Call}
      */
     that.call = function (params) {
@@ -420,7 +447,7 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Update TURN credentials and set a timeout to do it again in 20 hours.
+     * Update TURN credentials.
      * @memberof! brightstream.Client
      * @method brightstream.Client.updateTurnCredentials
      * @returns {Promise}
@@ -723,8 +750,8 @@ brightstream.Client = function (params) {
      * @param {string} params.id
      * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
      * know about this Endpoint.
-     * @param {function} [onMessage] TODO
-     * @param {function} [onPresence] TODO
+     * @param {function} [onMessage] - TODO
+     * @param {function} [onPresence] - TODO
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -759,8 +786,8 @@ brightstream.Client = function (params) {
      * @param {object} params
      * @param {string} params.connectionId
      * @param {string} params.[endpointId] - An endpointId to use in the creation of this connection.
-     * @param {function} [onMessage] TODO
-     * @param {function} [onPresence] TODO
+     * @param {function} [onMessage] - TODO
+     * @param {function} [onPresence] - TODO
      * @returns {brightstream.Connection} The connection whose ID was specified.
      */
     that.getConnection = function (params) {
