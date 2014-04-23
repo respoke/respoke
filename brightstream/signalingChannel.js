@@ -65,6 +65,13 @@ brightstream.SignalingChannel = function (params) {
     var socket = null;
     /**
      * @memberof! brightstream.SignalingChannel
+     * @name heartbeat
+     * @private
+     * @type {number}
+     */
+    var heartbeat = null;
+    /**
+     * @memberof! brightstream.SignalingChannel
      * @name clientSettings
      * @private
      * @type {object}
@@ -86,6 +93,15 @@ brightstream.SignalingChannel = function (params) {
      */
     var baseURL = that.baseURL || 'https://collective.brightstream.io';
     delete that.baseURL;
+    /**
+     * A reference to the private function Client.actuallyConnect that gets set in SignalingChannel.open() so we
+     * don't have to make it public.
+     * @memberof! brightstream.SignalingChannel
+     * @name actuallyConnect
+     * @private
+     * @type {function}
+     */
+    var actuallyConnect = null;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name appId
@@ -177,6 +193,7 @@ brightstream.SignalingChannel = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         log.trace('SignalingChannel.open', params);
         token = params.token || token;
+        actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
 
         Q.fcall(function () {
             if (params.developmentMode === true && params.appId && params.endpointId) {
@@ -226,7 +243,7 @@ brightstream.SignalingChannel = function (params) {
             parameters: {
                 appId: params.appId,
                 endpointId: params.endpointId,
-                ttl: 3600
+                ttl: 60 * 60 * 6
             },
             responseHandler: function (response) {
                 if (response.code === 200 && response.result && response.result.tokenId) {
@@ -290,6 +307,7 @@ brightstream.SignalingChannel = function (params) {
     that.close = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        clearInterval(heartbeat);
 
         wsCall({
             path: '/v1/endpointconnections/%s/',
@@ -894,6 +912,7 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {object} signal
          */
+        clientObj.updateTurnCredentials();
         params.call.fire('signal-offer', {
             signal: params.signal
         });
@@ -932,6 +951,7 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {object} signal
          */
+        clientObj.updateTurnCredentials();
         params.call.fire('signal-modify', {
             signal: params.signal
         });
@@ -952,6 +972,7 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {object} signal
          */
+        clientObj.updateTurnCredentials();
         params.call.fire('signal-answer', {
             signal: params.signal
         });
@@ -1307,7 +1328,7 @@ brightstream.SignalingChannel = function (params) {
         /**
          * Try to connect for 2 seconds before failing.
          * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-         * is doubled up to a maximum of 5 minutes. From the on, it will attempt to reconnect every 5 mins forever.
+         * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
          */
         var connectParams = {
             'connect timeout': 2000,
@@ -1315,7 +1336,7 @@ brightstream.SignalingChannel = function (params) {
             'max reconnection attempts': Infinity,
             'force new connection': true, // Don't try to reuse old connection.
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
-            reconnect: true,
+            reconnect: false,
             host: host,
             port: port || '443',
             protocol: protocol,
@@ -1327,6 +1348,17 @@ brightstream.SignalingChannel = function (params) {
 
         socket.on('connect', generateConnectHandler(function onSuccess(user) {
             deferred.resolve(user);
+            heartbeat = setInterval(function () {
+                that.sendMessage({
+                    message: 'heartbeat',
+                    recipient: {id: 'system-heartbeat'}
+                }).done(null, function (err) {
+                    if (err.message.indexOf('Not authorized') > -1) {
+                        clearInterval(heartbeat);
+                        socket.disconnect();
+                    }
+                });
+            }, 5000);
         }, function onError(err) {
             log.debug("Couldn't register endpoint.", err);
             deferred.reject(err);
@@ -1339,19 +1371,11 @@ brightstream.SignalingChannel = function (params) {
         socket.on('presence', onPresence);
 
         socket.on('connect_failed', function (res) {
-            log.error('Connect failed.');
-        });
-
-        socket.on('reconnect_failed', function (res) {
-            log.error('Reconnect failed.');
-        });
-
-        socket.on('reconnecting', function (res) {
-            log.info('reconnecting');
+            log.error('Socket.io connect failed.', res || "");
         });
 
         socket.on('error', function (res) {
-            log.trace('socket#error', res);
+            log.trace('Socket.io error.', res || "");
         });
 
         that.addHandler({
@@ -1365,28 +1389,38 @@ brightstream.SignalingChannel = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
+            var clientSettings = clientObj.getClientSettings();
             /**
              * @event brightstream.Client#disconnect
              */
             clientObj.fire('disconnect');
-            socket.removeAllListeners('connect');
 
-            socket.on('connect', generateConnectHandler(function onSuccess(user) {
+            if (clientSettings.reconnect !== true) {
+                socket = null;
+                return;
+            }
+
+            actuallyConnect().then(function (user) {
+                clientObj.user = user;
                 log.debug('socket reconnected');
-                Q.all(clientObj.getGroups().map(function iterGroups(group) {
-                    clientObj.join({id: group.id});
-                })).done(function (result) {
-                    clientObj.user = user;
-                    /**
-                     * @event brightstream.Client#reconnect
-                     */
-                    clientObj.fire('reconnect');
-                }, function (err) {
-                    throw new Error(err.message);
-                });
+                return Q.all(clientObj.getGroups().map(function iterGroups(group) {
+                    clientObj.join({
+                        id: group.id,
+                        onMessage: clientSettings.onMessage,
+                        onJoin: clientSettings.onJoin,
+                        onLeave: clientSettings.onLeave
+                    });
+                }));
             }, function onError(err) {
                 throw new Error(err.message);
-            }));
+            }).done(function (user) {
+                /**
+                 * @event brightstream.Client#reconnect
+                 */
+                clientObj.fire('reconnect');
+            }, function (err) {
+                throw new Error(err.message);
+            });
         });
 
         return deferred.promise;
@@ -1784,13 +1818,8 @@ brightstream.Group = function (params) {
      * @type {string}
      */
     var client = params.client;
-    /**
-     * @memberof! brightstream.Group
-     * @name signalingChannel
-     * @private
-     * @type {brightstream.SignalingChannel}
-     */
-    var signalingChannel = brightstream.getClient(client).getSignalingChannel();
+    var clientObj = brightstream.getClient(client);
+    var signalingChannel = clientObj.getSignalingChannel();
 
     if (!group.id) {
         throw new Error("Can't create a group without an ID.");
@@ -1813,6 +1842,9 @@ brightstream.Group = function (params) {
     group.listen('join', params.onJoin);
     group.listen('message', params.onMessage);
     group.listen('leave', params.onLeave);
+    clientObj.listen('disconnect', function () {
+        group.connections = [];
+    });
 
     delete group.client;
     delete group.onMessage;

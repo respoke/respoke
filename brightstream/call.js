@@ -257,18 +257,6 @@ brightstream.Call = function (params) {
     var localStreams = [];
     /**
      * @memberof! brightstream.Call
-     * @name mediaOptions
-     * @private
-     * @type {object}
-     */
-    var mediaOptions = {
-        optional: [
-            { DtlsSrtpKeyAgreement: true },
-            { RtpDataChannels: false }
-        ]
-    };
-    /**
-     * @memberof! brightstream.Call
      * @name toSendBye
      * @private
      * @type {boolean}

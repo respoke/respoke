@@ -15,6 +15,7 @@
 (function brightstreamInit() {
     'use strict';
     window.brightstream = {
+        buildNumber: 'NO BUILD NUMBER',
         streams: {},
         instances: {}
     };

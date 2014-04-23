@@ -21,9 +21,25 @@
  * brightstream.connect, brightstream.createClient, or to client.connect.
  * @param {string} [params.token] - The endpoint's authentication token.
  * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
- * different paramters than the built-in defaults.
+ * different parameters than the built-in defaults.
  * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
- * different paramters than the built-in defaults.
+ * different parameters than the built-in defaults.
+ * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+ * endpoint. This is only used when `developmentMode` is set to `true`.
+ * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
+ * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+ * operation and will limit the services you will be able to use.
+ * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+ * when a disconnect occurs.
+ * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
+ * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
+ * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+ * @param {function} [params.onConnect] - Callback for Client connect.
+ * @param {function} [params.onDisconnect] - Callback for Client disconnect.
+ * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+ * @param {function} [params.onCall] - Callback for when this client's user receives a call.
+ * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
+ * direct connection.
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
@@ -80,25 +96,34 @@ brightstream.Client = function (params) {
         baseURL: params.baseURL,
         token: params.token,
         appId: params.appId,
-        developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false
+        developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false,
+        reconnect: typeof params.developmentMode === 'boolean' ? params.developmentMode : true,
+        endpointId: params.endpointId,
+        onJoin: params.onJoin,
+        onLeave: params.onLeave,
+        onMessage: params.onMessage,
+        onConnect: params.onConnect,
+        onDisconnect: params.onDisconnect,
+        onReconnect: params.onReconnect,
+        onCall: params.onCall,
+        onDirectConnection: params.onDirectConnection
     };
     delete that.appId;
     delete that.baseURL;
     delete that.developmentMode;
+    delete that.token;
+
+    if (!app.token && !app.appId) {
+        throw new Error("Can't connect without either an appId, in which case developmentMode " +
+            "must be set to true, or an token");
+    }
+
     /**
      * @memberof! brightstream.Client
      * @name user - The currently logged-in endpoint.
      * @type {brightstream.User}
      */
     that.user = null;
-    /**
-     * @memberof! brightstream.Client
-     * @name turnRefresher
-     * @type {number}
-     * @private
-     * @desc A timer to facilitate refreshing the TURN credentials every 20 hours.
-     */
-    var turnRefresher = null;
     /**
      * @memberof! brightstream.Client
      * @name groups
@@ -149,19 +174,26 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {object} params
-     * @param {string} [params.token] - An authentication token to use for this endpoint.
-     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
-     * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {string} [params.appId] - An appId to use to obtain an authentication token if this app is in
-     * developer mode and the `developmentMode` parameter is also set to `true`.
-     * @param {boolean} [params.developmentMode] - Indication to obtain an authentication token from the service.
-     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
-     * operation and will limit the services you will be able to use.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+     * brightstream.connect, brightstream.createClient, or to client.connect.
+     * @param {string} [params.token] - The endpoint's authentication token.
+     * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
+     * different parameters than the built-in defaults.
+     * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
+     * different parameters than the built-in defaults.
+     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
+     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+     * operation and will limit the services you will be able to use.
+     * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+     * when a disconnect occurs.
      * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
      * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+     * @param {function} [params.onConnect] - Callback for Client connect.
      * @param {function} [params.onDisconnect] - Callback for Client disconnect.
      * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
      * @param {function} [params.onCall] - Callback for when this client's user receives a call.
@@ -171,52 +203,19 @@ brightstream.Client = function (params) {
      * @fires brightstream.Client#connect
      */
     that.connect = function (params) {
+        var promise;
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        log.trace('Client.connect', params);
+        log.trace('Client.connect');
 
-        app.token = params.token;
-        app.appId = params.appId || app.appId;
-        app.developmentMode = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
-        that.endpointId = params.endpointId || that.endpointId;
+        Object.keys(params).forEach(function (key) {
+            if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
+                app[key] = params[key];
+            }
+        });
+        that.endpointId = app.endpointId;
 
-        if (!app.token && !app.appId) {
-            deferred.reject(new Error("Can't connect without either an appId, in which case developmentMode " +
-                "must be set to true, or an token"));
-        }
-
-        signalingChannel.open({
-            appId: app.appId,
-            developmentMode: app.developmentMode,
-            endpointId: that.endpointId,
-            token: app.token
-        }).then(function () {
-            return signalingChannel.authenticate({
-                appId: app.appId
-            });
-        }, function (err) {
-            log.error(err.message);
-            deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
-        }).done(function (user) {
-            connected = true;
-
-            user.setOnline(); // Initiates presence.
-            user.listen('call', params.onCall);
-            user.listen('direct-connection', params.onDirectConnection);
-            user.listen('join', params.onJoin);
-            user.listen('leave', params.onLeave);
-            that.user = user;
-
-            that.listen('join', params.onAutoJoin);
-            that.listen('leave', params.onAutoLeave);
-            that.listen('message', params.onMessage);
-            that.listen('disconnect', params.onDisconnect);
-            that.listen('reconnect', params.onReconnect);
-
-            log.info('logged in as user ' + user.id);
-            log.debug(user);
-            that.updateTurnCredentials();
-
+        promise = actuallyConnect(params);
+        promise.done(function (user) {
             /**
              * This event is fired the first time the library connects to the cloud infrastructure.
              * @event brightstream.Client#connect
@@ -226,13 +225,78 @@ brightstream.Client = function (params) {
             that.fire('connect', {
                 user: user
             });
+        });
+        return promise;
+    };
+
+    /**
+     * This function contains the meat of the connection, the portions which can be repeated again on reconnect.
+     * When `reconnect` is true, this function will be added in an event listener to the Client#disconnect event.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.actuallyConnect
+     * @private
+     * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<brightstream.User>}
+     */
+    function actuallyConnect(params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+
+        signalingChannel.open({
+            actuallyConnect: actuallyConnect,
+            appId: app.appId,
+            developmentMode: app.developmentMode,
+            endpointId: that.endpointId,
+            token: app.token
+        }).then(function () {
+            return signalingChannel.authenticate();
+        }, function (err) {
+            log.error(err.message);
+            deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
+        }).done(function (user) {
+            connected = true;
+
+            that.user = user;
+            user.setOnline(); // Initiates presence.
+
+            /*
+             * These rely on the EventEmitter checking for duplicate event listeners in order for these
+             * not to be duplicated on reconnect.
+             */
+            user.listen('call', app.onCall);
+            user.listen('direct-connection', app.onDirectConnection);
+            user.listen('join', app.onJoin);
+            user.listen('leave', app.onLeave);
+
+            that.listen('message', app.onMessage);
+            that.listen('connect', app.onConnect);
+            that.listen('disconnect', app.onDisconnect);
+            that.listen('disconnect', setConnectedOnDisconnect);
+            that.listen('reconnect', app.onReconnect);
+            that.listen('reconnect', setConnectedOnReconnect);
+
+            log.info('logged in as user ' + user.id);
+            log.debug(user);
+
             deferred.resolve(user);
         }, function (err) {
+            connected = false;
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message);
         });
         return deferred.promise;
-    };
+    }
+
+    function setConnectedOnDisconnect() {
+        that.user = null;
+        connected = false;
+    }
+
+    function setConnectedOnReconnect() {
+        connected = true;
+    }
 
     /**
      * Disconnect from the Digium infrastructure. Invalidates the API token and disconnects the websocket.
@@ -257,7 +321,7 @@ brightstream.Client = function (params) {
             Q.all(leaveGroups).then(function () {
                 return signalingChannel.close();
             }, function (err) {
-                // Possibly the socket got closed already and we couldn't leave our groups. Backed will clean this up.
+                // Possibly the socket got closed already and we couldn't leave our groups. Backend will clean this up.
                 disconnectPromise.resolve();
             }).fin(function () {
                 if (!disconnectPromise.promise.isFulfilled()) {
@@ -268,22 +332,28 @@ brightstream.Client = function (params) {
         } else {
             disconnectPromise.resolve();
         }
-
-        function afterDisconnect() {
-            that.user = null;
-            connected = false;
-            endpoints = [];
-            groups = [];
-            /**
-             * This event is fired when the library has disconnected from the cloud infrastructure.
-             * @event brightstream.Client#disconnect
-             */
-            that.fire('disconnect');
-        }
-
         disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
         return disconnectPromise.promise;
     };
+
+    /**
+     * Clean up after an intentional disconnect.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.afterDisconnect
+     * @private
+     */
+    function afterDisconnect() {
+        that.user = null;
+        connected = false;
+        endpoints = [];
+        groups = [];
+        /**
+         * This event is fired when the library has disconnected from the cloud infrastructure.
+         * @event brightstream.Client#disconnect
+         */
+        that.fire('disconnect');
+    }
+
 
     /**
      * Get the client ID. This can be used in the brightstream.getClient static method to obtain a reference
@@ -353,20 +423,26 @@ brightstream.Client = function (params) {
      * Update TURN credentials and set a timeout to do it again in 20 hours.
      * @memberof! brightstream.Client
      * @method brightstream.Client.updateTurnCredentials
+     * @returns {Promise}
+     * @param {object} params
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @private
      */
     that.updateTurnCredentials = function () {
+        var promise;
         if (callSettings.disableTurn === true) {
             return;
         }
 
-        clearInterval(turnRefresher);
-        signalingChannel.getTurnCredentials().done(function successHandler(creds) {
+        promise = signalingChannel.getTurnCredentials();
+        promise.done(params.onSuccess, params.onError);
+        promise.done(function successHandler(creds) {
             callSettings.servers.iceServers = creds;
         }, function errorHandler(error) {
             throw error;
         });
-        turnRefresher = setInterval(that.updateTurnCredentials, 20 * (60 * 60 * 1000)); // 20 hours
+        return promise;
     };
 
     /**
