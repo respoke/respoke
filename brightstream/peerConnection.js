@@ -900,7 +900,7 @@ brightstream.PeerConnection = function (params) {
             log.error("Couldn't add ICE candidate: " + e.message, candidate.candidate);
             return;
         }
-        log.debug('Got a remote candidate.', candidate.candidate);
+        log.verbose('Got a remote candidate.', candidate.candidate);
         that.report.candidatesReceived.push(candidate.candidate);
     };
 
