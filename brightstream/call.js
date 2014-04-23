@@ -421,24 +421,28 @@ brightstream.Call = function (params) {
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
-        /**
-         * @event brightstream.Call#answer
-         */
-        that.fire('answer');
+        clientObj.updateTurnCredentials().done(function () {
+            /**
+             * @event brightstream.Call#answer
+             */
+            that.fire('answer');
 
-        pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
+            pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
 
-        /**
-         * There are a few situations in which we need to call approve automatically. Approve is for previewing
-         * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-         * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-         * previewLocalMedia callback to call, we will not wait for approval.
-         */
-        if (receiveOnly !== true && directConnectionOnly === null) {
-            doAddVideo(params);
-        } else if (typeof previewLocalMedia !== 'function') {
-            that.approve();
-        }
+            /**
+             * There are a few situations in which we need to call approve automatically. Approve is for previewing
+             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
+             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
+             * previewLocalMedia callback to call, we will not wait for approval.
+             */
+            if (receiveOnly !== true && directConnectionOnly === null) {
+                doAddVideo(params);
+            } else if (typeof previewLocalMedia !== 'function') {
+                that.approve();
+            }
+        }, function (err) {
+            throw err;
+        });
     };
 
     /**
@@ -943,8 +947,6 @@ brightstream.Call = function (params) {
         if (!that.initiator && defApproved.promise.isPending()) {
             defApproved.reject(new Error("Call hung up before approval."));
         }
-
-        clientObj.updateTurnCredentials();
 
         localStreams.forEach(function (stream) {
             stream.stop();

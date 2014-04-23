@@ -917,7 +917,6 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        clientObj.updateTurnCredentials();
         params.call.fire('signal-offer', {
             signal: params.signal
         });
@@ -956,7 +955,6 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        clientObj.updateTurnCredentials();
         params.call.fire('signal-modify', {
             signal: params.signal
         });
@@ -977,7 +975,6 @@ brightstream.SignalingChannel = function (params) {
          * @type {brightstream.Event}
          * @property {object} signal
          */
-        clientObj.updateTurnCredentials();
         params.call.fire('signal-answer', {
             signal: params.signal
         });

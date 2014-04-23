@@ -628,8 +628,6 @@ brightstream.PeerConnection = function (params) {
             }
         }
 
-        clientObj.updateTurnCredentials();
-
         toSendBye = (typeof params.signal === 'boolean' ? params.signal : toSendBye);
         if (toSendBye) {
             log.info('sending bye');
