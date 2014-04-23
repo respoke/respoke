@@ -783,7 +783,7 @@ brightstream.Client = function (params) {
             endpoints.every(function (ept) {
                 if (params.endpointId) {
                     if (params.endpointId !== ept.id) {
-                        return false;
+                        return true;
                     } else {
                         endpoint = ept;
                     }

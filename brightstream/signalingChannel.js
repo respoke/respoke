@@ -1514,7 +1514,8 @@ brightstream.SignalingChannel = function (params) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
         }
 
-        if (params.path.indexOf('signaling') === -1) { // Too many of these!
+        // Too many of these!
+        if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
             log.debug('socket request', params.httpMethod, params.path, params.parameters);
         }
 
@@ -1528,7 +1529,8 @@ brightstream.SignalingChannel = function (params) {
             data: params.parameters,
             headers: {'X-App-Token': appToken}
         }), function handleResponse(response) {
-            if (params.path.indexOf('signaling') === -1) { // Too many of these!
+            // Too many of these!
+            if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
                 log.debug('socket response', params.httpMethod, params.path, response);
             }
 
@@ -2005,17 +2007,6 @@ brightstream.Group = function (params) {
                 var connection = clientObj.getConnection({
                     endpointId: params.endpointId,
                     connectionId: params.connectionId
-                });
-                /**
-                 * This event is fired when a member joins a group that the currently logged-in user is a member of.
-                 * @event brightstream.Group#join
-                 * @type {brightstream.Event}
-                 * @property {brightstream.Group} group
-                 * @property {brightstream.Connection} connection
-                 */
-                group.fire('join', {
-                    group: group,
-                    connection: connection
                 });
 
                 if (endpointList.indexOf(params.endpointId) === -1) {

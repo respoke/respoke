@@ -476,7 +476,7 @@ brightstream.Endpoint = function (params) {
      */
     that.getConnection = function (params) {
         var connection;
-        if (that.connections.length === 1) {
+        if (that.connections.length === 1 && !params.connectionId) {
             return that.connections[0];
         }
 

@@ -121,10 +121,11 @@ brightstream.EventEmitter = function (params) {
         var args = null;
         var count = 0;
 
-        if (!eventType || !eventList[eventType]) {
+        if (!eventType) {
             return;
         }
 
+        eventList[eventType] = eventList[eventType] || [];
         evt = evt || {};
         evt.name = eventType;
         evt.target = that;
