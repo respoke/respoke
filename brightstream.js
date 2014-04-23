@@ -178,4 +178,52 @@ brightstream.Class = function (params) {
     });
 
     return that;
-}; // End brightstream.Class
+};
+
+/**
+ * Tell the user if the browser supports user media
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasUserMedia = function () {
+    "use strict";
+    return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) instanceof Function;
+};
+
+/**
+ * Tell the user if the browser supports RTC Peer Connection
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.cGlueom>
+ */
+brightstream.hasRTCPeerConnection = function () {
+    "use strict";
+    return (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection) instanceof Function;
+};
+
+/**
+ * Tell the user if the browser supports websockets
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasWebsocket = function () {
+    "use strict";
+    return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
+};
+
+/**
+ * Tell the user if the browser supports MediaStreams
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasMediaStream = function () {
+    "use strict";
+    return (window.MediaStream || window.webkitMediaStream || window.mozMediaStream) instanceof Function;
+};// End brightstream.Class
