@@ -187,30 +187,6 @@ brightstream.Endpoint = function (params) {
     };
 
     /**
-     * Send a signal to the endpoint.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.sendSignal
-     * @param {object} params
-     * @param {object|string} params.signal
-     * @param {string} [params.connectionId]
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @private
-     * @returns {Promise}
-     */
-    that.sendSignal = function (params) {
-        params = params || {};
-
-        return signalingChannel.sendSignal({
-            connectionId: params.connectionId,
-            signal: params.signal,
-            recipient: that,
-            onSuccess: params.onSuccess,
-            onError: params.onError
-        });
-    };
-
-    /**
      * Create a new Call for a voice and/or video call.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.call
@@ -554,23 +530,6 @@ brightstream.Connection = function (params) {
         params = params || {};
         params.connectionId = that.id;
         return that.getEndpoint().sendMessage(params);
-    };
-
-    /**
-     * Send a signal to this connection of an Endpoint only.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.sendSignal
-     * @param {object} params
-     * @param {object|string} params.signal
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @private
-     * @returns {Promise}
-     */
-    that.sendSignal = function (params) {
-        params = params || {};
-        params.connectionId = that.id;
-        return that.getEndpoint().sendSignal(params);
     };
 
     /**
