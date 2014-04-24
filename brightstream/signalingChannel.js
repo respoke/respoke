@@ -1487,6 +1487,7 @@ brightstream.SignalingChannel = function (params) {
                 deferred.reject(new Error("Got no TURN credentials."));
             }
 
+            log.debug('TURN creds', result);
             deferred.resolve(result);
         }, function (err) {
             deferred.reject(err);
