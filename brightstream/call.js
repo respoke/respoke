@@ -1311,7 +1311,9 @@ brightstream.Call = function (params) {
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
-    that.listen('signal-candidate', pc.addRemoteCandidate, true);
+    that.listen('signal-candidate', function (evt) {
+        pc.addRemoteCandidate({candidate: evt.signal.candidate});
+    }, true);
 
     setTimeout(function initTimeout() {
         saveParameters(params);

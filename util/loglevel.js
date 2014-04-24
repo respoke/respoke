@@ -98,8 +98,8 @@
          *
          */
 
-        self.levels = { "TRACE": 0, "DEBUG": 1, "INFO": 2, "WARN": 3,
-            "ERROR": 4, "SILENT": 5};
+        self.levels = { "TRACE": 0, "VERBOSE": 1, "DEBUG": 2, "INFO": 3, "WARN": 4,
+            "ERROR": 5, "SILENT": 6};
 
         self.setLevel = function (level) {
             if (typeof level === "number" && level >= 0 && level <= self.levels.SILENT) {
