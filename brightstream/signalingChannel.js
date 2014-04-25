@@ -679,14 +679,14 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
-     * @param {RTCIceCandidate} params.candidate - An ICE candidate to JSONify and send.
+     * @param {Array<RTCIceCandidate>} params.iceCandidates - An array of ICE candidate.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {Promise}
      */
     that.sendCandidate = function (params) {
         params = params || {};
-        params.signalType = 'candidate';
+        params.signalType = 'iceCandidates';
         return that.sendSignal(params);
     };
 
@@ -783,12 +783,12 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Call#offer
      * @fires brightstream.Call#connected
      * @fires brightstream.Call#answer
-     * @fires brightstream.Call#candidate
+     * @fires brightstream.Call#iceCandidates
      * @fires brightstream.Call#bye
      * @fires brightstream.DirectConnection#offer
      * @fires brightstream.DirectConnection#connected
      * @fires brightstream.DirectConnection#answer
-     * @fires brightstream.DirectConnection#candidate
+     * @fires brightstream.DirectConnection#iceCandidates
      * @fires brightstream.DirectConnection#bye
      * @todo TODO Make the call.set* methods accept the entire message.
      */
@@ -798,9 +798,9 @@ brightstream.SignalingChannel = function (params) {
         var method = 'do';
         var endpoint;
 
-        //if (signal.signalType !== 'candidate') { // Too many of these!
-        log.verbose(signal.signalType, signal);
-        //}
+        if (signal.signalType !== 'iceCandidates') { // Too many of these!
+            log.verbose(signal.signalType, signal);
+        }
 
         // Only create if this signal is an offer.
 
@@ -932,21 +932,21 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doCandidate
+     * @method brightstream.SignalingChannel.routingMethods.doIceCandidates
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-candidate
+     * @fires brightstream.Call#signal-icecandidates
      */
-    routingMethods.doCandidate = function (params) {
+    routingMethods.doIceCandidates = function (params) {
         /**
-         * @event brightstream.Call#signal-candidate
+         * @event brightstream.Call#signal-icecandidates
          * @type {brightstream.Event}
          * @property {object} signal
          * @property {string} name - the event name.
          * @property {brightstream.Call}
          */
-        params.call.fire('signal-candidate', {
+        params.call.fire('signal-icecandidates', {
             signal: params.signal
         });
     };
@@ -1342,7 +1342,7 @@ brightstream.SignalingChannel = function (params) {
         that.addHandler({
             type: 'signal',
             handler: function signalHandler(message) {
-                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'candidate', 'bye'];
+                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'bye'];
                 var signal = brightstream.SignalingMessage({
                     rawMessage: message
                 });
@@ -1733,19 +1733,22 @@ brightstream.TextMessage = function (params) {
  * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
  * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
  * @param {string} [params.signal] - If sending, a message to send
- * @param {string} [params.recipient]
+ * @param {brightstream.Endpoint} [params.recipient]
  * @param {string} [params.signalType]
- * @param {string} [params.sessionId]
- * @param {string} [params.target]
- * @param {string} [params.signalId]
- * @param {string} [params.callerId]
- * @param {string} [params.sdp]
- * @param {string} [params.candidate]
- * @param {string} [params.offering]
- * @param {string} [params.requesting]
- * @param {string} [params.reason]
- * @param {string} [params.error]
- * @param {string} [params.status]
+ * @param {string} [params.sessionId] - A globally unique ID to identify this call.
+ * @param {string} [params.target] - Either 'call' or 'directConnection', TODO remove the need for this.
+ * @param {string} [params.signalId] - A globally unique ID to identify this signal and it's ACK.
+ * @param {string} [params.callerId] - Human readable caller ID. Not implemented.
+ * @param {RTCSessionDescription} [params.sdp]
+ * @param {Array<RTCIceCandidate>} [params.iceCandidates]
+ * @param {object} [params.offering] - Object describing the media we're offering to send the remote party in a more
+ * usable way than SDP. Not implemented.
+ * @param {object} [params.requesting] - Object describing the media we're requesting from the remote party in a more
+ * usable way than SDP. Not implemented.
+ * @param {string} [params.reason] - Human readable reason for hanging up.
+ * @param {string} [params.error] - String indicating that a previous signal was malformed or received in the wrong
+ * state. Not implemented.
+ * @param {string} [params.status] - "Ringing". Not implemented.
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
  * @private
  * @returns {brightstream.SignalingMessage}
@@ -1770,7 +1773,7 @@ brightstream.SignalingMessage = function (params) {
      * @type {string}
      */
     var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sdp', 'candidate', 'offering', 'target', 'signalId',
+        'signalType', 'sessionId', 'callerId', 'sdp', 'iceCandidates', 'offering', 'target', 'signalId',
         'requesting', 'reason', 'error', 'status'
     ];
 

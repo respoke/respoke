@@ -246,6 +246,7 @@ brightstream.PeerConnection = function (params) {
      * to facilitate candidate logging.
      */
     function signalCandidate(params) {
+        params.iceCandidates = [params.candidate];
         signalCandidateOrig(params);
         that.report.candidatesSent.push({candidate: params.candidate});
     }

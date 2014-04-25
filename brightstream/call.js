@@ -1311,8 +1311,14 @@ brightstream.Call = function (params) {
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
-    that.listen('signal-candidate', function (evt) {
-        pc.addRemoteCandidate({candidate: evt.signal.candidate});
+    that.listen('signal-icecandidates', function onCandidateSignal(evt) {
+        console.log('signal-icecandidates', evt);
+        if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
+            return;
+        }
+        evt.signal.iceCandidates.forEach(function processCandidate(candidate) {
+            pc.addRemoteCandidate({candidate: candidate});
+        });
     }, true);
 
     setTimeout(function initTimeout() {
