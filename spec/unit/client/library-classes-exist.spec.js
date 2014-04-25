@@ -17,5 +17,11 @@ describe("The brightstream namespace", function() {
         expect(typeof brightstream.SignalingChannel).to.equal('function');
         expect(typeof brightstream.SignalingMessage).to.equal('function');
         expect(typeof brightstream.User).to.equal('function');
+
+        //capability flags
+        expect(typeof brightstream.hasUserMedia).to.equal('function');
+        expect(typeof brightstream.hasRTCPeerConnection).to.equal('function');
+        expect(typeof brightstream.hasWebsocket).to.equal('function');
+        expect(typeof brightstream.hasMediaStream).to.equal('function');
     });
 });

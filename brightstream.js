@@ -179,4 +179,40 @@ brightstream.Class = function (params) {
     });
 
     return that;
-}; // End brightstream.Class
+};
+
+/**
+ * Does the browser support UserMedia
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasUserMedia = function () {
+    "use strict";
+    return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) instanceof Function;
+};
+
+/**
+ * Does the browser support RTCPeerConnection
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasRTCPeerConnection = function () {
+    "use strict";
+    return (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection) instanceof Function;
+};
+
+/**
+ * Does the browser support WebSocket
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasWebsocket = function () {
+    "use strict";
+    return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
+};// End brightstream.Class
