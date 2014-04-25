@@ -590,12 +590,46 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
+     * Send an ACK signal to acknowlege reception of a signal.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendACK
+     * @param {object} params
+     * @param {brightstream.SignalingMessage} params.signal
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @return {Promise}
+     */
+    that.sendACK = function (params) {
+        var endpoint;
+        params = params || {};
+        console.log('sendACK', params);
+        if (!params.signal) {
+            return Q.reject("Can't send ACK, no signal was given.");
+        }
+
+        endpoint = clientObj.getEndpoint({id: params.signal.endpointId});
+        if (!endpoint) {
+            return Q.reject("Can't send ACK, can't get endpoint.");
+        }
+
+        return that.sendSignal({
+            recipient: endpoint,
+            signalType: 'ack',
+            signalId: params.signal.signalId,
+            sessionId: params.signal.sessionId,
+            target: params.signal.target,
+            ackedSignalType: params.signal.signalType,
+            onSuccess: params.onSuccess,
+            onError: params.onError
+        });
+    };
+
+    /**
      * Send a signaling message.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendSignal
      * @param {object} params
-     * @param {brightstream.SignalingMessage} params.signal
-     * @param {string} [params.connectionId]
+     * @param {brightstream.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {Promise}
@@ -605,12 +639,16 @@ brightstream.SignalingChannel = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var signal;
 
-        params.sessionId = params.call.id;
-        if (params.call.connectionId) { // the recipient's connectionId
-            params.connectionId = params.call.connectionId;
+        if (params.call) {
+            params.sessionId = params.call.id;
+            if (params.call.connectionId) { // the recipient's connectionId
+                params.connectionId = params.call.connectionId;
+            }
         }
 
         try {
+            params.signalId = brightstream.makeGUID();
+            // This will strip off non-signaling attributes.
             signal = brightstream.SignalingMessage(params);
         } catch (e) {
             deferred.reject(e);
@@ -759,16 +797,10 @@ brightstream.SignalingChannel = function (params) {
         var toCreate;
         var method = 'do';
         var endpoint;
-        var knownSignals = ['offer', 'answer', 'connected', 'modify', 'candidate', 'bye'];
 
         //if (signal.signalType !== 'candidate') { // Too many of these!
         log.verbose(signal.signalType, signal);
         //}
-
-        if (!signal.target || !signal.signalType || knownSignals.indexOf(signal.signalType) === -1) {
-            log.error("Got malformed signal.", signal);
-            throw new Error("Can't route signal without target or type.");
-        }
 
         // Only create if this signal is an offer.
 
@@ -794,7 +826,7 @@ brightstream.SignalingChannel = function (params) {
                 initiator: !toCreate
             }).done(function (directConnection) {
                 target = directConnection.call;
-                method += firstUpper((knownSignals.indexOf(signal.signalType) === -1) ? 'unknown' : signal.signalType);
+                method += firstUpper(signal.signalType);
                 routingMethods[method]({
                     call: target,
                     signal: signal
@@ -805,7 +837,7 @@ brightstream.SignalingChannel = function (params) {
             return;
         }
 
-        method += firstUpper((knownSignals.indexOf(signal.signalType) === -1) ? 'unknown' : signal.signalType);
+        method += firstUpper(signal.signalType);
         routingMethods[method]({
             call: target,
             signal: signal
@@ -1310,9 +1342,21 @@ brightstream.SignalingChannel = function (params) {
         that.addHandler({
             type: 'signal',
             handler: function signalHandler(message) {
-                that.routeSignal(brightstream.SignalingMessage({
+                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'candidate', 'bye'];
+                var signal = brightstream.SignalingMessage({
                     rawMessage: message
-                }));
+                });
+
+                if (signal.signalType === 'ack') {
+                    return;
+                }
+
+                if (!signal.target || !signal.signalType || knownSignals.indexOf(signal.signalType) === -1) {
+                    log.error("Got malformed signal.", signal);
+                    throw new Error("Can't route signal without target or type.");
+                }
+
+                that.routeSignal(signal);
             }
         });
 
@@ -1689,6 +1733,19 @@ brightstream.TextMessage = function (params) {
  * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
  * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
  * @param {string} [params.signal] - If sending, a message to send
+ * @param {string} [params.recipient]
+ * @param {string} [params.signalType]
+ * @param {string} [params.sessionId]
+ * @param {string} [params.target]
+ * @param {string} [params.signalId]
+ * @param {string} [params.callerId]
+ * @param {string} [params.sdp]
+ * @param {string} [params.candidate]
+ * @param {string} [params.offering]
+ * @param {string} [params.requesting]
+ * @param {string} [params.reason]
+ * @param {string} [params.error]
+ * @param {string} [params.status]
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
  * @private
  * @returns {brightstream.SignalingMessage}
@@ -1704,7 +1761,7 @@ brightstream.SignalingMessage = function (params) {
      * @private
      * @type {string}
      */
-    var required = ['recipient', 'signalType', 'sessionId', 'target'];
+    var required = ['recipient', 'signalType', 'sessionId', 'target', 'signalId'];
     /**
      * Attributes which we will copy onto the signal if defined.
      * @memberof! brightstream.SignalingMessage
@@ -1713,8 +1770,8 @@ brightstream.SignalingMessage = function (params) {
      * @type {string}
      */
     var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sdp', 'candidate', 'offering', 'target',
-        'requesting', 'reason', 'error', 'status', 'duration'
+        'signalType', 'sessionId', 'callerId', 'sdp', 'candidate', 'offering', 'target', 'signalId',
+        'requesting', 'reason', 'error', 'status'
     ];
 
     /**

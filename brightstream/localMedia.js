@@ -41,7 +41,7 @@ brightstream.LocalMedia = function (params) {
      * @name id
      * @type {string}
      */
-    that.id = brightstream.makeUniqueID().toString();
+    that.id = brightstream.makeGUID();
 
     /**
      * @memberof! brightstream.LocalMedia

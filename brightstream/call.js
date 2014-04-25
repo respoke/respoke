@@ -64,7 +64,7 @@ brightstream.Call = function (params) {
      * @name id
      * @type {string}
      */
-    that.id = that.id || brightstream.makeUniqueID().toString();
+    that.id = that.id || brightstream.makeGUID();
 
     if (!that.initiator) {
         /**

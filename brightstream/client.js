@@ -52,7 +52,7 @@ brightstream.Client = function (params) {
      * @private
      * @type {string}
      */
-    var client = brightstream.makeUniqueID().toString();
+    var client = brightstream.makeGUID();
     var that = brightstream.EventEmitter(params);
     brightstream.instances[client] = that;
     /**
