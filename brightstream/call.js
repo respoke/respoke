@@ -294,19 +294,19 @@ brightstream.Call = function (params) {
         }
 
         if (that.initiator !== true) {
-            Q.all([defApproved.promise, defSDPOffer.promise]).spread(function (approved, oOffer) {
+            Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
                 if (oOffer && oOffer.sdp) {
                     pc.processOffer(oOffer.sdp);
                 }
-            }, function (err) {
+            }, function errorHandler(err) {
                 log.warn("Call rejected.");
             }).done();
         } else {
-            Q.all([defApproved.promise, defMedia.promise]).spread(function (approved, media) {
+            Q.all([defApproved.promise, defMedia.promise]).spread(function successHandler(approved, media) {
                 if (media) {
                     pc.initOffer();
                 }
-            }, function (err) {
+            }, function errorHandler(err) {
                 log.warn("Call not approved or media error.");
             });
         }
@@ -423,7 +423,7 @@ brightstream.Call = function (params) {
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
-        clientObj.updateTurnCredentials().done(function () {
+        clientObj.updateTurnCredentials().done(function successHandler() {
             /**
              * @event brightstream.Call#answer
              * @property {string} name - the event name.
@@ -444,7 +444,7 @@ brightstream.Call = function (params) {
             } else if (typeof previewLocalMedia !== 'function') {
                 that.approve();
             }
-        }, function (err) {
+        }, function errorHandler(err) {
             throw err;
         });
     };
@@ -617,7 +617,7 @@ brightstream.Call = function (params) {
         params.client = client;
 
         stream = brightstream.LocalMedia(params);
-        stream.listen('waiting-for-allow', function (evt) {
+        stream.listen('waiting-for-allow', function waitAllowHandler(evt) {
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
              * to modify the UI of the application so that the user notices the request for permissions
@@ -629,7 +629,7 @@ brightstream.Call = function (params) {
              */
             that.fire('waiting-for-allow');
         }, true);
-        stream.listen('allowed', function (evt) {
+        stream.listen('allowed', function allowedHandler(evt) {
             /**
              * The user has approved the request for media. Any UI changes made to remind the user to click Allow
              * should be canceled now.
@@ -640,7 +640,7 @@ brightstream.Call = function (params) {
              */
             that.fire('allowed');
         }, true);
-        stream.listen('stream-received', function (evt) {
+        stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
             videoLocalElement = evt.element;
@@ -662,7 +662,7 @@ brightstream.Call = function (params) {
                 stream: stream
             });
         }, true);
-        stream.listen('error', function (evt) {
+        stream.listen('error', function errorHandler(evt) {
             that.removeStream({id: stream.id});
             pc.report.callStoppedReason = evt.reason;
         });
@@ -741,7 +741,7 @@ brightstream.Call = function (params) {
      */
     that.removeStream = function (params) {
         var savedIndex;
-        localStreams.forEach(function (stream, idx) {
+        localStreams.forEach(function eachStream(stream, idx) {
             if (stream.id === params.id) {
                 stream.stop();
                 savedIndex = idx;
@@ -854,7 +854,7 @@ brightstream.Call = function (params) {
 
         directConnection = brightstream.DirectConnection(params);
 
-        directConnection.listen('close', function () {
+        directConnection.listen('close', function closeHandler() {
             // TODO: make this look for remote streams, too. Don't want to hang up on a one-way media call.
             if (localStreams.length === 0) {
                 log.debug('Hanging up because there are no local streams.');
@@ -866,7 +866,7 @@ brightstream.Call = function (params) {
             }
         }, true);
 
-        directConnection.listen('accept', function () {
+        directConnection.listen('accept', function acceptHandler() {
             if (that.initiator === false) {
                 log.debug('Answering as a result of approval.');
                 that.answer();
@@ -881,11 +881,11 @@ brightstream.Call = function (params) {
             }
         }, true);
 
-        directConnection.listen('open', function () {
+        directConnection.listen('open', function openHandler() {
             directConnectionOnly = null;
         }, true);
 
-        directConnection.listen('error', function (err) {
+        directConnection.listen('error', function errorHandler(err) {
             defMedia.reject(new Error(err));
         }, true);
 
@@ -966,7 +966,7 @@ brightstream.Call = function (params) {
             defApproved.reject(new Error("Call hung up before approval."));
         }
 
-        localStreams.forEach(function (stream) {
+        localStreams.forEach(function eachStream(stream) {
             stream.stop();
         });
 
@@ -1119,10 +1119,10 @@ brightstream.Call = function (params) {
         // init the directConnection if necessary. We don't need to do anything with
         // audio or video right now.
         if (evt.signal.directConnection === true) {
-            actuallyAddDirectConnection().done(function (dc) {
+            actuallyAddDirectConnection().done(function successHandler(dc) {
                 directConnection = dc;
                 directConnection.accept();
-            }, function (err) {
+            }, function errorHandler(err) {
                 throw err;
             });
         } else if (evt.signal.directConnection === false) {
@@ -1208,7 +1208,7 @@ brightstream.Call = function (params) {
         if (videoIsMuted) {
             return;
         }
-        localStreams.forEach(function (stream) {
+        localStreams.forEach(function muteAllVideo(stream) {
             stream.muteVideo();
         });
         /**
@@ -1231,7 +1231,7 @@ brightstream.Call = function (params) {
         if (!videoIsMuted) {
             return;
         }
-        localStreams.forEach(function (stream) {
+        localStreams.forEach(function unmuteAllVideo(stream) {
             stream.unmuteVideo();
         });
         /**
@@ -1254,7 +1254,7 @@ brightstream.Call = function (params) {
         if (audioIsMuted) {
             return;
         }
-        localStreams.forEach(function (stream) {
+        localStreams.forEach(function muteAllAudio(stream) {
             stream.muteAudio();
         });
         /**
@@ -1278,7 +1278,7 @@ brightstream.Call = function (params) {
             return;
         }
 
-        localStreams.forEach(function (stream) {
+        localStreams.forEach(function unmuteAllAudio(stream) {
             stream.unmuteAudio();
         });
 

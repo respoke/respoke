@@ -224,7 +224,7 @@ brightstream.Client = function (params) {
         params = params || {};
         log.trace('Client.connect');
 
-        Object.keys(params).forEach(function (key) {
+        Object.keys(params).forEach(function eachParam(key) {
             if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
                 app[key] = params[key];
             }
@@ -232,7 +232,7 @@ brightstream.Client = function (params) {
         that.endpointId = app.endpointId;
 
         promise = actuallyConnect(params);
-        promise.done(function (user) {
+        promise.done(function successHandler(user) {
             /**
              * This event is fired the first time the library connects to the cloud infrastructure.
              * @event brightstream.Client#connect
@@ -269,12 +269,12 @@ brightstream.Client = function (params) {
             developmentMode: app.developmentMode,
             endpointId: that.endpointId,
             token: app.token
-        }).then(function () {
+        }).then(function successHandler() {
             return signalingChannel.authenticate();
-        }, function (err) {
+        }, function errorHandler(err) {
             log.error(err.message);
             deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
-        }).done(function (user) {
+        }).done(function successHandler(user) {
             connected = true;
 
             that.user = user;
@@ -300,7 +300,7 @@ brightstream.Client = function (params) {
             log.debug(user);
 
             deferred.resolve(user);
-        }, function (err) {
+        }, function errorHandler(err) {
             connected = false;
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message);
@@ -334,15 +334,15 @@ brightstream.Client = function (params) {
 
         if (signalingChannel.isOpen()) {
             // do websocket stuff. If the websocket is already closed, we have to skip this stuff.
-            var leaveGroups = groups.map(function (group) {
+            var leaveGroups = groups.map(function eachGroup(group) {
                 group.leave();
             });
-            Q.all(leaveGroups).then(function () {
+            Q.all(leaveGroups).then(function successHandler() {
                 return signalingChannel.close();
-            }, function (err) {
+            }, function errorHandler(err) {
                 // Possibly the socket got closed already and we couldn't leave our groups. Backend will clean this up.
                 disconnectPromise.resolve();
-            }).fin(function () {
+            }).fin(function finallyHandler() {
                 if (!disconnectPromise.promise.isFulfilled()) {
                     // Successfully closed our socket after leaving all groups.
                     disconnectPromise.resolve();
@@ -558,7 +558,7 @@ brightstream.Client = function (params) {
 
         signalingChannel.joinGroup({
             id: params.id
-        }).done(function () {
+        }).done(function successHandler() {
             var group = brightstream.Group({
                 client: client,
                 id: params.id,
@@ -579,11 +579,11 @@ brightstream.Client = function (params) {
                 group: group
             });
             addGroup(group);
-            group.listen('leave', function (evt) {
+            group.listen('leave', function leaveHandler(evt) {
                 checkEndpointForRemoval(evt.connection.getEndpoint());
             });
             deferred.resolve(group);
-        }, function (err) {
+        }, function errorHandler(err) {
             deferred.reject(err);
         });
         return deferred.promise;
@@ -601,7 +601,7 @@ brightstream.Client = function (params) {
         if (!newGroup || newGroup.className !== 'brightstream.Group') {
             throw new Error("Can't add group to internal tracking without a group.");
         }
-        groups.every(function (grp) {
+        groups.every(function eachGroup(grp) {
             if (grp.id === newGroup.id) {
                 group = grp;
                 return false;
@@ -610,7 +610,7 @@ brightstream.Client = function (params) {
         });
 
         if (!group) {
-            newGroup.listen('leave', function (evt) {
+            newGroup.listen('leave', function leaveHandler(evt) {
                 checkEndpointForRemoval(evt.connection.getEndpoint());
             }, true);
             groups.push(newGroup);
@@ -630,7 +630,7 @@ brightstream.Client = function (params) {
             throw new Error("Can't remove group to internal tracking without a group.");
         }
 
-        groups.every(function (grp, i) {
+        groups.every(function eachGroup(grp, i) {
             if (grp.id === newGroup.id) {
                 index = i;
                 return false;
@@ -639,10 +639,10 @@ brightstream.Client = function (params) {
         });
 
         if (index !== undefined && index > -1) {
-            groups[index].getMembers().done(function (list) {
+            groups[index].getMembers().done(function successHandler(list) {
                 groups[index].ignore();
                 groups.splice(index, 1);
-                list.forEach(function (connection) {
+                list.forEach(function eachConnection(connection) {
                     checkEndpointForRemoval(connection.getEndpoint());
                 });
             });
@@ -673,7 +673,7 @@ brightstream.Client = function (params) {
             throw new Error("Can't get a group without group id.");
         }
 
-        groups.every(function (grp) {
+        groups.every(function eachGroup(grp) {
             if (grp.id === params.id) {
                 group = grp;
                 return false;
@@ -694,7 +694,7 @@ brightstream.Client = function (params) {
         if (!newEndpoint || newEndpoint.className !== 'brightstream.Endpoint') {
             throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
         }
-        absent = endpoints.every(function (ept) {
+        absent = endpoints.every(function eachEndpoint(ept) {
             if (ept.id === newEndpoint.id) {
                 return false;
             }
@@ -724,18 +724,18 @@ brightstream.Client = function (params) {
             throw new Error("Can't remove endpoint from internal tracking without group id.");
         }
 
-        Q.all(groups.map(function (group) {
+        Q.all(groups.map(function eachGroup(group) {
             return group.getMembers();
-        })).done(function (connectionsByGroup) {
+        })).done(function successHandler(connectionsByGroup) {
             // connectionsByGroup is a two-dimensional array where the first dimension is a group
             // and the second dimension is a connection.
-            var absent = connectionsByGroup.every(function (connectionList) {
-                return connectionList.every(function (conn) {
+            var absent = connectionsByGroup.every(function eachConnectionList(connectionList) {
+                return connectionList.every(function eachConnection(conn) {
                     return (conn.endpointId !== params.id);
                 });
             });
             if (absent) {
-                endpoints.every(function (ept, index) {
+                endpoints.every(function eachEndpoint(ept, index) {
                     if (ept.id === params.id) {
                         endpoints.splice(index, 1);
                         return false;
@@ -766,7 +766,7 @@ brightstream.Client = function (params) {
             throw new Error("Can't get an endpoint without endpoint id.");
         }
 
-        endpoints.every(function (ept) {
+        endpoints.every(function eachEndpoint(ept) {
             if (ept.id === params.id) {
                 endpoint = ept;
                 return false;
@@ -813,7 +813,7 @@ brightstream.Client = function (params) {
         }
 
         if (!endpoint) {
-            endpoints.every(function (ept) {
+            endpoints.every(function eachEndpoint(ept) {
                 if (params.endpointId) {
                     if (params.endpointId !== ept.id) {
                         return true;
@@ -822,7 +822,7 @@ brightstream.Client = function (params) {
                     }
                 }
 
-                ept.connections.every(function (conn) {
+                ept.connections.every(function eachConnection(conn) {
                     if (conn.id === params.connectionId) {
                         connection = conn;
                         return false;

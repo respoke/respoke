@@ -378,7 +378,7 @@ brightstream.PeerConnection = function (params) {
                 var stats = brightstream.MediaStats({
                     peerConnection: pc,
                     interval: params.interval,
-                    onStats: function (stats) {
+                    onStats: function statsHandler(stats) {
                         /**
                          * @event brightstream.PeerConnection#stats
                          * @type {brightstream.Event}
@@ -392,7 +392,7 @@ brightstream.PeerConnection = function (params) {
                         that.report.stats.push(stats);
                     }
                 });
-                that.listen('close', function (evt) {
+                that.listen('close', function closeHandler(evt) {
                     stats.stopStats();
                 }, true);
                 deferred.resolve(stats);
@@ -696,7 +696,7 @@ brightstream.PeerConnection = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-        defSDPAnswer.promise.done(processQueues, function () {
+        defSDPAnswer.promise.done(processQueues, function successHandler() {
             log.error('set remote desc of answer failed', evt.signal.sdp);
             that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
             that.close();
@@ -744,7 +744,7 @@ brightstream.PeerConnection = function (params) {
      */
     that.startModify = function (params) {
         defModify = Q.defer();
-        defModify.promise.done(function () {
+        defModify.promise.done(function successHandler() {
             // No offer/answer when tearing down direct connection.
             if (params.directConnection !== false) {
                 defSDPOffer = Q.defer();
