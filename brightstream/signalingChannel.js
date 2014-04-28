@@ -816,15 +816,18 @@ brightstream.SignalingChannel = function (params) {
                 id: signal.endpointId
             });
 
-            if (!target) {
-                // orphaned signal
-                return;
-            }
             endpoint.getDirectConnection({
                 create: toCreate,
                 initiator: !toCreate
             }).done(function successHandler(directConnection) {
                 target = directConnection.call;
+
+                if (!target) {
+                    // orphaned signal
+                    log.warn("Couldn't associate signal with a call.", signal);
+                    return;
+                }
+
                 method += firstUpper(signal.signalType);
                 routingMethods[method]({
                     call: target,

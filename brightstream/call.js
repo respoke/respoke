@@ -293,6 +293,15 @@ brightstream.Call = function (params) {
             defMedia = Q.defer();
         }
 
+        clientObj.updateTurnCredentials().done(function successHandler() {
+            pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
+            if (defModify === undefined && directConnectionOnly === true) {
+                actuallyAddDirectConnection(params);
+            }
+        }, function errorHandler(err) {
+            throw err;
+        });
+
         if (that.initiator !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
                 if (oOffer && oOffer.sdp) {
@@ -309,10 +318,6 @@ brightstream.Call = function (params) {
             }, function errorHandler(err) {
                 log.warn("Call not approved or media error.");
             });
-        }
-
-        if (defModify === undefined && directConnectionOnly === true) {
-            actuallyAddDirectConnection(params);
         }
     }
 
@@ -423,30 +428,24 @@ brightstream.Call = function (params) {
 
         log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
 
-        clientObj.updateTurnCredentials().done(function successHandler() {
-            /**
-             * @event brightstream.Call#answer
-             * @property {string} name - the event name.
-             * @property {brightstream.Call} target
-             */
-            that.fire('answer');
+        /**
+         * @event brightstream.Call#answer
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
+         */
+        that.fire('answer');
 
-            pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
-
-            /**
-             * There are a few situations in which we need to call approve automatically. Approve is for previewing
-             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-             * previewLocalMedia callback to call, we will not wait for approval.
-             */
-            if (receiveOnly !== true && directConnectionOnly === null) {
-                doAddVideo(params);
-            } else if (typeof previewLocalMedia !== 'function') {
-                that.approve();
-            }
-        }, function errorHandler(err) {
-            throw err;
-        });
+        /**
+         * There are a few situations in which we need to call approve automatically. Approve is for previewing
+         * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
+         * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
+         * previewLocalMedia callback to call, we will not wait for approval.
+         */
+        if (receiveOnly !== true && directConnectionOnly === null) {
+            doAddVideo(params);
+        } else if (typeof previewLocalMedia !== 'function') {
+            that.approve();
+        }
     };
 
     /**
