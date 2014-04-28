@@ -602,7 +602,6 @@ brightstream.SignalingChannel = function (params) {
     that.sendACK = function (params) {
         var endpoint;
         params = params || {};
-        console.log('sendACK', params);
         if (!params.signal) {
             return Q.reject("Can't send ACK, no signal was given.");
         }

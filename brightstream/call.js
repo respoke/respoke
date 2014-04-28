@@ -1312,7 +1312,6 @@ brightstream.Call = function (params) {
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {
-        console.log('signal-icecandidates', evt);
         if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
             return;
         }
