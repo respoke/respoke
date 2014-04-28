@@ -1491,9 +1491,9 @@ brightstream.SignalingChannel = function (params) {
         }
 
         // Too many of these!
-        //if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-        log.verbose('socket request', params.httpMethod, params.path, params.parameters);
-        //}
+        if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
+            log.verbose('socket request', params.httpMethod, params.path, params.parameters);
+        }
 
         if (!socket) {
             deferred.reject(new Error("Can't make websocket request: no connection."));
@@ -1506,9 +1506,9 @@ brightstream.SignalingChannel = function (params) {
             headers: {'X-App-Token': appToken}
         }), function handleResponse(response) {
             // Too many of these!
-            //if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-            log.verbose('socket response', params.httpMethod, params.path, response);
-            //}
+            if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
+                log.verbose('socket response', params.httpMethod, params.path, response);
+            }
 
             try {
                 response = JSON.parse(response);
