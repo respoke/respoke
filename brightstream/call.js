@@ -426,8 +426,6 @@ brightstream.Call = function (params) {
         pc.listen('remote-stream-received', onRemoteStreamAdded, true);
         pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
-        log.debug("I am " + (that.initiator ? '' : 'not ') + "the initiator.");
-
         /**
          * @event brightstream.Call#answer
          * @property {string} name - the event name.
@@ -753,9 +751,9 @@ brightstream.Call = function (params) {
      *
      * Get the direct connection on this call, if it exists.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.getDirectConnection
+     * @method brightstream.Call.startDirectConnection
      */
-    that.getDirectConnection = function () {
+    that.startDirectConnection = function () {
         return directConnection || null;
     };
 

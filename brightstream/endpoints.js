@@ -187,7 +187,79 @@ brightstream.Endpoint = function (params) {
     };
 
     /**
-     * Create a new Call for a voice and/or video call.
+     * Create a new audio-only call.
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.startAudioCall
+     * @param {object} params
+     * @param {RTCServers} [params.servers]
+     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * audio and/or video attached.
+     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
+     * audio and/or video attached.
+     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
+     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
+     * between local media becoming available and calling approve().
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @returns {brightstream.Call}
+     */
+    that.startAudioCall = function (params) {
+        params = params || {};
+        params.constraints = {
+            video : false,
+            audio : true,
+            optional: [],
+            mandatory: {}
+        };
+        return that.startCall(params);
+    };
+
+    /**
+     * Create a new call with audio and video.
+     * @memberof! brightstream.Endpoint
+     * @method brightstream.Endpoint.startVideoCall
+     * @param {object} params
+     * @param {RTCServers} [params.servers]
+     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * audio and/or video attached.
+     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
+     * audio and/or video attached.
+     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
+     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
+     * between local media becoming available and calling approve().
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @returns {brightstream.Call}
+     */
+    that.startVideoCall = function (params) {
+        params = params || {};
+        params.constraints = {
+            video : true,
+            audio : true,
+            optional: [],
+            mandatory: {}
+        };
+        return that.startCall(params);
+    };
+
+    /**
+     * Create a new call.
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.call
      * @param {object} params
@@ -212,7 +284,7 @@ brightstream.Endpoint = function (params) {
      * all connections belonging to this endpoint.
      * @returns {brightstream.Call}
      */
-    that.call = function (params) {
+    that.startCall = function (params) {
         var call = null;
         var clientObj = brightstream.getClient(client);
         var combinedCallSettings = clientObj.getCallSettings();
@@ -312,9 +384,11 @@ brightstream.Endpoint = function (params) {
     /**
      * Create a new DirectConnection.  This method creates a new Call as well, attaching this DirectConnection to
      * it for the purposes of creating a peer-to-peer link for sending data such as messages to the other endpoint.
-     * Information sent through a DirectConnection is not handled by the cloud infrastructure.
+     * Information sent through a DirectConnection is not handled by the cloud infrastructure.  If there is already
+     * a direct connection open, this method will resolve the promise with that direct connection instead of
+     * attempting to create a new one.
      * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.getDirectConnection
+     * @method brightstream.Endpoint.startDirectConnection
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -330,7 +404,7 @@ brightstream.Endpoint = function (params) {
      * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
-    that.getDirectConnection = function (params) {
+    that.startDirectConnection = function (params) {
         params = params || {};
         var clientObj = brightstream.getClient(client);
         var combinedConnectionSettings = clientObj.getCallSettings();
@@ -343,7 +417,7 @@ brightstream.Endpoint = function (params) {
             return deferred.promise;
         }
 
-        log.trace('Endpoint.getDirectConnection', params);
+        log.trace('Endpoint.startDirectConnection', params);
         if (params.initiator === undefined) {
             params.initiator = true;
         }
@@ -564,13 +638,76 @@ brightstream.Connection = function (params) {
      * Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered
      * by another connection of this Endpoint.
      * @memberof! brightstream.Connection
-     * @method brightstream.Connection.call
+     * @method brightstream.Connection.startCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
      * audio and/or video attached.
      * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @returns {brightstream.Call}
+     */
+    that.startCall = function (params) {
+        params = params || {};
+        params.connectionId = that.id;
+        return that.getEndpoint().startCall(params);
+    };
+
+    /**
+     * Create a new audio-only call.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.startAudioCall
+     * @param {object} params
+     * @param {RTCServers} [params.servers]
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * element with the remote
+     * audio and/or video attached.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @returns {brightstream.Call}
+     */
+    that.startAudioCall = function (params) {
+        params = params || {};
+        params.connectionId = that.id;
+        params.constraints = {
+            video : false,
+            audio : true,
+            optional: [],
+            mandatory: {}
+        };
+        return that.startCall(params);
+    };
+
+    /**
+     * Create a new call with audio and video.
+     * @memberof! brightstream.Connection
+     * @method brightstream.Connection.startVideoCall
+     * @param {object} params
+     * @param {RTCServers} [params.servers]
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * element with the remote
      * audio and/or video attached.
      * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
      * @param {function} [params.onStats] - Callback for receiving statistical information.
@@ -585,7 +722,7 @@ brightstream.Connection = function (params) {
      * between local media becoming available and calling approve().
      * @returns {brightstream.Call}
      */
-    that.call = function (params) {
+    that.startVideoCall = function (params) {
         params = params || {};
         params.connectionId = that.id;
         return that.getEndpoint().call(params);
@@ -597,7 +734,7 @@ brightstream.Connection = function (params) {
      * DirectConnection to it for the purposes of creating a peer-to-peer link for sending data such as messages to
      * the other endpoint. Information sent through a DirectConnection is not handled by the cloud infrastructure.
      * @memberof! brightstream.Connection
-     * @method brightstream.Connection.getDirectConnection
+     * @method brightstream.Connection.startDirectConnection
      * @param {object} params
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -610,10 +747,10 @@ brightstream.Connection = function (params) {
      * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
-    that.getDirectConnection = function (params) {
+    that.startDirectConnection = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return that.getEndpoint().getDirectConnection(params);
+        return that.getEndpoint().startDirectConnection(params);
     };
 
     /**
@@ -738,7 +875,7 @@ brightstream.User = function (params) {
             endpoint = clientObj.getEndpoint({id: params.endpointId});
             try {
                 callSettings = clientObj.getCallSettings();
-                call = endpoint.call({
+                call = endpoint.startCall({
                     callSettings: callSettings,
                     id: params.id,
                     initiator: false

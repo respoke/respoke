@@ -822,47 +822,47 @@ brightstream.SignalingChannel = function (params) {
         }
 
         // Only create if this signal is an offer.
+        Q.fcall(function makePromise() {
+            toCreate = (signal.signalType === 'offer');
+            if (signal.target === 'call') {
+                target = clientObj.user.getCall({
+                    id: signal.sessionId,
+                    endpointId: signal.endpointId,
+                    create: toCreate
+                });
+            }
 
-        toCreate = (signal.signalType === 'offer' && signal.target === 'call');
-        target = clientObj.user.getCall({
-            id: signal.sessionId,
-            endpointId: signal.endpointId,
-            create: toCreate
-        });
-
-        if (!target) {
-            toCreate = (signal.signalType === 'offer' && signal.target === 'directConnection');
             endpoint = clientObj.getEndpoint({
                 id: signal.endpointId
             });
 
-            endpoint.getDirectConnection({
-                create: toCreate,
-                initiator: !toCreate
-            }).done(function successHandler(directConnection) {
-                target = directConnection.call;
-
-                if (!target) {
-                    // orphaned signal
-                    log.warn("Couldn't associate signal with a call.", signal);
-                    return;
-                }
-
-                method += firstUpper(signal.signalType);
-                routingMethods[method]({
-                    call: target,
-                    signal: signal
+            return endpoint.directConnection ? endpoint.directConnection.call : target;
+        }).then(function successHandler(target) {
+            if (target) {
+                return Q.fcall(function () {
+                    return target;
                 });
-            }, function errorHandler(err) {
-                throw new Error(err.message);
-            });
-            return;
-        }
+            }
 
-        method += firstUpper(signal.signalType);
-        routingMethods[method]({
-            call: target,
-            signal: signal
+            return endpoint.startDirectConnection({
+                create: (signal.signalType === 'offer'),
+                initiator: (signal.signalType !== 'offer')
+            });
+        }).done(function successHandler(target) {
+            target = target.call || target;
+            if (!target) {
+                // orphaned signal
+                log.warn("Couldn't associate signal with a call.", signal);
+                return;
+            }
+
+            method += firstUpper(signal.signalType);
+            routingMethods[method]({
+                call: target,
+                signal: signal
+            });
+        }, function errorHandler(err) {
+            throw new Error(err.message);
         });
     };
 

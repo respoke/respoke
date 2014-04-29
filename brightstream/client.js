@@ -401,8 +401,8 @@ brightstream.Client = function (params) {
      * Send a message to an endpoint.
      * @memberof! brightstream.Client
      * @method brightstream.Client.sendMessage
-     * @param {string} endpointId - The endpoint id of the recipient.
      * @param {object} params
+     * @param {string} params.endpointId - The endpoint id of the recipient.
      * @param {string} [params.connectionId] - The optional connection id of the receipient. If not set, message will be
      * broadcast to all connections for this endpoint.
      * @param {string} params.message - a string message.
@@ -419,7 +419,7 @@ brightstream.Client = function (params) {
     /**
      * Place an audio and/or video call to an endpoint.
      * @memberof! brightstream.Client
-     * @method brightstream.Client.call
+     * @method brightstream.Client.startCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {RTCServers} [params.servers]
@@ -444,10 +444,10 @@ brightstream.Client = function (params) {
      * all connections belonging to this endpoint.
      * @return {brightstream.Call}
      */
-    that.call = function (params) {
+    that.startCall = function (params) {
         var endpoint = that.getEndpoint({id: params.endpointId});
         delete params.endpointId;
-        return endpoint.call(params);
+        return endpoint.startCall(params);
     };
 
     /**
