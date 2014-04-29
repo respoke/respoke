@@ -66,7 +66,7 @@ brightstream.EventEmitter = function (params) {
         eventList[eventType] = eventList[eventType] || [];
         listener.isInternal = !!isInternal; // boolify
 
-        if (typeof listener === 'function' && eventList[eventType].map(function (a) {
+        if (typeof listener === 'function' && eventList[eventType].map(function eachListener(a) {
             return a.toString();
         }).indexOf(listener.toString()) === -1) {
             eventList[eventType].push(listener);
@@ -163,7 +163,7 @@ brightstream.EventEmitter = function (params) {
             return false;
         }
 
-        return !eventList[eventType].every(function (listener) {
+        return !eventList[eventType].every(function eachListener(listener) {
             return listener.isInternal;
         });
     };

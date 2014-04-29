@@ -41,7 +41,7 @@ brightstream.LocalMedia = function (params) {
      * @name id
      * @type {string}
      */
-    that.id = brightstream.makeUniqueID().toString();
+    that.id = brightstream.makeGUID();
 
     /**
      * @memberof! brightstream.LocalMedia
@@ -351,7 +351,7 @@ brightstream.LocalMedia = function (params) {
         if (videoIsMuted) {
             return;
         }
-        stream.getVideoTracks().forEach(function (track) {
+        stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -373,7 +373,7 @@ brightstream.LocalMedia = function (params) {
         if (!videoIsMuted) {
             return;
         }
-        stream.getVideoTracks().forEach(function (track) {
+        stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
@@ -395,7 +395,7 @@ brightstream.LocalMedia = function (params) {
         if (audioIsMuted) {
             return;
         }
-        stream.getAudioTracks().forEach(function (track) {
+        stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -417,7 +417,7 @@ brightstream.LocalMedia = function (params) {
         if (!audioIsMuted) {
             return;
         }
-        stream.getAudioTracks().forEach(function (track) {
+        stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**

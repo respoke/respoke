@@ -164,13 +164,13 @@ brightstream.MediaStats = function (params) {
          * extract the ssrcs from the sdp, because it isn't anwhere else.
          * we will use them to map results to audio/video etc
          */
-        Object.keys(sdp).forEach(function (side) {
+        Object.keys(sdp).forEach(function eachKey(side) {
             var rsdp = sdp[side];
             // filet the sdp
             var lines = rsdp.split("\r\n");
             var mediaType = null;
 
-            Object.keys(lines).forEach(function (lineIndex) {
+            Object.keys(lines).forEach(function lineNum(lineIndex) {
                 var line = lines[lineIndex];
                 var lbits = null;
                 var ssrc = null;
@@ -191,11 +191,11 @@ brightstream.MediaStats = function (params) {
         });
 
         if (params.onStats) {
-            timer = setInterval(function () {
-                that.getStats().done(function (report) {
+            timer = setInterval(function statsTimerHandler() {
+                that.getStats().done(function successHandler(report) {
                     params.onStats(report);
-                }, function () {
-                    log.error("error in getStats");
+                }, function errorHandler(err) {
+                    log.error("error in getStats", err);
                 });
             }, statsInterval);
         } else {
@@ -225,10 +225,10 @@ brightstream.MediaStats = function (params) {
             args.push(null);
         }
 
-        args.push(function (stats) {
+        args.push(function successHandler(stats) {
             deferred.resolve(buildStats(stats));
         });
-        args.push(function (err) {
+        args.push(function errorHandler(err) {
             log.error(err);
             deferred.reject(new Error("Can't get stats."));
         });
@@ -265,10 +265,10 @@ brightstream.MediaStats = function (params) {
             }
         };
 
-        Object.keys(interestingStats).forEach(function (statType) {
+        Object.keys(interestingStats).forEach(function eachStatType(statType) {
             var eachStat = {};
             var rule = interestingStats[statType];
-            var report = results.filter(function (result) {
+            var report = results.filter(function eachResult(result) {
                 var typeMatch = (result.type === rule.type);
                 var keyMatch = (result.stat(rule.match.key) === rule.match.value);
                 return (typeMatch && keyMatch);
@@ -280,7 +280,7 @@ brightstream.MediaStats = function (params) {
                     eachStat.deltaT = eachStat.timestamp - oldStats[statType].timestamp;
                 }
 
-                rule.keys.forEach(function (key) {
+                rule.keys.forEach(function eachKey(key) {
                     eachStat[key] = report[0].stat(key);
 
                     if (deltas[key] && oldStats) {

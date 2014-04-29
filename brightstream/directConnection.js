@@ -38,7 +38,7 @@ brightstream.DirectConnection = function (params) {
     var that = brightstream.EventEmitter(params);
     delete that.client;
     that.className = 'brightstream.DirectConnection';
-    that.id = brightstream.makeUniqueID().toString();
+    that.id = brightstream.makeGUID();
 
     if (!that.call.initiator) {
         that.call.initiator = false;

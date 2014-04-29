@@ -159,7 +159,7 @@ brightstream.Endpoint = function (params) {
      * @type {Array<brightstream.Connection>}
      */
     that.connections = [];
-    clientObj.listen('disconnect', function () {
+    clientObj.listen('disconnect', function disconnectHandler() {
         that.connections = [];
     });
 
@@ -180,30 +180,6 @@ brightstream.Endpoint = function (params) {
         return signalingChannel.sendMessage({
             connectionId: params.connectionId,
             message: params.message,
-            recipient: that,
-            onSuccess: params.onSuccess,
-            onError: params.onError
-        });
-    };
-
-    /**
-     * Send a signal to the endpoint.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.sendSignal
-     * @param {object} params
-     * @param {object|string} params.signal
-     * @param {string} [params.connectionId]
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @private
-     * @returns {Promise}
-     */
-    that.sendSignal = function (params) {
-        params = params || {};
-
-        return signalingChannel.sendSignal({
-            connectionId: params.connectionId,
-            signal: params.signal,
             recipient: that,
             onSuccess: params.onSuccess,
             onError: params.onError
@@ -264,37 +240,52 @@ brightstream.Endpoint = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
-            signalParams.type = 'offer';
+            signalParams.signalType = 'offer';
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams);
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't place a call.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
         };
         params.signalAnswer = function (signalParams) {
-            signalParams.type = 'answer';
+            signalParams.signalType = 'answer';
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams);
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't answer the call.", err.message, err.stack);
+                signalParams.call.hangup({signal: false});
+            });
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'call';
             signalParams.connectionId = signalParams.connectionId;
             signalParams.recipient = that;
-            signalingChannel.sendConnected(signalParams);
+            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send connected.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
         };
         params.signalModify = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendModify(signalParams);
+            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send modify.", err.message, err.stack);
+            });
         };
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendCandidate(signalParams);
+            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send candidate.", err.message, err.stack);
+            });
         };
         params.signalTerminate = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendBye(signalParams);
+            signalingChannel.sendBye(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send hangup.", err.message, err.stack);
+            });
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending report!");
@@ -370,31 +361,44 @@ brightstream.Endpoint = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
-            signalParams.type = 'offer';
+            signalParams.signalType = 'offer';
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams);
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't place a call.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendConnected(signalParams);
+            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send connected.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
         };
         params.signalAnswer = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalParams.type = 'answer';
-            signalingChannel.sendSDP(signalParams);
+            signalParams.signalType = 'answer';
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't answer the call.", err.message, err.stack);
+                signalParams.call.hangup({signal: false});
+            });
         };
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendCandidate(signalParams);
+            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send candidate.", err.message, err.stack);
+            });
         };
         params.signalTerminate = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendBye(signalParams);
+            signalingChannel.sendBye(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send bye.", err.message, err.stack);
+            });
         };
         params.signalReport = function (signalParams) {
             signalParams.report.target = 'directConnection';
@@ -404,7 +408,7 @@ brightstream.Endpoint = function (params) {
         params.directConnectionOnly = true;
 
         call = brightstream.Call(params);
-        call.listen('direct-connection', function (evt) {
+        call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
             if (params.initiator !== true) {
                 if (!clientObj.user.hasListeners('direct-connection') &&
@@ -416,7 +420,7 @@ brightstream.Endpoint = function (params) {
                 }
 
                 deferred.resolve(that.directConnection);
-                that.directConnection.listen('close', function (evt) {
+                that.directConnection.listen('close', function closeHandler(evt) {
                     that.directConnection = undefined;
                 }, true);
             }
@@ -482,7 +486,7 @@ brightstream.Endpoint = function (params) {
             throw new Error("Can't find a connection without the connectionId.");
         }
 
-        that.connections.every(function (conn) {
+        that.connections.every(function eachConnection(conn) {
             if (conn.id === params.connectionId) {
                 connection = conn;
                 return false;
@@ -554,23 +558,6 @@ brightstream.Connection = function (params) {
         params = params || {};
         params.connectionId = that.id;
         return that.getEndpoint().sendMessage(params);
-    };
-
-    /**
-     * Send a signal to this connection of an Endpoint only.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.sendSignal
-     * @param {object} params
-     * @param {object|string} params.signal
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @private
-     * @returns {Promise}
-     */
-    that.sendSignal = function (params) {
-        params = params || {};
-        params.connectionId = that.id;
-        return that.getEndpoint().sendSignal(params);
     };
 
     /**
@@ -697,7 +684,7 @@ brightstream.User = function (params) {
 
         return signalingChannel.sendPresence({
             presence: params.presence,
-            onSuccess: function (p) {
+            onSuccess: function successHandler(p) {
                 superClass.setPresence(params);
                 if (typeof params.onSuccess === 'function') {
                     params.onSuccess(p);
