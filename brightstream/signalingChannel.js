@@ -705,6 +705,26 @@ brightstream.SignalingChannel = function (params) {
         return deferred.promise;
     };
 
+    that.sendReport = function (params) {
+        params = params || {};
+        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var message = {
+            debugData: params
+        };
+
+        wsCall({
+            path: '/v1/calldebugs',
+            httpMethod: 'POST',
+            parameters: message
+        }).then(function () {
+            deferred.resolve();
+        }, function (err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    };
+
     /**
      * Send a message terminating the WebRTC session.
      * @memberof! brightstream.SignalingChannel

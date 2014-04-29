@@ -297,9 +297,9 @@ brightstream.Endpoint = function (params) {
             signalingChannel.sendBye(signalParams);
         };
         params.signalReport = function (signalParams) {
-            signalParams.report.target = 'call';
-            log.debug("Not sending report");
+            log.debug("Sending report!");
             log.debug(signalParams.report);
+            signalingChannel.sendReport(signalParams);
         };
         call = brightstream.Call(params);
 
