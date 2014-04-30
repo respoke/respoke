@@ -352,17 +352,17 @@ brightstream.Endpoint = function (params) {
                 log.error("Couldn't send candidate.", err.message, err.stack);
             });
         };
-        params.signalTerminate = function (signalParams) {
+        params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendBye(signalParams).done(null, function errorHandler(err) {
+            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending report!");
-            log.debug(signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            log.debug(signalParams);
+            //signalingChannel.sendReport(signalParams);
         };
         call = brightstream.Call(params);
 
@@ -467,11 +467,11 @@ brightstream.Endpoint = function (params) {
                 log.error("Couldn't send candidate.", err.message, err.stack);
             });
         };
-        params.signalTerminate = function (signalParams) {
+        params.signalHangup = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendBye(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send bye.", err.message, err.stack);
+            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {

@@ -29,7 +29,7 @@
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
  * @param {function} params.signalConnected - Signaling action from SignalingChannel.
  * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
- * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
@@ -241,11 +241,11 @@ brightstream.Call = function (params) {
     var localStreams = [];
     /**
      * @memberof! brightstream.Call
-     * @name toSendBye
+     * @name toSendHangup
      * @private
      * @type {boolean}
      */
-    var toSendBye = null;
+    var toSendHangup = null;
 
     /**
      * @memberof! brightstream.Call
@@ -269,7 +269,7 @@ brightstream.Call = function (params) {
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
         signalModify: params.signalModify,
-        signalTerminate: params.signalTerminate,
+        signalHangup: params.signalHangup,
         signalReport: params.signalReport,
         signalCandidate: params.signalCandidate
     });
@@ -377,7 +377,7 @@ brightstream.Call = function (params) {
         delete that.signalOffer;
         delete that.signalConnected;
         delete that.signalAnswer;
-        delete that.signalTerminate;
+        delete that.signalHangup;
         delete that.signalReport;
         delete that.signalCandidate;
         delete that.onRemoteVideo;
@@ -940,8 +940,8 @@ brightstream.Call = function (params) {
     };
 
     /**
-     * Tear down the call, release user media.  Send a bye signal to the remote party if
-     * signal is not false and we have not received a bye signal from the remote party.
+     * Tear down the call, release user media.  Send a hangup signal to the remote party if
+     * signal is not false and we have not received a hangup signal from the remote party.
      * @memberof! brightstream.Call
      * @method brightstream.Call.hangup
      * @fires brightstream.Call#hangup
@@ -953,11 +953,11 @@ brightstream.Call = function (params) {
         params = params || {};
         log.trace('hangup', directConnection);
 
-        if (toSendBye !== null) {
+        if (toSendHangup !== null) {
             log.info("call.hangup() called when call is already hung up.");
             return;
         }
-        toSendBye = false;
+        toSendHangup = false;
 
         if (!that.initiator && defApproved.promise.isPending()) {
             defApproved.reject(new Error("Call hung up before approval."));
@@ -973,19 +973,19 @@ brightstream.Call = function (params) {
         }
 
         if (pc) {
-            toSendBye = pc.close(params);
+            toSendHangup = pc.close(params);
         }
 
         /**
          * This event is fired when the call has hung up.
          * @event brightstream.Call#hangup
          * @type {brightstream.Event}
-         * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
+         * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
          */
         that.fire('hangup', {
-            sentSignal: toSendBye
+            sentSignal: toSendHangup
         });
 
         that.ignore();
@@ -1292,19 +1292,19 @@ brightstream.Call = function (params) {
     /**
      * Save the hangup reason and hang up.
      * @memberof! brightstream.Call
-     * @method brightstream.Call.listenBye
+     * @method brightstream.Call.listenHangup
      * @params {object} evt
-     * @params {object} evt.signal - The bye signal, including an optional hangup reason.
+     * @params {object} evt.signal - The hangup signal, including an optional hangup reason.
      * @private
      */
-    function listenBye(evt) {
+    function listenHangup(evt) {
         pc.report.callStoppedReason = evt.signal.reason || "Remote side hung up";
         that.hangup({signal: false});
     }
 
     that.listen('signal-offer', listenOffer, true);
     that.listen('signal-answer', listenAnswer, true);
-    that.listen('signal-bye', listenBye, true);
+    that.listen('signal-hangup', listenHangup, true);
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);

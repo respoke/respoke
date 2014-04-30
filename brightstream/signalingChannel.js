@@ -731,20 +731,20 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * Send a message terminating the WebRTC session.
+     * Send a message hanging up the WebRTC session.
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendBye
+     * @method brightstream.SignalingChannel.sendHangup
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
-     * @param {string} params.reason - The reason the session is being terminated.
+     * @param {string} params.reason - The reason the session is being hung up.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {function} [params.onError] - Error handler for this invocation of this method only.
      * @return {Promise}
      */
-    that.sendBye = function (params) {
+    that.sendHangup = function (params) {
         params = params || {};
-        params.signalType = 'bye';
+        params.signalType = 'hangup';
         return that.sendSignal(params);
     };
 
@@ -803,12 +803,12 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Call#connected
      * @fires brightstream.Call#answer
      * @fires brightstream.Call#iceCandidates
-     * @fires brightstream.Call#bye
+     * @fires brightstream.Call#hangup
      * @fires brightstream.DirectConnection#offer
      * @fires brightstream.DirectConnection#connected
      * @fires brightstream.DirectConnection#answer
      * @fires brightstream.DirectConnection#iceCandidates
-     * @fires brightstream.DirectConnection#bye
+     * @fires brightstream.DirectConnection#hangup
      * @todo TODO Make the call.set* methods accept the entire message.
      */
     that.routeSignal = function (signal) {
@@ -975,15 +975,15 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doBye
+     * @method brightstream.SignalingChannel.routingMethods.doHangup
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-bye
+     * @fires brightstream.Call#signal-hangup
      */
-    routingMethods.doBye = function (params) {
+    routingMethods.doHangup = function (params) {
         /**
-         *  We may receive bye from one or more parties after connectionId is set if the call is rejected
+         *  We may receive hangup from one or more parties after connectionId is set if the call is rejected
          *  by a connection that didn't win the call. In this case, we have to ignore the signal since
          *  we are already on a call. TODO: this should really be inside PeerConnection.
          */
@@ -991,13 +991,13 @@ brightstream.SignalingChannel = function (params) {
             return;
         }
         /**
-         * @event brightstream.Call#signal-bye
+         * @event brightstream.Call#signal-hangup
          * @type {brightstream.Event}
          * @property {object} signal
          * @property {string} name - the event name.
          * @property {brightstream.Call}
          */
-        params.call.fire('signal-bye', {
+        params.call.fire('signal-hangup', {
             signal: params.signal
         });
     };
@@ -1364,7 +1364,7 @@ brightstream.SignalingChannel = function (params) {
         that.addHandler({
             type: 'signal',
             handler: function signalHandler(message) {
-                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'bye'];
+                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'hangup'];
                 var signal = brightstream.SignalingMessage({
                     rawMessage: message
                 });

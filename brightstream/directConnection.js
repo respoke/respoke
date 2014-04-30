@@ -21,7 +21,7 @@
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
  * @param {function} params.signalConnected - Signaling action from SignalingChannel.
  * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
- * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.

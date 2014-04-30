@@ -26,7 +26,7 @@
  * @param {function} params.signalConnected - Signaling action from SignalingChannel.
  * @param {function} params.signalModify - Signaling action from SignalingChannel.
  * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
- * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
@@ -58,12 +58,12 @@ brightstream.PeerConnection = function (params) {
     that.className = 'brightstream.PeerConnection';
 
     /**
-     * Whether or not we will send a 'bye' signal to the other side during hangup.
+     * Whether or not we will send a 'hangup' signal to the other side during hangup.
      * @memberof! brightstream.PeerConnection
-     * @name toSendBye
+     * @name toSendHangup
      * @type {brightstream.Endpoint}
      */
-    var toSendBye;
+    var toSendHangup;
     /**
      * @memberof! brightstream.PeerConnection
      * @name state
@@ -215,12 +215,12 @@ brightstream.PeerConnection = function (params) {
     var signalAnswer = params.signalAnswer;
     /**
      * @memberof! brightstream.PeerConnection
-     * @name signalTerminate
+     * @name signalHangup
      * @private
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalTerminate = params.signalTerminate;
+    var signalHangup = params.signalHangup;
     /**
      * @memberof! brightstream.PeerConnection
      * @name signalReport
@@ -315,7 +315,7 @@ brightstream.PeerConnection = function (params) {
         if (that.call.initiator) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
-            signalTerminate({
+            signalHangup({
                 call: that.call
             });
             defSDPOffer.reject();
@@ -608,29 +608,29 @@ brightstream.PeerConnection = function (params) {
     }
 
     /**
-     * Tear down the call, release user media.  Send a bye signal to the remote party if
-     * signal is not false and we have not received a bye signal from the remote party.
+     * Tear down the call, release user media.  Send a hangup signal to the remote party if
+     * signal is not false and we have not received a hangup signal from the remote party.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.close
      * @fires brightstream.PeerConnection#destoy
      * @param {object} param
      * @param {boolean} [param.signal] - Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side. This is set to false by the library if we're responding to a
-     * bye signal.
+     * hangup signal.
      * @fires brightstream.PeerConnection#close
      */
     that.close = function (params) {
         params = params || {};
-        if (toSendBye !== undefined) {
+        if (toSendHangup !== undefined) {
             log.trace("PeerConnection.close got called twice.");
             return;
         }
-        toSendBye = true;
+        toSendHangup = true;
 
         if (that.call.initiator === true) {
             if (defSDPOffer.promise.isPending()) {
-                // Never send bye if we are the initiator but we haven't sent any other signal yet.
-                toSendBye = false;
+                // Never send hangup if we are the initiator but we haven't sent any other signal yet.
+                toSendHangup = false;
             }
         } else {
             if (defApproved.promise.isPending()) {
@@ -638,10 +638,10 @@ brightstream.PeerConnection = function (params) {
             }
         }
 
-        toSendBye = (typeof params.signal === 'boolean' ? params.signal : toSendBye);
-        if (toSendBye) {
-            log.info('sending bye');
-            signalTerminate({
+        toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
+        if (toSendHangup) {
+            log.info('sending hangup');
+            signalHangup({
                 call: that.call
             });
         }
@@ -655,12 +655,12 @@ brightstream.PeerConnection = function (params) {
         /**
          * @event brightstream.PeerConnection#close
          * @type {brightstream.Event}
-         * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
+         * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
          * @property {string} name - the event name.
          * @property {brightstream.PeerConnection}
          */
         that.fire('close', {
-            sentSignal: toSendBye
+            sentSignal: toSendHangup
         });
         that.ignore();
 
