@@ -290,7 +290,7 @@ brightstream.Endpoint = function (params) {
         params.signalReport = function (signalParams) {
             log.debug("Sending report!");
             log.debug(signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            //signalingChannel.sendReport(signalParams);
         };
         call = brightstream.Call(params);
 
