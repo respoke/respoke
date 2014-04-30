@@ -1150,20 +1150,6 @@ brightstream.Call = function (params) {
     }
 
     /**
-     * Get the state of the Call. 0 indicates the call has just been created. 1 indicates the call is waiting for the
-     * audio and/or video to be approved. 2 indicates the audio and/or video have been approved. 3 indicates the caller
-     * has requested the call. 4 indicates the callee has answered the call and the call is being set up. 5 indicates
-     * that audio and/or video is flowing successfully.  6 indicates the call has ended. 7 indicates the call was never
-     * successful due to an error setting up the audio and/or video.
-     * @memberof! brightstream.Call
-     * @method brightstream.Call.getState
-     * @returns {number} A number representing the current state of the call.
-     */
-    that.getState = function () {
-        return pc.getState();
-    };
-
-    /**
      * If video is muted, unmute. If not muted, mute.
      * @deprecated
      * @memberof! brightstream.Call

@@ -900,16 +900,6 @@ brightstream.PeerConnection = function (params) {
         that.report.candidatesReceived.push(params.candidate);
     };
 
-    /**
-     * Get the state of the Call
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.getState
-     * @returns {number}
-     */
-    that.getState = function () {
-        return pc ? that.state : 0;
-    };
-
     that.call.listen('signal-answer', listenAnswer, true);
     that.call.listen('signal-connected', listenConnected, true);
     that.call.listen('signal-modify', listenModify, true);

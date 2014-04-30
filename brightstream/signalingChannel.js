@@ -287,6 +287,7 @@ brightstream.SignalingChannel = function (params) {
                     log.trace("Signaling connection open to", baseURL);
                     state = 'open';
                 } else {
+                    state = 'closed';
                     deferred.reject(new Error("Couldn't authenticate app."));
                 }
             }
@@ -330,7 +331,7 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * Return the state of the signaling channel.
+     * Return the state of the signaling channel, 'new', 'open', or 'closed.'
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getState
      * @return {string} The state of the signaling channel.

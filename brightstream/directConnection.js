@@ -352,15 +352,5 @@ brightstream.DirectConnection = function (params) {
         return (dataChannel && dataChannel.readyState === 'open');
     };
 
-    /**
-     * Get the state of the connection.
-     * @memberof! brightstream.DirectConnection
-     * @method brightstream.DirectConnection.getState
-     * @returns {string}
-     */
-    that.getState = function () {
-        return pc.getState();
-    };
-
     return that;
 }; // End brightstream.DirectConnection
