@@ -61,6 +61,7 @@ class PushDocs:
                 "confluence/brightstream.js",
                 "confluence/brightstream.LocalMedia",
                 "confluence/brightstream.MediaStats",
+                "confluence/brightstream.MediaStatsParser",
                 "confluence/brightstream.Presentable",
                 "confluence/brightstream.TextMessage",
                 "confluence/brightstream.SignalingChannel",

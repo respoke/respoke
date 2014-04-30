@@ -130,7 +130,7 @@ brightstream.DirectConnection = function (params) {
          * @event brightstream.Endpoint#error
          * @type {brightstream.Event}
          * @property {object} error
-         * @property {brightstream.DirectConnection) directConnection
+         * @property {brightstream.DirectConnectionr} directConnection
          * @property {string} name - the event name.
          * @property {brightstream.DirectConnection} target
          */
@@ -306,7 +306,7 @@ brightstream.DirectConnection = function (params) {
         pc = null;
     };
 
-    /*
+    /**
      * Send a message over the datachannel in the form of a JSON-encoded plain old JavaScript object. Only one
      * attribute may be given: either a string 'message' or an object 'object'.
      * @memberof! brightstream.DirectConnection
@@ -314,8 +314,8 @@ brightstream.DirectConnection = function (params) {
      * @param {object} params
      * @param {string} [params.message] - The message to send.
      * @param {object} [params.object] - An object to send.
-     * @param [function] [params.onSuccess] - Success handler.
-     * @param [function] [params.onError] - Error handler.
+     * @param {function} [params.onSuccess] - Success handler.
+     * @param {function} [params.onError] - Error handler.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -331,7 +331,7 @@ brightstream.DirectConnection = function (params) {
         return deferred.promise;
     };
 
-    /*
+    /**
      * Expose close as reject for approve/reject workflow.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.reject

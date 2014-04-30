@@ -237,7 +237,7 @@ brightstream.Client = function (params) {
              * This event is fired the first time the library connects to the cloud infrastructure.
              * @event brightstream.Client#connect
              * @type {brightstream.Event}
-             * @property {brightstream.User}
+             * @property {brightstream.User} user
              * @property {string} name - the event name.
              * @property {brightstream.Client} target
              */

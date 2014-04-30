@@ -358,7 +358,7 @@ brightstream.PeerConnection = function (params) {
      * statistics, we'll return a promise for the stats object.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.getStats
-     * @returns {Promise<{brightstream.MediaStats}>}
+     * @returns {Promise<{brightstream.MediaStatsParser}>}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
      * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
@@ -375,7 +375,7 @@ brightstream.PeerConnection = function (params) {
 
         if (brightstream.MediaStats) {
             Q.all([defSDPOffer.promise, defSDPAnswer.promise]).done(function onSuccess() {
-                var stats = brightstream.MediaStats({
+                var stats = brightstream.MediaStatsParser({
                     peerConnection: pc,
                     interval: params.interval,
                     onStats: function statsHandler(stats) {
