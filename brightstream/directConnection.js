@@ -24,10 +24,13 @@
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
- * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
- * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages. Not usually
- * necessary to listen to this event if you are already listening to brightstream.Endpoint#message
+ * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
+ * closing the connection.
+ * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for the developer to be notified about
+ * opening the connection.
+ * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for the developer to be notified
+ * about incoming messages. Not usually necessary to listen to this event if you are already listening to
+ * brightstream.Endpoint#message.
  * @returns {brightstream.DirectConnection}
  */
 /*global brightstream: false */
@@ -72,10 +75,13 @@ brightstream.DirectConnection = function (params) {
      * Register any event listeners passed in as callbacks
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.saveParameters
-     * @param {function} params
-     * @param {function} [params.onClose] - Callback for the developer to be notified about closing the connection.
-     * @param {function} [params.onOpen] - Callback for the developer to be notified about opening the connection.
-     * @param {function} [params.onMessage] - Callback for the developer to be notified about incoming messages.
+     * @param {object} params
+     * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified
+     * about closing the connection.
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for the developer to be notified about
+     * opening the connection.
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for the developer to be notified
+     * about incoming messages.
      * @param {array} [params.servers] - Additional resources for determining network connectivity between two
      * endpoints.
      * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
@@ -87,6 +93,19 @@ brightstream.DirectConnection = function (params) {
         that.listen('close', params.onClose);
         that.listen('message', params.onMessage);
         pc.listen('direct-connection', listenDataChannel, true);
+        pc.listen('stats', function fireStats(evt) {
+            /**
+             * This event is fired every time statistical information about the direct connection
+             * becomes available.
+             * @event brightstream.DirectConnection#stats
+             * @type {brightstream.Event}
+             * @property {object} stats - an object with stats in it.
+             * @property {brightstream.DirectConnection} target
+             * @property {string} name - the event name.
+             */
+            that.fire('stats', {stats: evt.stats});
+        }, true);
+
     }
     saveParameters(params);
 
@@ -102,10 +121,13 @@ brightstream.DirectConnection = function (params) {
      * @returns {Promise<object>}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [params.onStats] - An optional callback to receive the stats. If no callback is provided,
-     * the connection's report will contain stats but the developer will not receive them on the client-side.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive the
+     * stats if the Brightstream stats module is loaded. If no callback is provided, the connection's report will
+     * contain stats but the developer will not receive them on the client-side.
+     * @param {brightstream.DirectConnection.statsSuccessHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation of
+     * this method only.
      */
     function getStats(params) {
         if (pc && pc.getStats) {
@@ -130,7 +152,7 @@ brightstream.DirectConnection = function (params) {
          * @event brightstream.Endpoint#error
          * @type {brightstream.Event}
          * @property {object} error
-         * @property {brightstream.DirectConnectionr} directConnection
+         * @property {brightstream.DirectConnection} directConnection
          * @property {string} name - the event name.
          * @property {brightstream.DirectConnection} target
          */
@@ -249,9 +271,9 @@ brightstream.DirectConnection = function (params) {
      * @method brightstream.DirectConnection.accept
      * @fires brightstream.DirectConnection#accept
      * @param {object} params
-     * @param {function} [params.onOpen]
-     * @param {function} [params.onClose]
-     * @param {function} [params.onMessage]
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen]
+     * @param {brightstream.DirectConnection.onClose} [params.onClose]
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage]
      */
     that.accept = function (params) {
         params = params || {};
@@ -314,8 +336,8 @@ brightstream.DirectConnection = function (params) {
      * @param {object} params
      * @param {string} [params.message] - The message to send.
      * @param {object} [params.object] - An object to send.
-     * @param {function} [params.onSuccess] - Success handler.
-     * @param {function} [params.onError] - Error handler.
+     * @param {brightstream.DirectConnection.sendHandler} [params.onSuccess] - Success handler.
+     * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -354,3 +376,47 @@ brightstream.DirectConnection = function (params) {
 
     return that;
 }; // End brightstream.DirectConnection
+
+/**
+ * Called when the direct connection is closed.  This callback fires every time brightstream.DirectConnection#close
+ * fires.
+ * @callback brightstream.DirectConnection.onClose
+ * @param {brightstream.Event} evt
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.DirectConnection} evt.target
+ */
+/**
+ * Called when the direct connection is opened.  This callback fires every time brightstream.DirectConnection#open
+ * fires.
+ * @callback brightstream.DirectConnection.onOpen
+ * @param {brightstream.Event} evt
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.DirectConnection} evt.target
+ */
+/**
+ * Called when a message is received over the direct connection.  This callback fires every time
+ * brightstream.DirectConnection#message fires.
+ * @callback brightstream.DirectConnection.onMessage
+ * @param {brightstream.Event} evt
+ * @param {object} evt.message
+ * @param {brightstream.Endpoint} evt.endpoint
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.DirectConnection} evt.target
+ */
+/**
+ * Handle an error that resulted from a method call.
+ * @callback brightstream.DirectConnection.errorHandler
+ * @param {Error} err
+ */
+/**
+ * Handle the successful kick-off of stats on a call.
+ * @callback brightstream.DirectConnection.statsSuccessHandler
+ * @param {brightstream.Event} evt
+ * @param {object} evt.stats - an object with stats in it.
+ * @param {brightstream.DirectConnection} evt.target
+ * @param {string} evt.name - the event name.
+ */
+/**
+ * Handle sending successfully.
+ * @callback brightstream.DirectConnection.sendHandler
+ */

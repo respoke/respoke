@@ -29,9 +29,9 @@
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
- * @param {function} [params.onStats] - Callback for the developer to receive statistics about the call. This is only
- * used if call.getStats() is called and the stats module is loaded.
+ * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for the developer to receive
+ * statistics about the call. This is only used if call.getStats() is called and the stats module is loaded.
  * @param {object} [params.callSettings]
  * @param {object} [params.pcOptions]
  * @param {object} [params.offerOptions]
@@ -120,7 +120,7 @@ brightstream.PeerConnection = function (params) {
      * @memberof! brightstream.PeerConnection
      * @name previewLocalMedia
      * @private
-     * @type {function}
+     * @type {brightstream.Call.previewLocalMedia}
      * @desc A callback provided by the developer that we'll call after receiving local media and before
      * approve() is called.
      */
@@ -361,8 +361,10 @@ brightstream.PeerConnection = function (params) {
      * @returns {Promise<{brightstream.MediaStatsParser}>}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @fires brightstream.PeerConnection#stats
      */
     function getStats(params) {
@@ -395,7 +397,7 @@ brightstream.PeerConnection = function (params) {
                 that.listen('close', function closeHandler(evt) {
                     stats.stopStats();
                 }, true);
-                deferred.resolve(stats);
+                deferred.resolve();
             }, function onError(err) {
                 log.warn("Call rejected.");
             });
@@ -469,7 +471,7 @@ brightstream.PeerConnection = function (params) {
             });
         };
 
-        /**
+        /*
          * Expose some methods on the PeerConnection.
          */
         that.getRemoteStreams = pc.getRemoteStreams.bind(pc);

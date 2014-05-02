@@ -31,15 +31,15 @@
  * operation and will limit the services you will be able to use.
  * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
  * when a disconnect occurs.
- * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
- * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
- * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
- * @param {function} [params.onConnect] - Callback for Client connect.
- * @param {function} [params.onDisconnect] - Callback for Client disconnect.
- * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
- * @param {function} [params.onCall] - Callback for when this client's user receives a call.
- * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
- * direct connection.
+ * @param {brightstream.Client.onUserJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
+ * @param {brightstream.Client.onUserLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
+ * @param {brightstream.Client.onClientMessage} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+ * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
+ * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
+ * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+ * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
+ * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user receives a request
+ * for a direct connection.
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
@@ -98,14 +98,15 @@ brightstream.Client = function (params) {
      * operation and will limit the services you will be able to use.
      * @property {boolean} [reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
      * when a disconnect occurs.
-     * @property {function} [onJoin] - Callback for when this client's endpoint joins a group.
-     * @property {function} [onLeave] - Callback for when this client's endpoint leaves a group.
-     * @property {function} [onMessage] - Callback for when any message is received from anywhere on the system.
-     * @property {function} [onConnect] - Callback for Client connect.
-     * @property {function} [onDisconnect] - Callback for Client disconnect.
-     * @property {function} [onReconnect] - Callback for Client reconnect. Not Implemented.
-     * @property {function} [onCall] - Callback for when this client's user receives a call.
-     * @property {function} [onDirectConnection] - Callback for when this client's user receives a request for a
+     * @property {onUserJoin} [onJoin] - Callback for when this client's endpoint joins a group.
+     * @property {onUserLeave} [onLeave] - Callback for when this client's endpoint leaves a group.
+     * @property {brightstream.Client.onClientMessage} [onMessage] - Callback for when any message is received from anywhere on the system.
+     * @property {brightstream.Client.onConnect} [onConnect] - Callback for Client connect.
+     * @property {brightstream.Client.onDisconnect} [onDisconnect] - Callback for Client disconnect.
+     * @property {brightstream.Client.onReconnect} [onReconnect] - Callback for Client reconnect. Not Implemented.
+     * @property {brightstream.Client.onCall} [onCall] - Callback for when this client's user receives a call.
+     * @property {brightstream.Client.onDirectConnection} [onDirectConnection] - Callback for when this client's user receives a request
+     * for a direct connection.
      */
     var app = {
         baseURL: params.baseURL,
@@ -191,8 +192,9 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @method brightstream.Client.connect
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation
+     * of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
      * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
      * brightstream.connect, brightstream.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
@@ -207,15 +209,17 @@ brightstream.Client = function (params) {
      * operation and will limit the services you will be able to use.
      * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
      * when a disconnect occurs.
-     * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
-     * @param {function} [params.onLeave] - Callback for when this client's endpoint leaves a group.
-     * @param {function} [params.onMessage] - Callback for when any message is received from anywhere on the system.
-     * @param {function} [params.onConnect] - Callback for Client connect.
-     * @param {function} [params.onDisconnect] - Callback for Client disconnect.
-     * @param {function} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
-     * @param {function} [params.onCall] - Callback for when this client's user receives a call.
-     * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
-     * direct connection.
+     * @param {brightstream.Client.onUserJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
+     * @param {brightstream.Client.onUserLeave} [params.onLeave] - Callback for when this client's endpoint leaves
+     * a group.
+     * @param {brightstream.Client.onClientMessage} [params.onMessage] - Callback for when any message is
+     * received from anywhere on the system.
+     * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
+     * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
+     * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+     * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
+     * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this
+     * client's user receives a request for a direct connection.
      * @returns {Promise<brightstream.User>}
      * @fires brightstream.Client#connect
      */
@@ -255,8 +259,8 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.actuallyConnect
      * @private
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
      * @returns {Promise<brightstream.User>}
      */
     function actuallyConnect(params) {
@@ -323,8 +327,8 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.disconnect
      * @returns {Promise}
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {disconnectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
      * @fires brightstream.Client#disconnect
      */
     that.disconnect = function (params) {
@@ -406,8 +410,8 @@ brightstream.Client = function (params) {
      * @param {string} [params.connectionId] - The optional connection id of the receipient. If not set, message will be
      * broadcast to all connections for this endpoint.
      * @param {string} params.message - a string message.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {sendHandler} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -425,12 +429,14 @@ brightstream.Client = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
-     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
-     * audio and/or video attached.
-     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
-     * audio and/or video attached.
-     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
-     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video element
+     * with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element
+     * with the remote audio and/or video attached.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
+     * up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -438,8 +444,8 @@ brightstream.Client = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
      * @return {brightstream.Call}
@@ -456,8 +462,10 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.updateTurnCredentials
      * @returns {Promise}
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.SignalingChannel.turnSuccessHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @private
      */
     that.updateTurnCredentials = function () {
@@ -541,11 +549,14 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.join
      * @param {object} params
      * @param {string} params.id - The name of the group.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @param {function} [params.onMessage] - Message handler for messages from this group only.
-     * @param {function} [params.onJoin] - Join event listener for endpoints who join this group only.
-     * @param {function} [params.onLeave] - Leave event listener for endpoints who leave this group only.
+     * @param {brightstream.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @param {brightstream.Group.onMessage} [params.onMessage] - Message handler for messages from this group only.
+     * @param {brightstream.Group.onJoin} [params.onJoin] - Join event listener for endpoints who join this group only.
+     * @param {brightstream.Group.onLeave} [params.onLeave] - Leave event listener for endpoints who leave
+     * this group only.
      * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
      * @fires brightstream.User#join
      */
@@ -569,7 +580,7 @@ brightstream.Client = function (params) {
             /**
              * This event is fired every time the currently logged-in endpoint joins a group. If the endpoint leaves
              * a group, this event will be fired again on the next time the endpoint joins the group.
-             * @event {brightstream.User#join}
+             * @event brightstream.User#join
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
              * @property {string} name - the event name.
@@ -863,3 +874,103 @@ brightstream.Client = function (params) {
 
     return that;
 }; // End brightstream.Client
+
+/**
+ * Handle sending successfully.
+ * @callback brightstream.Client.successHandler
+ */
+/**
+ * Handle joining a group successfully. This callback is called only once when Client.join() is called.
+ * @callback brightstream.Client.joinHandler
+ * @param {brightstream.Group} group
+ */
+/**
+ * Receive notification that the logged-in user has joined a group. This callback is called everytime
+ * brightstream.User#join is fired.
+ * @callback brightstream.Client.onUserJoin
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Group} evt.group
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.User} evt.target
+ */
+/**
+ * Receive notification that the logged-in user has left a group. This callback is called everytime
+ * brightstream.User#leave is fired.
+ * @callback brightstream.Client.onUserLeave
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Group} evt.group
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.User} evt.target
+ */
+/**
+ * Receive notification that a message has been received. This callback is called every time
+ * brightstream.Client#message is fired.
+ * @callback brightstream.Client.onClientMessage
+ * @param {brightstream.Event} evt
+ * @param {brightstream.TextMessage} evt.message
+ * @param {brightstream.Group} [evt.group] - If the message is to a group we already know about,
+ * this will be set. If null, the developer can use client.join({id: evt.message.header.channel}) to join
+ * the group. From that point forward, Group#message will fire when a message is received as well. If
+ * group is undefined instead of null, the message is not a group message at all.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Client} evt.target
+ */
+/**
+ * Receive notification that the logged-in user is receiving a call from a remote party. This callback is called every
+ * time brightstream.User#call is fired.
+ * @callback brightstream.Client.onCall
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Call} evt.call
+ * @param {brightstream.Endpoint} evt.endpoint
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.User} evt.target
+ */
+/**
+ * Receive notification that the logged-in user is receiving a request for a direct connection from a remote party.
+ * This callback is called every time brightstream.User#direct-connection is fired.
+ * @callback brightstream.Client.onDirectConnection
+ * @param {brightstream.Event} evt
+ * @param {brightstream.DirectConnection} evt.directConnection
+ * @param {brightstream.Endpoint} evt.endpoint
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * Receive notification Brightstream has successfully connected to the cloud. This callback is called every time
+ * brightstream.Client#connect is fired.
+ * @callback brightstream.Client.onConnect
+ * @param {brightstream.Event} evt
+ * @param {brightstream.User} evt.user
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Client} evt.target
+ */
+/**
+ * Receive notification Brightstream has successfully disconnected from the cloud. This callback is called every time
+ * brightstream.Client#disconnect is fired.
+ * @callback brightstream.Client.onDisconnect
+ * @param {brightstream.Event} evt
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Client} evt.target
+ */
+/**
+ * Receive notification Brightstream has successfully reconnected to the cloud. This callback is called every time
+ * brightstream.Client#reconnect is fired.
+ * @callback brightstream.Client.onReconnect
+ * @param {brightstream.Event} evt
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Client} evt.target
+ */
+/**
+ * Handle disconnection to the cloud successfully.
+ * @callback brightstream.Client.disconnectSuccessHandler
+ */
+/**
+ * Handle an error that resulted from a method call.
+ * @callback brightstream.Client.errorHandler
+ * @params {Error} err
+ */
+/**
+ * Handle connection to the cloud successfully.
+ * @callback brightstream.Client.connectSuccessHandler
+ * @param {brightstream.User} user
+ */

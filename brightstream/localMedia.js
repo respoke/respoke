@@ -141,7 +141,7 @@ brightstream.LocalMedia = function (params) {
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.saveParameters
      * @param {object} params
-     * @param {function} [params.onHangup]
+     * @param {brightstream.Call.onHangup} [params.onHangup]
      * @param {object} [params.callSettings]
      * @param {object} [params.constraints]
      * @param {array} [params.servers]

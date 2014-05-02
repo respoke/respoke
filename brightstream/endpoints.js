@@ -170,8 +170,10 @@ brightstream.Endpoint = function (params) {
      * @param {object} params
      * @param {string} params.message
      * @param {string} [params.connectionId]
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of this
+     * method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
+     * only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -192,12 +194,17 @@ brightstream.Endpoint = function (params) {
      * @method brightstream.Endpoint.startAudioCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
-     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * element with the remote
      * audio and/or video attached.
-     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
-     * audio and/or video attached.
-     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
-     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -205,8 +212,6 @@ brightstream.Endpoint = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
      * @returns {brightstream.Call}
@@ -228,12 +233,17 @@ brightstream.Endpoint = function (params) {
      * @method brightstream.Endpoint.startVideoCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
-     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * element with the remote
      * audio and/or video attached.
-     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
-     * audio and/or video attached.
-     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
-     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -241,8 +251,6 @@ brightstream.Endpoint = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
      * @returns {brightstream.Call}
@@ -263,14 +271,19 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.call
      * @param {object} params
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * element with the remote
+     * audio and/or video attached.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
-     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
-     * audio and/or video attached.
-     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
-     * audio and/or video attached.
-     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
-     * @param {function} [params.onStats] - Callback for receiving statistical information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -278,8 +291,6 @@ brightstream.Endpoint = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
      * @returns {brightstream.Call}
@@ -390,13 +401,16 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.startDirectConnection
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @param {function} [params.onOpen] - A callback for receiving notification of when the DirectConnection is
-     * open and ready to be used.
-     * @param {function} [params.onClose] - A callback for receiving notification of when the DirectConnection
-     * is closed and the two Endpoints are disconnected.
-     * @param {function} [params.onMessage] - A callback for receiving messages sent through the DirectConnection.
+     * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
+     * the DirectConnection is open and ready to be used.
+     * @param {brightstream.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
+     * when the DirectConnection is closed and the two Endpoints are disconnected.
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
+     * through the DirectConnection.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
      * @param {string} [params.connectionId] - An optional connection ID to use for this connection. This allows
      * the connection to be made to a specific instance of an endpoint in the case that the same endpoint is logged
@@ -517,7 +531,7 @@ brightstream.Endpoint = function (params) {
         var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
         var idList;
 
-        /**
+        /*
          * Sort the connections array by the priority of the value of the presence of that
          * connectionId. This will cause the first element in the list to be the id of the
          * session with the highest priority presence so we can access it by the 0 index.
@@ -624,8 +638,10 @@ brightstream.Connection = function (params) {
      * @method brightstream.Connection.sendMessage
      * @param {object} params
      * @param {string} params.message
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation
+     * of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -640,11 +656,19 @@ brightstream.Connection = function (params) {
      * @memberof! brightstream.Connection
      * @method brightstream.Connection.startCall
      * @param {object} params
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * element with the remote
+     * audio and/or video attached.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
-     * @param {function} [params.onLocalVideo] - Callback for receiving an HTML5 Video element with the local
-     * audio and/or video attached.
-     * @param {function} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element with the remote
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -709,8 +733,10 @@ brightstream.Connection = function (params) {
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {function} [params.onHangup] - Callback for being notified when the call has been hung up
-     * @param {function} [params.onStats] - Callback for receiving statistical information.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has
+     * been hung up
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -718,8 +744,6 @@ brightstream.Connection = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
      * @returns {brightstream.Call}
      */
     that.startVideoCall = function (params) {
@@ -736,13 +760,16 @@ brightstream.Connection = function (params) {
      * @memberof! brightstream.Connection
      * @method brightstream.Connection.startDirectConnection
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
-     * @param {function} [params.onOpen] - A callback for receiving notification of when the DirectConnection is
-     * open and ready to be used.
-     * @param {function} [params.onClose] - A callback for receiving notification of when the DirectConnection
-     * is closed and the two Endpoints are disconnected.
-     * @param {function} [params.onMessage] - A callback for receiving messages sent through the DirectConnection.
+     * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
+     * the DirectConnection is open and ready to be used.
+     * @param {brightstream.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
+     * when the DirectConnection is closed and the two Endpoints are disconnected.
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
+     * through the DirectConnection.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
      * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
@@ -810,8 +837,10 @@ brightstream.User = function (params) {
      * @method brightstream.User.setPresence
      * @param {object} params
      * @param {string} params.presence
-     * @param {function} [params.onSuccess]
-     * @param {function} [params.onError]
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.setPresence = function (params) {
@@ -957,7 +986,11 @@ brightstream.User = function (params) {
      * @memberof! brightstream.User
      * @method brightstream.User.setOnline
      * @param {object} params
-     * @param {string} params.presence - The presence to set.
+     * @param {string} [params.presence] - The presence to set.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     that.setOnline = function (params) {

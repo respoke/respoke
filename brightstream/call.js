@@ -24,17 +24,19 @@
  * required to flow peer-to-peer. If it cannot, the call will fail.
  * @param {brightstream.Endpoint} params.remoteEndpoint - The endpoint who is being called.
  * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint.
- * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
- * between local media becoming available and calling approve().
+ * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+ * wants to perform an action between local media becoming available and calling approve().
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
  * @param {function} params.signalConnected - Signaling action from SignalingChannel.
  * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
- * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
- * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
+ * video element.
+ * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the developer to receive the remote
+ * video element.
+ * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
  * @param {object} params.callSettings
  * @returns {brightstream.Call}
  */
@@ -131,28 +133,28 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @name previewLocalMedia
      * @private
-     * @type {function}
+     * @type {brightstream.Call.previewLocalMedia}
      */
     var previewLocalMedia = null;
     /**
      * @memberof! brightstream.Call
      * @name onLocalVideo
      * @private
-     * @type {function}
+     * @type {brightstream.Call.onLocalVideo}
      */
     var onLocalVideo = null;
     /**
      * @memberof! brightstream.Call
      * @name onRemoteVideo
      * @private
-     * @type {function}
+     * @type {brightstream.Call.onRemoteVideo}
      */
     var onRemoteVideo = null;
     /**
      * @memberof! brightstream.Call
      * @name onHangup
      * @private
-     * @type {function}
+     * @type {brightstream.Call.onHangup}
      */
     var onHangup = null;
     /**
@@ -326,10 +328,10 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.saveParameters
      * @param {object} params
-     * @param {function} [params.onLocalVideo]
-     * @param {function} [params.onRemoteVideo]
-     * @param {function} [params.onHangup]
-     * @param {function} [params.previewLocalMedia]
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onHangup} [params.onHangup]
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia]
      * @param {object} [params.callSettings]
      * @param {object} [params.constraints]
      * @param {array} [params.servers]
@@ -367,7 +369,7 @@ brightstream.Call = function (params) {
              * becomes available.
              * @event brightstream.Call#stats
              * @type {brightstream.Event}
-             * @property {object} stats - an object with stats in it.
+             * @property {brightstream.MediaStats} stats - an object with stats in it.
              * @property {brightstream.Call} target
              * @property {string} name - the event name.
              */
@@ -395,11 +397,13 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.answer
      * @fires brightstream.Call#answer
      * @param {object} [params]
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
-     * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
-     * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
-     * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
+     * video element.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the developer to receive the
+     * remote video element.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
@@ -454,11 +458,13 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.accept
      * @fires brightstream.Call#accept
      * @param {object} [params]
-     * @param {function} [params.previewLocalMedia] - A function to call if the developer wants to perform an action
-     * between local media becoming available and calling approve().
-     * @param {function} [params.onLocalVideo] - Callback for the developer to receive the local video element.
-     * @param {function} [params.onRemoteVideo] - Callback for the developer to receive the remote video element.
-     * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
+     * video element.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the developer to receive the
+     * remote video element.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
@@ -548,10 +554,12 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.getStats
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [params.onStats] - An optional callback to receive the stats. If no callback is provided,
-     * the call's report will contain stats but the developer will not receive them on the client-side.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive the stats. If no
+     * callback is provided, the call's report will contain stats but the developer will not receive them on
+     * the client-side.
+     * @param {brightstream.Call.statsSuccessHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Call.errorHandler} [params.onError] - Error handler for this invocation of this method only.
      * @returns {Promise<object>|null}
      */
     function getStats(params) {
@@ -594,13 +602,10 @@ brightstream.Call = function (params) {
      * @todo Find out when we can stop deleting TURN servers
      * @private
      * @param {object} params
-     * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
-     * an audio and/or video stream.
-     * @param {boolean} [params.directConnection] - Indicates media being requested is a direct connection.
-     * @param {function} [params.onHangup] - Call hangup callback; requires params.constraints be set.
-     * @param {function} [params.onOpen] - DirectConnection is open callback; requires params.directConnection=true.
-     * @param {function} [params.onClose] - DirectConnection is closed callback; requires params.directConnection=true.
-     * @param {function} [params.onMessage] - DirectConnection message callback; requires params.directConnection=true.
+     * @param {object} [params.constraints] - getUserMedia constraints
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onHangup} [params.onHangup]
      * @fires brightstream.Call#waiting-for-allow
      * @fires brightstream.Call#allowed
      * @fires brightstream.Call#local-stream-received
@@ -609,6 +614,7 @@ brightstream.Call = function (params) {
         var stream;
         log.trace('Call.doAddVideo');
         params = params || {};
+        saveParameters(params);
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
         params.client = client;
@@ -621,7 +627,7 @@ brightstream.Call = function (params) {
              * and approves it.
              * @event brightstream.Call#waiting-for-allow
              * @type {brightstream.Event}
-            * @property {string} name - the event name.
+             * @property {string} name - the event name.
              * @property {brightstream.Call} target
              */
             that.fire('waiting-for-allow');
@@ -673,13 +679,15 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.addVideo
      * @param {object} params
-     * @param {boolean} [audio=true]
-     * @param {boolean} [video=true]
+     * @param {boolean} [params.audio=true]
+     * @param {boolean} [params.video=true]
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
-     * @param {function} [onLocalVideo]
-     * @param {function} [onRemoteVideo]
-     * @param {function} [onError]
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onHangup} [params.onHangup]
+     * @param {brightstream.Call.mediaSuccessHandler} [params.onSuccess]
+     * @param {brightstream.Client.errorHandler} [params.onError]
      * @returns {Promise<brightstream.LocalMedia>}
      */
     that.addVideo = function (params) {
@@ -711,12 +719,15 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.addAudio
      * @param {object} params
-     * @param {boolean} [audio=true]
-     * @param {boolean} [video=false]
+     * @param {boolean} [params.audio=true]
+     * @param {boolean} [params.video=false]
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
-     * @param {function} [onLocalVideo]
-     * @param {function} [onRemoteVideo]
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onHangup} [params.onHangup]
+     * @param {brightstream.Call.mediaSuccessHandler} [params.onSuccess]
+     * @param {brightstream.Client.errorHandler} [params.onError]
      * @returns {Promise<brightstream.LocalMedia>}
      */
     that.addAudio = function (params) {
@@ -797,11 +808,15 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.addDirectConnection
      * @param {object} params
-     * @param {function} [onOpen]
-     * @param {function} [onClose]
-     * @param {function} [onMessage]
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
+     * closing the connection.
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for the developer to be notified about
+     * opening the connection.
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for the developer to be notified
+     * about incoming messages. Not usually necessary to listen to this event if you are already listening to
+     * brightstream.Endpoint#message.
+     * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess]
+     * @param {brightstream.Client.errorHandler} [params.onError]
      * @returns {Promise<brightstream.DirectConnection>}
      */
     that.addDirectConnection = function (params) {
@@ -821,13 +836,17 @@ brightstream.Call = function (params) {
      * Add a direct connection to the existing call.
      * @memberof! brightstream.Call
      * @method brightstream.Call.actuallyAddDirectConnection
-     * private
+     * @private
      * @param {object} params
-     * @param {function} [onOpen]
-     * @param {function} [onClose]
-     * @param {function} [onMessage]
-     * @param {function} [onSuccess]
-     * @param {function} [onError]
+     * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
+     * closing the connection.
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for the developer to be notified about
+     * opening the connection.
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for the developer to be notified
+     * about incoming messages. Not usually necessary to listen to this event if you are already listening to
+     * brightstream.Endpoint#message.
+     * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess]
+     * @param {brightstream.Client.errorHandler} [params.onError]
      * @returns {Promise<brightstream.DirectConnection>}
      * @fires brightstream.User#direct-connection
      * @fires brightstream.Call#direct-connection
@@ -993,11 +1012,12 @@ brightstream.Call = function (params) {
         pc = null;
     };
 
-    /*
+    /**
      * Expose hangup as reject for approve/reject workflow.
      * @memberof! brightstream.Call
      * @method brightstream.Call.reject
-     * @param {boolean} signal Optional flag to indicate whether to send or suppress sending
+     * @param {object} params
+     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     that.reject = function (params) {
@@ -1309,3 +1329,74 @@ brightstream.Call = function (params) {
     }, 0);
     return that;
 }; // End brightstream.Call
+
+/**
+ * Handle an error that resulted from a method call.
+ * @callback brightstream.Call.errorHandler
+ * @param {Error} err
+ */
+/**
+ * Handle the successful kick-off of stats on a call.
+ * @callback brightstream.Call.statsSuccessHandler
+ * @param {brightstream.MediaStatsParser} statsParser
+ */
+/**
+ * Handle obtaining media successfully.
+ * @callback brightstream.Call.mediaSuccessHandler
+ * @param {brightstream.LocalMedia} localMedia
+ */
+/**
+ * When on a call, receive local media when it becomes available. This is what you will need to provide if you want
+ * to show the user their own video during a call. This callback is called every time
+ * brightstream.Call#local-stream-received is fired.
+ * @callback brightstream.Call.onLocalVideo
+ * @param {brightstream.Event} evt
+ * @param {Element} evt.element
+ * @param {brightstream.LocalMedia} evt.stream
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * When on a call, receive remote media when it becomes available. This is what you will need to provide if you want
+ * to show the user the other party's video during a call. This callback is called every time
+ * brightstream.Call#remote-stream-received is fired.
+ * @callback brightstream.Call.onRemoteVideo
+ * @param {brightstream.Event} evt
+ * @param {Element} evt.element - the HTML5 Video element with the new stream attached.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * When on a call, receive notification the call has been hung up. This callback is called every time
+ * brightstream.Call#hangup is fired.
+ * @callback brightstream.Call.onHangup
+ * @param {brightstream.Event} evt
+ * @param {boolean} evt.sentSignal - Whether or not we sent a 'hangup' signal to the other party.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * The use of stats requires an additional module to Brightstream. When on a call, receive periodic statistical
+ * information about the call, including the codec, lost packets, and bandwidth being consumed. This callback is
+ * called every time brightstream.Call#stats is fired.
+ * @callback brightstream.MediaStatsParser.statsHandler
+ * @param {brightstream.Event} evt
+ * @param {brightstream.MediaStats} evt.stats - an object with stats in it.
+ * @param {brightstream.Call} evt.target
+ * @param {string} evt.name - the event name.
+ */
+/**
+ * When on a call, receive local media when it becomes available. This is what you will need to provide if you want
+ * to allow the user to preview and approve or reject their own video before a call. If this callback is provided,
+ * Brightstream will wait for call.answer() to be called before proceeding. If this callback is not provided,
+ * Brightstream will proceed without waiting for user input. This callback is called every time
+ * brightstream.Call#local-stream-received is fired.
+ * @callback brightstream.Call.previewLocalMedia
+ * @param {object} element - the HTML5 Video element with the new stream attached.
+ * @param {brightstream.Call} call
+ */
+/**
+ * Receive the DirectConnection.
+ * @callback brightstream.Call.directConnectionSuccessHandler
+ * @param {brightstream.DirectConnection} directConnection
+ */

@@ -221,7 +221,8 @@ brightstream.hasUserMedia = function () {
  */
 brightstream.hasRTCPeerConnection = function () {
     "use strict";
-    return (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection) instanceof Function;
+    return (window.RTCPeerConnection || window.webkitRTCPeerConnection ||
+            window.mozRTCPeerConnection) instanceof Function;
 };
 
 /**

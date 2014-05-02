@@ -54,7 +54,7 @@ brightstream.EventEmitter = function (params) {
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.listen
      * @param {string} eventType - A developer-specified string identifying the event.
-     * @param {function} listener - A function to call when the event is fire.
+     * @param {brightstream.EventEmitter.eventListener} listener - A function to call when the event is fire.
      * @param {boolean} [isInternal] - A flag to indicate this listener was added by the library. This parameter should
      * not be used by developers who are using the library, only by developers who are working on the library itself.
      */
@@ -170,6 +170,10 @@ brightstream.EventEmitter = function (params) {
 
     return that;
 }; // End brightstream.EventEmitter
+/**
+ * @callback brightstream.EventEmitter.eventListener
+ * @param {brightstream.Event} evt
+ */
 
 /**
  * This is the factory for objects that EventEmitters pass to event listeners. In addition to the two mandatory

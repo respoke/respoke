@@ -184,8 +184,10 @@ brightstream.SignalingChannel = function (params) {
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {string} [params.developmentMode] - Indicates the library should request a token from the service.
      * App must be set to development mode in your developer portal, and you must pass in your appId & endpointId.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.open = function (params) {
@@ -228,8 +230,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * be set to development mode in your developer portal, and you must pass in your appId.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise<String>}
      */
     that.getToken = function (params) {
@@ -264,8 +268,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
      * @param {string} [params.appId] - The App's id
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      * @private
      */
@@ -301,8 +307,10 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.close
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.close = function (params) {
@@ -359,8 +367,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} params.presence - description, "unavailable", "available", "away", "xa", "dnd"
      * @param {string} [params.status] - Non-enumeration human-readable status.
      * @param {string} [params.show] - I can't remember what this is.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      */
     that.sendPresence = function (params) {
         params = params || {};
@@ -392,8 +402,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getGroup
      * @returns {Promise<brightstream.Group>}
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.SignalingChannel.groupHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {string} name
      */
     that.getGroup = function (params) {
@@ -424,8 +436,10 @@ brightstream.SignalingChannel = function (params) {
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      */
     that.leaveGroup = function (params) {
         params = params || {};
@@ -451,8 +465,10 @@ brightstream.SignalingChannel = function (params) {
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      */
     that.joinGroup = function (params) {
         params = params || {};
@@ -477,8 +493,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.publish
      * @returns {Promise}
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {string} params.id
      * @param {string} params.message
      */
@@ -530,8 +548,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getGroupMembers
      * @returns {Promise<Array>}
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.SignalingChannel.groupListHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {string} params.id
      */
     that.getGroupMembers = function (params) {
@@ -565,8 +585,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.SignalingMessage} params.message - The string text message to send.
      * @param {brightstream.Endpoint} params.recipient
      * @param {string} [params.connectionId]
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -596,8 +618,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendACK
      * @param {object} params
      * @param {brightstream.SignalingMessage} params.signal
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendACK = function (params) {
@@ -630,8 +654,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendSignal
      * @param {object} params
      * @param {brightstream.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendSignal = function (params) {
@@ -680,8 +706,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {Array<RTCIceCandidate>} params.iceCandidates - An array of ICE candidate.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendCandidate = function (params) {
@@ -698,8 +726,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {RTCSessionDescription} params.sdp - An SDP to JSONify and send.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendSDP = function (params) {
@@ -711,6 +741,18 @@ brightstream.SignalingChannel = function (params) {
         return that.sendSignal(params);
     };
 
+    /**
+     * Send a call report to the cloud infrastructure.
+     * @memberof! brightstream.SignalingChannel
+     * @method brightstream.SignalingChannel.sendReport
+     * @param {object} params
+     * @todo TODO document the params.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @return {Promise}
+     */
     that.sendReport = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -739,8 +781,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {string} params.reason - The reason the session is being hung up.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendHangup = function (params) {
@@ -755,8 +799,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendConnected
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendConnected = function (params) {
@@ -772,8 +818,10 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} params.action - The state of the modify request, one of: 'initiate', 'accept', 'reject'
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.sendModify = function (params) {
@@ -1035,6 +1083,7 @@ brightstream.SignalingChannel = function (params) {
      * Socket handler for pub-sub messages.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.onPubSub
+     * @param {object} The Socket.io message.
      * @private
      * @fires brightstream.Group#message
      * @fires brightstream.Client#message
@@ -1085,6 +1134,7 @@ brightstream.SignalingChannel = function (params) {
      * Socket handler for join messages.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.onJoin
+     * @param {object} The Socket.io message.
      * @private
      */
     var onJoin = function onJoin(message) {
@@ -1136,6 +1186,7 @@ brightstream.SignalingChannel = function (params) {
      * Socket handler for leave messages.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.onLeave
+     * @param {object} The Socket.io message.
      * @private
      */
     var onLeave = function onLeave(message) {
@@ -1167,11 +1218,13 @@ brightstream.SignalingChannel = function (params) {
      * Socket handler for presence messages.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.onMessage
+     * @param {object} The Socket.io message.
      * @private
      * @fires brightstream.Endpoint#message
      * @fires brightstream.Client#message
      */
     var onMessage = function onMessage(message) {
+        console.log(message);
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
         endpoint = clientObj.getEndpoint({
@@ -1210,8 +1263,10 @@ brightstream.SignalingChannel = function (params) {
      * Create a socket handler for the onConnect event with all the right things in scope.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.generateConnectHandler
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @private
      */
     var generateConnectHandler = function generateConnectHandler(onSuccess, onError) {
@@ -1248,6 +1303,7 @@ brightstream.SignalingChannel = function (params) {
      * Socket handler for presence messages.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.onPresence
+     * @param {object} The Socket.io message.
      * @private
      */
     function onPresence(message) {
@@ -1287,9 +1343,10 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.authenticate
      * @param {object} params
-     * @param {function} params.onStatusChange - A function to which to call on every state change.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      */
     that.authenticate = function (params) {
@@ -1310,7 +1367,7 @@ brightstream.SignalingChannel = function (params) {
         host = pieces[0];
         port = pieces[1];
 
-        /**
+        /*
          * Try to connect for 2 seconds before failing.
          * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
          * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
@@ -1433,8 +1490,10 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getTurnCredentials
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.SignalingChannel.turnSuccessHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise<Array>}
      */
     that.getTurnCredentials = function (params) {
@@ -1486,8 +1545,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.wsCall
      * @private
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.SignalingChannel.responseHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {string} params.httpMethod
      * @param {string} params.path
      * @param {string} params.objectId
@@ -1564,7 +1625,7 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} params.objectId
      * @param {string} params.path
      * @param {object} params.parameters
-     * @param {function} responseHandler
+     * @param {brightstream.SignalingChannel.responseHandler} responseHandler
      * @todo TODO change this to return a promise
      */
     function call(params) {
@@ -1694,6 +1755,35 @@ brightstream.SignalingChannel = function (params) {
 
     return that;
 }; // End brightstream.SignalingChannel
+/**
+ * Handle an error that resulted from a method call.
+ * @callback brightstream.SignalingChannel.errorHandler
+ * @params {Error} err
+ */
+/**
+ * Handle sending successfully.
+ * @callback brightstream.SignalingChannel.sendHandler
+ */
+/**
+ * Receive a group.
+ * @callback brightstream.SignalingChannel.groupHandler
+ * @param {brightstream.Group}
+ */
+/**
+ * Receive a list of groups.
+ * @callback brightstream.SignalingChannel.groupListHandler
+ * @param {Array}
+ */
+/**
+ * Receive a list of TURN credentials.
+ * @callback brightstream.SignalingChannel.turnSuccessHandler
+ * @param {Array}
+ */
+/**
+ * Receive an HTTP response
+ * @callback brightstream.SignalingChannel.responseHandler
+ * @param {object}
+ */
 
 /**
  * A text message and the information needed to route it.
@@ -1843,11 +1933,12 @@ brightstream.SignalingMessage = function (params) {
  * @class brightstream.Group
  * @constructor
  * @param {object} params
- * @param {function} params.onJoin - A callback to receive notifications every time a new endpoint has joined
- * the group. This callback does not get called when the currently logged-in user joins the group.
- * @param {function} params.onMessage - A callback to receive messages sent to the group from remote endpoints.
- * @param {function} params.onLeave - A callback to receive notifications every time a new endpoint has left
- * the group. This callback does not get called when the currently logged-in user leaves the group.
+ * @param {brightstream.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
+ * endpoint has joined the group. This callback does not get called when the currently logged-in user joins the group.
+ * @param {brightstream.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
+ * remote endpoints.
+ * @param {brightstream.Group.onLeave} params.onLeave - A callback to receive notifications every time a new
+ * endpoint has left the group. This callback does not get called when the currently logged-in user leaves the group.
  * @returns {brightstream.Group}
  */
 brightstream.Group = function (params) {
@@ -1878,7 +1969,7 @@ brightstream.Group = function (params) {
     that.connections = [];
     /**
      * A name to identify the type of this object.
-     * @memberof! brightstream.group
+     * @memberof! brightstream.Group
      * @name className
      * @type {string}
      */
@@ -1901,8 +1992,10 @@ brightstream.Group = function (params) {
      * @memberof! brightstream.Group
      * @method brightstream.Group.leave
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @return {Promise}
      * @fires brightstream.User#leave
      */
@@ -2012,8 +2105,10 @@ brightstream.Group = function (params) {
      * @memberof! brightstream.Group
      * @method brightstream.Group.sendMessage
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {string} params.message - The message.
      * @returns {Promise}
      */
@@ -2029,8 +2124,10 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.getMembers
      * @returns {Promise<Array>} A promise to an array of Connections.
      * @param {object} params
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Group.connectionsHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {function} [onMessage] TODO
      * @param {function} [onPresence] TODO
      * @fires brightstream.Group#join
@@ -2075,3 +2172,35 @@ brightstream.Group = function (params) {
 
     return that;
 }; // End brightstream.Group
+/**
+ * Receive notification that an endpoint has joined this group. This callback is called everytime
+ * brightstream.Group#join is fired.
+ * @callback brightstream.Group.onJoin
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Connection} evt.connection
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Group} evt.target
+ */
+/**
+ * Receive notification that an endpoint has left this group. This callback is called everytime
+ * brightstream.Group#leave is fired.
+ * @callback brightstream.Group.onLeave
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Connection} evt.connection
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Group} evt.target
+ */
+/**
+ * Receive notification that a message has been received to a group. This callback is called every time
+ * brightstream.Group#message is fired.
+ * @callback brightstream.Group.onMessage
+ * @param {brightstream.Event} evt
+ * @param {brightstream.TextMessage} evt.message
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Group} evt.target
+ */
+/**
+ * Get a list of the Connections which are members of this Group.
+ * @callback brightstream.Group.connectionsHandler
+ * @param {Array<brightstream.Connection>} connections
+ */
