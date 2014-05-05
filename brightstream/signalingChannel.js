@@ -1324,8 +1324,6 @@ brightstream.SignalingChannel = function (params) {
                         onLeave: clientSettings.onLeave
                     });
                 }));
-            }, function onError(err) {
-                throw new Error(err.message);
             }).done(function successHandler(user) {
                 /**
                  * @event brightstream.Client#reconnect
@@ -1333,8 +1331,6 @@ brightstream.SignalingChannel = function (params) {
                  * @property {brightstream.Client}
                  */
                 clientObj.fire('reconnect');
-            }, function errorHandler(err) {
-                throw new Error(err.message);
             });
         }, reconnectTimeout);
     }
