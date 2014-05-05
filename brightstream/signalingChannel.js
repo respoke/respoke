@@ -1295,11 +1295,14 @@ brightstream.SignalingChannel = function (params) {
         }
     }
 
+    /*
+    * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
+    * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
+    * @memberof! brightstream.SignalingChannel
+    * @method brightstream.SignalingChannel.reconnect
+    * @private
+    */
     function reconnect () {
-        /*
-        * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-        * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
-        */
         reconnectTimeout = (reconnectTimeout == null) ? 500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
