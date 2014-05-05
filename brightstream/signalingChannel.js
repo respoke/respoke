@@ -104,6 +104,20 @@ brightstream.SignalingChannel = function (params) {
     var actuallyConnect = null;
     /**
      * @memberof! brightstream.SignalingChannel
+     * @name reconnectTimeout
+     * @private
+     * @type {number}
+     */
+    var reconnectTimeout = null;
+    /**
+     * @memberof! brightstream.SignalingChannel
+     * @name maxReconnectTimeout
+     * @private
+     * @type {number}
+     */
+    var maxReconnectTimeout = 5 * 60 * 1000;
+    /**
+     * @memberof! brightstream.SignalingChannel
      * @name appId
      * @private
      * @type {string}
@@ -1311,8 +1325,6 @@ brightstream.SignalingChannel = function (params) {
 
         /**
          * Try to connect for 2 seconds before failing.
-         * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-         * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
          */
         var connectParams = {
             'connect timeout': 2000,
@@ -1396,30 +1408,44 @@ brightstream.SignalingChannel = function (params) {
                 return;
             }
 
-            actuallyConnect().then(function successHandler(user) {
-                clientObj.user = user;
-                log.debug('socket reconnected');
-                return Q.all(clientObj.getGroups().map(function iterGroups(group) {
-                    clientObj.join({
-                        id: group.id,
-                        onMessage: clientSettings.onMessage,
-                        onJoin: clientSettings.onJoin,
-                        onLeave: clientSettings.onLeave
-                    });
-                }));
-            }, function onError(err) {
-                throw new Error(err.message);
-            }).done(function successHandler(user) {
-                /**
-                 * @event brightstream.Client#reconnect
-                 * @property {string} name - the event name.
-                 * @property {brightstream.Client}
-                 */
-                clientObj.fire('reconnect');
-            }, function errorHandler(err) {
-                throw new Error(err.message);
-            });
+            /*
+            * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
+            * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
+            */
+            reconnectTimeout = (reconnectTimeout == null) ? 500 : 2 * reconnectTimeout;
+
+            if (reconnectTimeout > (maxReconnectTimeout)) {
+                reconnectTimeout = maxReconnectTimeout;
+            }
+
+            setTimeout(function actuallyReconnect () {
+                actuallyConnect().then(function successHandler(user) {
+                    clientObj.user = user;
+                    log.debug('socket reconnected');
+                    return Q.all(clientObj.getGroups().map(function iterGroups(group) {
+                        clientObj.join({
+                            id: group.id,
+                            onMessage: clientSettings.onMessage,
+                            onJoin: clientSettings.onJoin,
+                            onLeave: clientSettings.onLeave
+                        });
+                    }));
+                }, function onError(err) {
+                    throw new Error(err.message);
+                }).done(function successHandler(user) {
+                    /**
+                     * @event brightstream.Client#reconnect
+                     * @property {string} name - the event name.
+                     * @property {brightstream.Client}
+                     */
+                    clientObj.fire('reconnect');
+                }, function errorHandler(err) {
+                    throw new Error(err.message);
+                });
+            }, reconnectTimeout);
         });
+
+
 
         return deferred.promise;
     };
