@@ -1303,7 +1303,7 @@ brightstream.SignalingChannel = function (params) {
     * @private
     */
     function reconnect () {
-        reconnectTimeout = (reconnectTimeout == null) ? 500 : 2 * reconnectTimeout;
+        reconnectTimeout = (reconnectTimeout === null) ? 500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
             reconnectTimeout = maxReconnectTimeout;
@@ -1713,7 +1713,7 @@ brightstream.SignalingChannel = function (params) {
         Object.keys(params).forEach(function formatParam(name) {
             var value = params[name];
             /* Skip objects -- We won't know how to name these. */
-            if (typeof value === 'array') {
+            if (value instanceof Array) {
                 strings.push([name, value.join(',')].join('='));
             } else if (typeof value !== 'object' && typeof value !== 'function') {
                 strings.push([name, value].join('='));
