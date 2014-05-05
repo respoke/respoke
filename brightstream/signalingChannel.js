@@ -1445,8 +1445,6 @@ brightstream.SignalingChannel = function (params) {
             }, reconnectTimeout);
         });
 
-
-
         return deferred.promise;
     };
 
