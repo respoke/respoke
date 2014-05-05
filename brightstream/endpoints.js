@@ -292,7 +292,7 @@ brightstream.Endpoint = function (params) {
     /**
      * Create a new call.
      * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.call
+     * @method brightstream.Endpoint.startCall
      * @param {object} params
      * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.

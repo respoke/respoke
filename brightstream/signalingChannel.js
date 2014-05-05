@@ -861,13 +861,7 @@ brightstream.SignalingChannel = function (params) {
 
             return endpoint.directConnection ? endpoint.directConnection.call : target;
         }).then(function successHandler(target) {
-            if (target) {
-                return Q.fcall(function () {
-                    return target;
-                });
-            }
-
-            return endpoint.startDirectConnection({
+            return target || endpoint.startDirectConnection({
                 create: (signal.signalType === 'offer'),
                 caller: (signal.signalType !== 'offer')
             });
