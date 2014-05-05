@@ -680,8 +680,7 @@ brightstream.PeerConnection = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        // Why does pc.iceConnectionState not transition into 'connected' even though media is flowing?
-        return (pc && pc.iceConnectionState === 'connected');
+        return (pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**

@@ -32,11 +32,21 @@
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
- * video element.
- * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the developer to receive the remote
- * video element.
- * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+ * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
+ * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
+ * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
+ * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+ * This callback will be called when media is muted or unmuted.
+ * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+ * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+ * for the user to give permission to start getting audio or video.
+ * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+ * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+ * the approval was automatic.
+ * @param {brightstream.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
+ * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
+ * granted by the browser without asking the user to approve it.
  * @param {object} params.callSettings
  * @returns {brightstream.Call}
  */
@@ -136,27 +146,6 @@ brightstream.Call = function (params) {
      * @type {brightstream.Call.previewLocalMedia}
      */
     var previewLocalMedia = null;
-    /**
-     * @memberof! brightstream.Call
-     * @name onLocalVideo
-     * @private
-     * @type {brightstream.Call.onLocalVideo}
-     */
-    var onLocalVideo = null;
-    /**
-     * @memberof! brightstream.Call
-     * @name onRemoteVideo
-     * @private
-     * @type {brightstream.Call.onRemoteVideo}
-     */
-    var onRemoteVideo = null;
-    /**
-     * @memberof! brightstream.Call
-     * @name onHangup
-     * @private
-     * @type {brightstream.Call.onHangup}
-     */
-    var onHangup = null;
     /**
      * @memberof! brightstream.Call
      * @name directConnectionOnly
@@ -328,10 +317,21 @@ brightstream.Call = function (params) {
      * @memberof! brightstream.Call
      * @method brightstream.Call.saveParameters
      * @param {object} params
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
-     * @param {brightstream.Call.onHangup} [params.onHangup]
-     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia]
+     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
+     * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will fire even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
+     * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
+     * granted by the browser without asking the user to approve it.
      * @param {object} [params.callSettings]
      * @param {object} [params.constraints]
      * @param {array} [params.servers]
@@ -345,6 +345,11 @@ brightstream.Call = function (params) {
         that.listen('local-stream-received', params.onLocalVideo);
         that.listen('remote-stream-received', params.onRemoteVideo);
         that.listen('hangup', params.onHangup);
+        that.listen('allow', params.onAllow);
+        that.listen('answer', params.onAnswer);
+        that.listen('approve', params.onApprove);
+        that.listen('mute', params.onMute);
+        that.listen('requesting-media', params.onRequestingMedia);
 
         forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
@@ -399,11 +404,21 @@ brightstream.Call = function (params) {
      * @param {object} [params]
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
-     * video element.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the developer to receive the
-     * remote video element.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
+     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
+     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
+     * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
+     * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
+     * granted by the browser without asking the user to approve it.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
@@ -606,8 +621,8 @@ brightstream.Call = function (params) {
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
      * @param {brightstream.Call.onHangup} [params.onHangup]
-     * @fires brightstream.Call#waiting-for-allow
-     * @fires brightstream.Call#allowed
+     * @fires brightstream.Call#requesting-media
+     * @fires brightstream.Call#allow
      * @fires brightstream.Call#local-stream-received
      */
     function doAddVideo(params) {
@@ -620,28 +635,30 @@ brightstream.Call = function (params) {
         params.client = client;
 
         stream = brightstream.LocalMedia(params);
-        stream.listen('waiting-for-allow', function waitAllowHandler(evt) {
+        stream.listen('requesting-media', function waitAllowHandler(evt) {
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
              * to modify the UI of the application so that the user notices the request for permissions
              * and approves it.
-             * @event brightstream.Call#waiting-for-allow
+             * @event brightstream.Call#requesting-media
              * @type {brightstream.Event}
              * @property {string} name - the event name.
              * @property {brightstream.Call} target
              */
-            that.fire('waiting-for-allow');
+            that.fire('requesting-media');
         }, true);
-        stream.listen('allowed', function allowedHandler(evt) {
+        stream.listen('allow', function allowHandler(evt) {
             /**
              * The user has approved the request for media. Any UI changes made to remind the user to click Allow
-             * should be canceled now.
-             * @event brightstream.Call#allowed
+             * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
+             * even if the allow process is automatic, i. e., permission and media is granted by the browser
+             * without asking the user to approve it.
+             * @event brightstream.Call#allow
              * @type {brightstream.Event}
              * @property {string} name - the event name.
              * @property {brightstream.Call} target
              */
-            that.fire('allowed');
+            that.fire('allow');
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
@@ -1205,7 +1222,7 @@ brightstream.Call = function (params) {
      * Mute all local video streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.muteVideo
-     * @fires brightstream.Call#video-muted
+     * @fires brightstream.Call#mute
      */
     that.muteVideo = function () {
         if (videoIsMuted) {
@@ -1216,11 +1233,17 @@ brightstream.Call = function (params) {
         });
         /**
          * This event indicates that local video has been muted.
-         * @event brightstream.Call#video-muted
+         * @event brightstream.Call#mute
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('video-muted');
+        that.fire('mute', {
+            type: 'video',
+            muted: true
+        });
         videoIsMuted = true;
     };
 
@@ -1228,7 +1251,7 @@ brightstream.Call = function (params) {
      * Unmute all local video streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.unmuteVideo
-     * @fires brightstream.Call#video-unmuted
+     * @fires brightstream.Call#mute
      */
     that.unmuteVideo = function () {
         if (!videoIsMuted) {
@@ -1239,11 +1262,17 @@ brightstream.Call = function (params) {
         });
         /**
          * This event indicates that local video has been unmuted.
-         * @event brightstream.Call#video-unmuted
+         * @event brightstream.Call#mute
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('video-unmuted');
+        that.fire('mute', {
+            type: 'video',
+            muted: false
+        });
         videoIsMuted = false;
     };
 
@@ -1251,7 +1280,7 @@ brightstream.Call = function (params) {
      * Mute all local audio streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.muteAudio
-     * @fires brightstream.Call#audio-muted
+     * @fires brightstream.Call#mute
      */
     that.muteAudio = function () {
         if (audioIsMuted) {
@@ -1262,11 +1291,17 @@ brightstream.Call = function (params) {
         });
         /**
          * This event indicates that local audio has been muted.
-         * @event brightstream.Call#audio-muted
+         * @event brightstream.Call#mute
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('audio-muted');
+        that.fire('mute', {
+            type: 'audio',
+            muted: true
+        });
         audioIsMuted = true;
     };
 
@@ -1274,7 +1309,7 @@ brightstream.Call = function (params) {
      * Unmute all local audio streams.
      * @memberof! brightstream.Call
      * @method brightstream.Call.unmuteAudio
-     * @fires brightstream.Call#audio-unmuted
+     * @fires brightstream.Call#mute
      */
     that.unmuteAudio = function () {
         if (!audioIsMuted) {
@@ -1287,11 +1322,17 @@ brightstream.Call = function (params) {
 
         /**
          * This event indicates that local audio has been unmuted.
-         * @event brightstream.Call#audio-unmuted
+         * @event brightstream.Call#mute
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('audio-unmuted');
+        that.fire('mute', {
+            type: 'audio',
+            muted: false
+        });
         audioIsMuted = false;
     };
 
@@ -1372,6 +1413,44 @@ brightstream.Call = function (params) {
  * @callback brightstream.Call.onHangup
  * @param {brightstream.Event} evt
  * @param {boolean} evt.sentSignal - Whether or not we sent a 'hangup' signal to the other party.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * Called when changing the mute state on any type of media. This callback will be called when media is muted or
+ * unmuted. This callback is called every time brightstream.Call#mute is fired.
+ * @callback brightstream.Call.onMute
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * Called when the callee answers the call. This callback is called every time brightstream.Call#answer is fired.
+ * @callback brightstream.Call.onAnswer
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * Called when the user approves local media. This callback will be called whether or not the approval was based
+ * on user feedback. I. e., it will be called even if the approval was automatic. This callback is called every time
+ * brightstream.Call#approve is fired.
+ * @callback brightstream.Call.onApprove
+ * @param {brightstream.Event} evt
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * When setting up a call, receive notification that the browser has granted access to media.  This callback is
+ * called every time brightstream.Call#allow is fired.
+ * @callback brightstream.Call.onAllow
+ * @param {brightstream.Event} evt
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * When setting up a call, receive notification that the app has asked the browser for permission to get audio or
+ * video and is waiting on the browser to grant or reject permission. This callback will be called every time
+ * brightstream.Call#requesting-media is fired.
+ * @callback brightstream.Call.onRequestingMedia
+ * @param {brightstream.Event} evt
  * @param {string} evt.name - the event name.
  * @param {brightstream.Call} evt.target
  */
