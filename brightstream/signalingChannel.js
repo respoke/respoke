@@ -873,7 +873,7 @@ brightstream.SignalingChannel = function (params) {
             });
         }).done(function successHandler(target) {
             target = target.call || target;
-            if (!target) {
+            if (!target || target.id !== signal.sessionId) {
                 // orphaned signal
                 log.warn("Couldn't associate signal with a call.", signal);
                 return;
@@ -1198,7 +1198,6 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Client#message
      */
     var onMessage = function onMessage(message) {
-        console.log(message);
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
         endpoint = clientObj.getEndpoint({

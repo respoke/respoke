@@ -199,7 +199,17 @@ brightstream.Endpoint = function (params) {
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
-     * hung up
+     * hung up.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
@@ -238,7 +248,17 @@ brightstream.Endpoint = function (params) {
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
-     * hung up
+     * hung up.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
@@ -276,7 +296,17 @@ brightstream.Endpoint = function (params) {
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
-     * hung up
+     * hung up.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
@@ -403,10 +433,16 @@ brightstream.Endpoint = function (params) {
      * invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
+     * @param {brightstream.DirectConnection.onStart} [params.onStart] - A callback for when setup of the direct
+     * connection begins. The direct connection will not be open yet.
      * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
      * the DirectConnection is open and ready to be used.
+     * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
+     * connection.
      * @param {brightstream.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
      * when the DirectConnection is closed and the two Endpoints are disconnected.
+     * @param {brightstream.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
+     * request for a direct connection and setup begins.
      * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
      * through the DirectConnection.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
@@ -584,6 +620,24 @@ brightstream.Endpoint = function (params) {
 
     return that;
 }; // End brightstream.Endpoint
+/**
+ * Handle messages sent to the logged-in user from this one Endpoint.  This callback is called every time
+ * brightstream.Endpoint#message fires.
+ * @callback brightstream.Endpoint.onMessage
+ * @param {brightstream.Event} evt
+ * @param {brightstream.TextMessage} evt.message - the message
+ * @param {brightstream.Endpoint} evt.target
+ * @param {string} evt.name - the event name
+ */
+/**
+ * Handle presence notifications from this one Endpoint.  This callback is called every time
+ * brightstream.Endpoint#message fires.
+ * @callback brightstream.Endpoint.onPresence
+ * @param {brightstream.Event} evt
+ * @param {brightstream.string} evt.presence - the Endpoint's presence
+ * @param {brightstream.Endpoint} evt.target
+ * @param {string} evt.name - the event name
+ */
 
 /**
  * Represents remote Connections which belong to an endpoint. An Endpoint can be authenticated from multiple devices,
@@ -659,7 +713,17 @@ brightstream.Connection = function (params) {
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
-     * hung up
+     * hung up.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
@@ -693,7 +757,17 @@ brightstream.Connection = function (params) {
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
-     * hung up
+     * hung up.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
@@ -731,7 +805,17 @@ brightstream.Connection = function (params) {
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has
-     * been hung up
+     * been hung up.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
@@ -761,12 +845,18 @@ brightstream.Connection = function (params) {
      * invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
+     * @param {brightstream.DirectConnection.onStart} [params.onStart] - A callback for when setup of the direct
+     * connection begins. The direct connection will not be open yet.
      * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
      * the DirectConnection is open and ready to be used.
+     * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
+     * connection.
      * @param {brightstream.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
      * when the DirectConnection is closed and the two Endpoints are disconnected.
      * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
      * through the DirectConnection.
+     * @param {brightstream.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
+     * request for a direct connection and setup begins.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
      * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
