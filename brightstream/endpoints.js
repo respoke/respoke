@@ -43,6 +43,12 @@ brightstream.Presentable = function (params) {
      */
     that.presence = 'unavailable';
 
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name clientObj
+     * @type {brightstream.Client}
+     * @private
+     */
     var clientObj = brightstream.getClient(client);
 
     /**
@@ -133,7 +139,19 @@ brightstream.Endpoint = function (params) {
      */
     var client = params.client;
     var that = brightstream.Presentable(params);
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name clientObj
+     * @type {brightstream.Client}
+     * @private
+     */
     var clientObj = brightstream.getClient(client);
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name signalingChannel
+     * @type {brightstream.SignalingChannel}
+     * @private
+     */
     var signalingChannel = clientObj.getSignalingChannel();
     delete that.client;
     delete that.connectionId;
@@ -667,6 +685,12 @@ brightstream.Connection = function (params) {
      */
     var client = params.client;
     var that = brightstream.Presentable(params);
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name clientObj
+     * @type {brightstream.Client}
+     * @private
+     */
     var clientObj = brightstream.getClient(client);
 
     /**
