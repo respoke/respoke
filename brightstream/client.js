@@ -76,12 +76,12 @@ brightstream.Client = function (params) {
      */
     var port = window.location.port;
     /**
+     * Whether the client is connected to the cloud infrastructure.
      * @memberof! brightstream.Client
      * @name connected
      * @type {boolean}
-     * @private
      */
-    var connected = false;
+    that.connected = false;
     /**
      * A container for baseURL, token, and appId so they won't be accessble on the console.
      * @memberof! brightstream.Client
@@ -279,7 +279,7 @@ brightstream.Client = function (params) {
             log.error(err.message);
             deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
         }).done(function successHandler(user) {
-            connected = true;
+            that.connected = true;
 
             that.user = user;
             user.setOnline(); // Initiates presence.
@@ -305,7 +305,7 @@ brightstream.Client = function (params) {
 
             deferred.resolve(user);
         }, function errorHandler(err) {
-            connected = false;
+            that.connected = false;
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message);
         });
@@ -314,11 +314,11 @@ brightstream.Client = function (params) {
 
     function setConnectedOnDisconnect() {
         that.user = null;
-        connected = false;
+        that.connected = false;
     }
 
     function setConnectedOnReconnect() {
-        connected = true;
+        that.connected = true;
     }
 
     /**
@@ -336,7 +336,7 @@ brightstream.Client = function (params) {
         params = params || {};
         var disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
 
-        if (signalingChannel.isOpen()) {
+        if (signalingChannel.connected) {
             // do websocket stuff. If the websocket is already closed, we have to skip this stuff.
             var leaveGroups = groups.map(function eachGroup(group) {
                 group.leave();
@@ -367,7 +367,7 @@ brightstream.Client = function (params) {
      */
     function afterDisconnect() {
         that.user = null;
-        connected = false;
+        that.connected = false;
         endpoints = [];
         groups = [];
         /**
@@ -482,16 +482,6 @@ brightstream.Client = function (params) {
             throw error;
         });
         return promise;
-    };
-
-    /**
-     * Determine whether the Client has authenticated with its token against the brightstream infrastructure.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.isConnected
-     * @returns {boolean} True or false to indicate whether the library is connected.
-     */
-    that.isConnected = function () {
-        return !!connected;
     };
 
      /**

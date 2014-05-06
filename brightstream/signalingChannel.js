@@ -50,12 +50,12 @@ brightstream.SignalingChannel = function (params) {
      */
     var clientObj = brightstream.getClient(client);
     /**
+     * The state of the signaling channel.
      * @memberof! brightstream.SignalingChannel
      * @name state
-     * @private
-     * @type {string}
+     * @type {boolean}
      */
-    var state = 'new';
+    that.connected = false;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name socket
@@ -291,9 +291,9 @@ brightstream.SignalingChannel = function (params) {
                     appToken = response.result.token;
                     deferred.resolve();
                     log.trace("Signaling connection open to", baseURL);
-                    state = 'open';
+                    that.connected = true;
                 } else {
-                    state = 'closed';
+                    that.connected = false;
                     deferred.reject(new Error("Couldn't authenticate app."));
                 }
             }
@@ -329,33 +329,13 @@ brightstream.SignalingChannel = function (params) {
                 responseHandler: function responseHandler(response) {
                     socket.removeAllListeners();
                     socket.disconnect();
-                    state = 'closed';
+                    that.connected = false;
                     deferred.resolve();
                 }
             });
         });
 
         return deferred.promise;
-    };
-
-    /**
-     * Return the state of the signaling channel, 'new', 'open', or 'closed.'
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.getState
-     * @return {string} The state of the signaling channel.
-    */
-    that.getState = function () {
-        return state;
-    };
-
-    /**
-     * Whether signaling channel is open.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.isOpen
-     * @return {boolean}
-     */
-    that.isOpen = function () {
-        return state === 'open';
     };
 
     /**
