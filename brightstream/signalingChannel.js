@@ -830,21 +830,25 @@ brightstream.SignalingChannel = function (params) {
                     endpointId: signal.endpointId,
                     create: toCreate
                 });
+                if (target) {
+                    return target;
+                }
             }
 
             endpoint = clientObj.getEndpoint({
                 id: signal.endpointId
             });
 
-            return endpoint.directConnection ? endpoint.directConnection.call : target;
+            return endpoint.directConnection ? endpoint.directConnection.call : null;
         }).then(function successHandler(target) {
             return target || endpoint.startDirectConnection({
+                id: signal.sessionId,
                 create: (signal.signalType === 'offer'),
                 initiator: (signal.signalType !== 'offer')
             });
         }).done(function successHandler(target) {
             target = target.call || target;
-            if (!target) {
+            if (!target || target.id !== signal.sessionId) {
                 // orphaned signal
                 log.warn("Couldn't associate signal with a call.", signal);
                 return;
