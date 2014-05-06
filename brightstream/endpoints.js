@@ -193,6 +193,8 @@ brightstream.Endpoint = function (params) {
      * @method brightstream.Endpoint.startAudioCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
@@ -242,6 +244,8 @@ brightstream.Endpoint = function (params) {
      * @method brightstream.Endpoint.startVideoCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
@@ -290,6 +294,8 @@ brightstream.Endpoint = function (params) {
      * @memberof! brightstream.Endpoint
      * @method brightstream.Endpoint.call
      * @param {object} params
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
@@ -707,6 +713,8 @@ brightstream.Connection = function (params) {
      * @memberof! brightstream.Connection
      * @method brightstream.Connection.startCall
      * @param {object} params
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
@@ -751,6 +759,8 @@ brightstream.Connection = function (params) {
      * @method brightstream.Connection.startAudioCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
@@ -799,6 +809,8 @@ brightstream.Connection = function (params) {
      * @method brightstream.Connection.startVideoCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video

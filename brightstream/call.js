@@ -32,6 +32,8 @@
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
+ * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+ * media renegotiation.
  * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
  * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
  * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
@@ -290,7 +292,18 @@ brightstream.Call = function (params) {
                 actuallyAddDirectConnection(params);
             }
         }, function errorHandler(err) {
-            throw err;
+            var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.fire('error', {
+                reason: message
+            });
         });
 
         if (that.caller !== true) {
@@ -307,7 +320,18 @@ brightstream.Call = function (params) {
                     pc.initOffer();
                 }
             }, function errorHandler(err) {
-                log.warn("Call not approved or media error.");
+                var message = "Call not approved locally or local media error.";
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event brightstream.Call#error
+                 * @type {brightstream.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {brightstream.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.fire('error', {
+                    reason: message
+                });
             });
         }
     }
@@ -569,9 +593,9 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.getStats
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive the stats. If no
-     * callback is provided, the call's report will contain stats but the developer will not receive them on
-     * the client-side.
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive
+     * the stats. If no callback is provided, the call's report will contain stats but the developer will not
+     * receive them on the client-side.
      * @param {brightstream.Call.statsSuccessHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Call.errorHandler} [params.onError] - Error handler for this invocation of this method only.
@@ -683,8 +707,20 @@ brightstream.Call = function (params) {
             });
         }, true);
         stream.listen('error', function errorHandler(evt) {
+            var message = evt.reason;
             that.removeStream({id: stream.id});
-            pc.report.callStoppedReason = evt.reason;
+            pc.report.callStoppedReason = message;
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.fire('error', {
+                reason: message
+            });
         });
         localStreams.push(stream);
         return stream;
@@ -1404,6 +1440,15 @@ brightstream.Call = function (params) {
  * @callback brightstream.Call.onRemoteVideo
  * @param {brightstream.Event} evt
  * @param {Element} evt.element - the HTML5 Video element with the new stream attached.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.Call} evt.target
+ */
+/**
+ * When a call is in setup or media renegotiation happens. This callback will be called every time
+ * brightstream.Call#error.
+ * @callback brightstream.Call.onError
+ * @param {brightstream.Event} evt
+ * @param {boolean} evt.reason - A human-readable description of the error.
  * @param {string} evt.name - the event name.
  * @param {brightstream.Call} evt.target
  */
