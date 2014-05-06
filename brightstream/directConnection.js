@@ -26,8 +26,8 @@
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {brightstream.DirectConnection.onStart} [params.onStart] - Callback for when setup of the direct connection
  * begins. The direct connection will not be open yet.
- * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
- * connection.
+ * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors that happen during
+ * direct connection setup or media renegotiation.
  * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for closing the direct connection.
  * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for opening the direct connection.
  * @param {brightstream.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the request
@@ -345,8 +345,10 @@ brightstream.DirectConnection = function (params) {
      * @param {object} params
      * @param {string} [params.message] - The message to send.
      * @param {object} [params.object] - An object to send.
-     * @param {brightstream.DirectConnection.sendHandler} [params.onSuccess] - Success handler.
-     * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler.
+     * @param {brightstream.DirectConnection.sendHandler} [params.onSuccess] - Success handler for this invocation
+     * of this method only.
+     * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation
+     * of this method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -421,16 +423,25 @@ brightstream.DirectConnection = function (params) {
  * @param {brightstream.DirectConnection} evt.target
  */
 /**
- * Handle an error that resulted from a method call.
+ * Handle an error that resulted from a specific method call. This handler will not fire more than once.
  * @callback brightstream.DirectConnection.errorHandler
  * @param {Error} err
  */
 /**
+ * When a call is in setup or media renegotiation happens. This callback will be called every time
+ * brightstream.DirectConnection#error.
+ * @callback brightstream.DirectConnection.onError
+ * @param {brightstream.Event} evt
+ * @param {boolean} evt.reason - A human-readable description of the error.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.DirectConnection} evt.target
+ */
+/**
  * Called when the callee accepts the direct connection. This callback is called every time
  * brightstream.DirectConnection#accept is fired.
- * @callback brightstream.Call.onAccept
+ * @callback brightstream.DirectConnection.onAccept
  * @param {brightstream.Event} evt
- * @param {brightstream.Call} evt.target
+ * @param {brightstream.DirectConnection} evt.target
  */
 /**
  * Handle the successful kick-off of stats on a call.
