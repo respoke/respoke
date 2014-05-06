@@ -875,7 +875,7 @@ brightstream.SignalingChannel = function (params) {
 
             return endpoint.startDirectConnection({
                 create: (signal.signalType === 'offer'),
-                initiator: (signal.signalType !== 'offer')
+                caller: (signal.signalType !== 'offer')
             });
         }).done(function successHandler(target) {
             target = target.call || target;

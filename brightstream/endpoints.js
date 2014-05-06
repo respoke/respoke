@@ -304,8 +304,8 @@ brightstream.Endpoint = function (params) {
 
         log.trace('Endpoint.call');
         log.debug('Default callSettings is', combinedCallSettings);
-        if (params.initiator === undefined) {
-            params.initiator = true;
+        if (params.caller === undefined) {
+            params.caller = true;
         }
 
         if (!that.id) {
@@ -377,7 +377,7 @@ brightstream.Endpoint = function (params) {
         };
         call = brightstream.Call(params);
 
-        if (params.initiator === true) {
+        if (params.caller === true) {
             call.answer();
         }
         user.addCall({
@@ -432,8 +432,8 @@ brightstream.Endpoint = function (params) {
         }
 
         log.trace('Endpoint.startDirectConnection', params);
-        if (params.initiator === undefined) {
-            params.initiator = true;
+        if (params.caller === undefined) {
+            params.caller = true;
         }
 
         if (!that.id) {
@@ -498,7 +498,7 @@ brightstream.Endpoint = function (params) {
         call = brightstream.Call(params);
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
-            if (params.initiator !== true) {
+            if (params.caller !== true) {
                 if (!clientObj.user.hasListeners('direct-connection') &&
                         !clientObj.hasListeners('direct-connection') &&
                         !call.hasListeners('direct-connection')) {
@@ -514,7 +514,7 @@ brightstream.Endpoint = function (params) {
             }
         }, true);
 
-        if (params.initiator === true) {
+        if (params.caller === true) {
             call.answer(params);
         }
         return deferred.promise;
@@ -907,7 +907,7 @@ brightstream.User = function (params) {
                 call = endpoint.startCall({
                     callSettings: callSettings,
                     id: params.id,
-                    initiator: false
+                    caller: false
                 });
             } catch (e) {
                 log.error("Couldn't create Call: " + e.message);
@@ -929,7 +929,7 @@ brightstream.User = function (params) {
         if (calls.indexOf(params.call) === -1) {
             calls.push(params.call);
             if (params.call.className === 'brightstream.Call') {
-                if (!params.call.initiator && !that.hasListeners('call')) {
+                if (!params.call.caller && !that.hasListeners('call')) {
                     log.warn("Got an incoming call with no handlers to accept it!");
                     params.call.reject();
                     return;

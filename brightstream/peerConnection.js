@@ -304,7 +304,7 @@ brightstream.PeerConnection = function (params) {
     };
 
     /**
-     * Process a remote offer if we are not the initiator.
+     * Process a remote offer if we are not the caller.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
@@ -312,7 +312,7 @@ brightstream.PeerConnection = function (params) {
      */
     that.processOffer = function (oOffer) {
         log.trace('processOffer', oOffer);
-        if (that.call.initiator) {
+        if (that.call.caller) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
             signalHangup({
@@ -459,8 +459,8 @@ brightstream.PeerConnection = function (params) {
         };
         pc.ondatachannel = function ondatachannel(evt) {
             /**
-             * CAUTION: This event is only called for the non-initiator because RTCPeerConnection#ondatachannel
-             * is only called for the non-initiator.
+             * CAUTION: This event is only called for the callee because RTCPeerConnection#ondatachannel
+             * is only called for the callee.
              * @event brightstream.PeerConnection#direct-connection
              * @type {brightstream.Event}
              * @property {string} name - the event name.
@@ -509,7 +509,7 @@ brightstream.PeerConnection = function (params) {
             return;
         }
 
-        if (that.call.initiator && defSDPAnswer.promise.isPending()) {
+        if (that.call.caller && defSDPAnswer.promise.isPending()) {
             candidateSendingQueue.push(candidate);
         } else {
             signalCandidate({
@@ -538,7 +538,7 @@ brightstream.PeerConnection = function (params) {
      */
     function processQueues() {
         /* We only need to queue (and thus process queues) if
-         * we are the initiator. The person receiving the call
+         * we are the caller. The person receiving the call
          * never has a valid PeerConnection at a time when we don't
          * have one. */
         var can = null;
@@ -629,9 +629,9 @@ brightstream.PeerConnection = function (params) {
         }
         toSendHangup = true;
 
-        if (that.call.initiator === true) {
+        if (that.call.caller === true) {
             if (defSDPOffer.promise.isPending()) {
-                // Never send hangup if we are the initiator but we haven't sent any other signal yet.
+                // Never send hangup if we are the caller but we haven't sent any other signal yet.
                 toSendHangup = false;
             }
         } else {
@@ -736,7 +736,7 @@ brightstream.PeerConnection = function (params) {
     }
 
     /**
-     * Send the initiate signal to start the modify process. This method is only called by the initiator of the
+     * Send the initiate signal to start the modify process. This method is only called by the caller of the
      * renegotiation.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.startModify
@@ -775,7 +775,7 @@ brightstream.PeerConnection = function (params) {
         log.trace('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
-            that.call.initiator = true;
+            that.call.caller = true;
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
@@ -865,7 +865,7 @@ brightstream.PeerConnection = function (params) {
             action: 'accept',
             call: that.call
         });
-        that.call.initiator = false;
+        that.call.caller = false;
         defModify.resolve();
     }
 
@@ -887,7 +887,7 @@ brightstream.PeerConnection = function (params) {
             log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }
-        if (!pc || that.call.initiator && defSDPAnswer.promise.isPending()) {
+        if (!pc || that.call.caller && defSDPAnswer.promise.isPending()) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;

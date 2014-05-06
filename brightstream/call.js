@@ -14,7 +14,7 @@
  * @augments brightstream.EventEmitter
  * @param {object} params
  * @param {string} params.client - client id
- * @param {boolean} params.initiator - whether or not we initiated the call
+ * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
  * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
@@ -68,14 +68,14 @@ brightstream.Call = function (params) {
      */
     that.id = that.id || brightstream.makeGUID();
 
-    if (!that.initiator) {
+    if (!that.caller) {
         /**
-         * Whether or not the currently logged-in user is the initiator of the call.
+         * Whether or not the currently logged-in user is the caller of the call.
          * @memberof! brightstream.Call
-         * @name initiator
+         * @name caller
          * @type {boolean}
          */
-        that.initiator = false;
+        that.caller = false;
     }
 
     /**
@@ -119,9 +119,9 @@ brightstream.Call = function (params) {
      */
     var defMedia = Q.defer();
     /**
-     * Promise used to trigger notification of a request for renegotiating media. For the initiator of the
-     * renegotiation (which doesn't have to be the same as the initiator of the call), this is resolved
-     * or rejected as soon as the 'accept' or 'reject' signal is received. For the non-initiator, it is
+     * Promise used to trigger notification of a request for renegotiating media. For the caller of the
+     * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
+     * or rejected as soon as the 'accept' or 'reject' signal is received. For the callee, it is
      * resolved or rejected only after the developer or logged-in user approves or rejects the modify.
      * @memberof! brightstream.Call
      * @name defModify
@@ -277,7 +277,7 @@ brightstream.Call = function (params) {
     });
 
     /**
-     * Set up promises. If we're not the initiator, we need to listen for approval AND the remote SDP to come in
+     * Set up promises. If we're not the caller, we need to listen for approval AND the remote SDP to come in
      * before we can act on the call. Save parameters sent in with the constructor, then delete them off the call.
      * If this call was initiated with a DirectConnection, set it up so answer() will be the approval mechanism.
      * @method brightstream.Call.init
@@ -304,7 +304,7 @@ brightstream.Call = function (params) {
             throw err;
         });
 
-        if (that.initiator !== true) {
+        if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
                 if (oOffer && oOffer.sdp) {
                     pc.processOffer(oOffer.sdp);
@@ -883,7 +883,7 @@ brightstream.Call = function (params) {
         }, true);
 
         directConnection.listen('accept', function acceptHandler() {
-            if (that.initiator === false) {
+            if (that.caller === false) {
                 log.debug('Answering as a result of approval.');
                 that.answer();
                 if (defMedia && defMedia.promise.isPending()) {
@@ -938,7 +938,7 @@ brightstream.Call = function (params) {
             endpoint: that.remoteEndpoint
         });
 
-        if (that.initiator === true) {
+        if (that.caller === true) {
             directConnection.accept();
         }
 
@@ -978,7 +978,7 @@ brightstream.Call = function (params) {
         }
         toSendHangup = false;
 
-        if (!that.initiator && defApproved.promise.isPending()) {
+        if (!that.caller && defApproved.promise.isPending()) {
             defApproved.reject(new Error("Call hung up before approval."));
         }
 
@@ -1122,16 +1122,16 @@ brightstream.Call = function (params) {
      * @private
      */
     function onModifyAccept(evt) {
-        that.initiator = evt.signal.action === 'initiate' ? false : true;
+        that.caller = evt.signal.action === 'initiate' ? false : true;
         init();
 
         if (evt.signal.action !== 'initiate') {
-            defModify.resolve(); // resolved later for non-initiator
+            defModify.resolve(); // resolved later for callee
             defModify = undefined;
             return;
         }
 
-        // non-initiator only from here down
+        // callee only from here down
 
         // init the directConnection if necessary. We don't need to do anything with
         // audio or video right now.
