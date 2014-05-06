@@ -2054,6 +2054,10 @@ brightstream.Group = function (params) {
 
         if (absent) {
             that.connections.push(params.connection);
+            if (params.skipEvent) {
+                return;
+            }
+
             /**
              * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
              * of.
@@ -2124,7 +2128,10 @@ brightstream.Group = function (params) {
                 if (endpointList.indexOf(params.endpointId) === -1) {
                     endpointList.push(params.endpointId);
                 }
-                that.addMember({connection: connection});
+                that.addMember({
+                    connection: connection,
+                    skipEvent: true
+                });
             });
 
             if (endpointList.length > 0) {
