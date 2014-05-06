@@ -111,13 +111,6 @@ brightstream.SignalingChannel = function (params) {
     var appId = null;
     /**
      * @memberof! brightstream.SignalingChannel
-     * @name endpointId
-     * @private
-     * @type {string}
-     */
-    var endpointId = null;
-    /**
-     * @memberof! brightstream.SignalingChannel
      * @name token
      * @private
      * @type {string}
@@ -214,6 +207,7 @@ brightstream.SignalingChannel = function (params) {
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
+            log.verbose('client', clientObj);
         }, function errorHandler(err) {
             deferred.reject(err);
         });
@@ -321,7 +315,7 @@ brightstream.SignalingChannel = function (params) {
         wsCall({
             path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
-            objectId: clientObj.user.id
+            objectId: clientObj.endpointId
         }).fin(function finallyHandler() {
             call({
                 path: '/v1/appauthsessions',
@@ -339,8 +333,8 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * Generate and send a presence message representing the user's current status. This triggers
-     * the server to send the user's endpoint's presence.
+     * Generate and send a presence message representing the client's current status. This triggers
+     * the server to send the client's endpoint's presence.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendPresence
      * @param {object} params
@@ -854,7 +848,7 @@ brightstream.SignalingChannel = function (params) {
         Q.fcall(function makePromise() {
             toCreate = (signal.signalType === 'offer');
             if (signal.target === 'call') {
-                target = clientObj.user.getCall({
+                target = clientObj.getCall({
                     id: signal.sessionId,
                     endpointId: signal.endpointId,
                     create: toCreate
@@ -1072,7 +1066,7 @@ brightstream.SignalingChannel = function (params) {
         var group;
         var groupMessage;
 
-        if (message.header.from === clientObj.user.id) {
+        if (message.header.from === clientObj.endpointId) {
             return;
         }
 
@@ -1123,7 +1117,7 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         var connection;
 
-        if (message.endpoint === endpointId) {
+        if (message.endpoint === clientObj.endpointId) {
             return;
         }
 
@@ -1174,7 +1168,7 @@ brightstream.SignalingChannel = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpointId === clientObj.user.id) {
+        if (message.endpointId === clientObj.endpointId) {
             return;
         }
 
@@ -1269,12 +1263,9 @@ brightstream.SignalingChannel = function (params) {
                 httpMethod: 'POST'
             }).then(function successHandler(res) {
                 log.debug('endpointconnections result', res);
-                endpointId = res.endpointId;
-                onSuccess(brightstream.User({
-                    client: client,
-                    connectionId: res.id,
-                    id: res.endpointId
-                }));
+                clientObj.endpointId = res.endpointId;
+                clientObj.connectionId = res.id;
+                onSuccess();
             }, onError);
         };
     };
@@ -1290,7 +1281,7 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         var groups;
 
-        if (message.header.from === endpointId) {
+        if (message.header.from === clientObj.endpointId) {
             // Skip ourselves
             return;
         }
@@ -1368,8 +1359,8 @@ brightstream.SignalingChannel = function (params) {
 
         socket = io.connect(baseURL + '?app-token=' + appToken, connectParams);
 
-        socket.on('connect', generateConnectHandler(function onSuccess(user) {
-            deferred.resolve(user);
+        socket.on('connect', generateConnectHandler(function onSuccess() {
+            deferred.resolve();
             heartbeat = setInterval(function heartbeatHandler() {
                 that.sendMessage({
                     message: 'heartbeat',
@@ -1434,8 +1425,7 @@ brightstream.SignalingChannel = function (params) {
                 return;
             }
 
-            actuallyConnect().then(function successHandler(user) {
-                clientObj.user = user;
+            actuallyConnect().then(function successHandler() {
                 log.debug('socket reconnected');
                 return Q.all(clientObj.getGroups().map(function iterGroups(group) {
                     clientObj.join({
@@ -1447,7 +1437,7 @@ brightstream.SignalingChannel = function (params) {
                 }));
             }, function onError(err) {
                 throw new Error(err.message);
-            }).done(function successHandler(user) {
+            }).done(function successHandler() {
                 /**
                  * @event brightstream.Client#reconnect
                  * @property {string} name - the event name.
@@ -1914,11 +1904,11 @@ brightstream.SignalingMessage = function (params) {
  * @constructor
  * @param {object} params
  * @param {brightstream.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
- * endpoint has joined the group. This callback does not get called when the currently logged-in user joins the group.
+ * endpoint has joined the group. This callback does not get called when the client joins the group.
  * @param {brightstream.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
  * remote endpoints.
  * @param {brightstream.Group.onLeave} params.onLeave - A callback to receive notifications every time a new
- * endpoint has left the group. This callback does not get called when the currently logged-in user leaves the group.
+ * endpoint has left the group. This callback does not get called when the client leaves the group.
  * @returns {brightstream.Group}
  */
 brightstream.Group = function (params) {
@@ -1977,7 +1967,7 @@ brightstream.Group = function (params) {
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @return {Promise}
-     * @fires brightstream.User#leave
+     * @fires brightstream.Client#leave
      */
     that.leave = function (params) {
         params = params || {};
@@ -1987,14 +1977,14 @@ brightstream.Group = function (params) {
             id: that.id
         }).done(function successHandler() {
             /**
-             * This event is fired when the currently logged-in user leaves a group.
-             * @event brightstream.User#leave
+             * This event is fired when the client leaves a group.
+             * @event brightstream.Client#leave
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
              * @property {string} name - the event name.
-             * @property {brightstream.User} target
+             * @property {brightstream.Client} target
              */
-            clientObj.user.fire('leave', {
+            clientObj.fire('leave', {
                 group: that
             });
             deferred.resolve();
@@ -2024,7 +2014,7 @@ brightstream.Group = function (params) {
                 that.connections.splice(index, 1);
 
                 /**
-                 * This event is fired when a member leaves a group the currently logged-in user is a member of.
+                 * This event is fired when a member leaves a group the client is a member of.
                  * @event brightstream.Group#leave
                  * @type {brightstream.Event}
                  * @property {brightstream.Connection} connection

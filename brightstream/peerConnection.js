@@ -729,8 +729,8 @@ brightstream.PeerConnection = function (params) {
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.toConnection !== clientObj.user.connectionId) {
-            log.verbose("Hanging up because I didn't win the call.");
+        if (evt.signal.toConnection !== clientObj.connectionId) {
+            log.verbose("Hanging up because I didn't win the call.", evt.signal, clientObj);
             that.call.hangup({signal: false});
         }
     }

@@ -15,7 +15,7 @@
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.Client
  * @constructor
- * @augments brightstream.EventEmitter
+ * @augments brightstream.Presentable
  * @param {object} params
  * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
  * brightstream.connect, brightstream.createClient, or to client.connect.
@@ -31,14 +31,14 @@
  * operation and will limit the services you will be able to use.
  * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
  * when a disconnect occurs.
- * @param {brightstream.Client.onUserJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
- * @param {brightstream.Client.onUserLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
+ * @param {brightstream.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
+ * @param {brightstream.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
  * @param {brightstream.Client.onClientMessage} [params.onMessage] - Callback for when any message is received from anywhere on the system.
  * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
  * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
  * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
- * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
- * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user receives a request
+ * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client receives a call.
+ * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client receives a request
  * for a direct connection.
  * @returns {brightstream.Client}
  */
@@ -53,7 +53,7 @@ brightstream.Client = function (params) {
      * @type {string}
      */
     var client = brightstream.makeGUID();
-    var that = brightstream.EventEmitter(params);
+    var that = brightstream.Presentable(params);
     brightstream.instances[client] = that;
     /**
      * @memberof! brightstream.Client
@@ -83,6 +83,16 @@ brightstream.Client = function (params) {
      */
     that.connected = false;
     /**
+     * A simple POJO to store some methods we will want to override but reference later.
+     * @memberof! brightstream.Client
+     * @name superClass
+     * @private
+     * @type {object}
+     */
+    var superClass = {
+        setPresence: that.setPresence
+    };
+    /**
      * A container for baseURL, token, and appId so they won't be accessble on the console.
      * @memberof! brightstream.Client
      * @name app
@@ -98,14 +108,16 @@ brightstream.Client = function (params) {
      * operation and will limit the services you will be able to use.
      * @property {boolean} [reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
      * when a disconnect occurs.
-     * @property {onUserJoin} [onJoin] - Callback for when this client's endpoint joins a group.
-     * @property {onUserLeave} [onLeave] - Callback for when this client's endpoint leaves a group.
-     * @property {brightstream.Client.onClientMessage} [onMessage] - Callback for when any message is received from anywhere on the system.
+     * @property {onJoin} [onJoin] - Callback for when this client's endpoint joins a group.
+     * @property {onLeave} [onLeave] - Callback for when this client's endpoint leaves a group.
+     * @property {brightstream.Client.onClientMessage} [onMessage] - Callback for when any message is received
+     * from anywhere on the system.
      * @property {brightstream.Client.onConnect} [onConnect] - Callback for Client connect.
      * @property {brightstream.Client.onDisconnect} [onDisconnect] - Callback for Client disconnect.
      * @property {brightstream.Client.onReconnect} [onReconnect] - Callback for Client reconnect. Not Implemented.
-     * @property {brightstream.Client.onCall} [onCall] - Callback for when this client's user receives a call.
-     * @property {brightstream.Client.onDirectConnection} [onDirectConnection] - Callback for when this client's user receives a request
+     * @property {brightstream.Client.onCall} [onCall] - Callback for when this client receives a call.
+     * @property {brightstream.Client.onDirectConnection} [onDirectConnection] - Callback for when this client
+     * receives a request
      * for a direct connection.
      */
     var app = {
@@ -136,12 +148,6 @@ brightstream.Client = function (params) {
 
     /**
      * @memberof! brightstream.Client
-     * @name user - The currently logged-in endpoint.
-     * @type {brightstream.User}
-     */
-    that.user = null;
-    /**
-     * @memberof! brightstream.Client
      * @name groups
      * @type {Array<brightstream.Group>}
      * @private
@@ -154,6 +160,14 @@ brightstream.Client = function (params) {
      * @private
      */
     var endpoints = [];
+    /**
+     * Array of calls in progress.
+     * @memberof! brightstream.Client
+     * @name calls
+     * @private
+     * @type {array}
+     */
+    var calls = [];
 
     log.debug("Client ID is ", client);
 
@@ -209,18 +223,18 @@ brightstream.Client = function (params) {
      * operation and will limit the services you will be able to use.
      * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
      * when a disconnect occurs.
-     * @param {brightstream.Client.onUserJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
-     * @param {brightstream.Client.onUserLeave} [params.onLeave] - Callback for when this client's endpoint leaves
+     * @param {brightstream.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
+     * @param {brightstream.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves
      * a group.
      * @param {brightstream.Client.onClientMessage} [params.onMessage] - Callback for when any message is
      * received from anywhere on the system.
      * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
      * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
      * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
-     * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
+     * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client receives a call.
      * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this
-     * client's user receives a request for a direct connection.
-     * @returns {Promise<brightstream.User>}
+     * client receives a request for a direct connection.
+     * @returns {Promise}
      * @fires brightstream.Client#connect
      */
     that.connect = function (params) {
@@ -236,18 +250,15 @@ brightstream.Client = function (params) {
         that.endpointId = app.endpointId;
 
         promise = actuallyConnect(params);
-        promise.done(function successHandler(user) {
+        promise.done(function successHandler() {
             /**
              * This event is fired the first time the library connects to the cloud infrastructure.
              * @event brightstream.Client#connect
              * @type {brightstream.Event}
-             * @property {brightstream.User} user
              * @property {string} name - the event name.
              * @property {brightstream.Client} target
              */
-            that.fire('connect', {
-                user: user
-            });
+            that.fire('connect');
         });
         return promise;
     };
@@ -261,7 +272,7 @@ brightstream.Client = function (params) {
      * @param {object} params
      * @param {connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
-     * @returns {Promise<brightstream.User>}
+     * @returns {Promise}
      */
     function actuallyConnect(params) {
         params = params || {};
@@ -278,20 +289,18 @@ brightstream.Client = function (params) {
         }, function errorHandler(err) {
             log.error(err.message);
             deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
-        }).done(function successHandler(user) {
+        }).done(function successHandler() {
             that.connected = true;
-
-            that.user = user;
-            user.setOnline(); // Initiates presence.
+            that.setOnline(); // Initiates presence.
 
             /*
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */
-            user.listen('call', app.onCall);
-            user.listen('direct-connection', app.onDirectConnection);
-            user.listen('join', app.onJoin);
-            user.listen('leave', app.onLeave);
+            that.listen('call', app.onCall);
+            that.listen('direct-connection', app.onDirectConnection);
+            that.listen('join', app.onJoin);
+            that.listen('leave', app.onLeave);
 
             that.listen('message', app.onMessage);
             that.listen('connect', app.onConnect);
@@ -300,10 +309,8 @@ brightstream.Client = function (params) {
             that.listen('reconnect', app.onReconnect);
             that.listen('reconnect', setConnectedOnReconnect);
 
-            log.info('logged in as user ' + user.id);
-            log.debug(user);
-
-            deferred.resolve(user);
+            log.info('logged in as ' + that.id, that);
+            deferred.resolve();
         }, function errorHandler(err) {
             that.connected = false;
             deferred.reject("Couldn't create an endpoint.");
@@ -313,7 +320,6 @@ brightstream.Client = function (params) {
     }
 
     function setConnectedOnDisconnect() {
-        that.user = null;
         that.connected = false;
     }
 
@@ -366,7 +372,6 @@ brightstream.Client = function (params) {
      * @private
      */
     function afterDisconnect() {
-        that.user = null;
         that.connected = false;
         endpoints = [];
         groups = [];
@@ -379,26 +384,171 @@ brightstream.Client = function (params) {
         that.fire('disconnect');
     }
 
-
     /**
-     * Get the client ID. This can be used in the brightstream.getClient static method to obtain a reference
-     * to the client object. Developers can instantiate multiple clients.
+     * Overrides Presentable.setPresence to send presence to the server before updating the object.
      * @memberof! brightstream.Client
-     * @method brightstream.Client.getID
-     * @return {string} The ID of this client.
+     * @method brightstream.Client.setPresence
+     * @param {object} params
+     * @param {string} params.presence
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @return {Promise}
      */
-    that.getID = function () {
-        return client;
+    that.setPresence = function (params) {
+        params = params || {};
+        params.presence = params.presence || "available";
+        log.info('sending my presence update ' + params.presence);
+
+        return signalingChannel.sendPresence({
+            presence: params.presence,
+            onSuccess: function successHandler(p) {
+                superClass.setPresence(params);
+                if (typeof params.onSuccess === 'function') {
+                    params.onSuccess(p);
+                }
+            },
+            onError: params.onError
+        });
     };
 
     /**
-     * Get an array containing all call in progress. Returns null if not connected.
+     * Get all current calls.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getCalls
-     * @returns {Array<brightstream.Call>} A list of all the calls in progress.
+     * @returns {Array<brightstream.Call>}
      */
     that.getCalls = function () {
-        return that.user ? that.user.getCalls() : null;
+        return calls;
+    };
+
+    /**
+     * Get the Call with the endpoint specified.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.getCall
+     * @param {object} params
+     * @param {string} [params.id] - Call ID.
+     * @param {string} [params.endpointId] - Endpoint ID. Warning: If you pass only the endpointId, this method
+     * will just return the first call that matches. If you are placing multiple calls to the same endpoint,
+     * pass in the call ID, too.
+     * @param {boolean} params.create - whether or not to create a new call if the specified endpointId isn't found
+     * @returns {brightstream.Call}
+     */
+    that.getCall = function (params) {
+        var call = null;
+        var endpoint = null;
+        var clientObj = brightstream.getClient(client);
+
+        calls.every(function findCall(one) {
+            if (params.id && one.id === params.id) {
+                call = one;
+                return false;
+            }
+
+            if (!params.id && params.endpointId && one.remoteEndpoint.id === params.endpointId) {
+                call = one;
+                return false;
+            }
+            return true;
+        });
+
+        if (call === null && params.create === true) {
+            endpoint = clientObj.getEndpoint({id: params.endpointId});
+            try {
+                call = endpoint.startCall({
+                    callSettings: clientObj.getCallSettings(),
+                    id: params.id,
+                    caller: false
+                });
+            } catch (e) {
+                log.error("Couldn't create Call: " + e.message);
+            }
+        }
+        return call;
+    };
+
+    /**
+     * Associate the call with this client.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.addCall
+     * @param {object} params
+     * @param {brightstream.Call} params.call
+     * @fires brightstream.Client#call
+     * @private
+     */
+    that.addCall = function (params) {
+        if (calls.indexOf(params.call) === -1) {
+            calls.push(params.call);
+            if (params.call.className === 'brightstream.Call') {
+                if (!params.call.caller && !that.hasListeners('call')) {
+                    log.warn("Got an incoming call with no handlers to accept it!");
+                    params.call.reject();
+                    return;
+                }
+                /**
+                 * This event provides notification for when an incoming call is being received.  If the user wishes
+                 * to allow the call, the app should call evt.call.answer() to answer the call.
+                 * @event brightstream.Client#call
+                 * @type {brightstream.Event}
+                 * @property {brightstream.Call} call
+                 * @property {brightstream.Endpoint} endpoint
+                 * @property {string} name - the event name.
+                 * @property {brightstream.Client} target
+                 */
+                that.fire('call', {
+                    endpoint: params.endpoint,
+                    call: params.call
+                });
+            }
+        }
+    };
+
+    /**
+     * Remove the call or direct connection.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.removeCall
+     * @param {object} params
+     * @param {string} [params.id] Call or DirectConnection id
+     * @param {brightstream.Call} [call] Call or DirectConnection
+     * @todo TODO rename this something else or make it an event listener.
+     */
+    that.removeCall = function (params) {
+        var match = false;
+        if (!params.id && !params.call) {
+            throw new Error("Must specify endpointId of Call to remove or the call itself.");
+        }
+
+        // Loop backward since we're modifying the array in place.
+        for (var i = calls.length - 1; i >= 0; i -= 1) {
+            if (calls[i].id === params.id ||
+                    (params.call && calls[i] === params.call)) {
+                calls.splice(i);
+                match = true;
+            }
+        }
+
+        if (!match) {
+            log.warn("No call removed.");
+        }
+    };
+
+    /**
+     * Set presence to available.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.setOnline
+     * @param {object} params
+     * @param {string} [params.presence] - The presence to set.
+     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @returns {Promise}
+     */
+    that.setOnline = function (params) {
+        params = params || {};
+        params.presence = params.presence || 'available';
+        return that.setPresence(params);
     };
 
     /**
@@ -547,8 +697,8 @@ brightstream.Client = function (params) {
      * @param {brightstream.Group.onJoin} [params.onJoin] - Join event listener for endpoints who join this group only.
      * @param {brightstream.Group.onLeave} [params.onLeave] - Leave event listener for endpoints who leave
      * this group only.
-     * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the user joined.
-     * @fires brightstream.User#join
+     * @returns {Promise<brightstream.Group>} The instance of the brightstream.Group which the client joined.
+     * @fires brightstream.Client#join
      */
     that.join = function (params) {
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
@@ -568,15 +718,14 @@ brightstream.Client = function (params) {
                 onLeave: params.onLeave
             });
             /**
-             * This event is fired every time the currently logged-in endpoint joins a group. If the endpoint leaves
-             * a group, this event will be fired again on the next time the endpoint joins the group.
-             * @event brightstream.User#join
+             * This event is fired every time the client joins a group. If the client leaves
+             * a group, this event will be fired again on the next time the client joins the group.
+             * @event brightstream.Client#join
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
              * @property {string} name - the event name.
-             * @property {brightstream.User} target
              */
-            that.user.fire('join', {
+            that.fire('join', {
                 group: group
             });
             addGroup(group);
@@ -851,7 +1000,7 @@ brightstream.Client = function (params) {
      * Get the list of all endpoints that the library has knowledge of. The library gains knowledge of an endpoint
      * either when an endpoint joins a group that the currently logged-in endpoint is a member of (if group presence is
      * enabled); when an endpoint that the currently logged-in endpoint is watching (if enabled). If an endpoint that
-     * the library does not know about sends a message to the currently logged-in user, there is a special case in
+     * the library does not know about sends a message to the client, there is a special case in
      * which the developer can immediately call the getEndpoint() method on the sender of the message. This tells
      * the library to keep track of the endpoint, even though it had previously not had reason to do so.
      * @memberof! brightstream.Client
@@ -875,22 +1024,20 @@ brightstream.Client = function (params) {
  * @param {brightstream.Group} group
  */
 /**
- * Receive notification that the logged-in user has joined a group. This callback is called everytime
- * brightstream.User#join is fired.
- * @callback brightstream.Client.onUserJoin
+ * Receive notification that the client has joined a group. This callback is called everytime
+ * brightstream.Client#join is fired.
+ * @callback brightstream.Client.onJoin
  * @param {brightstream.Event} evt
  * @param {brightstream.Group} evt.group
  * @param {string} evt.name - the event name.
- * @param {brightstream.User} evt.target
  */
 /**
- * Receive notification that the logged-in user has left a group. This callback is called everytime
- * brightstream.User#leave is fired.
- * @callback brightstream.Client.onUserLeave
+ * Receive notification that the client has left a group. This callback is called everytime
+ * brightstream.Client#leave is fired.
+ * @callback brightstream.Client.onLeave
  * @param {brightstream.Event} evt
  * @param {brightstream.Group} evt.group
  * @param {string} evt.name - the event name.
- * @param {brightstream.User} evt.target
  */
 /**
  * Receive notification that a message has been received. This callback is called every time
@@ -906,18 +1053,17 @@ brightstream.Client = function (params) {
  * @param {brightstream.Client} evt.target
  */
 /**
- * Receive notification that the logged-in user is receiving a call from a remote party. This callback is called every
- * time brightstream.User#call is fired.
+ * Receive notification that the client is receiving a call from a remote party. This callback is called every
+ * time brightstream.Client#call is fired.
  * @callback brightstream.Client.onCall
  * @param {brightstream.Event} evt
  * @param {brightstream.Call} evt.call
  * @param {brightstream.Endpoint} evt.endpoint
  * @param {string} evt.name - the event name.
- * @param {brightstream.User} evt.target
  */
 /**
- * Receive notification that the logged-in user is receiving a request for a direct connection from a remote party.
- * This callback is called every time brightstream.User#direct-connection is fired.
+ * Receive notification that the client is receiving a request for a direct connection from a remote party.
+ * This callback is called every time brightstream.Client#direct-connection is fired.
  * @callback brightstream.Client.onDirectConnection
  * @param {brightstream.Event} evt
  * @param {brightstream.DirectConnection} evt.directConnection
@@ -930,7 +1076,6 @@ brightstream.Client = function (params) {
  * brightstream.Client#connect is fired.
  * @callback brightstream.Client.onConnect
  * @param {brightstream.Event} evt
- * @param {brightstream.User} evt.user
  * @param {string} evt.name - the event name.
  * @param {brightstream.Client} evt.target
  */
@@ -962,5 +1107,4 @@ brightstream.Client = function (params) {
 /**
  * Handle connection to the cloud successfully.
  * @callback brightstream.Client.connectSuccessHandler
- * @param {brightstream.User} user
  */

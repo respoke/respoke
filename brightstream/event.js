@@ -148,7 +148,7 @@ brightstream.EventEmitter = function (params) {
      * checks for the isInternal flag on each listener and doesn't count it toward an event being listened to. This
      * method is used in the library to handle situations where an action is needed if an event won't be acted on.
      * For instance, if a call comes in for the logged-in user, but the developer isn't listening to
-     * {brightstream.User#call}, we'll need to reject the call immediately.
+     * {brightstream.Client#call}, we'll need to reject the call immediately.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.hasListeners
      * @param {string} eventType - The name of the event

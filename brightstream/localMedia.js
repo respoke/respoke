@@ -233,7 +233,7 @@ brightstream.LocalMedia = function (params) {
             stream.numPc = 1;
             brightstream.streams[that.constraints] = stream;
 
-            stream.id = clientObj.user.id;
+            stream.id = clientObj.endpointId;
             attachMediaStream(videoLocalElement, stream);
             // We won't want our local video outputting audio.
             videoLocalElement.muted = true;

@@ -70,7 +70,7 @@ brightstream.Call = function (params) {
 
     if (!that.caller) {
         /**
-         * Whether or not the currently logged-in user is the caller of the call.
+         * Whether or not the client is the caller of the call.
          * @memberof! brightstream.Call
          * @name caller
          * @type {boolean}
@@ -122,7 +122,7 @@ brightstream.Call = function (params) {
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
      * or rejected as soon as the 'accept' or 'reject' signal is received. For the callee, it is
-     * resolved or rejected only after the developer or logged-in user approves or rejects the modify.
+     * resolved or rejected only after the developer or user approves or rejects the modify.
      * @memberof! brightstream.Call
      * @name defModify
      * @private
@@ -848,7 +848,7 @@ brightstream.Call = function (params) {
      * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess]
      * @param {brightstream.Client.errorHandler} [params.onError]
      * @returns {Promise<brightstream.DirectConnection>}
-     * @fires brightstream.User#direct-connection
+     * @fires brightstream.Client#direct-connection
      * @fires brightstream.Call#direct-connection
      */
     function actuallyAddDirectConnection(params) {
@@ -926,14 +926,14 @@ brightstream.Call = function (params) {
          * This event is fired when the logged-in endpoint is receiving a request to open a direct connection
          * to another endpoint.  If the user wishes to allow the direct connection, calling
          * evt.directConnection.accept() will allow the connection to be set up.
-         * @event brightstream.User#direct-connection
+         * @event brightstream.Client#direct-connection
          * @type {brightstream.Event}
          * @property {brightstream.DirectConnection} directConnection
          * @property {brightstream.Endpoint} endpoint
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
          */
-        clientObj.user.fire('direct-connection', {
+        clientObj.fire('direct-connection', {
             directConnection: directConnection,
             endpoint: that.remoteEndpoint
         });
