@@ -37,22 +37,59 @@
 brightstream.DirectConnection = function (params) {
     "use strict";
     params = params || {};
+    /**
+     * @memberof! brightstream.Client
+     * @name client
+     * @private
+     * @type {string}
+     */
     var client = params.client;
     var that = brightstream.EventEmitter(params);
     delete that.client;
+
+    /**
+     * @memberof! brightstream.Client
+     * @name className - A name to identify this class
+     * @type {string}
+     */
     that.className = 'brightstream.DirectConnection';
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name id
+     * @type {string}
+     */
     that.id = brightstream.makeGUID();
 
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name call
+     * @type {brightstream.Call}
+     */
     if (!that.call.initiator) {
         that.call.initiator = false;
     }
 
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name dataChannel
+     * @type {RTCDataChannel}
+     * @private
+     */
     var dataChannel = null;
-    var onOpen = null;
-    var onClose = null;
-    var onMessage = null;
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name clientObj
+     * @type {brightstream.Client}
+     * @private
+     */
     var clientObj = brightstream.getClient(client);
 
+    /**
+     * @memberof! brightstream.DirectConnection
+     * @name pc
+     * @type {RTCPeerConnection}
+     * @private
+     */
     var pc = params.pc;
     delete params.pc;
 
