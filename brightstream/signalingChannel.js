@@ -853,15 +853,19 @@ brightstream.SignalingChannel = function (params) {
                     endpointId: signal.endpointId,
                     create: toCreate
                 });
+                if (target) {
+                    return target;
+                }
             }
 
             endpoint = clientObj.getEndpoint({
                 id: signal.endpointId
             });
 
-            return endpoint.directConnection ? endpoint.directConnection.call : target;
+            return endpoint.directConnection ? endpoint.directConnection.call : null;
         }).then(function successHandler(target) {
             return target || endpoint.startDirectConnection({
+                id: signal.sessionId,
                 create: (signal.signalType === 'offer'),
                 caller: (signal.signalType !== 'offer')
             });
