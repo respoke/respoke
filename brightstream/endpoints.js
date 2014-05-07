@@ -351,7 +351,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var combinedCallSettings = client.getCallSettings();
+        var combinedCallSettings = client.callSettings.clone();
         params = params || {};
 
         log.trace('Endpoint.call');
@@ -470,7 +470,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var combinedConnectionSettings = client.getCallSettings();
+        var combinedConnectionSettings = client.callSettings.clone();
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var call;
 

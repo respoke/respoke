@@ -171,9 +171,8 @@ brightstream.Client = function (params) {
      * @memberof! brightstream.Client
      * @name callSettings
      * @type {object}
-     * @private
      */
-    var callSettings = {
+    that.callSettings = {
         constraints: params.constraints || {
             video : true,
             audio : true,
@@ -457,7 +456,6 @@ brightstream.Client = function (params) {
             endpoint = that.getEndpoint({id: params.endpointId});
             try {
                 call = endpoint.startCall({
-                    callSettings: callSettings,
                     id: params.id,
                     caller: false
                 });
@@ -631,43 +629,19 @@ brightstream.Client = function (params) {
      */
     function updateTurnCredentials() {
         var promise;
-        if (callSettings.disableTurn === true) {
+        if (that.callSettings.disableTurn === true) {
             return;
         }
 
         promise = getTurnCredentials();
         promise.done(params.onSuccess, params.onError);
         promise.done(function successHandler(creds) {
-            callSettings.servers.iceServers = creds;
+            that.callSettings = that.callSettings || {};
+            that.callSettings.servers = that.callSettings.servers || {};
+            that.callSettings.servers.iceServers = creds;
         }, null);
         return promise;
     }
-
-    /**
-     * Get an object containing the default media constraints and other media settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getCallSettings
-     * @returns {object} An object containing the media settings which will be used in
-     * brightstream calls.
-     * @private
-     */
-    that.getCallSettings = function () {
-        return callSettings;
-    };
-
-    /**
-     * Set the default media constraints and other media settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.setDefaultCallSettings
-     * @param {object} params
-     * @param {object} [params.constraints]
-     * @param {object} [params.servers]
-     */
-    that.setDefaultCallSettings = function (params) {
-        params = params || {};
-        callSettings.constraints = params.constraints || callSettings.constraints;
-        callSettings.servers = params.servers || callSettings.servers;
-    };
 
     /**
      * Get the SignalingChannel. This is not really a private method but we don't want our developers interacting
