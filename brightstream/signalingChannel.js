@@ -18,7 +18,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @private
  * @returns {brightstream.SignalingChannel}
  */
@@ -28,13 +28,13 @@ brightstream.SignalingChannel = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.SignalingChannel
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name className
@@ -44,11 +44,11 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.Client}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * The state of the signaling channel.
      * @memberof! brightstream.SignalingChannel
@@ -207,7 +207,7 @@ brightstream.SignalingChannel = function (params) {
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
-            log.verbose('client', clientObj);
+            log.verbose('client', client);
         }, function errorHandler(err) {
             deferred.reject(err);
         });
@@ -315,7 +315,7 @@ brightstream.SignalingChannel = function (params) {
         wsCall({
             path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
-            objectId: clientObj.endpointId
+            objectId: client.endpointId
         }).fin(function finallyHandler() {
             call({
                 path: '/v1/appauthsessions',
@@ -605,7 +605,7 @@ brightstream.SignalingChannel = function (params) {
             return Q.reject("Can't send ACK, no signal was given.");
         }
 
-        endpoint = clientObj.getEndpoint({id: params.signal.endpointId});
+        endpoint = client.getEndpoint({id: params.signal.endpointId});
         if (!endpoint) {
             return Q.reject("Can't send ACK, can't get endpoint.");
         }
@@ -848,7 +848,7 @@ brightstream.SignalingChannel = function (params) {
         Q.fcall(function makePromise() {
             toCreate = (signal.signalType === 'offer');
             if (signal.target === 'call') {
-                target = clientObj.getCall({
+                target = client.getCall({
                     id: signal.sessionId,
                     endpointId: signal.endpointId,
                     create: toCreate
@@ -858,7 +858,7 @@ brightstream.SignalingChannel = function (params) {
                 }
             }
 
-            endpoint = clientObj.getEndpoint({
+            endpoint = client.getEndpoint({
                 id: signal.endpointId
             });
 
@@ -1064,7 +1064,7 @@ brightstream.SignalingChannel = function (params) {
         var group;
         var groupMessage;
 
-        if (message.header.from === clientObj.endpointId) {
+        if (message.header.from === client.endpointId) {
             return;
         }
 
@@ -1072,7 +1072,7 @@ brightstream.SignalingChannel = function (params) {
             rawMessage: message
         });
 
-        group = clientObj.getGroup({id: message.header.channel});
+        group = client.getGroup({id: message.header.channel});
         if (group) {
             /**
              * @event brightstream.Group#message
@@ -1096,7 +1096,7 @@ brightstream.SignalingChannel = function (params) {
          * @property {string} name - the event name.
          * @property {brightstream.Client} target
          */
-        clientObj.fire('message', {
+        client.fire('message', {
             message: groupMessage,
             group: group || null
         });
@@ -1115,13 +1115,13 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         var connection;
 
-        if (message.endpoint === clientObj.endpointId) {
+        if (message.endpoint === client.endpointId) {
             return;
         }
 
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.endpoint,
-            client: client,
+            instanceId: instanceId,
             name: message.endpoint
         });
 
@@ -1132,7 +1132,7 @@ brightstream.SignalingChannel = function (params) {
             endpoint.setPresence({
                 connectionId: message.connectionId
             });
-            connection = clientObj.getConnection({
+            connection = client.getConnection({
                 connectionId: message.connectionId,
                 endpointId: message.endpoint
             });
@@ -1145,7 +1145,7 @@ brightstream.SignalingChannel = function (params) {
         if (!presenceRegistered[message.endpoint]) {
             that.registerPresence({endpointList: [message.endpoint]});
         }
-        group = clientObj.getGroup({id: message.header.channel});
+        group = client.getGroup({id: message.header.channel});
 
         if (group && connection) {
             group.addMember({connection: connection});
@@ -1166,11 +1166,11 @@ brightstream.SignalingChannel = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpointId === clientObj.endpointId) {
+        if (message.endpointId === client.endpointId) {
             return;
         }
 
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.endpointId
         });
 
@@ -1182,7 +1182,7 @@ brightstream.SignalingChannel = function (params) {
             return true;
         });
 
-        group = clientObj.getGroup({id: message.header.channel});
+        group = client.getGroup({id: message.header.channel});
         group.removeMember({connectionId: message.connectionId});
     };
 
@@ -1198,7 +1198,7 @@ brightstream.SignalingChannel = function (params) {
     var onMessage = function onMessage(message) {
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.endpointId,
             skipCreate: true
         });
@@ -1224,7 +1224,7 @@ brightstream.SignalingChannel = function (params) {
          * @property {string} name - the event name.
          * @property {brightstream.Client} target
          */
-        clientObj.fire('message', {
+        client.fire('message', {
             endpoint: endpoint || null,
             message: message
         });
@@ -1260,8 +1260,8 @@ brightstream.SignalingChannel = function (params) {
                 httpMethod: 'POST'
             }).then(function successHandler(res) {
                 log.debug('endpointconnections result', res);
-                clientObj.endpointId = res.endpointId;
-                clientObj.connectionId = res.id;
+                client.endpointId = res.endpointId;
+                client.connectionId = res.id;
                 onSuccess();
             }, onError);
         };
@@ -1278,15 +1278,15 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         var groups;
 
-        if (message.header.from === clientObj.endpointId) {
+        if (message.header.from === client.endpointId) {
             // Skip ourselves
             return;
         }
         log.verbose('socket.on presence', message);
 
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.header.from,
-            client: client,
+            instanceId: instanceId,
             name: message.header.from,
             connection: message.header.fromConnection
         });
@@ -1297,7 +1297,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         if (endpoint.getPresence() === 'unavailable') {
-            var groups = clientObj.getGroups();
+            var groups = client.getGroups();
             if (groups) {
                 groups.forEach(function eachGroup(group) {
                     group.removeMember({connectionId: message.header.fromConnection});
@@ -1409,13 +1409,13 @@ brightstream.SignalingChannel = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
-            var clientSettings = clientObj.getClientSettings();
+            var clientSettings = client.getClientSettings();
             /**
              * @event brightstream.Client#disconnect
              * @property {string} name - the event name.
              * @property {brightstream.Client} target
              */
-            clientObj.fire('disconnect');
+            client.fire('disconnect');
 
             if (clientSettings.reconnect !== true) {
                 socket = null;
@@ -1424,8 +1424,8 @@ brightstream.SignalingChannel = function (params) {
 
             actuallyConnect().then(function successHandler() {
                 log.debug('socket reconnected');
-                return Q.all(clientObj.getGroups().map(function iterGroups(group) {
-                    clientObj.join({
+                return Q.all(client.getGroups().map(function iterGroups(group) {
+                    client.join({
                         id: group.id,
                         onMessage: clientSettings.onMessage,
                         onJoin: clientSettings.onJoin,
@@ -1440,7 +1440,7 @@ brightstream.SignalingChannel = function (params) {
                  * @property {string} name - the event name.
                  * @property {brightstream.Client} target
                  */
-                clientObj.fire('reconnect');
+                client.fire('reconnect');
             }, function errorHandler(err) {
                 throw new Error(err.message);
             });
@@ -1900,6 +1900,7 @@ brightstream.SignalingMessage = function (params) {
  * @class brightstream.Group
  * @constructor
  * @param {object} params
+ * @param {string} params.instanceId
  * @param {brightstream.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
  * endpoint has joined the group. This callback does not get called when the client joins the group.
  * @param {brightstream.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
@@ -1915,13 +1916,13 @@ brightstream.Group = function (params) {
     var that = brightstream.EventEmitter(params);
     /**
      * @memberof! brightstream.Group
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
-    var clientObj = brightstream.getClient(client);
-    var signalingChannel = clientObj.getSignalingChannel();
+    var instanceId = params.instanceId;
+    var client = brightstream.getClient(instanceId);
+    var signalingChannel = client.getSignalingChannel();
 
     if (!that.id) {
         throw new Error("Can't create a group without an ID.");
@@ -1944,11 +1945,11 @@ brightstream.Group = function (params) {
     that.listen('join', params.onJoin);
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
-    clientObj.listen('disconnect', function disconnectHandler() {
+    client.listen('disconnect', function disconnectHandler() {
         that.connections = [];
     });
 
-    delete that.client;
+    delete that.instanceId;
     delete that.onMessage;
     delete that.onPresence;
     delete that.onJoin;
@@ -1969,7 +1970,6 @@ brightstream.Group = function (params) {
     that.leave = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var clientObj = brightstream.getClient(client);
         signalingChannel.leaveGroup({
             id: that.id
         }).done(function successHandler() {
@@ -1981,7 +1981,7 @@ brightstream.Group = function (params) {
              * @property {string} name - the event name.
              * @property {brightstream.Client} target
              */
-            clientObj.fire('leave', {
+            client.fire('leave', {
                 group: that
             });
             deferred.resolve();
@@ -2106,7 +2106,6 @@ brightstream.Group = function (params) {
     that.getMembers = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var clientObj = brightstream.getClient(client);
 
         if (that.connections.length > 0) {
             deferred.resolve(that.connections);
@@ -2118,7 +2117,7 @@ brightstream.Group = function (params) {
         }).done(function successHandler(list) {
             var endpointList = [];
             list.forEach(function eachMember(params) {
-                var connection = clientObj.getConnection({
+                var connection = client.getConnection({
                     endpointId: params.endpointId,
                     connectionId: params.connectionId
                 });

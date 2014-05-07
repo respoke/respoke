@@ -14,7 +14,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client
+ * @param {string} params.instanceId
  * @param {string} params.id
  * @returns {brightstream.Presentable}
  */
@@ -23,13 +23,13 @@ brightstream.Presentable = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Presentable
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.Presentable
      * @name className - A name to identify the type of this object.
@@ -45,11 +45,11 @@ brightstream.Presentable = function (params) {
 
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * Set the presence on the object and the session
@@ -79,7 +79,7 @@ brightstream.Presentable = function (params) {
             if (connection) {
                 connection.presence = params.presence;
             } else {
-                connection = clientObj.getConnection({
+                connection = client.getConnection({
                     connectionId: params.connectionId,
                     skipCreate: false,
                     endpointId: that.id
@@ -126,6 +126,7 @@ brightstream.Presentable = function (params) {
  * @augments brightstream.Presentable
  * @param {object} params
  * @param {string} params.id
+ * @param {string} params.instanceId
  * @returns {brightstream.Endpoint}
  */
 brightstream.Endpoint = function (params) {
@@ -133,27 +134,27 @@ brightstream.Endpoint = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Endpoint
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.Presentable(params);
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.DirectConnection
      * @name signalingChannel
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = clientObj.getSignalingChannel();
-    delete that.client;
+    var signalingChannel = client.getSignalingChannel();
+    delete that.instanceId;
     delete that.connectionId;
     /**
      * A name to identify the type of this object.
@@ -176,7 +177,7 @@ brightstream.Endpoint = function (params) {
      * @type {Array<brightstream.Connection>}
      */
     that.connections = [];
-    clientObj.listen('disconnect', function disconnectHandler() {
+    client.listen('disconnect', function disconnectHandler() {
         that.connections = [];
     });
 
@@ -350,8 +351,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var clientObj = brightstream.getClient(client);
-        var combinedCallSettings = clientObj.getCallSettings();
+        var combinedCallSettings = client.getCallSettings();
         params = params || {};
 
         log.trace('Endpoint.call');
@@ -371,7 +371,7 @@ brightstream.Endpoint = function (params) {
         log.debug('Final callSettings is', combinedCallSettings);
 
         params.callSettings = combinedCallSettings;
-        params.client = client;
+        params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
@@ -432,14 +432,14 @@ brightstream.Endpoint = function (params) {
         if (params.caller === true) {
             call.answer();
         }
-        clientObj.addCall({
+        client.addCall({
             call: call,
             endpoint: that
         });
 
         // Don't use params.onHangup here. Will overwrite the developer's callback.
         call.listen('hangup', function hangupListener(evt) {
-            clientObj.removeCall({id: call.id});
+            client.removeCall({id: call.id});
         }, true);
         return call;
     };
@@ -478,8 +478,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var clientObj = brightstream.getClient(client);
-        var combinedConnectionSettings = clientObj.getCallSettings();
+        var combinedConnectionSettings = client.getCallSettings();
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var call;
 
@@ -502,7 +501,7 @@ brightstream.Endpoint = function (params) {
         combinedConnectionSettings.servers = params.servers || combinedConnectionSettings.servers;
 
         params.connectionSettings = combinedConnectionSettings;
-        params.client = client;
+        params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
@@ -556,8 +555,8 @@ brightstream.Endpoint = function (params) {
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
             if (params.caller !== true) {
-                if (!clientObj.hasListeners('direct-connection') &&
-                        !clientObj.hasListeners('direct-connection') &&
+                if (!client.hasListeners('direct-connection') &&
+                        !client.hasListeners('direct-connection') &&
                         !call.hasListeners('direct-connection')) {
                     that.directConnection.reject();
                     deferred.reject(new Error("Got an incoming direct connection with no handlers to accept it!"));
@@ -679,19 +678,19 @@ brightstream.Connection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Connection
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.Presentable(params);
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * @memberof! brightstream.Connection
@@ -702,7 +701,7 @@ brightstream.Connection = function (params) {
     if (!that.id) {
         throw new Error("Can't make a connection without an id.");
     }
-    delete that.client;
+    delete that.instanceId;
     delete that.connectionId;
 
     /**
@@ -910,7 +909,7 @@ brightstream.Connection = function (params) {
      * @returns {brightstream.Endpoint}
      */
     that.getEndpoint = function () {
-        return clientObj.getEndpoint({id: that.endpointId});
+        return client.getEndpoint({id: that.endpointId});
     };
 
     return that;

@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {string} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {brightstream.Call} params.call - The call that is handling state for this direct connection.
  * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
  * it to flow peer-to-peer. The relay acts like a blind proxy.
@@ -42,13 +42,13 @@ brightstream.DirectConnection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Client
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
 
     /**
      * @memberof! brightstream.Client
@@ -81,11 +81,11 @@ brightstream.DirectConnection = function (params) {
     var dataChannel = null;
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * @memberof! brightstream.DirectConnection

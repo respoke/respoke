@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -58,13 +58,13 @@ brightstream.Call = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Call
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * A name to identify the type of object.
      * @memberof! brightstream.Call
@@ -178,11 +178,11 @@ brightstream.Call = function (params) {
     var forceTurn = null;
     /**
      * @memberof! brightstream.Call
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.getClient}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.Call
      * @name videoLocalElement
@@ -247,7 +247,7 @@ brightstream.Call = function (params) {
      * @type {brightstream.PeerConnection}
      */
     var pc = brightstream.PeerConnection({
-        client: client,
+        instanceId: instanceId,
         forceTurn: forceTurn,
         call: that,
         callSettings: callSettings,
@@ -286,7 +286,7 @@ brightstream.Call = function (params) {
             defMedia = Q.defer();
         }
 
-        clientObj.updateTurnCredentials().done(function successHandler() {
+        client.updateTurnCredentials().done(function successHandler() {
             pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
             if (defModify === undefined && directConnectionOnly === true) {
                 actuallyAddDirectConnection(params);
@@ -656,7 +656,7 @@ brightstream.Call = function (params) {
         saveParameters(params);
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
-        params.client = client;
+        params.instanceId = instanceId;
 
         stream = brightstream.LocalMedia(params);
         stream.listen('requesting-media', function waitAllowHandler(evt) {
@@ -749,7 +749,7 @@ brightstream.Call = function (params) {
         params.constraints = params.constraints || {video: true, audio: true};
         params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
         params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
-        params.client = client;
+        params.instanceId = instanceId;
 
         if (!defMedia.promise.isFulfilled()) {
             doAddVideo(params);
@@ -917,7 +917,7 @@ brightstream.Call = function (params) {
             return defMedia.promise;
         }
 
-        params.client = client;
+        params.instanceId = instanceId;
         params.pc = pc;
         params.call = that;
 
@@ -986,7 +986,7 @@ brightstream.Call = function (params) {
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
          */
-        clientObj.fire('direct-connection', {
+        client.fire('direct-connection', {
             directConnection: directConnection,
             endpoint: that.remoteEndpoint
         });

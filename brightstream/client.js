@@ -50,13 +50,15 @@ brightstream.Client = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Client
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = brightstream.makeGUID();
+    var instanceId = brightstream.makeGUID();
+    params.instanceId = instanceId;
     var that = brightstream.Presentable(params);
-    brightstream.instances[client] = that;
+    brightstream.instances[instanceId] = that;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.Client
      * @name className - A name to identify this class
@@ -171,7 +173,7 @@ brightstream.Client = function (params) {
      */
     var calls = [];
 
-    log.debug("Client ID is ", client);
+    log.debug("Client ID is ", instanceId);
 
     /**
      * @memberof! brightstream.Client
@@ -197,7 +199,7 @@ brightstream.Client = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = brightstream.SignalingChannel({'client': client, baseURL: app.baseURL});
+    var signalingChannel = brightstream.SignalingChannel({instanceId: instanceId, baseURL: app.baseURL});
 
     /**
      * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
@@ -210,7 +212,8 @@ brightstream.Client = function (params) {
      * @param {object} params
      * @param {brightstream.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation
      * of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
      * brightstream.connect, brightstream.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
@@ -273,7 +276,8 @@ brightstream.Client = function (params) {
      * @private
      * @param {object} params
      * @param {connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     function actuallyConnect(params) {
@@ -336,7 +340,8 @@ brightstream.Client = function (params) {
      * @returns {Promise}
      * @param {object} params
      * @param {disconnectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @fires brightstream.Client#disconnect
      */
     that.disconnect = function (params) {
@@ -440,7 +445,7 @@ brightstream.Client = function (params) {
     that.getCall = function (params) {
         var call = null;
         var endpoint = null;
-        var clientObj = brightstream.getClient(client);
+        var client = brightstream.getClient(instanceId);
 
         calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
@@ -456,10 +461,10 @@ brightstream.Client = function (params) {
         });
 
         if (call === null && params.create === true) {
-            endpoint = clientObj.getEndpoint({id: params.endpointId});
+            endpoint = client.getEndpoint({id: params.endpointId});
             try {
                 call = endpoint.startCall({
-                    callSettings: clientObj.getCallSettings(),
+                    callSettings: client.getCallSettings(),
                     id: params.id,
                     caller: false
                 });
@@ -563,7 +568,8 @@ brightstream.Client = function (params) {
      * broadcast to all connections for this endpoint.
      * @param {string} params.message - a string message.
      * @param {sendHandler} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -725,7 +731,7 @@ brightstream.Client = function (params) {
             id: params.id
         }).done(function successHandler() {
             var group = brightstream.Group({
-                client: client,
+                instanceId: instanceId,
                 id: params.id,
                 onMessage: params.onMessage,
                 onJoin: params.onJoin,
@@ -950,7 +956,7 @@ brightstream.Client = function (params) {
         });
 
         if (!endpoint && params && !params.skipCreate) {
-            params.client = client;
+            params.instanceId = instanceId;
             endpoint = brightstream.Endpoint(params);
             that.addEndpoint(endpoint);
         }
@@ -1018,7 +1024,7 @@ brightstream.Client = function (params) {
                 throw new Error("Couldn't find an endpoint for this connection. Did you pass in the endpointId?");
             }
 
-            params.client = client;
+            params.instanceId = instanceId;
             connection = brightstream.Connection(params);
             endpoint.connections.push(connection);
         }

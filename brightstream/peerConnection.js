@@ -15,7 +15,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
@@ -43,13 +43,13 @@ brightstream.PeerConnection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.PeerConnection
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.PeerConnection
      * @name className
@@ -168,11 +168,11 @@ brightstream.PeerConnection = function (params) {
     var candidateReceivingQueue = [];
     /**
      * @memberof! brightstream.PeerConnection
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.Client}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.PeerConnection
      * @name callSettings
@@ -803,8 +803,8 @@ brightstream.PeerConnection = function (params) {
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.toConnection !== clientObj.connectionId) {
-            log.verbose("Hanging up because I didn't win the call.", evt.signal, clientObj);
+        if (evt.signal.toConnection !== client.connectionId) {
+            log.verbose("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
     }
