@@ -432,15 +432,7 @@ brightstream.Endpoint = function (params) {
         if (params.caller === true) {
             call.answer();
         }
-        client.addCall({
-            call: call,
-            endpoint: that
-        });
 
-        // Don't use params.onHangup here. Will overwrite the developer's callback.
-        call.listen('hangup', function hangupListener(evt) {
-            client.removeCall({id: call.id});
-        }, true);
         return call;
     };
 

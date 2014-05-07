@@ -97,7 +97,7 @@ brightstream.Client = function (params) {
         setPresence: that.setPresence
     };
     /**
-     * A container for baseURL, token, and appId so they won't be accessble on the console.
+     * A container for baseURL, token, and appId so they won't be accidentally viewable in any JavaScript debugger.
      * @memberof! brightstream.Client
      * @name app
      * @type {object}
@@ -304,10 +304,14 @@ brightstream.Client = function (params) {
              * not to be duplicated on reconnect.
              */
             that.listen('call', app.onCall);
+            that.listen('call', addCall);
             that.listen('direct-connection', app.onDirectConnection);
+            that.listen('direct-connection', function (evt) {
+                evt.call = evt.directConnection.call;
+                addCall(evt);
+            });
             that.listen('join', app.onJoin);
             that.listen('leave', app.onLeave);
-
             that.listen('message', app.onMessage);
             that.listen('connect', app.onConnect);
             that.listen('disconnect', app.onDisconnect);
@@ -445,7 +449,6 @@ brightstream.Client = function (params) {
     that.getCall = function (params) {
         var call = null;
         var endpoint = null;
-        var client = brightstream.getClient(instanceId);
 
         calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
@@ -461,15 +464,15 @@ brightstream.Client = function (params) {
         });
 
         if (call === null && params.create === true) {
-            endpoint = client.getEndpoint({id: params.endpointId});
+            endpoint = that.getEndpoint({id: params.endpointId});
             try {
                 call = endpoint.startCall({
-                    callSettings: client.getCallSettings(),
+                    callSettings: callSettings,
                     id: params.id,
                     caller: false
                 });
             } catch (e) {
-                log.error("Couldn't create Call: " + e.message);
+                log.error("Couldn't create Call.", e.message, e.stack);
             }
         }
         return call;
@@ -479,57 +482,39 @@ brightstream.Client = function (params) {
      * Associate the call with this client.
      * @memberof! brightstream.Client
      * @method brightstream.Client.addCall
-     * @param {object} params
-     * @param {brightstream.Call} params.call
-     * @fires brightstream.Client#call
+     * @param {object} evt
+     * @param {brightstream.Call} evt.call
+     * @param {brightstream.Endpoint} evt.endpoint
      * @private
      */
-    that.addCall = function (params) {
-        if (calls.indexOf(params.call) === -1) {
-            calls.push(params.call);
-            if (params.call.className === 'brightstream.Call') {
-                if (!params.call.caller && !that.hasListeners('call')) {
-                    log.warn("Got an incoming call with no handlers to accept it!");
-                    params.call.reject();
+    function addCall(evt) {
+        if (calls.indexOf(evt.call) === -1) {
+            calls.push(evt.call);
+            evt.call.listen('hangup', removeCall, true);
+            if (evt.call.className === 'brightstream.Call') {
+                if (!evt.call.caller && !that.hasListeners('call')) {
+                    log.warn("Got a incoming call with no handlers to accept it!");
+                    evt.call.reject();
                     return;
                 }
-                /**
-                 * This event provides notification for when an incoming call is being received.  If the user wishes
-                 * to allow the call, the app should call evt.call.answer() to answer the call.
-                 * @event brightstream.Client#call
-                 * @type {brightstream.Event}
-                 * @property {brightstream.Call} call
-                 * @property {brightstream.Endpoint} endpoint
-                 * @property {string} name - the event name.
-                 * @property {brightstream.Client} target
-                 */
-                that.fire('call', {
-                    endpoint: params.endpoint,
-                    call: params.call
-                });
             }
         }
-    };
+    }
 
     /**
      * Remove the call or direct connection.
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeCall
-     * @param {object} params
-     * @param {string} [params.id] Call or DirectConnection id
-     * @param {brightstream.Call} [call] Call or DirectConnection
-     * @todo TODO rename this something else or make it an event listener.
+     * @param {object} evt
+     * @param {brightstream.Call} evt.target
+     * @private
      */
-    that.removeCall = function (params) {
+    function removeCall(evt) {
         var match = false;
-        if (!params.id && !params.call) {
-            throw new Error("Must specify endpointId of Call to remove or the call itself.");
-        }
 
         // Loop backward since we're modifying the array in place.
         for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if (calls[i].id === params.id ||
-                    (params.call && calls[i] === params.call)) {
+            if (calls[i].id === evt.target.id) {
                 calls.splice(i);
                 match = true;
             }
@@ -538,7 +523,7 @@ brightstream.Client = function (params) {
         if (!match) {
             log.warn("No call removed.");
         }
-    };
+    }
 
     /**
      * Set presence to available.

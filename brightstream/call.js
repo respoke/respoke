@@ -273,6 +273,7 @@ brightstream.Call = function (params) {
      * If this call was initiated with a DirectConnection, set it up so answer() will be the approval mechanism.
      * @method brightstream.Call.init
      * @memberof! brightstream.Call
+     * @fires brightstream.Client#call
      * @private
      */
     function init() {
@@ -334,6 +335,26 @@ brightstream.Call = function (params) {
                 });
             });
         }
+
+        if (directConnectionOnly === true) {
+            // create the call in stealth mode.
+            return;
+        }
+
+        /**
+         * This event provides notification for when an incoming call is being received.  If the user wishes
+         * to allow the call, the app should call evt.call.answer() to answer the call.
+         * @event brightstream.Client#call
+         * @type {brightstream.Event}
+         * @property {brightstream.Call} call
+         * @property {brightstream.Endpoint} endpoint
+         * @property {string} name - the event name.
+         * @property {brightstream.Client} target
+         */
+        client.fire('call', {
+            endpoint: that.remoteEndpoint,
+            call: that
+        });
     }
 
     /**
