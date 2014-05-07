@@ -164,14 +164,12 @@ brightstream.Client = function (params) {
      */
     var endpoints = [];
     /**
-     * Array of calls in progress.
+     * Array of calls in progress. This array should never be modified.
      * @memberof! brightstream.Client
      * @name calls
-     * @private
      * @type {array}
      */
-    var calls = [];
-
+    that.calls = [];
     log.debug("Client ID is ", instanceId);
 
     /**
@@ -426,16 +424,6 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Get all current calls.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getCalls
-     * @returns {Array<brightstream.Call>}
-     */
-    that.getCalls = function () {
-        return calls;
-    };
-
-    /**
      * Get the Call with the endpoint specified.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getCall
@@ -451,7 +439,7 @@ brightstream.Client = function (params) {
         var call = null;
         var endpoint = null;
 
-        calls.every(function findCall(one) {
+        that.calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
                 call = one;
                 return false;
@@ -489,8 +477,8 @@ brightstream.Client = function (params) {
      * @private
      */
     function addCall(evt) {
-        if (calls.indexOf(evt.call) === -1) {
-            calls.push(evt.call);
+        if (that.calls.indexOf(evt.call) === -1) {
+            that.calls.push(evt.call);
             evt.call.listen('hangup', removeCall, true);
 
             updateTurnCredentials().done(null, function (err) {
@@ -530,9 +518,9 @@ brightstream.Client = function (params) {
         var match = false;
 
         // Loop backward since we're modifying the array in place.
-        for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if (calls[i].id === evt.target.id) {
-                calls.splice(i);
+        for (var i = that.calls.length - 1; i >= 0; i -= 1) {
+            if (that.calls[i].id === evt.target.id) {
+                that.calls.splice(i);
                 match = true;
             }
         }
