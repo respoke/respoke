@@ -261,7 +261,7 @@ brightstream.Endpoint = function (params) {
     /**
      * Create a new call.
      * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.call
+     * @method brightstream.Endpoint.startCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
