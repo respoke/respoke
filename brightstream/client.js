@@ -37,11 +37,10 @@
  * from anywhere on the system.
  * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
  * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
- * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+ * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect.
  * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
  * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user
- * receives a request
- * for a direct connection.
+ * receives a request for a direct connection.
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
