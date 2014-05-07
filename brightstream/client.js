@@ -17,7 +17,7 @@
  * @constructor
  * @augments brightstream.Presentable
  * @param {object} params
- * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+ * @param {string} [params.appId] - The ID of your Brightstream app. This must be passed either to
  * brightstream.connect, brightstream.createClient, or to client.connect.
  * @param {string} [params.token] - The endpoint's authentication token.
  * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
@@ -103,7 +103,7 @@ brightstream.Client = function (params) {
      * @private
      * @property {string} [baseURL] - the URL of the cloud infrastructure's REST API.
      * @property {string} [token] - The endpoint's authentication token.
-     * @property {string} [appId] - The id of your BrightStream app.
+     * @property {string} [appId] - The id of your Brightstream app.
      * @property {string} [endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @property {boolean} [developmentMode=false] - Indication to obtain an authentication token from the service.
@@ -123,7 +123,7 @@ brightstream.Client = function (params) {
      * receives a request
      * for a direct connection.
      */
-    var app = {
+    var clientSettings = {
         baseURL: params.baseURL,
         token: params.token,
         appId: params.appId,
@@ -143,11 +143,6 @@ brightstream.Client = function (params) {
     delete that.baseURL;
     delete that.developmentMode;
     delete that.token;
-
-    if (!app.token && !app.appId) {
-        throw new Error("Can't connect without either an appId, in which case developmentMode " +
-            "must be set to true, or an token");
-    }
 
     /**
      * @memberof! brightstream.Client
@@ -196,7 +191,10 @@ brightstream.Client = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var result = brightstream.SignalingChannel({instanceId: instanceId, baseURL: app.baseURL});
+    var result = brightstream.SignalingChannel({
+        instanceId: instanceId,
+        clientSettings: clientSettings
+    });
     var signalingChannel = result.signalingChannel;
     var getTurnCredentials = result.getTurnCredentials;
 
@@ -213,7 +211,7 @@ brightstream.Client = function (params) {
      * of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+     * @param {string} [params.appId] - The ID of your Brightstream app. This must be passed either to
      * brightstream.connect, brightstream.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
      * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
@@ -248,10 +246,15 @@ brightstream.Client = function (params) {
 
         Object.keys(params).forEach(function eachParam(key) {
             if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
-                app[key] = params[key];
+                clientSettings[key] = params[key];
             }
         });
-        that.endpointId = app.endpointId;
+        that.endpointId = clientSettings.endpointId;
+
+        if (!clientSettings.token && !clientSettings.appId) {
+            throw new Error("Can't connect without either an appId, in which case developmentMode " +
+                "must be set to true, or an token");
+        }
 
         promise = actuallyConnect(params);
         promise.done(function successHandler() {
@@ -285,10 +288,8 @@ brightstream.Client = function (params) {
 
         signalingChannel.open({
             actuallyConnect: actuallyConnect,
-            appId: app.appId,
-            developmentMode: app.developmentMode,
             endpointId: that.endpointId,
-            token: app.token
+            token: clientSettings.token
         }).then(function successHandler() {
             return signalingChannel.authenticate();
         }, function errorHandler(err) {
@@ -302,20 +303,20 @@ brightstream.Client = function (params) {
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */
-            that.listen('call', app.onCall);
+            that.listen('call', clientSettings.onCall);
             that.listen('call', addCall);
-            that.listen('direct-connection', app.onDirectConnection);
+            that.listen('direct-connection', clientSettings.onDirectConnection);
             that.listen('direct-connection', function (evt) {
                 evt.call = evt.directConnection.call;
                 addCall(evt);
             });
-            that.listen('join', app.onJoin);
-            that.listen('leave', app.onLeave);
-            that.listen('message', app.onMessage);
-            that.listen('connect', app.onConnect);
-            that.listen('disconnect', app.onDisconnect);
+            that.listen('join', clientSettings.onJoin);
+            that.listen('leave', clientSettings.onLeave);
+            that.listen('message', clientSettings.onMessage);
+            that.listen('connect', clientSettings.onConnect);
+            that.listen('disconnect', clientSettings.onDisconnect);
             that.listen('disconnect', setConnectedOnDisconnect);
-            that.listen('reconnect', app.onReconnect);
+            that.listen('reconnect', clientSettings.onReconnect);
             that.listen('reconnect', setConnectedOnReconnect);
 
             log.info('logged in as ' + that.id, that);
@@ -641,17 +642,6 @@ brightstream.Client = function (params) {
         }, null);
         return promise;
     }
-
-     /**
-     * Get an object containing the client settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getClientSettings
-     * @returns {object} An object containing the client settings.
-     * @private
-     */
-    that.getClientSettings = function () {
-        return app;
-    };
 
     /**
      * Get an object containing the default media constraints and other media settings.
