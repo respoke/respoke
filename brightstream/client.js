@@ -644,18 +644,6 @@ brightstream.Client = function (params) {
     }
 
     /**
-     * Get the SignalingChannel. This is not really a private method but we don't want our developers interacting
-     * directly with the signaling channel.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getSignalingChannel
-     * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
-     * @private
-     */
-    that.getSignalingChannel = function () {
-        return signalingChannel;
-    };
-
-    /**
      * Join a Group and begin keeping track of it. Attach some event listeners.
      * @memberof! brightstream.Client
      * @method brightstream.Client.join
@@ -683,6 +671,7 @@ brightstream.Client = function (params) {
             id: params.id
         }).done(function successHandler() {
             var group = brightstream.Group({
+                signalingChannel: signalingChannel,
                 instanceId: instanceId,
                 id: params.id,
                 onMessage: params.onMessage,
@@ -886,6 +875,7 @@ brightstream.Client = function (params) {
 
         if (!endpoint && params && !params.skipCreate) {
             params.instanceId = instanceId;
+            params.signalingChannel = signalingChannel;
             endpoint = brightstream.Endpoint(params);
             endpoints.push(endpoint);
         }

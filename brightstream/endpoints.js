@@ -153,7 +153,8 @@ brightstream.Endpoint = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = client.getSignalingChannel();
+    var signalingChannel = params.signalingChannel;
+    delete that.signalingChannel;
     delete that.instanceId;
     delete that.connectionId;
     /**

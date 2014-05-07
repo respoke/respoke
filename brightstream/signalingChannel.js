@@ -1903,11 +1903,19 @@ brightstream.Group = function (params) {
      */
     var instanceId = params.instanceId;
     var client = brightstream.getClient(instanceId);
-    var signalingChannel = client.getSignalingChannel();
 
     if (!that.id) {
         throw new Error("Can't create a group without an ID.");
     }
+
+    /**
+     * @memberof! brightstream.Group
+     * @name signalingChannel
+     * @type brightstream.SignalingChannel
+     * @private
+     */
+    var signalingChannel = params.signalingChannel;
+    delete params.signalingChannel;
 
     /**
      * @memberof! brightstream.Group
