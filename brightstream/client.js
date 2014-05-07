@@ -593,7 +593,7 @@ brightstream.Client = function (params) {
      * with the local audio and/or video attached.
      * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
      * with the remote audio and/or video attached.
      * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.

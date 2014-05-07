@@ -468,12 +468,12 @@ brightstream.PeerConnection = function (params) {
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
             /**
-             * @event brightstream.PeerConnection#remote-stream-received
+             * @event brightstream.PeerConnection#connect
              * @type {brightstream.Event}
              * @property {string} name - the event name.
              * @property {brightstream.PeerConnection}
              */
-            that.fire('remote-stream-received', {
+            that.fire('connect', {
                 stream: evt.stream
             });
         };
