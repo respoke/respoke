@@ -287,7 +287,7 @@ brightstream.Endpoint = function (params) {
     /**
      * Create a new call.
      * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.call
+     * @method brightstream.Endpoint.startCall
      * @param {object} params
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
