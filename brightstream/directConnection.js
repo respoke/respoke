@@ -130,7 +130,7 @@ brightstream.DirectConnection = function (params) {
          * @event brightstream.Endpoint#error
          * @type {brightstream.Event}
          * @property {object} error
-         * @property {brightstream.DirectConnectionr} directConnection
+         * @property {brightstream.DirectConnection} directConnection
          * @property {string} name - the event name.
          * @property {brightstream.DirectConnection} target
          */
