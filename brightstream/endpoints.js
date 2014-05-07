@@ -31,8 +31,9 @@ brightstream.Presentable = function (params) {
     var that = brightstream.EventEmitter(params);
     delete that.instanceId;
     /**
+     * A name to identify the type of this object.
      * @memberof! brightstream.Presentable
-     * @name className - A name to identify the type of this object.
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.Presentable';
