@@ -33,12 +33,14 @@
  * when a disconnect occurs.
  * @param {brightstream.Client.onUserJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
  * @param {brightstream.Client.onUserLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
- * @param {brightstream.Client.onClientMessage} [params.onMessage] - Callback for when any message is received from anywhere on the system.
+ * @param {brightstream.Client.onClientMessage} [params.onMessage] - Callback for when any message is received
+ * from anywhere on the system.
  * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
  * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
  * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
  * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
- * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user receives a request
+ * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user
+ * receives a request
  * for a direct connection.
  * @returns {brightstream.Client}
  */
@@ -431,10 +433,22 @@ brightstream.Client = function (params) {
      * @param {string} [params.connectionId]
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
+     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
      * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element
      * with the remote audio and/or video attached.
+     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
-     * up
+     * up.
+     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
@@ -666,6 +680,10 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getGroup
      * @param {object} params
      * @param {string} params.id
+     * @param {brightstream.Group.onJoin} [params.onJoin] - Receive notification that an endpoint has joined this group.
+     * @param {brightstream.Group.onLeave} [params.onLeave] - Receive notification that an endpoint has left this group.
+     * @param {brightstream.Group.onMessage} [params.onMessage] - Receive notification that a message has been
+     * received to a group.
      * @returns {brightstream.Group} The group whose ID was specified.
      */
     that.getGroup = function (params) {
@@ -681,6 +699,13 @@ brightstream.Client = function (params) {
             }
             return true;
         });
+
+        if (group) {
+            group.listen('join', params.onJoin);
+            group.listen('leave', params.onLeave);
+            group.listen('message', params.onMessage);
+        }
+
         return group;
     };
 
@@ -757,8 +782,8 @@ brightstream.Client = function (params) {
      * @param {string} params.id
      * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
      * know about this Endpoint.
-     * @param {function} [onMessage] - TODO
-     * @param {function} [onPresence] - TODO
+     * @param {function} [params.onMessage] - Handle messages sent to the logged-in user from this one Endpoint.
+     * @param {function} [params.onPresence] - Handle presence notifications from this one Endpoint.
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -781,6 +806,11 @@ brightstream.Client = function (params) {
             that.addEndpoint(endpoint);
         }
 
+        if (endpoint) {
+            endpoint.listen('presence', params.onPresence);
+            endpoint.listen('message', params.onMessage);
+        }
+
         return endpoint;
     };
 
@@ -793,8 +823,8 @@ brightstream.Client = function (params) {
      * @param {object} params
      * @param {string} params.connectionId
      * @param {string} params.[endpointId] - An endpointId to use in the creation of this connection.
-     * @param {function} [onMessage] - TODO
-     * @param {function} [onPresence] - TODO
+     * @param {function} [params.onMessage] - TODO
+     * @param {function} [params.onPresence] - TODO
      * @returns {brightstream.Connection} The connection whose ID was specified.
      */
     that.getConnection = function (params) {

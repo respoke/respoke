@@ -333,21 +333,52 @@ brightstream.PeerConnection = function (params) {
                         defSDPOffer.resolve();
                         processQueues(oSession);
                     }, function errorHandler(err) {
-                        log.error("Error creating SDP answer.", err);
-                        that.report.callStoppedReason = 'Error creating SDP answer.';
+                        err = new Error("Error creating SDP answer." + err.message);
+                        that.report.callStoppedReason = err.message;
+                        /**
+                         * This event is fired on errors that occur during call setup or media negotiation.
+                         * @event brightstream.Call#error
+                         * @type {brightstream.Event}
+                         * @property {string} reason - A human readable description about the error.
+                         * @property {brightstream.Call} target
+                         * @property {string} name - the event name.
+                         */
+                        that.call.fire('error', {
+                            message: err.message
+                        });
                         defSDPOffer.reject(err);
                     });
                 }, function errorHandler(err) {
-                    err = new Error('Error calling setRemoteDescription on offer I received.', err);
-                    log.error(err.message);
+                    err = new Error('Error calling setRemoteDescription on offer I received.' + err.message);
                     that.report.callStoppedReason = err.message;
+                    /**
+                     * This event is fired on errors that occur during call setup or media negotiation.
+                     * @event brightstream.Call#error
+                     * @type {brightstream.Event}
+                     * @property {string} reason - A human readable description about the error.
+                     * @property {brightstream.Call} target
+                     * @property {string} name - the event name.
+                     */
+                    that.call.fire('error', {
+                        message: err.message
+                    });
                     defSDPOffer.reject(err);
                 }
             );
         } catch (err) {
-            var newErr = new Error("Exception calling setRemoteDescription on offer I received.", err.message);
-            log.error(newErr.message);
+            var newErr = new Error("Exception calling setRemoteDescription on offer I received." + err.message);
             that.report.callStoppedReason = newErr.message;
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: newErr.message
+            });
             defSDPOffer.reject(newErr);
         }
         return defSDPOffer.promise;
@@ -487,7 +518,17 @@ brightstream.PeerConnection = function (params) {
      */
     that.addStream = function (stream) {
         if (!pc) {
-            throw new Error("Got local stream in a precall state.");
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: "Got local stream in a precall state."
+            });
         }
         pc.addStream(stream);
     };
@@ -578,7 +619,18 @@ brightstream.PeerConnection = function (params) {
             });
             defSDPOffer.resolve(oSession);
         }, function errorHandler(p) {
-            var err = new Error('setLocalDescription failed');
+            var err = new Error('Error calling setLocalDescription on offer I created.');
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: err.message
+            });
             defSDPOffer.reject(err);
         });
     }
@@ -603,9 +655,19 @@ brightstream.PeerConnection = function (params) {
             });
             defSDPAnswer.resolve(oSession);
         }, function errorHandler(p) {
+            var err = new Error('Error calling setLocalDescription on answer I created.');
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: err.message
+            });
             defSDPAnswer.reject();
-            log.error('setLocalDescription failed');
-            log.error(p);
         });
     }
 
@@ -680,8 +742,7 @@ brightstream.PeerConnection = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        // Why does pc.iceConnectionState not transition into 'connected' even though media is flowing?
-        return (pc && pc.iceConnectionState === 'connected');
+        return (pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**
@@ -716,6 +777,19 @@ brightstream.PeerConnection = function (params) {
             function successHandler() {
                 defSDPAnswer.resolve(evt.signal.sdp);
             }, function errorHandler(p) {
+                var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
+                that.report.callStoppedReason = newErr.message;
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event brightstream.Call#error
+                 * @type {brightstream.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {brightstream.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.call.fire('error', {
+                    message: newErr.message
+                });
                 defSDPAnswer.reject();
             }
         );

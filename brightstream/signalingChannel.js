@@ -859,27 +859,25 @@ brightstream.SignalingChannel = function (params) {
                     endpointId: signal.endpointId,
                     create: toCreate
                 });
+                if (target) {
+                    return target;
+                }
             }
 
             endpoint = clientObj.getEndpoint({
                 id: signal.endpointId
             });
 
-            return endpoint.directConnection ? endpoint.directConnection.call : target;
+            return endpoint.directConnection ? endpoint.directConnection.call : null;
         }).then(function successHandler(target) {
-            if (target) {
-                return Q.fcall(function () {
-                    return target;
-                });
-            }
-
-            return endpoint.startDirectConnection({
+            return target || endpoint.startDirectConnection({
+                id: signal.sessionId,
                 create: (signal.signalType === 'offer'),
                 caller: (signal.signalType !== 'offer')
             });
         }).done(function successHandler(target) {
             target = target.call || target;
-            if (!target) {
+            if (!target || target.id !== signal.sessionId) {
                 // orphaned signal
                 log.warn("Couldn't associate signal with a call.", signal);
                 return;
@@ -1204,7 +1202,6 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Client#message
      */
     var onMessage = function onMessage(message) {
-        console.log(message);
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
         endpoint = clientObj.getEndpoint({
@@ -2065,6 +2062,10 @@ brightstream.Group = function (params) {
 
         if (absent) {
             that.connections.push(params.connection);
+            if (params.skipEvent) {
+                return;
+            }
+
             /**
              * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
              * of.
@@ -2135,7 +2136,10 @@ brightstream.Group = function (params) {
                 if (endpointList.indexOf(params.endpointId) === -1) {
                     endpointList.push(params.endpointId);
                 }
-                that.addMember({connection: connection});
+                that.addMember({
+                    connection: connection,
+                    skipEvent: true
+                });
             });
 
             if (endpointList.length > 0) {
