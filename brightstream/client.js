@@ -199,7 +199,9 @@ brightstream.Client = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = brightstream.SignalingChannel({instanceId: instanceId, baseURL: app.baseURL});
+    var result = brightstream.SignalingChannel({instanceId: instanceId, baseURL: app.baseURL});
+    var signalingChannel = result.signalingChannel;
+    var getTurnCredentials = result.getTurnCredentials;
 
     /**
      * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
@@ -491,6 +493,22 @@ brightstream.Client = function (params) {
         if (calls.indexOf(evt.call) === -1) {
             calls.push(evt.call);
             evt.call.listen('hangup', removeCall, true);
+
+            updateTurnCredentials().done(null, function (err) {
+                var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event brightstream.Call#error
+                 * @type {brightstream.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {brightstream.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.fire('error', {
+                    reason: message
+                });
+            });
+
             if (evt.call.className === 'brightstream.Call') {
                 if (!evt.call.caller && !that.hasListeners('call')) {
                     log.warn("Got a incoming call with no handlers to accept it!");
@@ -623,21 +641,19 @@ brightstream.Client = function (params) {
      * method only.
      * @private
      */
-    that.updateTurnCredentials = function () {
+    function updateTurnCredentials() {
         var promise;
         if (callSettings.disableTurn === true) {
             return;
         }
 
-        promise = signalingChannel.getTurnCredentials();
+        promise = getTurnCredentials();
         promise.done(params.onSuccess, params.onError);
         promise.done(function successHandler(creds) {
             callSettings.servers.iceServers = creds;
-        }, function errorHandler(error) {
-            throw error;
-        });
+        }, null);
         return promise;
-    };
+    }
 
      /**
      * Get an object containing the client settings.
@@ -850,29 +866,6 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Add an Endpoint. This is called when we need to start keeping track of an endpoint.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.addEndpoint
-     * @param {brightstream.Endpoint}
-     */
-    that.addEndpoint = function (newEndpoint) {
-        var absent = false;
-        if (!newEndpoint || newEndpoint.className !== 'brightstream.Endpoint') {
-            throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
-        }
-        absent = endpoints.every(function eachEndpoint(ept) {
-            if (ept.id === newEndpoint.id) {
-                return false;
-            }
-            return true;
-        });
-
-        if (absent) {
-            endpoints.push(newEndpoint);
-        }
-    };
-
-    /**
      * Remove an Endpoint. Since an endpoint can be a member of multiple groups, we can't just remove it from
      * our list on brightstream.Endpoint#leave. We must see if it's a member of any more groups. If it's not
      * a member of any other groups, we can stop keeping track of it.
@@ -943,7 +936,7 @@ brightstream.Client = function (params) {
         if (!endpoint && params && !params.skipCreate) {
             params.instanceId = instanceId;
             endpoint = brightstream.Endpoint(params);
-            that.addEndpoint(endpoint);
+            endpoints.push(endpoint);
         }
 
         if (endpoint) {

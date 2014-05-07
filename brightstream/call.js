@@ -287,25 +287,10 @@ brightstream.Call = function (params) {
             defMedia = Q.defer();
         }
 
-        client.updateTurnCredentials().done(function successHandler() {
-            pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
-            if (defModify === undefined && directConnectionOnly === true) {
-                actuallyAddDirectConnection(params);
-            }
-        }, function errorHandler(err) {
-            var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
-            /**
-             * This event is fired on errors that occur during call setup or media negotiation.
-             * @event brightstream.Call#error
-             * @type {brightstream.Event}
-             * @property {string} reason - A human readable description about the error.
-             * @property {brightstream.Call} target
-             * @property {string} name - the event name.
-             */
-            that.fire('error', {
-                reason: message
-            });
-        });
+        pc.init(callSettings); // instantiates RTCPeerConnection, can't call on modify
+        if (defModify === undefined && directConnectionOnly === true) {
+            actuallyAddDirectConnection(params);
+        }
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {

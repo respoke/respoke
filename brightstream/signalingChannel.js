@@ -1461,9 +1461,10 @@ brightstream.SignalingChannel = function (params) {
      * invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
+     * @private
      * @return {Promise<Array>}
      */
-    that.getTurnCredentials = function (params) {
+    function getTurnCredentials(params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -1500,7 +1501,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    };
+    }
 
     /**
      * Construct a websocket API call and return the formatted response and errors. The 'success'
@@ -1720,7 +1721,7 @@ brightstream.SignalingChannel = function (params) {
         }
     }
 
-    return that;
+    return {signalingChannel: that, getTurnCredentials: getTurnCredentials};
 }; // End brightstream.SignalingChannel
 /**
  * Handle an error that resulted from a method call.
