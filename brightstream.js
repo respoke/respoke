@@ -184,7 +184,6 @@ Object.defineProperty(Object.prototype, 'isNumber', {
 Object.defineProperty(Object.prototype, 'clone', {
     value: function () {
         "use strict";
-        console.log('clone', this);
         return JSON.parse(JSON.stringify(this));
     },
     enumerable: false,
