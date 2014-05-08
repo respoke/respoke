@@ -12,9 +12,11 @@
  * @global
  */
 /*global Bugsnag: true, brightstream: true*/
+/*jshint bitwise: false*/
 (function brightstreamInit() {
     'use strict';
     window.brightstream = {
+        buildNumber: 'NO BUILD NUMBER',
         streams: {},
         instances: {}
     };
@@ -114,9 +116,27 @@ brightstream.createClient = function (params) {
  * @member brightstream
  * @returns {number}
  */
-brightstream.makeUniqueID = function () {
+brightstream.makeGUID = function () {
     "use strict";
-    return Math.floor(Math.random() * 100000000);
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+    var uuid = new Array(36);
+    var rnd = 0;
+    var r;
+    for (var i = 0; i < 36; i += 1) {
+        if (i === 8 || i === 13 ||  i === 18 || i === 23) {
+            uuid[i] = '-';
+        } else if (i === 14) {
+            uuid[i] = '4';
+        } else {
+            if (rnd <= 0x02) {
+                rnd = 0x2000000 + (Math.random() * 0x1000000) | 0;
+            }
+            r = rnd & 0xf;
+            rnd = rnd >> 4;
+            uuid[i] = chars[(i === 19) ? (r & 0x3) | 0x8 : r];
+        }
+    }
+    return uuid.join('');
 };
 
 /**
@@ -178,4 +198,40 @@ brightstream.Class = function (params) {
     });
 
     return that;
-}; // End brightstream.Class
+};
+
+/**
+ * Does the browser support UserMedia
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasUserMedia = function () {
+    "use strict";
+    return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) instanceof Function;
+};
+
+/**
+ * Does the browser support RTCPeerConnection
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasRTCPeerConnection = function () {
+    "use strict";
+    return (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection) instanceof Function;
+};
+
+/**
+ * Does the browser support WebSocket
+ * @static
+ * @member brightstream
+ * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
+ */
+brightstream.hasWebsocket = function () {
+    "use strict";
+    return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
+};// End brightstream.Class

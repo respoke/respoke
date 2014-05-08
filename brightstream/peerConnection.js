@@ -245,13 +245,10 @@ brightstream.PeerConnection = function (params) {
      * @desc A signaling function constructed from the one passed to us by the signaling channel with additions
      * to facilitate candidate logging.
      */
-    function signalCandidate(oCan) {
-        signalCandidateOrig({
-            candidate: oCan,
-            callId: that.call.id,
-            connectionId: that.call.connectionId
-        });
-        that.report.candidatesSent.push(oCan);
+    function signalCandidate(params) {
+        params.iceCandidates = [params.candidate];
+        signalCandidateOrig(params);
+        that.report.candidatesSent.push({candidate: params.candidate});
     }
 
     /**
@@ -286,7 +283,7 @@ brightstream.PeerConnection = function (params) {
         callerconnection: that.call.initiator ? clientObj.user.id : that.call.connectionId,
         calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : clientObj.user.name,
         calleeconnection: that.call.initiator ? that.call.connectionId : clientObj.user.id,
-        callId: that.call.id,
+        sessionId: that.call.id,
         lastSDPString: '',
         sdpsSent: [],
         sdpsReceived: [],
@@ -323,8 +320,7 @@ brightstream.PeerConnection = function (params) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
             signalTerminate({
-                connectionId: that.call.connectionId,
-                callId: that.call.id
+                call: that.call
             });
             defSDPOffer.reject();
             return;
@@ -386,11 +382,13 @@ brightstream.PeerConnection = function (params) {
                 var stats = brightstream.MediaStats({
                     peerConnection: pc,
                     interval: params.interval,
-                    onStats: function (stats) {
+                    onStats: function statsHandler(stats) {
                         /**
                          * @event brightstream.PeerConnection#stats
                          * @type {brightstream.Event}
                          * @property {object} stats - an object with stats in it.
+                         * @property {string} name - the event name.
+                         * @property {brightstream.PeerConnection}
                          */
                         that.fire('stats', {
                             stats: stats
@@ -398,7 +396,7 @@ brightstream.PeerConnection = function (params) {
                         that.report.stats.push(stats);
                     }
                 });
-                that.listen('close', function (evt) {
+                that.listen('close', function closeHandler(evt) {
                     stats.stopStats();
                 }, true);
                 deferred.resolve(stats);
@@ -443,6 +441,8 @@ brightstream.PeerConnection = function (params) {
             /**
              * @event brightstream.PeerConnection#remote-stream-received
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('remote-stream-received', {
                 stream: evt.stream
@@ -452,6 +452,8 @@ brightstream.PeerConnection = function (params) {
             /**
              * @event brightstream.PeerConnection#remote-stream-removed
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('remote-stream-removed', {
                 stream: evt.stream
@@ -463,6 +465,8 @@ brightstream.PeerConnection = function (params) {
              * is only called for the non-initiator.
              * @event brightstream.PeerConnection#direct-connection
              * @type {brightstream.Event}
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('direct-connection', {
                 channel: evt.channel
@@ -495,21 +499,25 @@ brightstream.PeerConnection = function (params) {
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.onIceCandidate
      * @private
-     * @param {RTCICECandidate}
+     * @param {RTCIceCandidate}
      */
     function onIceCandidate(oCan) {
-        if (!oCan.candidate || !oCan.candidate.candidate) {
+        var candidate = oCan.candidate; // {candidate: ..., sdpMLineIndex: ... }
+        if (!candidate || !candidate.candidate) {
             return;
         }
 
-        if (forceTurn === true && oCan.candidate.candidate.indexOf("typ relay") === -1) {
+        if (forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
             return;
         }
 
         if (that.call.initiator && defSDPAnswer.promise.isPending()) {
-            candidateSendingQueue.push(oCan.candidate);
+            candidateSendingQueue.push(candidate);
         } else {
-            signalCandidate(oCan.candidate);
+            signalCandidate({
+                candidate: candidate,
+                call: that.call
+            });
         }
     }
 
@@ -537,11 +545,14 @@ brightstream.PeerConnection = function (params) {
          * have one. */
         var can = null;
         for (var i = 0; i < candidateSendingQueue.length; i += 1) {
-            signalCandidate(candidateSendingQueue[i]);
+            signalCandidate({
+                candidate: candidateSendingQueue[i],
+                call: that.call
+            });
         }
         candidateSendingQueue = [];
         for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            that.addRemoteCandidate(candidateReceivingQueue[i]);
+            that.addRemoteCandidate({candidate: candidateReceivingQueue[i]});
         }
         candidateReceivingQueue = [];
     }
@@ -564,8 +575,8 @@ brightstream.PeerConnection = function (params) {
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
             signalOffer({
-                sdp: oSession,
-                callId: that.call.id
+                call: that.call,
+                sdp: oSession
             });
             defSDPOffer.resolve(oSession);
         }, function errorHandler(p) {
@@ -593,8 +604,7 @@ brightstream.PeerConnection = function (params) {
             oSession.type = 'answer';
             signalAnswer({
                 sdp: oSession,
-                callId: that.call.id,
-                connectionId: that.call.connectionId
+                call: that.call
             });
             defSDPAnswer.resolve(oSession);
         }, function errorHandler(p) {
@@ -635,27 +645,26 @@ brightstream.PeerConnection = function (params) {
             }
         }
 
-        clientObj.updateTurnCredentials();
-
         toSendBye = (typeof params.signal === 'boolean' ? params.signal : toSendBye);
         if (toSendBye) {
             log.info('sending bye');
             signalTerminate({
-                connectionId: that.call.connectionId,
-                callId: that.call.id
+                call: that.call
             });
         }
 
         that.report.callStopped = new Date().getTime();
         signalReport({
             report: that.report,
-            connectionId: that.call.connectionId
+            call: that.call
         });
 
         /**
          * @event brightstream.PeerConnection#close
          * @type {brightstream.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
+         * @property {string} name - the event name.
+         * @property {brightstream.PeerConnection}
          */
         that.fire('close', {
             sentSignal: toSendBye
@@ -694,7 +703,7 @@ brightstream.PeerConnection = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-        defSDPAnswer.promise.done(processQueues, function () {
+        defSDPAnswer.promise.done(processQueues, function successHandler() {
             log.error('set remote desc of answer failed', evt.signal.sdp);
             that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
             that.close();
@@ -708,8 +717,7 @@ brightstream.PeerConnection = function (params) {
         }
         that.call.connectionId = evt.signal.connectionId;
         signalConnected({
-            connectionId: that.call.connectionId,
-            callId: that.call.id
+            call: that.call
         });
 
         pc.setRemoteDescription(
@@ -723,13 +731,15 @@ brightstream.PeerConnection = function (params) {
     }
 
     /**
-     * Save the answer and tell the browser about it.
+     * Figure out who won the call. This necessary to prevent two connections of the same endpoint from thinking
+     * they are both on the same call.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.listenConnected
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.connectionId !== clientObj.user.id) {
+        if (evt.signal.toConnection !== clientObj.user.connectionId) {
+            log.verbose("Hanging up because I didn't win the call.");
             that.call.hangup({signal: false});
         }
     }
@@ -745,7 +755,7 @@ brightstream.PeerConnection = function (params) {
      */
     that.startModify = function (params) {
         defModify = Q.defer();
-        defModify.promise.done(function () {
+        defModify.promise.done(function successHandler() {
             // No offer/answer when tearing down direct connection.
             if (params.directConnection !== false) {
                 defSDPOffer = Q.defer();
@@ -755,10 +765,9 @@ brightstream.PeerConnection = function (params) {
         });
         signalModify({
             action: 'initiate',
-            connectionId: that.call.connectionId,
+            call: that.call,
             constraints: params.constraints,
-            directConnection: params.directConnection,
-            callId: that.call.id
+            directConnection: params.directConnection
         });
     };
 
@@ -781,6 +790,8 @@ brightstream.PeerConnection = function (params) {
                 /**
                  * @event brightstream.PeerConnection#modify-accept
                  * @type {brightstream.Event}
+                 * @property {string} name - the event name.
+                 * @property {brightstream.PeerConnection}
                  */
                 that.fire('modify-accept', {signal: evt.signal});
             }
@@ -794,6 +805,8 @@ brightstream.PeerConnection = function (params) {
                  * @event brightstream.PeerConnection#modify-reject
                  * @type {brightstream.Event}
                  * @property {Error} err
+                 * @property {string} name - the event name.
+                 * @property {brightstream.PeerConnection}
                  */
                 that.fire('modify-reject', {err: err});
             }
@@ -811,12 +824,13 @@ brightstream.PeerConnection = function (params) {
              * @event brightstream.PeerConnection#modify-reject
              * @type {brightstream.Event}
              * @property {Error} err
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('modify-reject', {err: err});
             signalModify({
                 action: 'reject',
-                callId: that.call.id,
-                connectionId: that.call.connectionId
+                call: that.call
             });
             return;
         }
@@ -829,12 +843,13 @@ brightstream.PeerConnection = function (params) {
              * @event brightstream.PeerConnection#modify-reject
              * @type {brightstream.Event}
              * @property {Error} err
+             * @property {string} name - the event name.
+             * @property {brightstream.PeerConnection}
              */
             that.fire('modify-reject', {err: err});
             signalModify({
                 action: 'reject',
-                callId: that.call.id,
-                connectionId: that.call.connectionId
+                call: that.call
             });
             defModify.reject(err);
             return;
@@ -851,12 +866,13 @@ brightstream.PeerConnection = function (params) {
          * @event brightstream.PeerConnection#modify-accept
          * @type {brightstream.Event}
          * @property {object} signal
+         * @property {string} name - the event name.
+         * @property {brightstream.PeerConnection}
          */
         that.fire('modify-accept', {signal: evt.signal});
         signalModify({
             action: 'accept',
-            callId: that.call.id,
-            connectionId: that.call.connectionId
+            call: that.call
         });
         that.call.initiator = false;
         defModify.resolve();
@@ -867,33 +883,32 @@ brightstream.PeerConnection = function (params) {
      * we can process them after we receive the answer.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.addRemoteCandidate
-     * @param {object} evt
-     * @param {object} evt.signal - The signal, including the ICE candidate.
+     * @param {object} params
+     * @param {RTCIceCandidate} params.candidate
      */
-    that.addRemoteCandidate = function (evt) {
-        var candidate;
-        if (!evt || !evt.signal || !evt.signal.candidate || evt.signal.candidate.candidate === null) {
+    that.addRemoteCandidate = function (params) {
+        params = params || {};
+        if (!params.candidate) {
             return;
         }
-        candidate = evt.signal;
 
-        if (!candidate.candidate.hasOwnProperty('sdpMLineIndex') || !candidate.candidate) {
-            log.warn("addRemoteCandidate got wrong format!", candidate);
+        if (!params.candidate.hasOwnProperty('sdpMLineIndex')) {
+            log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }
         if (!pc || that.call.initiator && defSDPAnswer.promise.isPending()) {
-            candidateReceivingQueue.push(candidate);
+            candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;
         }
         try {
-            pc.addIceCandidate(new RTCIceCandidate(candidate.candidate));
+            pc.addIceCandidate(new RTCIceCandidate(params.candidate));
         } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message, candidate.candidate);
+            log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
             return;
         }
-        log.debug('Got a remote candidate.', candidate.candidate);
-        that.report.candidatesReceived.push(candidate.candidate);
+        log.verbose('Got a remote candidate.', params.candidate);
+        that.report.candidatesReceived.push(params.candidate);
     };
 
     /**

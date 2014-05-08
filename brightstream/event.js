@@ -66,7 +66,7 @@ brightstream.EventEmitter = function (params) {
         eventList[eventType] = eventList[eventType] || [];
         listener.isInternal = !!isInternal; // boolify
 
-        if (typeof listener === 'function' && eventList[eventType].map(function (a) {
+        if (typeof listener === 'function' && eventList[eventType].map(function eachListener(a) {
             return a.toString();
         }).indexOf(listener.toString()) === -1) {
             eventList[eventType].push(listener);
@@ -121,25 +121,26 @@ brightstream.EventEmitter = function (params) {
         var args = null;
         var count = 0;
 
-        if (!eventType || !eventList[eventType]) {
+        if (!eventType) {
             return;
         }
 
+        eventList[eventType] = eventList[eventType] || [];
         evt = evt || {};
         evt.name = eventType;
         evt.target = that;
-        evt = brightstream.Event(evt);
+        evt = brightstream.buildEvent(evt);
         eventList[eventType].forEach(function fireListener(listener) {
             if (typeof listener === 'function') {
                 try {
                     listener.call(that, evt);
                     count += 1;
                 } catch (e) {
-                    log.error('Error in ' + that.className + "#" + eventType, e);
+                    log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
                 }
             }
         });
-        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
+        log.verbose("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 
     /**
@@ -162,7 +163,7 @@ brightstream.EventEmitter = function (params) {
             return false;
         }
 
-        return !eventList[eventType].every(function (listener) {
+        return !eventList[eventType].every(function eachListener(listener) {
             return listener.isInternal;
         });
     };
@@ -171,18 +172,23 @@ brightstream.EventEmitter = function (params) {
 }; // End brightstream.EventEmitter
 
 /**
- * Create a generic Event object for EventEmitters to pass to event listeners. In addition to the two properties
- * mentioned below, this object will retain any other properties passed into the factory. This structure is used
- * to construct arbitrary POJO's to be used as event values.
+ * This is the factory for objects that EventEmitters pass to event listeners. In addition to the two mandatory
+ * properties mentioned below (name and target), this object will contain other properties and objects meant to provide
+ * context and easy access to certain objects and information that might be needed in handling the event.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.Event
+ * @memberof! brightstream
+ * @method brightstream.buildEvent
+ * @static
+ * @private
+ * @typedef {object} brightstream.Event
  * @property {string} name
  * @property {brightstream.Class} target
- * @constructor
- * @private
- * @returns {brightstream.Event}
+ * @property {brightstream.DirectConnection] [directConnection]
+ * @property {brightstream.Call] [call]
+ * @property {brightstream.Endpoint] [endpoint]
+ * @property {brightstream.Connection] [connection]
  */
-brightstream.Event = function (that) {
+brightstream.buildEvent = function (that) {
     "use strict";
 
     if (!that.name) {

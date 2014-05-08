@@ -38,7 +38,7 @@ brightstream.DirectConnection = function (params) {
     var that = brightstream.EventEmitter(params);
     delete that.client;
     that.className = 'brightstream.DirectConnection';
-    that.id = brightstream.makeUniqueID().toString();
+    that.id = brightstream.makeGUID();
 
     if (!that.call.initiator) {
         that.call.initiator = false;
@@ -131,6 +131,8 @@ brightstream.DirectConnection = function (params) {
          * @type {brightstream.Event}
          * @property {object} error
          * @property {brightstream.DirectConnection) directConnection
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('error', {
             error: error
@@ -157,6 +159,8 @@ brightstream.DirectConnection = function (params) {
          * @type {brightstream.Event}
          * @property {object} message
          * @property {brightstream.DirectConnection} directConnection
+         * @property {string} name - the event name.
+         * @property {brightstream.Call} target
          */
         that.call.remoteEndpoint.fire('message', {
             message: message,
@@ -167,6 +171,8 @@ brightstream.DirectConnection = function (params) {
          * @type {brightstream.Event}
          * @property {object} message
          * @property {brightstream.Endpoint} endpoint
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('message', {
             message: message,
@@ -186,6 +192,8 @@ brightstream.DirectConnection = function (params) {
         /**
          * @event brightstream.DirectConnection#open
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('open');
     }
@@ -202,6 +210,8 @@ brightstream.DirectConnection = function (params) {
         /**
          * @event brightstream.DirectConnection#close
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('close');
     }
@@ -225,6 +235,8 @@ brightstream.DirectConnection = function (params) {
          * DirectConnection#open for that notification.
          * @event brightstream.DirectConnection#started
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('started');
     }
@@ -255,6 +267,8 @@ brightstream.DirectConnection = function (params) {
         /**
          * @event brightstream.DirectConnection#accept
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('accept');
     };
@@ -275,6 +289,8 @@ brightstream.DirectConnection = function (params) {
         /**
          * @event brightstream.DirectConnection#close
          * @type {brightstream.Event}
+         * @property {string} name - the event name.
+         * @property {brightstream.DirectConnection} target
          */
         that.fire('close');
 
