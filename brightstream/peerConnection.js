@@ -281,8 +281,8 @@ brightstream.PeerConnection = function (params) {
         callStopped: 0,
         callerendpoint: that.call.initiator ? clientObj.user.name : that.call.remoteEndpoint.id,
         callerconnection: that.call.initiator ? clientObj.user.id : that.call.connectionId,
-        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : clientObj.user.name,
-        calleeconnection: that.call.initiator ? that.call.connectionId : clientObj.user.id,
+        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : clientObj.user.id,
+        calleeconnection: that.call.initiator ? that.call.connectionId : clientObj.user.connectionId,
         sessionId: that.call.id,
         lastSDPString: '',
         sdpsSent: [],
@@ -655,8 +655,7 @@ brightstream.PeerConnection = function (params) {
 
         that.report.callStopped = new Date().getTime();
         signalReport({
-            report: that.report,
-            call: that.call
+            report: that.report
         });
 
         /**

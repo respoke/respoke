@@ -288,9 +288,8 @@ brightstream.Endpoint = function (params) {
             });
         };
         params.signalReport = function (signalParams) {
-            log.debug("Sending debug report");
-            log.debug(signalParams.report);
-            //signalingChannel.sendReport(signalParams);
+            log.debug("Sending debug report", signalParams.report);
+            signalingChannel.sendReport(signalParams);
         };
         call = brightstream.Call(params);
 
