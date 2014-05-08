@@ -279,6 +279,10 @@ brightstream.PeerConnection = function (params) {
     that.report = {
         callStarted: 0,
         callStopped: 0,
+        callerendpoint: that.call.initiator ? clientObj.user.name : that.call.remoteEndpoint.id,
+        callerconnection: that.call.initiator ? clientObj.user.id : that.call.connectionId,
+        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : clientObj.user.id,
+        calleeconnection: that.call.initiator ? that.call.connectionId : clientObj.user.connectionId,
         sessionId: that.call.id,
         lastSDPString: '',
         sdpsSent: [],
@@ -593,6 +597,9 @@ brightstream.PeerConnection = function (params) {
         oSession.type = 'answer';
         log.debug('setting and sending answer', oSession);
         that.report.sdpsSent.push(oSession);
+        if (!that.call.initiator) {
+            that.report.callerconnection = that.call.connectionId;
+        }
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
             signalAnswer({
@@ -648,8 +655,7 @@ brightstream.PeerConnection = function (params) {
 
         that.report.callStopped = new Date().getTime();
         signalReport({
-            report: that.report,
-            call: that.call
+            report: that.report
         });
 
         /**
@@ -705,6 +711,10 @@ brightstream.PeerConnection = function (params) {
 
         that.report.sdpsReceived.push(evt.signal.sdp);
         that.report.lastSDPString = evt.signal.sdp.sdp;
+        if (that.call.initiator) {
+            that.report.calleeconnection = evt.signal.connectionId;
+        }
+        that.call.connectionId = evt.signal.connectionId;
         signalConnected({
             call: that.call
         });
