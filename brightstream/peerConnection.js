@@ -15,7 +15,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
@@ -26,12 +26,12 @@
  * @param {function} params.signalConnected - Signaling action from SignalingChannel.
  * @param {function} params.signalModify - Signaling action from SignalingChannel.
  * @param {function} params.signalAnswer - Signaling action from SignalingChannel.
- * @param {function} params.signalTerminate - Signaling action from SignalingChannel.
+ * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {function} [params.onHangup] - Callback for the developer to be notified about hangup.
- * @param {function} [params.onStats] - Callback for the developer to receive statistics about the call. This is only
- * used if call.getStats() is called and the stats module is loaded.
+ * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for the developer to receive
+ * statistics about the call. This is only used if call.getStats() is called and the stats module is loaded.
  * @param {object} [params.callSettings]
  * @param {object} [params.pcOptions]
  * @param {object} [params.offerOptions]
@@ -43,13 +43,13 @@ brightstream.PeerConnection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.PeerConnection
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.PeerConnection
      * @name className
@@ -58,12 +58,12 @@ brightstream.PeerConnection = function (params) {
     that.className = 'brightstream.PeerConnection';
 
     /**
-     * Whether or not we will send a 'bye' signal to the other side during hangup.
+     * Whether or not we will send a 'hangup' signal to the other side during hangup.
      * @memberof! brightstream.PeerConnection
-     * @name toSendBye
+     * @name toSendHangup
      * @type {brightstream.Endpoint}
      */
-    var toSendBye;
+    var toSendHangup;
     /**
      * @memberof! brightstream.PeerConnection
      * @name state
@@ -120,7 +120,7 @@ brightstream.PeerConnection = function (params) {
      * @memberof! brightstream.PeerConnection
      * @name previewLocalMedia
      * @private
-     * @type {function}
+     * @type {brightstream.Call.previewLocalMedia}
      * @desc A callback provided by the developer that we'll call after receiving local media and before
      * approve() is called.
      */
@@ -168,11 +168,11 @@ brightstream.PeerConnection = function (params) {
     var candidateReceivingQueue = [];
     /**
      * @memberof! brightstream.PeerConnection
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.Client}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.PeerConnection
      * @name callSettings
@@ -215,12 +215,12 @@ brightstream.PeerConnection = function (params) {
     var signalAnswer = params.signalAnswer;
     /**
      * @memberof! brightstream.PeerConnection
-     * @name signalTerminate
+     * @name signalHangup
      * @private
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalTerminate = params.signalTerminate;
+    var signalHangup = params.signalHangup;
     /**
      * @memberof! brightstream.PeerConnection
      * @name signalReport
@@ -279,10 +279,10 @@ brightstream.PeerConnection = function (params) {
     that.report = {
         callStarted: 0,
         callStopped: 0,
-        callerendpoint: that.call.initiator ? clientObj.user.name : that.call.remoteEndpoint.id,
-        callerconnection: that.call.initiator ? clientObj.user.id : that.call.connectionId,
-        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : clientObj.user.id,
-        calleeconnection: that.call.initiator ? that.call.connectionId : clientObj.user.connectionId,
+        callerendpoint: that.call.initiator ? client.name : that.call.remoteEndpoint.id,
+        callerconnection: that.call.initiator ? client.id : that.call.connectionId,
+        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : client.id,
+        calleeconnection: that.call.initiator ? that.call.connectionId : client.connectionId,
         sessionId: that.call.id,
         lastSDPString: '',
         sdpsSent: [],
@@ -308,7 +308,7 @@ brightstream.PeerConnection = function (params) {
     };
 
     /**
-     * Process a remote offer if we are not the initiator.
+     * Process a remote offer if we are not the caller.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
@@ -316,10 +316,10 @@ brightstream.PeerConnection = function (params) {
      */
     that.processOffer = function (oOffer) {
         log.trace('processOffer', oOffer);
-        if (that.call.initiator) {
+        if (that.call.caller) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
-            signalTerminate({
+            signalHangup({
                 call: that.call
             });
             defSDPOffer.reject();
@@ -337,21 +337,52 @@ brightstream.PeerConnection = function (params) {
                         defSDPOffer.resolve();
                         processQueues(oSession);
                     }, function errorHandler(err) {
-                        log.error("Error creating SDP answer.", err);
-                        that.report.callStoppedReason = 'Error creating SDP answer.';
+                        err = new Error("Error creating SDP answer." + err.message);
+                        that.report.callStoppedReason = err.message;
+                        /**
+                         * This event is fired on errors that occur during call setup or media negotiation.
+                         * @event brightstream.Call#error
+                         * @type {brightstream.Event}
+                         * @property {string} reason - A human readable description about the error.
+                         * @property {brightstream.Call} target
+                         * @property {string} name - the event name.
+                         */
+                        that.call.fire('error', {
+                            message: err.message
+                        });
                         defSDPOffer.reject(err);
                     });
                 }, function errorHandler(err) {
-                    err = new Error('Error calling setRemoteDescription on offer I received.', err);
-                    log.error(err.message);
+                    err = new Error('Error calling setRemoteDescription on offer I received.' + err.message);
                     that.report.callStoppedReason = err.message;
+                    /**
+                     * This event is fired on errors that occur during call setup or media negotiation.
+                     * @event brightstream.Call#error
+                     * @type {brightstream.Event}
+                     * @property {string} reason - A human readable description about the error.
+                     * @property {brightstream.Call} target
+                     * @property {string} name - the event name.
+                     */
+                    that.call.fire('error', {
+                        message: err.message
+                    });
                     defSDPOffer.reject(err);
                 }
             );
         } catch (err) {
-            var newErr = new Error("Exception calling setRemoteDescription on offer I received.", err.message);
-            log.error(newErr.message);
+            var newErr = new Error("Exception calling setRemoteDescription on offer I received." + err.message);
             that.report.callStoppedReason = newErr.message;
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: newErr.message
+            });
             defSDPOffer.reject(newErr);
         }
         return defSDPOffer.promise;
@@ -362,11 +393,13 @@ brightstream.PeerConnection = function (params) {
      * statistics, we'll return a promise for the stats object.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.getStats
-     * @returns {Promise<{brightstream.MediaStats}>}
+     * @returns {Promise<{brightstream.MediaStatsParser}>}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @fires brightstream.PeerConnection#stats
      */
     function getStats(params) {
@@ -379,7 +412,7 @@ brightstream.PeerConnection = function (params) {
 
         if (brightstream.MediaStats) {
             Q.all([defSDPOffer.promise, defSDPAnswer.promise]).done(function onSuccess() {
-                var stats = brightstream.MediaStats({
+                var stats = brightstream.MediaStatsParser({
                     peerConnection: pc,
                     interval: params.interval,
                     onStats: function statsHandler(stats) {
@@ -399,7 +432,7 @@ brightstream.PeerConnection = function (params) {
                 that.listen('close', function closeHandler(evt) {
                     stats.stopStats();
                 }, true);
-                deferred.resolve(stats);
+                deferred.resolve();
             }, function onError(err) {
                 log.warn("Call rejected.");
             });
@@ -439,12 +472,12 @@ brightstream.PeerConnection = function (params) {
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
             /**
-             * @event brightstream.PeerConnection#remote-stream-received
+             * @event brightstream.PeerConnection#connect
              * @type {brightstream.Event}
              * @property {string} name - the event name.
              * @property {brightstream.PeerConnection}
              */
-            that.fire('remote-stream-received', {
+            that.fire('connect', {
                 stream: evt.stream
             });
         };
@@ -461,8 +494,8 @@ brightstream.PeerConnection = function (params) {
         };
         pc.ondatachannel = function ondatachannel(evt) {
             /**
-             * CAUTION: This event is only called for the non-initiator because RTCPeerConnection#ondatachannel
-             * is only called for the non-initiator.
+             * CAUTION: This event is only called for the callee because RTCPeerConnection#ondatachannel
+             * is only called for the callee.
              * @event brightstream.PeerConnection#direct-connection
              * @type {brightstream.Event}
              * @property {string} name - the event name.
@@ -473,7 +506,7 @@ brightstream.PeerConnection = function (params) {
             });
         };
 
-        /**
+        /*
          * Expose some methods on the PeerConnection.
          */
         that.getRemoteStreams = pc.getRemoteStreams.bind(pc);
@@ -489,7 +522,17 @@ brightstream.PeerConnection = function (params) {
      */
     that.addStream = function (stream) {
         if (!pc) {
-            throw new Error("Got local stream in a precall state.");
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: "Got local stream in a precall state."
+            });
         }
         pc.addStream(stream);
     };
@@ -511,7 +554,7 @@ brightstream.PeerConnection = function (params) {
             return;
         }
 
-        if (that.call.initiator && defSDPAnswer.promise.isPending()) {
+        if (that.call.caller && defSDPAnswer.promise.isPending()) {
             candidateSendingQueue.push(candidate);
         } else {
             signalCandidate({
@@ -540,7 +583,7 @@ brightstream.PeerConnection = function (params) {
      */
     function processQueues() {
         /* We only need to queue (and thus process queues) if
-         * we are the initiator. The person receiving the call
+         * we are the caller. The person receiving the call
          * never has a valid PeerConnection at a time when we don't
          * have one. */
         var can = null;
@@ -580,7 +623,18 @@ brightstream.PeerConnection = function (params) {
             });
             defSDPOffer.resolve(oSession);
         }, function errorHandler(p) {
-            var err = new Error('setLocalDescription failed');
+            var err = new Error('Error calling setLocalDescription on offer I created.');
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: err.message
+            });
             defSDPOffer.reject(err);
         });
     }
@@ -608,36 +662,46 @@ brightstream.PeerConnection = function (params) {
             });
             defSDPAnswer.resolve(oSession);
         }, function errorHandler(p) {
+            var err = new Error('Error calling setLocalDescription on answer I created.');
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event brightstream.Call#error
+             * @type {brightstream.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {brightstream.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: err.message
+            });
             defSDPAnswer.reject();
-            log.error('setLocalDescription failed');
-            log.error(p);
         });
     }
 
     /**
-     * Tear down the call, release user media.  Send a bye signal to the remote party if
-     * signal is not false and we have not received a bye signal from the remote party.
+     * Tear down the call, release user media.  Send a hangup signal to the remote party if
+     * signal is not false and we have not received a hangup signal from the remote party.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.close
      * @fires brightstream.PeerConnection#destoy
      * @param {object} param
      * @param {boolean} [param.signal] - Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side. This is set to false by the library if we're responding to a
-     * bye signal.
+     * hangup signal.
      * @fires brightstream.PeerConnection#close
      */
     that.close = function (params) {
         params = params || {};
-        if (toSendBye !== undefined) {
+        if (toSendHangup !== undefined) {
             log.trace("PeerConnection.close got called twice.");
             return;
         }
-        toSendBye = true;
+        toSendHangup = true;
 
-        if (that.call.initiator === true) {
+        if (that.call.caller === true) {
             if (defSDPOffer.promise.isPending()) {
-                // Never send bye if we are the initiator but we haven't sent any other signal yet.
-                toSendBye = false;
+                // Never send hangup if we are the caller but we haven't sent any other signal yet.
+                toSendHangup = false;
             }
         } else {
             if (defApproved.promise.isPending()) {
@@ -645,10 +709,10 @@ brightstream.PeerConnection = function (params) {
             }
         }
 
-        toSendBye = (typeof params.signal === 'boolean' ? params.signal : toSendBye);
-        if (toSendBye) {
-            log.info('sending bye');
-            signalTerminate({
+        toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
+        if (toSendHangup) {
+            log.info('sending hangup');
+            signalHangup({
                 call: that.call
             });
         }
@@ -661,12 +725,12 @@ brightstream.PeerConnection = function (params) {
         /**
          * @event brightstream.PeerConnection#close
          * @type {brightstream.Event}
-         * @property {boolean} sentSignal - Whether or not we sent a 'bye' signal to the other party.
+         * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
          * @property {string} name - the event name.
          * @property {brightstream.PeerConnection}
          */
         that.fire('close', {
-            sentSignal: toSendBye
+            sentSignal: toSendHangup
         });
         that.ignore();
 
@@ -684,8 +748,7 @@ brightstream.PeerConnection = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        // Why does pc.iceConnectionState not transition into 'connected' even though media is flowing?
-        return (pc && pc.iceConnectionState === 'connected');
+        return (pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**
@@ -724,6 +787,19 @@ brightstream.PeerConnection = function (params) {
             function successHandler() {
                 defSDPAnswer.resolve(evt.signal.sdp);
             }, function errorHandler(p) {
+                var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
+                that.report.callStoppedReason = newErr.message;
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event brightstream.Call#error
+                 * @type {brightstream.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {brightstream.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.call.fire('error', {
+                    message: newErr.message
+                });
                 defSDPAnswer.reject();
             }
         );
@@ -737,14 +813,14 @@ brightstream.PeerConnection = function (params) {
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.toConnection !== clientObj.user.connectionId) {
-            log.verbose("Hanging up because I didn't win the call.");
+        if (evt.signal.toConnection !== client.connectionId) {
+            log.verbose("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
     }
 
     /**
-     * Send the initiate signal to start the modify process. This method is only called by the initiator of the
+     * Send the initiate signal to start the modify process. This method is only called by the caller of the
      * renegotiation.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.startModify
@@ -783,7 +859,7 @@ brightstream.PeerConnection = function (params) {
         log.trace('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
-            that.call.initiator = true;
+            that.call.caller = true;
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
@@ -873,7 +949,7 @@ brightstream.PeerConnection = function (params) {
             action: 'accept',
             call: that.call
         });
-        that.call.initiator = false;
+        that.call.caller = false;
         defModify.resolve();
     }
 
@@ -895,7 +971,7 @@ brightstream.PeerConnection = function (params) {
             log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }
-        if (!pc || that.call.initiator && defSDPAnswer.promise.isPending()) {
+        if (!pc || that.call.caller && defSDPAnswer.promise.isPending()) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;
@@ -908,16 +984,6 @@ brightstream.PeerConnection = function (params) {
         }
         log.verbose('Got a remote candidate.', params.candidate);
         that.report.candidatesReceived.push(params.candidate);
-    };
-
-    /**
-     * Get the state of the Call
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.getState
-     * @returns {number}
-     */
-    that.getState = function () {
-        return pc ? that.state : 0;
     };
 
     that.call.listen('signal-answer', listenAnswer, true);
