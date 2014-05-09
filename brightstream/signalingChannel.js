@@ -1338,8 +1338,6 @@ brightstream.SignalingChannel = function (params) {
         }
 
         setTimeout(function actuallyReconnect() {
-
-            var clientSettings = client.getClientSettings();
             actuallyConnect().then(function successHandler() {
                 reconnectTimeout = null;
                 log.debug('socket reconnected');
