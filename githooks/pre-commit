@@ -12,4 +12,9 @@ grunt combine
 grunt dist
 
 # Upgrade the pre-commit hook.
-cp githooks/pre-commit .git/hooks/pre-commit  || cp githooks/pre-commit ../../.git/modules/javascript/transporter/hooks/pre-commit
+if [ -d '.git/hooks/pre-commit' ]; then
+    cp githooks/pre-commit .git/hooks/pre-commit
+fi
+if [ -d '../../.git/modules/javascript/transporter/hooks/pre-commit' ]; then
+    cp githooks/pre-commit ../../.git/modules/javascript/transporter/hooks/pre-commit
+fi
