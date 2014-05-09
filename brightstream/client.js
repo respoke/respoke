@@ -17,7 +17,7 @@
  * @constructor
  * @augments brightstream.Presentable
  * @param {object} params
- * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+ * @param {string} [params.appId] - The ID of your Brightstream app. This must be passed either to
  * brightstream.connect, brightstream.createClient, or to client.connect.
  * @param {string} [params.token] - The endpoint's authentication token.
  * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
@@ -37,11 +37,10 @@
  * from anywhere on the system.
  * @param {brightstream.Client.onConnect} [params.onConnect] - Callback for Client connect.
  * @param {brightstream.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
- * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+ * @param {brightstream.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect.
  * @param {brightstream.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
  * @param {brightstream.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user
- * receives a request
- * for a direct connection.
+ * receives a request for a direct connection.
  * @returns {brightstream.Client}
  */
 /*global brightstream: false */
@@ -50,16 +49,19 @@ brightstream.Client = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Client
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = brightstream.makeGUID();
+    var instanceId = brightstream.makeGUID();
+    params.instanceId = instanceId;
     var that = brightstream.Presentable(params);
-    brightstream.instances[client] = that;
+    brightstream.instances[instanceId] = that;
+    delete that.instanceId;
     /**
+     * A name to identify this class
      * @memberof! brightstream.Client
-     * @name className - A name to identify this class
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.Client';
@@ -95,14 +97,14 @@ brightstream.Client = function (params) {
         setPresence: that.setPresence
     };
     /**
-     * A container for baseURL, token, and appId so they won't be accessble on the console.
+     * A container for baseURL, token, and appId so they won't be accidentally viewable in any JavaScript debugger.
      * @memberof! brightstream.Client
-     * @name app
+     * @name clientSettings
      * @type {object}
      * @private
      * @property {string} [baseURL] - the URL of the cloud infrastructure's REST API.
      * @property {string} [token] - The endpoint's authentication token.
-     * @property {string} [appId] - The id of your BrightStream app.
+     * @property {string} [appId] - The id of your Brightstream app.
      * @property {string} [endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @property {boolean} [developmentMode=false] - Indication to obtain an authentication token from the service.
@@ -122,7 +124,7 @@ brightstream.Client = function (params) {
      * receives a request
      * for a direct connection.
      */
-    var app = {
+    var clientSettings = {
         baseURL: params.baseURL,
         token: params.token,
         appId: params.appId,
@@ -143,11 +145,6 @@ brightstream.Client = function (params) {
     delete that.developmentMode;
     delete that.token;
 
-    if (!app.token && !app.appId) {
-        throw new Error("Can't connect without either an appId, in which case developmentMode " +
-            "must be set to true, or an token");
-    }
-
     /**
      * @memberof! brightstream.Client
      * @name groups
@@ -163,23 +160,20 @@ brightstream.Client = function (params) {
      */
     var endpoints = [];
     /**
-     * Array of calls in progress.
+     * Array of calls in progress. This array should never be modified.
      * @memberof! brightstream.Client
      * @name calls
-     * @private
      * @type {array}
      */
-    var calls = [];
-
-    log.debug("Client ID is ", client);
+    that.calls = [];
+    log.debug("Client ID is ", instanceId);
 
     /**
      * @memberof! brightstream.Client
      * @name callSettings
      * @type {object}
-     * @private
      */
-    var callSettings = {
+    that.callSettings = {
         constraints: params.constraints || {
             video : true,
             audio : true,
@@ -197,7 +191,12 @@ brightstream.Client = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = brightstream.SignalingChannel({'client': client, baseURL: app.baseURL});
+    var result = brightstream.SignalingChannel({
+        instanceId: instanceId,
+        clientSettings: clientSettings
+    });
+    var signalingChannel = result.signalingChannel;
+    var getTurnCredentials = result.getTurnCredentials;
 
     /**
      * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
@@ -210,8 +209,9 @@ brightstream.Client = function (params) {
      * @param {object} params
      * @param {brightstream.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation
      * of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
-     * @param {string} [params.appId] - The ID of your BrightStream app. This must be passed either to
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @param {string} [params.appId] - The ID of your Brightstream app. This must be passed either to
      * brightstream.connect, brightstream.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
      * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
@@ -246,10 +246,15 @@ brightstream.Client = function (params) {
 
         Object.keys(params).forEach(function eachParam(key) {
             if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
-                app[key] = params[key];
+                clientSettings[key] = params[key];
             }
         });
-        that.endpointId = app.endpointId;
+        that.endpointId = clientSettings.endpointId;
+
+        if (!clientSettings.token && !clientSettings.appId) {
+            throw new Error("Can't connect without either an appId, in which case developmentMode " +
+                "must be set to true, or an token");
+        }
 
         promise = actuallyConnect(params);
         promise.done(function successHandler() {
@@ -273,7 +278,8 @@ brightstream.Client = function (params) {
      * @private
      * @param {object} params
      * @param {connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     function actuallyConnect(params) {
@@ -282,10 +288,8 @@ brightstream.Client = function (params) {
 
         signalingChannel.open({
             actuallyConnect: actuallyConnect,
-            appId: app.appId,
-            developmentMode: app.developmentMode,
             endpointId: that.endpointId,
-            token: app.token
+            token: clientSettings.token
         }).then(function successHandler() {
             return signalingChannel.authenticate();
         }, function errorHandler(err) {
@@ -299,16 +303,20 @@ brightstream.Client = function (params) {
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */
-            that.listen('call', app.onCall);
-            that.listen('direct-connection', app.onDirectConnection);
-            that.listen('join', app.onJoin);
-            that.listen('leave', app.onLeave);
-
-            that.listen('message', app.onMessage);
-            that.listen('connect', app.onConnect);
-            that.listen('disconnect', app.onDisconnect);
+            that.listen('call', clientSettings.onCall);
+            that.listen('call', addCall);
+            that.listen('direct-connection', clientSettings.onDirectConnection);
+            that.listen('direct-connection', function (evt) {
+                evt.call = evt.directConnection.call;
+                addCall(evt);
+            });
+            that.listen('join', clientSettings.onJoin);
+            that.listen('leave', clientSettings.onLeave);
+            that.listen('message', clientSettings.onMessage);
+            that.listen('connect', clientSettings.onConnect);
+            that.listen('disconnect', clientSettings.onDisconnect);
             that.listen('disconnect', setConnectedOnDisconnect);
-            that.listen('reconnect', app.onReconnect);
+            that.listen('reconnect', clientSettings.onReconnect);
             that.listen('reconnect', setConnectedOnReconnect);
 
             log.info('logged in as ' + that.id, that);
@@ -336,7 +344,8 @@ brightstream.Client = function (params) {
      * @returns {Promise}
      * @param {object} params
      * @param {disconnectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @fires brightstream.Client#disconnect
      */
     that.disconnect = function (params) {
@@ -416,16 +425,6 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Get all current calls.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getCalls
-     * @returns {Array<brightstream.Call>}
-     */
-    that.getCalls = function () {
-        return calls;
-    };
-
-    /**
      * Get the Call with the endpoint specified.
      * @memberof! brightstream.Client
      * @method brightstream.Client.getCall
@@ -440,9 +439,8 @@ brightstream.Client = function (params) {
     that.getCall = function (params) {
         var call = null;
         var endpoint = null;
-        var clientObj = brightstream.getClient(client);
 
-        calls.every(function findCall(one) {
+        that.calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
                 call = one;
                 return false;
@@ -456,15 +454,14 @@ brightstream.Client = function (params) {
         });
 
         if (call === null && params.create === true) {
-            endpoint = clientObj.getEndpoint({id: params.endpointId});
+            endpoint = that.getEndpoint({id: params.endpointId});
             try {
                 call = endpoint.startCall({
-                    callSettings: clientObj.getCallSettings(),
                     id: params.id,
                     caller: false
                 });
             } catch (e) {
-                log.error("Couldn't create Call: " + e.message);
+                log.error("Couldn't create Call.", e.message, e.stack);
             }
         }
         return call;
@@ -474,58 +471,56 @@ brightstream.Client = function (params) {
      * Associate the call with this client.
      * @memberof! brightstream.Client
      * @method brightstream.Client.addCall
-     * @param {object} params
-     * @param {brightstream.Call} params.call
-     * @fires brightstream.Client#call
+     * @param {object} evt
+     * @param {brightstream.Call} evt.call
+     * @param {brightstream.Endpoint} evt.endpoint
      * @private
      */
-    that.addCall = function (params) {
-        if (calls.indexOf(params.call) === -1) {
-            calls.push(params.call);
-            if (params.call.className === 'brightstream.Call') {
-                if (!params.call.caller && !that.hasListeners('call')) {
-                    log.warn("Got an incoming call with no handlers to accept it!");
-                    params.call.reject();
+    function addCall(evt) {
+        if (that.calls.indexOf(evt.call) === -1) {
+            that.calls.push(evt.call);
+            evt.call.listen('hangup', removeCall, true);
+
+            updateTurnCredentials().done(null, function (err) {
+                var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event brightstream.Call#error
+                 * @type {brightstream.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {brightstream.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.fire('error', {
+                    reason: message
+                });
+            });
+
+            if (evt.call.className === 'brightstream.Call') {
+                if (!evt.call.caller && !that.hasListeners('call')) {
+                    log.warn("Got a incoming call with no handlers to accept it!");
+                    evt.call.reject();
                     return;
                 }
-                /**
-                 * This event provides notification for when an incoming call is being received.  If the user wishes
-                 * to allow the call, the app should call evt.call.answer() to answer the call.
-                 * @event brightstream.Client#call
-                 * @type {brightstream.Event}
-                 * @property {brightstream.Call} call
-                 * @property {brightstream.Endpoint} endpoint
-                 * @property {string} name - the event name.
-                 * @property {brightstream.Client} target
-                 */
-                that.fire('call', {
-                    endpoint: params.endpoint,
-                    call: params.call
-                });
             }
         }
-    };
+    }
 
     /**
      * Remove the call or direct connection.
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeCall
-     * @param {object} params
-     * @param {string} [params.id] Call or DirectConnection id
-     * @param {brightstream.Call} [call] Call or DirectConnection
-     * @todo TODO rename this something else or make it an event listener.
+     * @param {object} evt
+     * @param {brightstream.Call} evt.target
+     * @private
      */
-    that.removeCall = function (params) {
+    function removeCall(evt) {
         var match = false;
-        if (!params.id && !params.call) {
-            throw new Error("Must specify endpointId of Call to remove or the call itself.");
-        }
 
         // Loop backward since we're modifying the array in place.
-        for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if (calls[i].id === params.id ||
-                    (params.call && calls[i] === params.call)) {
-                calls.splice(i);
+        for (var i = that.calls.length - 1; i >= 0; i -= 1) {
+            if (that.calls[i].id === evt.target.id) {
+                that.calls.splice(i);
                 match = true;
             }
         }
@@ -533,7 +528,7 @@ brightstream.Client = function (params) {
         if (!match) {
             log.warn("No call removed.");
         }
-    };
+    }
 
     /**
      * Set presence to available.
@@ -563,7 +558,8 @@ brightstream.Client = function (params) {
      * broadcast to all connections for this endpoint.
      * @param {string} params.message - a string message.
      * @param {sendHandler} [params.onSuccess] - Success handler for this invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -585,7 +581,7 @@ brightstream.Client = function (params) {
      * with the local audio and/or video attached.
      * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video element
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
      * with the remote audio and/or video attached.
      * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
@@ -632,70 +628,21 @@ brightstream.Client = function (params) {
      * method only.
      * @private
      */
-    that.updateTurnCredentials = function () {
+    function updateTurnCredentials() {
         var promise;
-        if (callSettings.disableTurn === true) {
+        if (that.callSettings.disableTurn === true) {
             return;
         }
 
-        promise = signalingChannel.getTurnCredentials();
+        promise = getTurnCredentials();
         promise.done(params.onSuccess, params.onError);
         promise.done(function successHandler(creds) {
-            callSettings.servers.iceServers = creds;
-        }, function errorHandler(error) {
-            throw error;
-        });
+            that.callSettings = that.callSettings || {};
+            that.callSettings.servers = that.callSettings.servers || {};
+            that.callSettings.servers.iceServers = creds;
+        }, null);
         return promise;
-    };
-
-     /**
-     * Get an object containing the client settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getClientSettings
-     * @returns {object} An object containing the client settings.
-     * @private
-     */
-    that.getClientSettings = function () {
-        return app;
-    };
-
-    /**
-     * Get an object containing the default media constraints and other media settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getCallSettings
-     * @returns {object} An object containing the media settings which will be used in
-     * brightstream calls.
-     * @private
-     */
-    that.getCallSettings = function () {
-        return callSettings;
-    };
-
-    /**
-     * Set the default media constraints and other media settings.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.setDefaultCallSettings
-     * @param {object} params
-     * @param {object} [params.constraints]
-     * @param {object} [params.servers]
-     */
-    that.setDefaultCallSettings = function (params) {
-        params = params || {};
-        callSettings.constraints = params.constraints || callSettings.constraints;
-        callSettings.servers = params.servers || callSettings.servers;
-    };
-
-    /**
-     * Get the SignalingChannel. This is not really a private method but we don't want our developers interacting
-     * directly with the signaling channel.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.getSignalingChannel
-     * @returns {brightstream.SignalingChannel} The instance of the brightstream.SignalingChannel.
-     * @private
-     */
-    that.getSignalingChannel = function () {
-        return signalingChannel;
-    };
+    }
 
     /**
      * Join a Group and begin keeping track of it. Attach some event listeners.
@@ -725,7 +672,8 @@ brightstream.Client = function (params) {
             id: params.id
         }).done(function successHandler() {
             var group = brightstream.Group({
-                client: client,
+                signalingChannel: signalingChannel,
+                instanceId: instanceId,
                 id: params.id,
                 onMessage: params.onMessage,
                 onJoin: params.onJoin,
@@ -859,29 +807,6 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Add an Endpoint. This is called when we need to start keeping track of an endpoint.
-     * @memberof! brightstream.Client
-     * @method brightstream.Client.addEndpoint
-     * @param {brightstream.Endpoint}
-     */
-    that.addEndpoint = function (newEndpoint) {
-        var absent = false;
-        if (!newEndpoint || newEndpoint.className !== 'brightstream.Endpoint') {
-            throw new Error("Can't add endpoint to internal tracking. No endpoint given.");
-        }
-        absent = endpoints.every(function eachEndpoint(ept) {
-            if (ept.id === newEndpoint.id) {
-                return false;
-            }
-            return true;
-        });
-
-        if (absent) {
-            endpoints.push(newEndpoint);
-        }
-    };
-
-    /**
      * Remove an Endpoint. Since an endpoint can be a member of multiple groups, we can't just remove it from
      * our list on brightstream.Endpoint#leave. We must see if it's a member of any more groups. If it's not
      * a member of any other groups, we can stop keeping track of it.
@@ -931,8 +856,10 @@ brightstream.Client = function (params) {
      * @param {string} params.id
      * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
      * know about this Endpoint.
-     * @param {function} [params.onMessage] - Handle messages sent to the logged-in user from this one Endpoint.
-     * @param {function} [params.onPresence] - Handle presence notifications from this one Endpoint.
+     * @param {brightstream.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
+     * from this one Endpoint.
+     * @param {brightstream.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
+     * Endpoint.
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -950,9 +877,10 @@ brightstream.Client = function (params) {
         });
 
         if (!endpoint && params && !params.skipCreate) {
-            params.client = client;
+            params.instanceId = instanceId;
+            params.signalingChannel = signalingChannel;
             endpoint = brightstream.Endpoint(params);
-            that.addEndpoint(endpoint);
+            endpoints.push(endpoint);
         }
 
         if (endpoint) {
@@ -971,9 +899,11 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getConnection
      * @param {object} params
      * @param {string} params.connectionId
-     * @param {string} params.[endpointId] - An endpointId to use in the creation of this connection.
-     * @param {function} [params.onMessage] - TODO
-     * @param {function} [params.onPresence] - TODO
+     * @param {string} [params.endpointId] - An endpointId to use in the creation of this connection.
+     * @param {brightstream.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
+     * from this one Connection.
+     * @param {brightstream.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
+     * Connection.
      * @returns {brightstream.Connection} The connection whose ID was specified.
      */
     that.getConnection = function (params) {
@@ -1018,7 +948,7 @@ brightstream.Client = function (params) {
                 throw new Error("Couldn't find an endpoint for this connection. Did you pass in the endpointId?");
             }
 
-            params.client = client;
+            params.instanceId = instanceId;
             connection = brightstream.Connection(params);
             endpoint.connections.push(connection);
         }
