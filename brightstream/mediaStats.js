@@ -280,7 +280,7 @@ brightstream.MediaStatsParser = function (params) {
                 }
                 rule.keys.forEach(function eachKey(key) {
                     var testInt = parseInt(report[0].stat(key), 10);
-                    if (testInt || testInt === 0) {
+                    if (!isNaN(testInt)) {
                         eachStat[key] = testInt;
                     } else {
                         eachStat[key] = report[0].stat(key);
