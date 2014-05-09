@@ -15,6 +15,7 @@
  * @augments brightstream.Class
  * @constructor
  * @param {object} params
+ * @param {string} params.instanceId
  * @returns {brightstream.EventEmitter}
  */
 /*global brightstream: false */
@@ -23,13 +24,13 @@ brightstream.EventEmitter = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.EventEmitter
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.Class(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * A name to identify the type of this object.
      * @memberof! brightstream.EventEmitter
@@ -148,7 +149,7 @@ brightstream.EventEmitter = function (params) {
      * checks for the isInternal flag on each listener and doesn't count it toward an event being listened to. This
      * method is used in the library to handle situations where an action is needed if an event won't be acted on.
      * For instance, if a call comes in for the logged-in user, but the developer isn't listening to
-     * {brightstream.User#call}, we'll need to reject the call immediately.
+     * {brightstream.Client#call}, we'll need to reject the call immediately.
      * @memberof! brightstream.EventEmitter
      * @method brightstream.EventEmitter.hasListeners
      * @param {string} eventType - The name of the event

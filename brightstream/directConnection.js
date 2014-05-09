@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {string} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {brightstream.Call} params.call - The call that is handling state for this direct connection.
  * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
  * it to flow peer-to-peer. The relay acts like a blind proxy.
@@ -24,13 +24,16 @@
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
- * closing the connection.
- * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for the developer to be notified about
- * opening the connection.
- * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for the developer to be notified
- * about incoming messages. Not usually necessary to listen to this event if you are already listening to
- * brightstream.Endpoint#message.
+ * @param {brightstream.DirectConnection.onStart} [params.onStart] - Callback for when setup of the direct connection
+ * begins. The direct connection will not be open yet.
+ * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors that happen during
+ * direct connection setup or media renegotiation.
+ * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for closing the direct connection.
+ * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for opening the direct connection.
+ * @param {brightstream.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the request
+ * for a direct connection and setup is about to begin.
+ * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for incoming messages. Not usually
+ * necessary to listen to this event if you are already listening to brightstream.Endpoint#message.
  * @returns {brightstream.DirectConnection}
  */
 /*global brightstream: false */
@@ -39,17 +42,18 @@ brightstream.DirectConnection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Client
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
 
     /**
-     * @memberof! brightstream.Client
-     * @name className - A name to identify this class
+     * A name to identify this class
+     * @memberof! brightstream.DirectConnection
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.DirectConnection';
@@ -65,8 +69,8 @@ brightstream.DirectConnection = function (params) {
      * @name call
      * @type {brightstream.Call}
      */
-    if (!that.call.initiator) {
-        that.call.initiator = false;
+    if (!that.call.caller) {
+        that.call.caller = false;
     }
 
     /**
@@ -78,11 +82,11 @@ brightstream.DirectConnection = function (params) {
     var dataChannel = null;
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * @memberof! brightstream.DirectConnection
@@ -95,7 +99,7 @@ brightstream.DirectConnection = function (params) {
 
     /**
      * When the datachannel is availble, we need to attach the callbacks. The event this function is attached to
-     * only fires for the non-initiator.
+     * only fires for the callee.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.listenDataChannel
      * @param {brightstream.Event} evt
@@ -113,12 +117,15 @@ brightstream.DirectConnection = function (params) {
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.saveParameters
      * @param {object} params
-     * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified
-     * about closing the connection.
-     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for the developer to be notified about
-     * opening the connection.
-     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for the developer to be notified
-     * about incoming messages.
+     * @param {brightstream.DirectConnection.onClose} [params.onClose] - Callback for when the direct connection
+     * is closed.
+     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - Callback for when the direct connection
+     * is open.
+     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - Callback for incoming messages.
+     * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
+     * connection.
+     * @param {brightstream.DirectConnection.onStart} [params.onStart] - Callback for when the direct connection
+     * is being set up. The direct connection will not be open yet.
      * @param {array} [params.servers] - Additional resources for determining network connectivity between two
      * endpoints.
      * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
@@ -129,6 +136,8 @@ brightstream.DirectConnection = function (params) {
         that.listen('open', params.onOpen);
         that.listen('close', params.onClose);
         that.listen('message', params.onMessage);
+        that.listen('start', params.onStart);
+        that.listen('error', params.onError);
         pc.listen('direct-connection', listenDataChannel, true);
         pc.listen('stats', function fireStats(evt) {
             /**
@@ -186,7 +195,7 @@ brightstream.DirectConnection = function (params) {
      */
     function onDataChannelError(error) {
         /**
-         * @event brightstream.Endpoint#error
+         * @event brightstream.DirectConnection#error
          * @type {brightstream.Event}
          * @property {object} error
          * @property {brightstream.DirectConnection} directConnection
@@ -276,7 +285,7 @@ brightstream.DirectConnection = function (params) {
     }
 
     /**
-     * Create the datachannel. For the initiator, set up all the handlers we'll need to keep track of the
+     * Create the datachannel. For the caller, set up all the handlers we'll need to keep track of the
      * datachannel's state and to receive messages.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.createDataChannel
@@ -292,18 +301,18 @@ brightstream.DirectConnection = function (params) {
         /**
          * The direct connection setup has begun. This does NOT mean it's ready to send messages yet. Listen to
          * DirectConnection#open for that notification.
-         * @event brightstream.DirectConnection#started
+         * @event brightstream.DirectConnection#start
          * @type {brightstream.Event}
          * @property {string} name - the event name.
          * @property {brightstream.DirectConnection} target
          */
-        that.fire('started');
+        that.fire('start');
     }
 
     /**
-     * Start the process of obtaining media. saveParameters will only be meaningful for the non-initiator,
-     * since the library calls this method for the initiator. Developers will use this method to pass in
-     * callbacks for the non-initiator.
+     * Start the process of obtaining media. saveParameters will only be meaningful for the callee,
+     * since the library calls this method for the caller. Developers will use this method to pass in
+     * callbacks for the callee.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.accept
      * @fires brightstream.DirectConnection#accept
@@ -311,15 +320,16 @@ brightstream.DirectConnection = function (params) {
      * @param {brightstream.DirectConnection.onOpen} [params.onOpen]
      * @param {brightstream.DirectConnection.onClose} [params.onClose]
      * @param {brightstream.DirectConnection.onMessage} [params.onMessage]
+     * @param {brightstream.DirectConnection.onStart} [params.onStart]
      */
     that.accept = function (params) {
         params = params || {};
         log.trace('DirectConnection.accept');
         saveParameters(params);
 
-        log.debug("I am " + (that.call.initiator ? '' : 'not ') + "the initiator.");
+        log.debug("I am " + (that.call.caller ? '' : 'not ') + "the caller.");
 
-        if (that.call.initiator === true) {
+        if (that.call.caller === true) {
             createDataChannel();
         }
 
@@ -373,8 +383,10 @@ brightstream.DirectConnection = function (params) {
      * @param {object} params
      * @param {string} [params.message] - The message to send.
      * @param {object} [params.object] - An object to send.
-     * @param {brightstream.DirectConnection.sendHandler} [params.onSuccess] - Success handler.
-     * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler.
+     * @param {brightstream.DirectConnection.sendHandler} [params.onSuccess] - Success handler for this invocation
+     * of this method only.
+     * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation
+     * of this method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -415,7 +427,7 @@ brightstream.DirectConnection = function (params) {
 }; // End brightstream.DirectConnection
 
 /**
- * Called when the direct connection is closed.  This callback fires every time brightstream.DirectConnection#close
+ * Called when the direct connection is closed.  This callback is called every time brightstream.DirectConnection#close
  * fires.
  * @callback brightstream.DirectConnection.onClose
  * @param {brightstream.Event} evt
@@ -423,7 +435,15 @@ brightstream.DirectConnection = function (params) {
  * @param {brightstream.DirectConnection} evt.target
  */
 /**
- * Called when the direct connection is opened.  This callback fires every time brightstream.DirectConnection#open
+ * Called when the setup of the direct connection has begun. The direct connection will not be open yet. This
+ * callback is called every time brightstream.DirectConnection#start fires.
+ * @callback brightstream.DirectConnection.onStart
+ * @param {brightstream.Event} evt
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.DirectConnection} evt.target
+ */
+/**
+ * Called when the direct connection is opened.  This callback is called every time brightstream.DirectConnection#open
  * fires.
  * @callback brightstream.DirectConnection.onOpen
  * @param {brightstream.Event} evt
@@ -431,7 +451,7 @@ brightstream.DirectConnection = function (params) {
  * @param {brightstream.DirectConnection} evt.target
  */
 /**
- * Called when a message is received over the direct connection.  This callback fires every time
+ * Called when a message is received over the direct connection.  This callback is called every time
  * brightstream.DirectConnection#message fires.
  * @callback brightstream.DirectConnection.onMessage
  * @param {brightstream.Event} evt
@@ -441,9 +461,25 @@ brightstream.DirectConnection = function (params) {
  * @param {brightstream.DirectConnection} evt.target
  */
 /**
- * Handle an error that resulted from a method call.
+ * Handle an error that resulted from a specific method call. This handler will not fire more than once.
  * @callback brightstream.DirectConnection.errorHandler
  * @param {Error} err
+ */
+/**
+ * When a call is in setup or media renegotiation happens. This callback will be called every time
+ * brightstream.DirectConnection#error.
+ * @callback brightstream.DirectConnection.onError
+ * @param {brightstream.Event} evt
+ * @param {boolean} evt.reason - A human-readable description of the error.
+ * @param {string} evt.name - the event name.
+ * @param {brightstream.DirectConnection} evt.target
+ */
+/**
+ * Called when the callee accepts the direct connection. This callback is called every time
+ * brightstream.DirectConnection#accept is fired.
+ * @callback brightstream.DirectConnection.onAccept
+ * @param {brightstream.Event} evt
+ * @param {brightstream.DirectConnection} evt.target
  */
 /**
  * Handle the successful kick-off of stats on a call.

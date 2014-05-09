@@ -18,7 +18,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @private
  * @returns {brightstream.SignalingChannel}
  */
@@ -28,13 +28,13 @@ brightstream.SignalingChannel = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.SignalingChannel
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name className
@@ -44,18 +44,18 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * @memberof! brightstream.SignalingChannel
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.Client}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
+     * The state of the signaling channel.
      * @memberof! brightstream.SignalingChannel
      * @name state
-     * @private
-     * @type {string}
+     * @type {boolean}
      */
-    var state = 'new';
+    that.connected = false;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name socket
@@ -76,7 +76,9 @@ brightstream.SignalingChannel = function (params) {
      * @private
      * @type {object}
      */
-    var clientSettings = null;
+    var clientSettings = params.clientSettings;
+    delete that.clientSettings;
+    clientSettings.baseURL = clientSettings.baseURL || 'https://collective.brightstream.io';
     /**
      * A map to avoid duplicate endpoint presence registrations.
      * @memberof! brightstream.SignalingChannel
@@ -86,14 +88,6 @@ brightstream.SignalingChannel = function (params) {
      */
     var presenceRegistered = {};
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @name baseURL
-     * @private
-     * @type {string}
-     */
-    var baseURL = that.baseURL || 'https://collective.brightstream.io';
-    delete that.baseURL;
-    /**
      * A reference to the private function Client.actuallyConnect that gets set in SignalingChannel.open() so we
      * don't have to make it public.
      * @memberof! brightstream.SignalingChannel
@@ -102,20 +96,6 @@ brightstream.SignalingChannel = function (params) {
      * @type {function}
      */
     var actuallyConnect = null;
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @name appId
-     * @private
-     * @type {string}
-     */
-    var appId = null;
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @name endpointId
-     * @private
-     * @type {string}
-     */
-    var endpointId = null;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name token
@@ -179,11 +159,8 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.open
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
-     * @param {string} [params.appId] - The App's id
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {string} [params.developmentMode] - Indicates the library should request a token from the service.
-     * App must be set to development mode in your developer portal, and you must pass in your appId & endpointId.
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -193,14 +170,14 @@ brightstream.SignalingChannel = function (params) {
     that.open = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        log.trace('SignalingChannel.open', params);
+        log.trace('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
 
         Q.fcall(function tokenPromise() {
-            if (params.developmentMode === true && params.appId && params.endpointId) {
+            if (clientSettings.developmentMode === true && clientSettings.appId && params.endpointId) {
                 return that.getToken({
-                    appId: params.appId,
+                    appId: clientSettings.appId,
                     endpointId: params.endpointId
                 });
             }
@@ -214,6 +191,7 @@ brightstream.SignalingChannel = function (params) {
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
+            log.verbose('client', client);
         }, function errorHandler(err) {
             deferred.reject(err);
         });
@@ -226,10 +204,8 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getToken
      * @param {object} params
-     * @param {string} [params.appId] - The App's id
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * be set to development mode in your developer portal, and you must pass in your appId.
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -245,7 +221,7 @@ brightstream.SignalingChannel = function (params) {
             path: '/v1/tokens',
             httpMethod: 'POST',
             parameters: {
-                appId: params.appId,
+                appId: clientSettings.appId,
                 endpointId: params.endpointId,
                 ttl: 60 * 60 * 6
             },
@@ -267,7 +243,6 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.doOpen
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
-     * @param {string} [params.appId] - The App's id
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -290,10 +265,10 @@ brightstream.SignalingChannel = function (params) {
                 if (response.code === 200) {
                     appToken = response.result.token;
                     deferred.resolve();
-                    log.trace("Signaling connection open to", baseURL);
-                    state = 'open';
+                    log.trace("Signaling connection open to", clientSettings.baseURL);
+                    that.connected = true;
                 } else {
-                    state = 'closed';
+                    that.connected = false;
                     deferred.reject(new Error("Couldn't authenticate app."));
                 }
             }
@@ -321,7 +296,7 @@ brightstream.SignalingChannel = function (params) {
         wsCall({
             path: '/v1/endpointconnections/%s/',
             httpMethod: 'DELETE',
-            objectId: clientObj.user.id
+            objectId: client.endpointId
         }).fin(function finallyHandler() {
             call({
                 path: '/v1/appauthsessions',
@@ -329,7 +304,7 @@ brightstream.SignalingChannel = function (params) {
                 responseHandler: function responseHandler(response) {
                     socket.removeAllListeners();
                     socket.disconnect();
-                    state = 'closed';
+                    that.connected = false;
                     deferred.resolve();
                 }
             });
@@ -339,28 +314,8 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * Return the state of the signaling channel, 'new', 'open', or 'closed.'
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.getState
-     * @return {string} The state of the signaling channel.
-    */
-    that.getState = function () {
-        return state;
-    };
-
-    /**
-     * Whether signaling channel is open.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.isOpen
-     * @return {boolean}
-     */
-    that.isOpen = function () {
-        return state === 'open';
-    };
-
-    /**
-     * Generate and send a presence message representing the user's current status. This triggers
-     * the server to send the user's endpoint's presence.
+     * Generate and send a presence message representing the client's current status. This triggers
+     * the server to send the client's endpoint's presence.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.sendPresence
      * @param {object} params
@@ -384,7 +339,7 @@ brightstream.SignalingChannel = function (params) {
                 'presence': {
                     show: params.show,
                     'status': params.status,
-                    namespace: appId,
+                    namespace: clientSettings.appId,
                     type: params.presence || "available"
                 }
             }
@@ -631,7 +586,7 @@ brightstream.SignalingChannel = function (params) {
             return Q.reject("Can't send ACK, no signal was given.");
         }
 
-        endpoint = clientObj.getEndpoint({id: params.signal.endpointId});
+        endpoint = client.getEndpoint({id: params.signal.endpointId});
         if (!endpoint) {
             return Q.reject("Can't send ACK, can't get endpoint.");
         }
@@ -874,7 +829,7 @@ brightstream.SignalingChannel = function (params) {
         Q.fcall(function makePromise() {
             toCreate = (signal.signalType === 'offer');
             if (signal.target === 'call') {
-                target = clientObj.user.getCall({
+                target = client.getCall({
                     id: signal.sessionId,
                     endpointId: signal.endpointId,
                     create: toCreate
@@ -884,7 +839,7 @@ brightstream.SignalingChannel = function (params) {
                 }
             }
 
-            endpoint = clientObj.getEndpoint({
+            endpoint = client.getEndpoint({
                 id: signal.endpointId
             });
 
@@ -893,7 +848,7 @@ brightstream.SignalingChannel = function (params) {
             return target || endpoint.startDirectConnection({
                 id: signal.sessionId,
                 create: (signal.signalType === 'offer'),
-                initiator: (signal.signalType !== 'offer')
+                caller: (signal.signalType !== 'offer')
             });
         }).done(function successHandler(target) {
             target = target.call || target;
@@ -1090,7 +1045,7 @@ brightstream.SignalingChannel = function (params) {
         var group;
         var groupMessage;
 
-        if (message.header.from === clientObj.user.id) {
+        if (message.header.from === client.endpointId) {
             return;
         }
 
@@ -1098,7 +1053,7 @@ brightstream.SignalingChannel = function (params) {
             rawMessage: message
         });
 
-        group = clientObj.getGroup({id: message.header.channel});
+        group = client.getGroup({id: message.header.channel});
         if (group) {
             /**
              * @event brightstream.Group#message
@@ -1122,7 +1077,7 @@ brightstream.SignalingChannel = function (params) {
          * @property {string} name - the event name.
          * @property {brightstream.Client} target
          */
-        clientObj.fire('message', {
+        client.fire('message', {
             message: groupMessage,
             group: group || null
         });
@@ -1141,13 +1096,13 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         var connection;
 
-        if (message.endpoint === endpointId) {
+        if (message.endpoint === client.endpointId) {
             return;
         }
 
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.endpoint,
-            client: client,
+            instanceId: instanceId,
             name: message.endpoint
         });
 
@@ -1158,7 +1113,7 @@ brightstream.SignalingChannel = function (params) {
             endpoint.setPresence({
                 connectionId: message.connectionId
             });
-            connection = clientObj.getConnection({
+            connection = client.getConnection({
                 connectionId: message.connectionId,
                 endpointId: message.endpoint
             });
@@ -1171,7 +1126,7 @@ brightstream.SignalingChannel = function (params) {
         if (!presenceRegistered[message.endpoint]) {
             that.registerPresence({endpointList: [message.endpoint]});
         }
-        group = clientObj.getGroup({id: message.header.channel});
+        group = client.getGroup({id: message.header.channel});
 
         if (group && connection) {
             group.addMember({connection: connection});
@@ -1192,11 +1147,11 @@ brightstream.SignalingChannel = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpointId === clientObj.user.id) {
+        if (message.endpointId === client.endpointId) {
             return;
         }
 
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.endpointId
         });
 
@@ -1208,7 +1163,7 @@ brightstream.SignalingChannel = function (params) {
             return true;
         });
 
-        group = clientObj.getGroup({id: message.header.channel});
+        group = client.getGroup({id: message.header.channel});
         group.removeMember({connectionId: message.connectionId});
     };
 
@@ -1222,10 +1177,9 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.Client#message
      */
     var onMessage = function onMessage(message) {
-        console.log(message);
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.endpointId,
             skipCreate: true
         });
@@ -1251,7 +1205,7 @@ brightstream.SignalingChannel = function (params) {
          * @property {string} name - the event name.
          * @property {brightstream.Client} target
          */
-        clientObj.fire('message', {
+        client.fire('message', {
             endpoint: endpoint || null,
             message: message
         });
@@ -1287,12 +1241,9 @@ brightstream.SignalingChannel = function (params) {
                 httpMethod: 'POST'
             }).then(function successHandler(res) {
                 log.debug('endpointconnections result', res);
-                endpointId = res.endpointId;
-                onSuccess(brightstream.User({
-                    client: client,
-                    connectionId: res.id,
-                    id: res.endpointId
-                }));
+                client.endpointId = res.endpointId;
+                client.connectionId = res.id;
+                onSuccess();
             }, onError);
         };
     };
@@ -1308,15 +1259,15 @@ brightstream.SignalingChannel = function (params) {
         var endpoint;
         var groups;
 
-        if (message.header.from === endpointId) {
+        if (message.header.from === client.endpointId) {
             // Skip ourselves
             return;
         }
         log.verbose('socket.on presence', message);
 
-        endpoint = clientObj.getEndpoint({
+        endpoint = client.getEndpoint({
             id: message.header.from,
-            client: client,
+            instanceId: instanceId,
             name: message.header.from,
             connection: message.header.fromConnection
         });
@@ -1327,7 +1278,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         if (endpoint.getPresence() === 'unavailable') {
-            var groups = clientObj.getGroups();
+            var groups = client.getGroups();
             if (groups) {
                 groups.forEach(function eachGroup(group) {
                     group.removeMember({connectionId: message.header.fromConnection});
@@ -1359,7 +1310,7 @@ brightstream.SignalingChannel = function (params) {
             deferred.reject(new Error("Can't open a websocket without an app token."));
         }
 
-        pieces = baseURL.split(/:\/\//);
+        pieces = clientSettings.baseURL.split(/:\/\//);
         protocol = pieces[0];
         pieces = pieces[1].split(/:/);
         host = pieces[0];
@@ -1384,10 +1335,10 @@ brightstream.SignalingChannel = function (params) {
             query: 'app-token=' + appToken
         };
 
-        socket = io.connect(baseURL + '?app-token=' + appToken, connectParams);
+        socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
 
-        socket.on('connect', generateConnectHandler(function onSuccess(user) {
-            deferred.resolve(user);
+        socket.on('connect', generateConnectHandler(function onSuccess() {
+            deferred.resolve();
             heartbeat = setInterval(function heartbeatHandler() {
                 that.sendMessage({
                     message: 'heartbeat',
@@ -1439,24 +1390,22 @@ brightstream.SignalingChannel = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
-            var clientSettings = clientObj.getClientSettings();
             /**
              * @event brightstream.Client#disconnect
              * @property {string} name - the event name.
              * @property {brightstream.Client} target
              */
-            clientObj.fire('disconnect');
+            client.fire('disconnect');
 
             if (clientSettings.reconnect !== true) {
                 socket = null;
                 return;
             }
 
-            actuallyConnect().then(function successHandler(user) {
-                clientObj.user = user;
+            actuallyConnect().then(function successHandler() {
                 log.debug('socket reconnected');
-                return Q.all(clientObj.getGroups().map(function iterGroups(group) {
-                    clientObj.join({
+                return Q.all(client.getGroups().map(function iterGroups(group) {
+                    client.join({
                         id: group.id,
                         onMessage: clientSettings.onMessage,
                         onJoin: clientSettings.onJoin,
@@ -1465,13 +1414,13 @@ brightstream.SignalingChannel = function (params) {
                 }));
             }, function onError(err) {
                 throw new Error(err.message);
-            }).done(function successHandler(user) {
+            }).done(function successHandler() {
                 /**
                  * @event brightstream.Client#reconnect
                  * @property {string} name - the event name.
                  * @property {brightstream.Client} target
                  */
-                clientObj.fire('reconnect');
+                client.fire('reconnect');
             }, function errorHandler(err) {
                 throw new Error(err.message);
             });
@@ -1492,9 +1441,10 @@ brightstream.SignalingChannel = function (params) {
      * invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
+     * @private
      * @return {Promise<Array>}
      */
-    that.getTurnCredentials = function (params) {
+    function getTurnCredentials(params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
@@ -1531,7 +1481,7 @@ brightstream.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    };
+    }
 
     /**
      * Construct a websocket API call and return the formatted response and errors. The 'success'
@@ -1639,7 +1589,7 @@ brightstream.SignalingChannel = function (params) {
             'code': null
         };
 
-        uri = baseURL + params.path;
+        uri = clientSettings.baseURL + params.path;
 
         if (!params) {
             throw new Error('No params.');
@@ -1751,7 +1701,7 @@ brightstream.SignalingChannel = function (params) {
         }
     }
 
-    return that;
+    return {signalingChannel: that, getTurnCredentials: getTurnCredentials};
 }; // End brightstream.SignalingChannel
 /**
  * Handle an error that resulted from a method call.
@@ -1931,12 +1881,13 @@ brightstream.SignalingMessage = function (params) {
  * @class brightstream.Group
  * @constructor
  * @param {object} params
+ * @param {string} params.instanceId
  * @param {brightstream.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
- * endpoint has joined the group. This callback does not get called when the currently logged-in user joins the group.
+ * endpoint has joined the group. This callback does not get called when the client joins the group.
  * @param {brightstream.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
  * remote endpoints.
  * @param {brightstream.Group.onLeave} params.onLeave - A callback to receive notifications every time a new
- * endpoint has left the group. This callback does not get called when the currently logged-in user leaves the group.
+ * endpoint has left the group. This callback does not get called when the client leaves the group.
  * @returns {brightstream.Group}
  */
 brightstream.Group = function (params) {
@@ -1946,17 +1897,25 @@ brightstream.Group = function (params) {
     var that = brightstream.EventEmitter(params);
     /**
      * @memberof! brightstream.Group
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
-    var clientObj = brightstream.getClient(client);
-    var signalingChannel = clientObj.getSignalingChannel();
+    var instanceId = params.instanceId;
+    var client = brightstream.getClient(instanceId);
 
     if (!that.id) {
         throw new Error("Can't create a group without an ID.");
     }
+
+    /**
+     * @memberof! brightstream.Group
+     * @name signalingChannel
+     * @type brightstream.SignalingChannel
+     * @private
+     */
+    var signalingChannel = params.signalingChannel;
+    delete params.signalingChannel;
 
     /**
      * @memberof! brightstream.Group
@@ -1975,11 +1934,11 @@ brightstream.Group = function (params) {
     that.listen('join', params.onJoin);
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
-    clientObj.listen('disconnect', function disconnectHandler() {
+    client.listen('disconnect', function disconnectHandler() {
         that.connections = [];
     });
 
-    delete that.client;
+    delete that.instanceId;
     delete that.onMessage;
     delete that.onPresence;
     delete that.onJoin;
@@ -1995,24 +1954,23 @@ brightstream.Group = function (params) {
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @return {Promise}
-     * @fires brightstream.User#leave
+     * @fires brightstream.Client#leave
      */
     that.leave = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var clientObj = brightstream.getClient(client);
         signalingChannel.leaveGroup({
             id: that.id
         }).done(function successHandler() {
             /**
-             * This event is fired when the currently logged-in user leaves a group.
-             * @event brightstream.User#leave
+             * This event is fired when the client leaves a group.
+             * @event brightstream.Client#leave
              * @type {brightstream.Event}
              * @property {brightstream.Group} group
              * @property {string} name - the event name.
-             * @property {brightstream.User} target
+             * @property {brightstream.Client} target
              */
-            clientObj.user.fire('leave', {
+            client.fire('leave', {
                 group: that
             });
             deferred.resolve();
@@ -2042,7 +2000,7 @@ brightstream.Group = function (params) {
                 that.connections.splice(index, 1);
 
                 /**
-                 * This event is fired when a member leaves a group the currently logged-in user is a member of.
+                 * This event is fired when a member leaves a group the client is a member of.
                  * @event brightstream.Group#leave
                  * @type {brightstream.Event}
                  * @property {brightstream.Connection} connection
@@ -2083,6 +2041,10 @@ brightstream.Group = function (params) {
 
         if (absent) {
             that.connections.push(params.connection);
+            if (params.skipEvent) {
+                return;
+            }
+
             /**
              * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
              * of.
@@ -2133,7 +2095,6 @@ brightstream.Group = function (params) {
     that.getMembers = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var clientObj = brightstream.getClient(client);
 
         if (that.connections.length > 0) {
             deferred.resolve(that.connections);
@@ -2145,7 +2106,7 @@ brightstream.Group = function (params) {
         }).done(function successHandler(list) {
             var endpointList = [];
             list.forEach(function eachMember(params) {
-                var connection = clientObj.getConnection({
+                var connection = client.getConnection({
                     endpointId: params.endpointId,
                     connectionId: params.connectionId
                 });
@@ -2153,7 +2114,10 @@ brightstream.Group = function (params) {
                 if (endpointList.indexOf(params.endpointId) === -1) {
                     endpointList.push(params.endpointId);
                 }
-                that.addMember({connection: connection});
+                that.addMember({
+                    connection: connection,
+                    skipEvent: true
+                });
             });
 
             if (endpointList.length > 0) {

@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {object} params.callSettings
  * @returns {brightstream.LocalMedia}
  */
@@ -23,13 +23,13 @@ brightstream.LocalMedia = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.LocalMedia
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.LocalMedia
      * @name className
@@ -45,11 +45,11 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * @memberof! brightstream.LocalMedia
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.getClient}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.LocalMedia
      * @name videoLocalElement
@@ -72,7 +72,7 @@ brightstream.LocalMedia = function (params) {
      */
     var audioIsMuted = false;
     /**
-     * A timer to make sure we only fire {brightstream.LocalMedia#waiting-for-allow} if the browser doesn't
+     * A timer to make sure we only fire {brightstream.LocalMedia#requesting-media} if the browser doesn't
      * automatically grant permission on behalf of the user. Timer is canceled in onReceiveUserMedia.
      * @memberof! brightstream.LocalMedia
      * @name allowTimer
@@ -178,13 +178,15 @@ brightstream.LocalMedia = function (params) {
         clearTimeout(allowTimer);
         /**
          * The user has approved the request for media. Any UI changes made to remind the user to click Allow
-         * should be canceled now.
-         * @event brightstream.LocalMedia#allowed
+         * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
+         * even if the allow process is automatic, i. e., permission and media is granted by the browser
+         * without asking the user to approve it.
+         * @event brightstream.LocalMedia#allow
          * @type {brightstream.Event}
          * @property {string} name - the event name.
          * @property {brightstream.LocalMedia} target
          */
-        that.fire('allowed');
+        that.fire('allow');
         log.debug('User gave permission to use media.');
         log.trace('onReceiveUserMedia');
 
@@ -233,7 +235,7 @@ brightstream.LocalMedia = function (params) {
             stream.numPc = 1;
             brightstream.streams[that.constraints] = stream;
 
-            stream.id = clientObj.user.id;
+            stream.id = client.endpointId;
             attachMediaStream(videoLocalElement, stream);
             // We won't want our local video outputting audio.
             videoLocalElement.muted = true;
@@ -296,12 +298,12 @@ brightstream.LocalMedia = function (params) {
                  * The browser is asking for permission to access the User's media. This would be an ideal time
                  * to modify the UI of the application so that the user notices the request for permissions
                  * and approves it.
-                 * @event brightstream.LocalMedia#waiting-for-allow
+                 * @event brightstream.LocalMedia#requesting-media
                  * @type {brightstream.Event}
                  * @property {string} name - the event name.
                  * @property {brightstream.LocalMedia} target
                  */
-                that.fire('waiting-for-allow');
+                that.fire('requesting-media');
             }, 500);
             getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
@@ -322,7 +324,7 @@ brightstream.LocalMedia = function (params) {
             log.warn("Permission denied.");
             /**
              * Indicate there has been an error obtaining media.
-             * @event brightstream.LocalMedia#waiting-for-allow
+             * @event brightstream.LocalMedia#requesting-media
              * @type {brightstream.Event}
              * @property {string} name - the event name.
              * @property {brightstream.LocalMedia} target
@@ -332,7 +334,7 @@ brightstream.LocalMedia = function (params) {
             log.warn(p);
             /**
              * Indicate there has been an error obtaining media.
-             * @event brightstream.LocalMedia#waiting-for-allow
+             * @event brightstream.LocalMedia#requesting-media
              * @type {brightstream.Event}
              * @property {string} name - the event name.
              * @property {brightstream.LocalMedia} target
@@ -345,7 +347,7 @@ brightstream.LocalMedia = function (params) {
      * Mute local video stream.
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.muteVideo
-     * @fires brightstream.LocalMedia#video-muted
+     * @fires brightstream.LocalMedia#mute
      */
     that.muteVideo = function () {
         if (videoIsMuted) {
@@ -355,11 +357,17 @@ brightstream.LocalMedia = function (params) {
             track.enabled = false;
         });
         /**
-         * @event brightstream.LocalMedia#video-muted
+         * @event brightstream.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {brightstream.LocalMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('video-muted');
+        that.fire('mute', {
+            type: 'video',
+            muted: true
+        });
         videoIsMuted = true;
     };
 
@@ -367,7 +375,7 @@ brightstream.LocalMedia = function (params) {
      * Unmute local video stream.
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.unmuteVideo
-     * @fires brightstream.LocalMedia#video-unmuted
+     * @fires brightstream.LocalMedia#mute
      */
     that.unmuteVideo = function () {
         if (!videoIsMuted) {
@@ -377,11 +385,17 @@ brightstream.LocalMedia = function (params) {
             track.enabled = true;
         });
         /**
-         * @event brightstream.LocalMedia#video-unmuted
+         * @event brightstream.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {brightstream.LocalMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('video-unmuted');
+        that.fire('mute', {
+            type: 'video',
+            muted: false
+        });
         videoIsMuted = false;
     };
 
@@ -389,7 +403,7 @@ brightstream.LocalMedia = function (params) {
      * Mute local audio stream.
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.muteAudio
-     * @fires brightstream.LocalMedia#audio-muted
+     * @fires brightstream.LocalMedia#mute
      */
     that.muteAudio = function () {
         if (audioIsMuted) {
@@ -399,11 +413,17 @@ brightstream.LocalMedia = function (params) {
             track.enabled = false;
         });
         /**
-         * @event brightstream.LocalMedia#audio-muted
+         * @event brightstream.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {brightstream.LocalMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('audio-muted');
+        that.fire('mute', {
+            type: 'audio',
+            muted: true
+        });
         audioIsMuted = true;
     };
 
@@ -411,7 +431,7 @@ brightstream.LocalMedia = function (params) {
      * Unmute local audio stream.
      * @memberof! brightstream.LocalMedia
      * @method brightstream.LocalMedia.unmuteAudio
-     * @fires brightstream.LocalMedia#audio-unmuted
+     * @fires brightstream.LocalMedia#mute
      */
     that.unmuteAudio = function () {
         if (!audioIsMuted) {
@@ -421,11 +441,17 @@ brightstream.LocalMedia = function (params) {
             track.enabled = true;
         });
         /**
-         * @event brightstream.LocalMedia#audio-unmuted
+         * @event brightstream.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {brightstream.LocalMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        that.fire('audio-unmuted');
+        that.fire('mute', {
+            type: 'audio',
+            muted: false
+        });
         audioIsMuted = false;
     };
 
