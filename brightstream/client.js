@@ -304,20 +304,27 @@ brightstream.Client = function (params) {
              * not to be duplicated on reconnect.
              */
             that.listen('call', clientSettings.onCall);
-            that.listen('call', addCall);
+            that.listen('call', function (evt) {
+                evt.call.listen('hangup', function (evt) {
+                    removeCall({call: evt.target});
+                }, true);
+                addCall(evt);
+            }, true);
             that.listen('direct-connection', clientSettings.onDirectConnection);
             that.listen('direct-connection', function (evt) {
-                evt.call = evt.directConnection.call;
-                addCall(evt);
-            });
+                addCall({call: evt.directConnection.call});
+                evt.directConnection.listen('close', function (evt) {
+                    removeCall({call: evt.target.call});
+                }, true);
+            }, true);
             that.listen('join', clientSettings.onJoin);
             that.listen('leave', clientSettings.onLeave);
             that.listen('message', clientSettings.onMessage);
             that.listen('connect', clientSettings.onConnect);
             that.listen('disconnect', clientSettings.onDisconnect);
-            that.listen('disconnect', setConnectedOnDisconnect);
+            that.listen('disconnect', setConnectedOnDisconnect, true);
             that.listen('reconnect', clientSettings.onReconnect);
-            that.listen('reconnect', setConnectedOnReconnect);
+            that.listen('reconnect', setConnectedOnReconnect, true);
 
             log.info('logged in as ' + that.id, that);
             deferred.resolve();
@@ -468,7 +475,7 @@ brightstream.Client = function (params) {
     };
 
     /**
-     * Associate the call with this client.
+     * Add the call to internal record-keeping.
      * @memberof! brightstream.Client
      * @method brightstream.Client.addCall
      * @param {object} evt
@@ -477,9 +484,11 @@ brightstream.Client = function (params) {
      * @private
      */
     function addCall(evt) {
+        if (!evt.call) {
+            throw new Error("Can't add call without a call parameter.");
+        }
         if (that.calls.indexOf(evt.call) === -1) {
             that.calls.push(evt.call);
-            evt.call.listen('hangup', removeCall, true);
 
             updateTurnCredentials().done(null, function (err) {
                 var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
@@ -507,7 +516,7 @@ brightstream.Client = function (params) {
     }
 
     /**
-     * Remove the call or direct connection.
+     * Remove the call or direct connection from internal record-keeping.
      * @memberof! brightstream.Client
      * @method brightstream.Client.removeCall
      * @param {object} evt
@@ -515,18 +524,21 @@ brightstream.Client = function (params) {
      * @private
      */
     function removeCall(evt) {
-        var match = false;
+        var match = 0;
+        if (!evt.call) {
+            throw new Error("Can't remove call without a call parameter.");
+        }
 
         // Loop backward since we're modifying the array in place.
         for (var i = that.calls.length - 1; i >= 0; i -= 1) {
-            if (that.calls[i].id === evt.target.id) {
-                that.calls.splice(i);
-                match = true;
+            if (that.calls[i].id === evt.call.id) {
+                that.calls.splice(i, 1);
+                match += 1;
             }
         }
 
-        if (!match) {
-            log.warn("No call removed.");
+        if (match !== 1) {
+            log.warn("Something went wrong.", match, "calls were removed!");
         }
     }
 

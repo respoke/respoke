@@ -72,13 +72,6 @@ brightstream.Call = function (params) {
      * @type {string}
      */
     that.className = 'brightstream.Call';
-    /**
-     * The call ID.
-     * @memberof! brightstream.Call
-     * @name id
-     * @type {string}
-     */
-    that.id = that.id || brightstream.makeGUID();
 
     if (!that.caller) {
         /**
@@ -88,6 +81,18 @@ brightstream.Call = function (params) {
          * @type {boolean}
          */
         that.caller = false;
+    } else {
+        /**
+         * The call ID.
+         * @memberof! brightstream.Call
+         * @name id
+         * @type {string}
+         */
+        that.id = brightstream.makeGUID();
+    }
+
+    if (!that.id) {
+        throw new Error("Can't start a new call without a call id.");
     }
 
     /**

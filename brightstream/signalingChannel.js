@@ -841,13 +841,11 @@ brightstream.SignalingChannel = function (params) {
      * @fires brightstream.DirectConnection#answer
      * @fires brightstream.DirectConnection#iceCandidates
      * @fires brightstream.DirectConnection#hangup
-     * @todo TODO Make the call.set* methods accept the entire message.
      */
     that.routeSignal = function (signal) {
         var target = null;
         var toCreate;
         var method = 'do';
-        var endpoint;
 
         if (signal.signalType !== 'iceCandidates') { // Too many of these!
             log.verbose(signal.signalType, signal);
@@ -856,30 +854,40 @@ brightstream.SignalingChannel = function (params) {
         // Only create if this signal is an offer.
         Q.fcall(function makePromise() {
             toCreate = (signal.signalType === 'offer');
-            if (signal.target === 'call') {
-                target = client.getCall({
-                    id: signal.sessionId,
-                    endpointId: signal.endpointId,
-                    create: toCreate
-                });
-                if (target) {
-                    return target;
-                }
-            }
-
-            endpoint = client.getEndpoint({
-                id: signal.endpointId
-            });
-
-            return endpoint.directConnection ? endpoint.directConnection.call : null;
-        }).then(function successHandler(target) {
-            return target || endpoint.startDirectConnection({
+            /*
+             * This will return calls regardless of whether they are associated
+             * with a direct connection or not, and it will create a call if no
+             * call is found and this signal is an offer. Direct connections get
+             * created in the next step.
+             */
+            target = client.getCall({
                 id: signal.sessionId,
-                create: (signal.signalType === 'offer'),
-                caller: (signal.signalType !== 'offer')
+                endpointId: signal.endpointId,
+                create: (toCreate && signal.target === 'call')
             });
+            return target;
+        }).then(function successHandler(target) {
+            if (!target && signal.target === 'directConnection') {
+                // return a promise
+                return client.getEndpoint({
+                    id: signal.endpointId
+                }).startDirectConnection({
+                    id: signal.sessionId,
+                    create: (signal.signalType === 'offer'),
+                    caller: (signal.signalType !== 'offer')
+                });
+            }
+            /*
+             * Return the call from the previous promise. This might also return
+             * null if we have no record of this call and the signal wasn't an offer (thus
+             * we weren't supposed to create it).
+             */
+            return target;
         }).done(function successHandler(target) {
-            target = target.call || target;
+            // target might be null, a Call, or a DirectConnection.
+            if (target) {
+                target = target.call || target;
+            }
             if (!target || target.id !== signal.sessionId) {
                 // orphaned signal
                 log.warn("Couldn't associate signal with a call.", signal);
@@ -891,9 +899,7 @@ brightstream.SignalingChannel = function (params) {
                 call: target,
                 signal: signal
             });
-        }, function errorHandler(err) {
-            throw new Error(err.message);
-        });
+        }, null);
     };
 
     /**
