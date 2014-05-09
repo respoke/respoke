@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {string} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {brightstream.Call} params.call - The call that is handling state for this direct connection.
  * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
  * it to flow peer-to-peer. The relay acts like a blind proxy.
@@ -42,17 +42,18 @@ brightstream.DirectConnection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Client
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
 
     /**
-     * @memberof! brightstream.Client
-     * @name className - A name to identify this class
+     * A name to identify this class
+     * @memberof! brightstream.DirectConnection
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.DirectConnection';
@@ -68,8 +69,8 @@ brightstream.DirectConnection = function (params) {
      * @name call
      * @type {brightstream.Call}
      */
-    if (!that.call.initiator) {
-        that.call.initiator = false;
+    if (!that.call.caller) {
+        that.call.caller = false;
     }
 
     /**
@@ -81,11 +82,11 @@ brightstream.DirectConnection = function (params) {
     var dataChannel = null;
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * @memberof! brightstream.DirectConnection
@@ -98,7 +99,7 @@ brightstream.DirectConnection = function (params) {
 
     /**
      * When the datachannel is availble, we need to attach the callbacks. The event this function is attached to
-     * only fires for the non-initiator.
+     * only fires for the callee.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.listenDataChannel
      * @param {brightstream.Event} evt
@@ -284,7 +285,7 @@ brightstream.DirectConnection = function (params) {
     }
 
     /**
-     * Create the datachannel. For the initiator, set up all the handlers we'll need to keep track of the
+     * Create the datachannel. For the caller, set up all the handlers we'll need to keep track of the
      * datachannel's state and to receive messages.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.createDataChannel
@@ -309,9 +310,9 @@ brightstream.DirectConnection = function (params) {
     }
 
     /**
-     * Start the process of obtaining media. saveParameters will only be meaningful for the non-initiator,
-     * since the library calls this method for the initiator. Developers will use this method to pass in
-     * callbacks for the non-initiator.
+     * Start the process of obtaining media. saveParameters will only be meaningful for the callee,
+     * since the library calls this method for the caller. Developers will use this method to pass in
+     * callbacks for the callee.
      * @memberof! brightstream.DirectConnection
      * @method brightstream.DirectConnection.accept
      * @fires brightstream.DirectConnection#accept
@@ -326,9 +327,9 @@ brightstream.DirectConnection = function (params) {
         log.trace('DirectConnection.accept');
         saveParameters(params);
 
-        log.debug("I am " + (that.call.initiator ? '' : 'not ') + "the initiator.");
+        log.debug("I am " + (that.call.caller ? '' : 'not ') + "the caller.");
 
-        if (that.call.initiator === true) {
+        if (that.call.caller === true) {
             createDataChannel();
         }
 
