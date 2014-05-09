@@ -292,7 +292,7 @@ brightstream.Call = function (params) {
                 actuallyAddDirectConnection(params);
             }
         }, function errorHandler(err) {
-            var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
+            var message = "Couldn't get TURN credentials. Media relay will not be possible with this call.";
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event brightstream.Call#error
