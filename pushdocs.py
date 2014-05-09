@@ -54,6 +54,7 @@ class PushDocs:
                 "confluence/brightstream.Call",
                 "confluence/brightstream.Class",
                 "confluence/brightstream.Client",
+                "confluence/brightstream.Connection",
                 "confluence/brightstream.DirectConnection",
                 "confluence/brightstream.Endpoint",
                 "confluence/brightstream.EventEmitter",

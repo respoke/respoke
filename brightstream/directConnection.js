@@ -51,8 +51,9 @@ brightstream.DirectConnection = function (params) {
     delete that.instanceId;
 
     /**
-     * @memberof! brightstream.Client
-     * @name className - A name to identify this class
+     * A name to identify this class
+     * @memberof! brightstream.DirectConnection
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.DirectConnection';

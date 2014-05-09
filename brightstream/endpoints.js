@@ -31,8 +31,9 @@ brightstream.Presentable = function (params) {
     var that = brightstream.EventEmitter(params);
     delete that.instanceId;
     /**
+     * A name to identify the type of this object.
      * @memberof! brightstream.Presentable
-     * @name className - A name to identify the type of this object.
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.Presentable';
@@ -153,7 +154,8 @@ brightstream.Endpoint = function (params) {
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = client.getSignalingChannel();
+    var signalingChannel = params.signalingChannel;
+    delete that.signalingChannel;
     delete that.instanceId;
     delete that.connectionId;
     /**
@@ -216,7 +218,7 @@ brightstream.Endpoint = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -267,7 +269,7 @@ brightstream.Endpoint = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -317,7 +319,7 @@ brightstream.Endpoint = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -351,7 +353,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var combinedCallSettings = client.getCallSettings();
+        var combinedCallSettings = client.callSettings.clone();
         params = params || {};
 
         log.trace('Endpoint.call');
@@ -432,15 +434,7 @@ brightstream.Endpoint = function (params) {
         if (params.caller === true) {
             call.answer();
         }
-        client.addCall({
-            call: call,
-            endpoint: that
-        });
 
-        // Don't use params.onHangup here. Will overwrite the developer's callback.
-        call.listen('hangup', function hangupListener(evt) {
-            client.removeCall({id: call.id});
-        }, true);
         return call;
     };
 
@@ -478,7 +472,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var combinedConnectionSettings = client.getCallSettings();
+        var combinedConnectionSettings = client.callSettings.clone();
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         var call;
 
@@ -740,7 +734,7 @@ brightstream.Connection = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -786,7 +780,7 @@ brightstream.Connection = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -836,7 +830,7 @@ brightstream.Connection = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has
