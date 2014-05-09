@@ -175,6 +175,22 @@ Object.defineProperty(Object.prototype, 'isNumber', {
 });
 
 /**
+ * Simple clone by JSON encode/parse.
+ * @param {object}
+ * @returns {object}
+ * @static
+ * @private
+ */
+Object.defineProperty(Object.prototype, 'clone', {
+    value: function () {
+        "use strict";
+        return JSON.parse(JSON.stringify(this));
+    },
+    enumerable: false,
+    configurable: false
+});
+
+/**
  * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
  * params that were passed in onto the base object. Add the class name.
  * @class brightstream.Class

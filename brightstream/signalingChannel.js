@@ -76,7 +76,9 @@ brightstream.SignalingChannel = function (params) {
      * @private
      * @type {object}
      */
-    var clientSettings = null;
+    var clientSettings = params.clientSettings;
+    delete that.clientSettings;
+    clientSettings.baseURL = clientSettings.baseURL || 'https://collective.brightstream.io';
     /**
      * A map to avoid duplicate endpoint presence registrations.
      * @memberof! brightstream.SignalingChannel
@@ -86,14 +88,6 @@ brightstream.SignalingChannel = function (params) {
      */
     var presenceRegistered = {};
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @name baseURL
-     * @private
-     * @type {string}
-     */
-    var baseURL = that.baseURL || 'https://collective.brightstream.io';
-    delete that.baseURL;
-    /**
      * A reference to the private function Client.actuallyConnect that gets set in SignalingChannel.open() so we
      * don't have to make it public.
      * @memberof! brightstream.SignalingChannel
@@ -102,13 +96,6 @@ brightstream.SignalingChannel = function (params) {
      * @type {function}
      */
     var actuallyConnect = null;
-    /**
-     * @memberof! brightstream.SignalingChannel
-     * @name appId
-     * @private
-     * @type {string}
-     */
-    var appId = null;
     /**
      * @memberof! brightstream.SignalingChannel
      * @name token
@@ -172,11 +159,8 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.open
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
-     * @param {string} [params.appId] - The App's id
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {string} [params.developmentMode] - Indicates the library should request a token from the service.
-     * App must be set to development mode in your developer portal, and you must pass in your appId & endpointId.
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -186,14 +170,14 @@ brightstream.SignalingChannel = function (params) {
     that.open = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        log.trace('SignalingChannel.open', params);
+        log.trace('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
 
         Q.fcall(function tokenPromise() {
-            if (params.developmentMode === true && params.appId && params.endpointId) {
+            if (clientSettings.developmentMode === true && clientSettings.appId && params.endpointId) {
                 return that.getToken({
-                    appId: params.appId,
+                    appId: clientSettings.appId,
                     endpointId: params.endpointId
                 });
             }
@@ -220,10 +204,8 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getToken
      * @param {object} params
-     * @param {string} [params.appId] - The App's id
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * be set to development mode in your developer portal, and you must pass in your appId.
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -239,7 +221,7 @@ brightstream.SignalingChannel = function (params) {
             path: '/v1/tokens',
             httpMethod: 'POST',
             parameters: {
-                appId: params.appId,
+                appId: clientSettings.appId,
                 endpointId: params.endpointId,
                 ttl: 60 * 60 * 6
             },
@@ -261,7 +243,6 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.doOpen
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
-     * @param {string} [params.appId] - The App's id
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -284,7 +265,7 @@ brightstream.SignalingChannel = function (params) {
                 if (response.code === 200) {
                     appToken = response.result.token;
                     deferred.resolve();
-                    log.trace("Signaling connection open to", baseURL);
+                    log.trace("Signaling connection open to", clientSettings.baseURL);
                     that.connected = true;
                 } else {
                     that.connected = false;
@@ -358,7 +339,7 @@ brightstream.SignalingChannel = function (params) {
                 'presence': {
                     show: params.show,
                     'status': params.status,
-                    namespace: appId,
+                    namespace: clientSettings.appId,
                     type: params.presence || "available"
                 }
             }
@@ -1329,7 +1310,7 @@ brightstream.SignalingChannel = function (params) {
             deferred.reject(new Error("Can't open a websocket without an app token."));
         }
 
-        pieces = baseURL.split(/:\/\//);
+        pieces = clientSettings.baseURL.split(/:\/\//);
         protocol = pieces[0];
         pieces = pieces[1].split(/:/);
         host = pieces[0];
@@ -1354,7 +1335,7 @@ brightstream.SignalingChannel = function (params) {
             query: 'app-token=' + appToken
         };
 
-        socket = io.connect(baseURL + '?app-token=' + appToken, connectParams);
+        socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
             deferred.resolve();
@@ -1409,7 +1390,6 @@ brightstream.SignalingChannel = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
-            var clientSettings = client.getClientSettings();
             /**
              * @event brightstream.Client#disconnect
              * @property {string} name - the event name.
@@ -1609,7 +1589,7 @@ brightstream.SignalingChannel = function (params) {
             'code': null
         };
 
-        uri = baseURL + params.path;
+        uri = clientSettings.baseURL + params.path;
 
         if (!params) {
             throw new Error('No params.');
@@ -1923,11 +1903,19 @@ brightstream.Group = function (params) {
      */
     var instanceId = params.instanceId;
     var client = brightstream.getClient(instanceId);
-    var signalingChannel = client.getSignalingChannel();
 
     if (!that.id) {
         throw new Error("Can't create a group without an ID.");
     }
+
+    /**
+     * @memberof! brightstream.Group
+     * @name signalingChannel
+     * @type brightstream.SignalingChannel
+     * @private
+     */
+    var signalingChannel = params.signalingChannel;
+    delete params.signalingChannel;
 
     /**
      * @memberof! brightstream.Group
