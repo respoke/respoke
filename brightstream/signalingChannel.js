@@ -104,6 +104,20 @@ brightstream.SignalingChannel = function (params) {
     var actuallyConnect = null;
     /**
      * @memberof! brightstream.SignalingChannel
+     * @name reconnectTimeout
+     * @private
+     * @type {number}
+     */
+    var reconnectTimeout = null;
+    /**
+     * @memberof! brightstream.SignalingChannel
+     * @name maxReconnectTimeout
+     * @private
+     * @type {number}
+     */
+    var maxReconnectTimeout = 5 * 60 * 1000;
+    /**
+     * @memberof! brightstream.SignalingChannel
      * @name appId
      * @private
      * @type {string}
@@ -1279,6 +1293,46 @@ brightstream.SignalingChannel = function (params) {
         }
     }
 
+    /*
+    * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
+    * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
+    * @memberof! brightstream.SignalingChannel
+    * @method brightstream.SignalingChannel.reconnect
+    * @private
+    */
+    function reconnect () {
+        reconnectTimeout = (reconnectTimeout === null) ? 500 : 2 * reconnectTimeout;
+
+        if (reconnectTimeout > (maxReconnectTimeout)) {
+            reconnectTimeout = maxReconnectTimeout;
+        }
+
+        setTimeout(function actuallyReconnect () {
+
+            var clientSettings = clientObj.getClientSettings();
+            actuallyConnect().then(function successHandler(user) {
+                reconnectTimeout = null;
+                clientObj.user = user;
+                log.debug('socket reconnected');
+                return Q.all(clientObj.getGroups().map(function iterGroups(group) {
+                    clientObj.join({
+                        id: group.id,
+                        onMessage: clientSettings.onMessage,
+                        onJoin: clientSettings.onJoin,
+                        onLeave: clientSettings.onLeave
+                    });
+                }));
+            }).done(function successHandler(user) {
+                /**
+                 * @event brightstream.Client#reconnect
+                 * @property {string} name - the event name.
+                 * @property {brightstream.Client}
+                 */
+                clientObj.fire('reconnect');
+            });
+        }, reconnectTimeout);
+    }
+
     /**
      * Authenticate to the cloud and call the handler on state change.
      * @memberof! brightstream.SignalingChannel
@@ -1309,8 +1363,6 @@ brightstream.SignalingChannel = function (params) {
 
         /**
          * Try to connect for 2 seconds before failing.
-         * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-         * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
          */
         var connectParams = {
             'connect timeout': 2000,
@@ -1353,10 +1405,14 @@ brightstream.SignalingChannel = function (params) {
 
         socket.on('connect_failed', function connectFailedHandler(res) {
             log.error('Socket.io connect failed.', res || "");
+            reconnect();
         });
 
         socket.on('error', function errorHandler(res) {
             log.trace('Socket.io error.', res || "");
+            if (!clientObj.connected) {
+                reconnect();
+            }
         });
 
         that.addHandler({
@@ -1393,30 +1449,7 @@ brightstream.SignalingChannel = function (params) {
                 socket = null;
                 return;
             }
-
-            actuallyConnect().then(function successHandler(user) {
-                clientObj.user = user;
-                log.debug('socket reconnected');
-                return Q.all(clientObj.getGroups().map(function iterGroups(group) {
-                    clientObj.join({
-                        id: group.id,
-                        onMessage: clientSettings.onMessage,
-                        onJoin: clientSettings.onJoin,
-                        onLeave: clientSettings.onLeave
-                    });
-                }));
-            }, function onError(err) {
-                throw new Error(err.message);
-            }).done(function successHandler(user) {
-                /**
-                 * @event brightstream.Client#reconnect
-                 * @property {string} name - the event name.
-                 * @property {brightstream.Client}
-                 */
-                clientObj.fire('reconnect');
-            }, function errorHandler(err) {
-                throw new Error(err.message);
-            });
+            reconnect();
         });
 
         return deferred.promise;
@@ -1633,8 +1666,7 @@ brightstream.SignalingChannel = function (params) {
                 return;
             }
             if (this.status === 0) {
-                log.error("Status is 0: Incomplete request, SSL error, or CORS error.");
-                return;
+                throw new Error("Status is 0: Incomplete request, SSL error, or CORS error.");
             }
             if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
                 response.code = this.status;
@@ -1652,7 +1684,7 @@ brightstream.SignalingChannel = function (params) {
                     'params' : params.parameters
                 });
             } else {
-                log.warn('unexpected response ' + this.status);
+                throw new Error('unexpected response ' + this.status);
             }
         };
     }
@@ -1675,7 +1707,7 @@ brightstream.SignalingChannel = function (params) {
         Object.keys(params).forEach(function formatParam(name) {
             var value = params[name];
             /* Skip objects -- We won't know how to name these. */
-            if (typeof value === 'array') {
+            if (value instanceof Array) {
                 strings.push([name, value.join(',')].join('='));
             } else if (typeof value !== 'object' && typeof value !== 'function') {
                 strings.push([name, value].join('='));
