@@ -191,10 +191,8 @@ brightstream.MediaStatsParser = function (params) {
 
         if (params.onStats) {
             timer = setInterval(function statsTimerHandler() {
-                that.getStats().done(function successHandler(report) {
-                    params.onStats(brightstream.MediaStats(report));
-                }, function errorHandler(err) {
-                    log.error("error in getStats", err);
+                that.getStats().done(params.onStats, function errorHandler(err) {
+                    log.error("error in getStats", err.message, err.stack);
                 });
             }, statsInterval);
         } else {
@@ -206,8 +204,11 @@ brightstream.MediaStatsParser = function (params) {
      * Get one snapshot of stats from the call's PeerConnection.
      * @memberof! brightstream.MediaStatsParser
      * @method brightstream.MediaStatsParser.getStats
-     * @param {function} [onSuccess] - Success handler for this invocation of this method only.
-     * @param {function} [onError] - Error handler for this invocation of this method only.
+     * @param {object} [params]
+     * @param {brightstream.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
+     * invocation of this method only.
+     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @returns {Promise<object>}
      */
     that.getStats = function (params) {
@@ -225,7 +226,7 @@ brightstream.MediaStatsParser = function (params) {
         }
 
         args.push(function successHandler(stats) {
-            deferred.resolve(buildStats(stats));
+            deferred.resolve(brightstream.MediaStats(buildStats(stats)));
         });
         args.push(function errorHandler(err) {
             log.error(err);
@@ -302,7 +303,11 @@ brightstream.MediaStatsParser = function (params) {
 
     return that;
 }; // End brightstream.MediaStatsParser
-
+/**
+ * Success handler for methods that generate stats.
+ * @callback brightstream.MediaStatsParser.statsHandler
+ * @param {brightstream.MediaStats}
+ */
 /**
  * A report containing statistical information about the flow of media.
  * with the latest live statistics.
@@ -459,7 +464,7 @@ brightstream.MediaStats = function (params) {
         }
     };
 
-    /*
+    /**
      * Rename report attributes to have more readable, understandable names.
      * @memberof! brightstream.MediaStats
      * @method brightstream.MediaStats.format
