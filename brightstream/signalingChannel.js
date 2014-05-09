@@ -1207,10 +1207,12 @@ brightstream.SignalingChannel = function (params) {
     var onMessage = function onMessage(message) {
         var endpoint;
         message = brightstream.TextMessage({rawMessage: message});
-        endpoint = client.getEndpoint({
-            id: message.endpointId,
-            skipCreate: true
-        });
+        if (message.endpointId) {
+            endpoint = client.getEndpoint({
+                id: message.endpointId,
+                skipCreate: true
+            });
+        }
         if (endpoint) {
             /**
              * @event brightstream.Endpoint#message
