@@ -59,8 +59,9 @@ brightstream.Client = function (params) {
     brightstream.instances[instanceId] = that;
     delete that.instanceId;
     /**
+     * A name to identify this class
      * @memberof! brightstream.Client
-     * @name className - A name to identify this class
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.Client';
@@ -98,7 +99,7 @@ brightstream.Client = function (params) {
     /**
      * A container for baseURL, token, and appId so they won't be accidentally viewable in any JavaScript debugger.
      * @memberof! brightstream.Client
-     * @name app
+     * @name clientSettings
      * @type {object}
      * @private
      * @property {string} [baseURL] - the URL of the cloud infrastructure's REST API.
@@ -855,8 +856,10 @@ brightstream.Client = function (params) {
      * @param {string} params.id
      * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
      * know about this Endpoint.
-     * @param {function} [params.onMessage] - Handle messages sent to the logged-in user from this one Endpoint.
-     * @param {function} [params.onPresence] - Handle presence notifications from this one Endpoint.
+     * @param {brightstream.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
+     * from this one Endpoint.
+     * @param {brightstream.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
+     * Endpoint.
      * @returns {brightstream.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -896,9 +899,11 @@ brightstream.Client = function (params) {
      * @method brightstream.Client.getConnection
      * @param {object} params
      * @param {string} params.connectionId
-     * @param {string} params.[endpointId] - An endpointId to use in the creation of this connection.
-     * @param {function} [params.onMessage] - TODO
-     * @param {function} [params.onPresence] - TODO
+     * @param {string} [params.endpointId] - An endpointId to use in the creation of this connection.
+     * @param {brightstream.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
+     * from this one Connection.
+     * @param {brightstream.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
+     * Connection.
      * @returns {brightstream.Connection} The connection whose ID was specified.
      */
     that.getConnection = function (params) {
