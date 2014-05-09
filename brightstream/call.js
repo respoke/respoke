@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -35,7 +35,7 @@
  * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
  * media renegotiation.
  * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
- * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
+ * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for the remote video element.
  * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
  * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
  * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -58,13 +58,13 @@ brightstream.Call = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Call
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * A name to identify the type of object.
      * @memberof! brightstream.Call
@@ -82,7 +82,7 @@ brightstream.Call = function (params) {
 
     if (!that.caller) {
         /**
-         * Whether or not the currently logged-in user is the caller of the call.
+         * Whether or not the client is the caller of the call.
          * @memberof! brightstream.Call
          * @name caller
          * @type {boolean}
@@ -134,7 +134,7 @@ brightstream.Call = function (params) {
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
      * or rejected as soon as the 'accept' or 'reject' signal is received. For the callee, it is
-     * resolved or rejected only after the developer or logged-in user approves or rejects the modify.
+     * resolved or rejected only after the developer or user approves or rejects the modify.
      * @memberof! brightstream.Call
      * @name defModify
      * @private
@@ -178,11 +178,11 @@ brightstream.Call = function (params) {
     var forceTurn = null;
     /**
      * @memberof! brightstream.Call
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.getClient}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.Call
      * @name videoLocalElement
@@ -247,7 +247,7 @@ brightstream.Call = function (params) {
      * @type {brightstream.PeerConnection}
      */
     var pc = brightstream.PeerConnection({
-        client: client,
+        instanceId: instanceId,
         forceTurn: forceTurn,
         call: that,
         callSettings: callSettings,
@@ -273,6 +273,7 @@ brightstream.Call = function (params) {
      * If this call was initiated with a DirectConnection, set it up so answer() will be the approval mechanism.
      * @method brightstream.Call.init
      * @memberof! brightstream.Call
+     * @fires brightstream.Client#call
      * @private
      */
     function init() {
@@ -286,25 +287,10 @@ brightstream.Call = function (params) {
             defMedia = Q.defer();
         }
 
-        clientObj.updateTurnCredentials().done(function successHandler() {
-            pc.init(callSettings); // instatiates RTCPeerConnection, can't call on modify
-            if (defModify === undefined && directConnectionOnly === true) {
-                actuallyAddDirectConnection(params);
-            }
-        }, function errorHandler(err) {
-            var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
-            /**
-             * This event is fired on errors that occur during call setup or media negotiation.
-             * @event brightstream.Call#error
-             * @type {brightstream.Event}
-             * @property {string} reason - A human readable description about the error.
-             * @property {brightstream.Call} target
-             * @property {string} name - the event name.
-             */
-            that.fire('error', {
-                reason: message
-            });
-        });
+        pc.init(callSettings); // instantiates RTCPeerConnection, can't call on modify
+        if (defModify === undefined && directConnectionOnly === true) {
+            actuallyAddDirectConnection(params);
+        }
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
@@ -334,6 +320,26 @@ brightstream.Call = function (params) {
                 });
             });
         }
+
+        if (directConnectionOnly === true) {
+            // create the call in stealth mode.
+            return;
+        }
+
+        /**
+         * This event provides notification for when an incoming call is being received.  If the user wishes
+         * to allow the call, the app should call evt.call.answer() to answer the call.
+         * @event brightstream.Client#call
+         * @type {brightstream.Event}
+         * @property {brightstream.Call} call
+         * @property {brightstream.Endpoint} endpoint
+         * @property {string} name - the event name.
+         * @property {brightstream.Client} target
+         */
+        client.fire('call', {
+            endpoint: that.remoteEndpoint,
+            call: that
+        });
     }
 
     /**
@@ -344,7 +350,7 @@ brightstream.Call = function (params) {
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
      * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -367,7 +373,7 @@ brightstream.Call = function (params) {
      */
     function saveParameters(params) {
         that.listen('local-stream-received', params.onLocalVideo);
-        that.listen('remote-stream-received', params.onRemoteVideo);
+        that.listen('connect', params.onConnect);
         that.listen('hangup', params.onHangup);
         that.listen('allow', params.onAllow);
         that.listen('answer', params.onAnswer);
@@ -411,7 +417,7 @@ brightstream.Call = function (params) {
         delete that.signalHangup;
         delete that.signalReport;
         delete that.signalCandidate;
-        delete that.onRemoteVideo;
+        delete that.onConnect;
         delete that.onLocalVideo;
         delete that.callSettings;
         delete that.directConnectionOnly;
@@ -429,7 +435,7 @@ brightstream.Call = function (params) {
      * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the remote video element.
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
      * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -466,7 +472,7 @@ brightstream.Call = function (params) {
          */
         saveParameters(params);
 
-        pc.listen('remote-stream-received', onRemoteStreamAdded, true);
+        pc.listen('connect', onRemoteStreamAdded, true);
         pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
         /**
@@ -501,7 +507,7 @@ brightstream.Call = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
      * video element.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for the developer to receive the
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for the developer to receive the
      * remote video element.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -560,7 +566,7 @@ brightstream.Call = function (params) {
      * @method brightstream.Call.onRemoteStreamAdded
      * @private
      * @param {object}
-     * @fires brightstream.Call#remote-stream-received
+     * @fires brightstream.Call#connect
      */
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
@@ -571,13 +577,13 @@ brightstream.Call = function (params) {
         videoRemoteElement.used = true;
         videoRemoteElement.play();
         /**
-         * @event brightstream.LocalMedia#remote-stream-received
+         * @event brightstream.LocalMedia#connect
          * @type {brightstream.Event}
          * @property {Element} element - the HTML5 Video element with the new stream attached.
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
          */
-        that.fire('remote-stream-received', {
+        that.fire('connect', {
             element: videoRemoteElement
         });
     }
@@ -643,7 +649,7 @@ brightstream.Call = function (params) {
      * @param {object} params
      * @param {object} [params.constraints] - getUserMedia constraints
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onConnect} [params.onConnect]
      * @param {brightstream.Call.onHangup} [params.onHangup]
      * @fires brightstream.Call#requesting-media
      * @fires brightstream.Call#allow
@@ -656,7 +662,7 @@ brightstream.Call = function (params) {
         saveParameters(params);
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
-        params.client = client;
+        params.instanceId = instanceId;
 
         stream = brightstream.LocalMedia(params);
         stream.listen('requesting-media', function waitAllowHandler(evt) {
@@ -737,7 +743,7 @@ brightstream.Call = function (params) {
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onConnect} [params.onConnect]
      * @param {brightstream.Call.onHangup} [params.onHangup]
      * @param {brightstream.Call.mediaSuccessHandler} [params.onSuccess]
      * @param {brightstream.Client.errorHandler} [params.onError]
@@ -749,7 +755,7 @@ brightstream.Call = function (params) {
         params.constraints = params.constraints || {video: true, audio: true};
         params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
         params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
-        params.client = client;
+        params.instanceId = instanceId;
 
         if (!defMedia.promise.isFulfilled()) {
             doAddVideo(params);
@@ -777,7 +783,7 @@ brightstream.Call = function (params) {
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo]
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo]
+     * @param {brightstream.Call.onConnect} [params.onConnect]
      * @param {brightstream.Call.onHangup} [params.onHangup]
      * @param {brightstream.Call.mediaSuccessHandler} [params.onSuccess]
      * @param {brightstream.Client.errorHandler} [params.onError]
@@ -901,7 +907,7 @@ brightstream.Call = function (params) {
      * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess]
      * @param {brightstream.Client.errorHandler} [params.onError]
      * @returns {Promise<brightstream.DirectConnection>}
-     * @fires brightstream.User#direct-connection
+     * @fires brightstream.Client#direct-connection
      * @fires brightstream.Call#direct-connection
      */
     function actuallyAddDirectConnection(params) {
@@ -917,7 +923,7 @@ brightstream.Call = function (params) {
             return defMedia.promise;
         }
 
-        params.client = client;
+        params.instanceId = instanceId;
         params.pc = pc;
         params.call = that;
 
@@ -979,14 +985,14 @@ brightstream.Call = function (params) {
          * This event is fired when the logged-in endpoint is receiving a request to open a direct connection
          * to another endpoint.  If the user wishes to allow the direct connection, calling
          * evt.directConnection.accept() will allow the connection to be set up.
-         * @event brightstream.User#direct-connection
+         * @event brightstream.Client#direct-connection
          * @type {brightstream.Event}
          * @property {brightstream.DirectConnection} directConnection
          * @property {brightstream.Endpoint} endpoint
          * @property {string} name - the event name.
          * @property {brightstream.Call} target
          */
-        clientObj.user.fire('direct-connection', {
+        client.fire('direct-connection', {
             directConnection: directConnection,
             endpoint: that.remoteEndpoint
         });
@@ -1436,8 +1442,8 @@ brightstream.Call = function (params) {
 /**
  * When on a call, receive remote media when it becomes available. This is what you will need to provide if you want
  * to show the user the other party's video during a call. This callback is called every time
- * brightstream.Call#remote-stream-received is fired.
- * @callback brightstream.Call.onRemoteVideo
+ * brightstream.Call#connect is fired.
+ * @callback brightstream.Call.onConnect
  * @param {brightstream.Event} evt
  * @param {Element} evt.element - the HTML5 Video element with the new stream attached.
  * @param {string} evt.name - the event name.

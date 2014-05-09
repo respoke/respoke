@@ -13,7 +13,7 @@
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client - client id
+ * @param {string} params.instanceId - client id
  * @param {object} params.callSettings
  * @returns {brightstream.LocalMedia}
  */
@@ -23,13 +23,13 @@ brightstream.LocalMedia = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.LocalMedia
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
      * @memberof! brightstream.LocalMedia
      * @name className
@@ -45,11 +45,11 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * @memberof! brightstream.LocalMedia
-     * @name clientObj
+     * @name client
      * @private
      * @type {brightstream.getClient}
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.LocalMedia
      * @name videoLocalElement
@@ -235,7 +235,7 @@ brightstream.LocalMedia = function (params) {
             stream.numPc = 1;
             brightstream.streams[that.constraints] = stream;
 
-            stream.id = clientObj.user.id;
+            stream.id = client.endpointId;
             attachMediaStream(videoLocalElement, stream);
             // We won't want our local video outputting audio.
             videoLocalElement.muted = true;

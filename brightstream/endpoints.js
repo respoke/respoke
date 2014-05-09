@@ -8,14 +8,13 @@
 
 /*global brightstream: false */
 /**
- * The purpose of the class is so that User and Endpoint can share the same presence. This will probably be
- * merged into Endpoint when User is merged into Client.
+ * The purpose of the class is so that Client and Endpoint can share the same presence.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
  * @augments brightstream.EventEmitter
  * @param {object} params
- * @param {string} params.client
+ * @param {string} params.instanceId
  * @param {string} params.id
  * @returns {brightstream.Presentable}
  */
@@ -24,16 +23,17 @@ brightstream.Presentable = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Presentable
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.EventEmitter(params);
-    delete that.client;
+    delete that.instanceId;
     /**
+     * A name to identify the type of this object.
      * @memberof! brightstream.Presentable
-     * @name className - A name to identify the type of this object.
+     * @name className
      * @type {string}
      */
     that.className = 'brightstream.Presentable';
@@ -46,11 +46,11 @@ brightstream.Presentable = function (params) {
 
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * Set the presence on the object and the session
@@ -68,7 +68,7 @@ brightstream.Presentable = function (params) {
         params.presence = params.presence || 'available';
         params.connectionId = params.connectionId || that.connectionId;
 
-        if (that.className === 'brightstream.User' || that.className === 'brightstream.Connection') {
+        if (that.className === 'brightstream.Client' || that.className === 'brightstream.Connection') {
             that.presence = params.presence;
             if (that.className === 'brightstream.Connection') {
                 that.getEndpoint().resolvePresence();
@@ -80,7 +80,7 @@ brightstream.Presentable = function (params) {
             if (connection) {
                 connection.presence = params.presence;
             } else {
-                connection = clientObj.getConnection({
+                connection = client.getConnection({
                     connectionId: params.connectionId,
                     skipCreate: false,
                     endpointId: that.id
@@ -119,7 +119,7 @@ brightstream.Presentable = function (params) {
 /**
  * Represents remote Endpoints. Endpoints are users of this application that are not the one logged into this
  * instance of the application. An Endpoint could be logged in from multiple other instances of this app, each of
- * which is represented by a Connection. The currently logged-in user can interact with endpoints by calling them or
+ * which is represented by a Connection. The client can interact with endpoints by calling them or
  * sending them messages. An endpoint can be a person using an app from a browser or a script using the APIs on
  * a server.
  * @author Erin Spiceland <espiceland@digium.com>
@@ -127,6 +127,7 @@ brightstream.Presentable = function (params) {
  * @augments brightstream.Presentable
  * @param {object} params
  * @param {string} params.id
+ * @param {string} params.instanceId
  * @returns {brightstream.Endpoint}
  */
 brightstream.Endpoint = function (params) {
@@ -134,27 +135,28 @@ brightstream.Endpoint = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Endpoint
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.Presentable(params);
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
     /**
      * @memberof! brightstream.DirectConnection
      * @name signalingChannel
      * @type {brightstream.SignalingChannel}
      * @private
      */
-    var signalingChannel = clientObj.getSignalingChannel();
-    delete that.client;
+    var signalingChannel = params.signalingChannel;
+    delete that.signalingChannel;
+    delete that.instanceId;
     delete that.connectionId;
     /**
      * A name to identify the type of this object.
@@ -177,7 +179,7 @@ brightstream.Endpoint = function (params) {
      * @type {Array<brightstream.Connection>}
      */
     that.connections = [];
-    clientObj.listen('disconnect', function disconnectHandler() {
+    client.listen('disconnect', function disconnectHandler() {
         that.connections = [];
     });
 
@@ -216,7 +218,7 @@ brightstream.Endpoint = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -267,7 +269,7 @@ brightstream.Endpoint = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -317,7 +319,7 @@ brightstream.Endpoint = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -351,9 +353,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var clientObj = brightstream.getClient(client);
-        var combinedCallSettings = clientObj.getCallSettings();
-        var user = clientObj.user;
+        var combinedCallSettings = client.callSettings.clone();
         params = params || {};
 
         log.trace('Endpoint.call');
@@ -373,7 +373,7 @@ brightstream.Endpoint = function (params) {
         log.debug('Final callSettings is', combinedCallSettings);
 
         params.callSettings = combinedCallSettings;
-        params.client = client;
+        params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
@@ -434,15 +434,7 @@ brightstream.Endpoint = function (params) {
         if (params.caller === true) {
             call.answer();
         }
-        user.addCall({
-            call: call,
-            endpoint: that
-        });
 
-        // Don't use params.onHangup here. Will overwrite the developer's callback.
-        call.listen('hangup', function hangupListener(evt) {
-            user.removeCall({id: call.id});
-        }, true);
         return call;
     };
 
@@ -480,10 +472,8 @@ brightstream.Endpoint = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var clientObj = brightstream.getClient(client);
-        var combinedConnectionSettings = clientObj.getCallSettings();
+        var combinedConnectionSettings = client.callSettings.clone();
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var user = clientObj.user;
         var call;
 
         if (that.directConnection) {
@@ -505,7 +495,7 @@ brightstream.Endpoint = function (params) {
         combinedConnectionSettings.servers = params.servers || combinedConnectionSettings.servers;
 
         params.connectionSettings = combinedConnectionSettings;
-        params.client = client;
+        params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
@@ -559,8 +549,8 @@ brightstream.Endpoint = function (params) {
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
             if (params.caller !== true) {
-                if (!clientObj.user.hasListeners('direct-connection') &&
-                        !clientObj.hasListeners('direct-connection') &&
+                if (!client.hasListeners('direct-connection') &&
+                        !client.hasListeners('direct-connection') &&
                         !call.hasListeners('direct-connection')) {
                     that.directConnection.reject();
                     deferred.reject(new Error("Got an incoming direct connection with no handlers to accept it!"));
@@ -668,7 +658,7 @@ brightstream.Endpoint = function (params) {
 
 /**
  * Represents remote Connections which belong to an endpoint. An Endpoint can be authenticated from multiple devices,
- * browsers, or tabs. Each of these separate authentications is a Connection. The currently logged-in user can interact
+ * browsers, or tabs. Each of these separate authentications is a Connection. The client can interact
  * with connections by calling them or sending them messages.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
@@ -682,19 +672,19 @@ brightstream.Connection = function (params) {
     params = params || {};
     /**
      * @memberof! brightstream.Connection
-     * @name client
+     * @name instanceId
      * @private
      * @type {string}
      */
-    var client = params.client;
+    var instanceId = params.instanceId;
     var that = brightstream.Presentable(params);
     /**
      * @memberof! brightstream.DirectConnection
-     * @name clientObj
+     * @name client
      * @type {brightstream.Client}
      * @private
      */
-    var clientObj = brightstream.getClient(client);
+    var client = brightstream.getClient(instanceId);
 
     /**
      * @memberof! brightstream.Connection
@@ -705,7 +695,7 @@ brightstream.Connection = function (params) {
     if (!that.id) {
         throw new Error("Can't make a connection without an id.");
     }
-    delete that.client;
+    delete that.instanceId;
     delete that.connectionId;
 
     /**
@@ -744,7 +734,7 @@ brightstream.Connection = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -790,7 +780,7 @@ brightstream.Connection = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
@@ -840,7 +830,7 @@ brightstream.Connection = function (params) {
      * media renegotiation.
      * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onRemoteVideo} [params.onRemoteVideo] - Callback for receiving an HTML5 Video
+     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
      * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has
@@ -913,218 +903,8 @@ brightstream.Connection = function (params) {
      * @returns {brightstream.Endpoint}
      */
     that.getEndpoint = function () {
-        return clientObj.getEndpoint({id: that.endpointId});
+        return client.getEndpoint({id: that.endpointId});
     };
 
     return that;
 }; // End brightstream.Connection
-
-/**
- * Represents the currently logged-in Endpoint.
- * @author Erin Spiceland <espiceland@digium.com>
- * @constructor
- * @augments brightstream.Presentable
- * @param {object} params
- * @param {string} params.client
- * @param {string} params.token
- * @returns {brightstream.User}
- */
-brightstream.User = function (params) {
-    "use strict";
-    params = params || {};
-    var client = params.client;
-    var that = brightstream.Presentable(params);
-    /**
-     * A simple POJO to store some methods we will want to override but reference later.
-     * @memberof! brightstream.User
-     * @name superClass
-     * @private
-     * @type {object}
-     */
-    var superClass = {
-        setPresence: that.setPresence
-    };
-    delete that.client;
-    that.className = 'brightstream.User';
-
-    /**
-     * Array of calls in progress.
-     * @memberof! brightstream.User
-     * @name calls
-     * @private
-     * @type {array}
-     */
-    var calls = [];
-    var signalingChannel = brightstream.getClient(client).getSignalingChannel();
-
-    /**
-     * Overrides Presentable.setPresence to send presence to the server before updating the object.
-     * @memberof! brightstream.User
-     * @method brightstream.User.setPresence
-     * @param {object} params
-     * @param {string} params.presence
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @return {Promise}
-     */
-    that.setPresence = function (params) {
-        params = params || {};
-        params.presence = params.presence || "available";
-        log.info('sending my presence update ' + params.presence);
-
-        return signalingChannel.sendPresence({
-            presence: params.presence,
-            onSuccess: function successHandler(p) {
-                superClass.setPresence(params);
-                if (typeof params.onSuccess === 'function') {
-                    params.onSuccess(p);
-                }
-            },
-            onError: params.onError
-        });
-    };
-
-    /**
-     * Get all current calls.
-     * @memberof! brightstream.User
-     * @method brightstream.User.getCalls
-     * @returns {Array<brightstream.Call>}
-     */
-    that.getCalls = function () {
-        return calls;
-    };
-
-    /**
-     * Get the Call with the endpoint specified.
-     * @memberof! brightstream.User
-     * @method brightstream.User.getCall
-     * @param {object} params
-     * @param {string} [params.id] - Call ID.
-     * @param {string} [params.endpointId] - Endpoint ID. Warning: don't use this method if you are placing multiple
-     * calls to the same endpoint. Use user.getCalls instead.
-     * @param {boolean} params.create - whether or not to create a new call if the specified endpointId isn't found
-     * @returns {brightstream.Call}
-     */
-    that.getCall = function (params) {
-        var call = null;
-        var endpoint = null;
-        var callSettings = null;
-        var clientObj = brightstream.getClient(client);
-
-        calls.every(function findCall(one) {
-            if (params.id && one.id === params.id) {
-                call = one;
-                return false;
-            }
-
-            if (!params.id && params.endpointId && one.remoteEndpoint.id === params.endpointId) {
-                call = one;
-                return false;
-            }
-            return true;
-        });
-
-        if (call === null && params.create === true) {
-            endpoint = clientObj.getEndpoint({id: params.endpointId});
-            try {
-                callSettings = clientObj.getCallSettings();
-                call = endpoint.startCall({
-                    callSettings: callSettings,
-                    id: params.id,
-                    caller: false
-                });
-            } catch (e) {
-                log.error("Couldn't create Call: " + e.message);
-            }
-        }
-        return call;
-    };
-
-    /**
-     * Associate the call with this user.
-     * @memberof! brightstream.User
-     * @method brightstream.User.addCall
-     * @param {object} params
-     * @param {brightstream.Call} params.call
-     * @fires brightstream.User#call
-     * @private
-     */
-    that.addCall = function (params) {
-        if (calls.indexOf(params.call) === -1) {
-            calls.push(params.call);
-            if (params.call.className === 'brightstream.Call') {
-                if (!params.call.caller && !that.hasListeners('call')) {
-                    log.warn("Got an incoming call with no handlers to accept it!");
-                    params.call.reject();
-                    return;
-                }
-                /**
-                 * This event provides notification for when an incoming call is being received.  If the user wishes
-                 * to allow the call, the app should call evt.call.answer() to answer the call.
-                 * @event brightstream.User#call
-                 * @type {brightstream.Event}
-                 * @property {brightstream.Call} call
-                 * @property {brightstream.Endpoint} endpoint
-                 * @property {string} name - the event name.
-                 * @property {brightstream.User} target
-                 */
-                that.fire('call', {
-                    endpoint: params.endpoint,
-                    call: params.call
-                });
-            }
-        }
-    };
-
-    /**
-     * Remove the call or direct connection.
-     * @memberof! brightstream.User
-     * @method brightstream.User.removeCall
-     * @param {object} params
-     * @param {string} [params.id] Call or DirectConnection id
-     * @param {brightstream.Call} [call] Call or DirectConnection
-     * @todo TODO rename this something else or make it an event listener.
-     */
-    that.removeCall = function (params) {
-        var match = false;
-        if (!params.id && !params.call) {
-            throw new Error("Must specify endpointId of Call to remove or the call itself.");
-        }
-
-        // Loop backward since we're modifying the array in place.
-        for (var i = calls.length - 1; i >= 0; i -= 1) {
-            if (calls[i].id === params.id ||
-                    (params.call && calls[i] === params.call)) {
-                calls.splice(i);
-                match = true;
-            }
-        }
-
-        if (!match) {
-            log.warn("No call removed.");
-        }
-    };
-
-    /**
-     * Set presence to available.
-     * @memberof! brightstream.User
-     * @method brightstream.User.setOnline
-     * @param {object} params
-     * @param {string} [params.presence] - The presence to set.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @returns {Promise}
-     */
-    that.setOnline = function (params) {
-        params = params || {};
-        params.presence = params.presence || 'available';
-        return that.setPresence(params);
-    };
-
-    return that;
-}; // End brightstream.User
-
