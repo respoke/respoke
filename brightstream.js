@@ -107,6 +107,13 @@ brightstream.getClient = function (id) {
  */
 brightstream.createClient = function (params) {
     "use strict";
+    var client;
+    if (params.instanceId) {
+        client = brightstream.getClient(params.instanceId);
+        if (client) {
+            return client;
+        }
+    }
     return brightstream.Client(params);
 };
 

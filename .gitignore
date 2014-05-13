@@ -1,6 +1,7 @@
 .idea
 confluence/
 docs/
+build/
 node_modules
 brightstream.min.js
 brightstream-stats.min.js

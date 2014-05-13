@@ -1,109 +1,30 @@
 
 var expect = chai.expect;
 
-describe("A brightstream.EventEmitter ", function () {
-    var eventThrower = brightstream.EventEmitter({
+describe("A brightstream.EventEmitter", function () {
+    var results = [];
+    var eventEmitter = brightstream.EventEmitter({
         "gloveColor": "white"
     });
 
-    /*
-    * Inheritance
-    */
-    /*
-    * Make sure there is a className attribute on every instance.
-    */
     it("has the correct class name.", function () {
-        expect(eventThrower.className).to.equal('brightstream.EventEmitter');
+        expect(eventEmitter.className).to.equal('brightstream.EventEmitter');
     });
 
-    /*
-    * Native methods
-    */
     it("contains some important methods.", function () {
-        expect(typeof eventThrower.listen).to.equal('function');
-        expect(typeof eventThrower.ignore).to.equal('function');
-        expect(typeof eventThrower.fire).to.equal('function');
+        expect(typeof eventEmitter.listen).to.equal('function');
+        expect(typeof eventEmitter.ignore).to.equal('function');
+        expect(typeof eventEmitter.fire).to.equal('function');
     });
 
-    /*
-    * Constructor
-    */
     it("saves unexpected developer-specified parameters.", function () {
-        expect(eventThrower.gloveColor).to.equal('white');
+        expect(eventEmitter.gloveColor).to.equal('white');
     });
 
     it("doesn't expose the signaling channel", function () {
-        expect(eventThrower.signalingChannel).to.not.exist;
-        expect(eventThrower.getSignalingChannel).to.not.exist;
+        expect(eventEmitter.signalingChannel).to.not.exist;
+        expect(eventEmitter.getSignalingChannel).to.not.exist;
     });
-
-    /*
-    * Function
-    */
-    describe("listen, fire, and ignore", function () {
-        var results;
-
-        beforeEach(function(){
-            results = {
-                1: 0,
-                2: 0,
-                3: 0,
-                4: 0,
-                5: 0,
-                6: 0
-            };
-        });
-
-        it("should handle multiple events, multiple listeners, and call each once.", function () {
-            eventThrower.listen('event1', function () {
-                results[1] += 1;
-            });
-            eventThrower.listen('event2', function () {
-                results[2] += 1;
-            });
-            eventThrower.listen('event2', function () {
-                results[3] += 1;
-            });
-            eventThrower.listen('event3', function () {
-                results[4] += 1;
-            });
-            eventThrower.listen('event3', function () {
-                results[5] += 1;
-            });
-            eventThrower.listen('event3', function () {
-                results[6] += 1;
-            });
-
-            eventThrower.fire('event2');
-            eventThrower.fire('event3');
-            eventThrower.fire('event1');
-
-            expect(results[1]).to.equal(1);
-            expect(results[2]).to.equal(1);
-            expect(results[3]).to.equal(1);
-            expect(results[4]).to.equal(1);
-            expect(results[5]).to.equal(1);
-            expect(results[6]).to.equal(1);
-        });
-
-        it("should honor requests to ignore events", function () {
-            eventThrower.ignore('event1');
-            eventThrower.ignore('event2');
-            eventThrower.ignore('event3');
-
-            eventThrower.fire('event2');
-            eventThrower.fire('event3');
-            eventThrower.fire('event1');
-
-            expect(results[1]).to.equal(0);
-            expect(results[2]).to.equal(0);
-            expect(results[3]).to.equal(0);
-            expect(results[4]).to.equal(0);
-            expect(results[5]).to.equal(0);
-            expect(results[6]).to.equal(0);
-        });
-    });
-
 
     it("should accept and correctly pass all kinds of arguments.", function () {
         var args = [
@@ -128,9 +49,71 @@ describe("A brightstream.EventEmitter ", function () {
                     expect(args[setIndex][itemIndex]).to.equal(item);
                 });
             }
-            eventThrower.listen('event4', argListener);
-            eventThrower.fire('event4', set);
-            eventThrower.ignore('event4', argListener);
+            eventEmitter.listen('event4', argListener);
+            eventEmitter.fire('event4', set);
+            eventEmitter.ignore('event4', argListener);
+        });
+    });
+
+    describe('when firing events', function () {
+        beforeEach(function () {
+            results = {
+                1: 0,
+                2: 0,
+                3: 0,
+                4: 0,
+                5: 0,
+                6: 0
+            };
+        });
+
+        it("should handle multiple events, multiple listeners, and call each once.", function () {
+            eventEmitter.listen('event1', function () {
+                results[1] += 1;
+            });
+            eventEmitter.listen('event2', function () {
+                results[2] += 1;
+            });
+            eventEmitter.listen('event2', function () {
+                results[3] += 1;
+            });
+            eventEmitter.listen('event3', function () {
+                results[4] += 1;
+            });
+            eventEmitter.listen('event3', function () {
+                results[5] += 1;
+            });
+            eventEmitter.listen('event3', function () {
+                results[6] += 1;
+            });
+
+            eventEmitter.fire('event2');
+            eventEmitter.fire('event3');
+            eventEmitter.fire('event1');
+
+            expect(results[1]).to.equal(1);
+            expect(results[2]).to.equal(1);
+            expect(results[3]).to.equal(1);
+            expect(results[4]).to.equal(1);
+            expect(results[5]).to.equal(1);
+            expect(results[6]).to.equal(1);
+        });
+
+        it("should not call any listeners when ignore is used", function () {
+            eventEmitter.ignore('event1');
+            eventEmitter.ignore('event2');
+            eventEmitter.ignore('event3');
+
+            eventEmitter.fire('event2');
+            eventEmitter.fire('event3');
+            eventEmitter.fire('event1');
+
+            expect(results[1]).to.equal(0);
+            expect(results[2]).to.equal(0);
+            expect(results[3]).to.equal(0);
+            expect(results[4]).to.equal(0);
+            expect(results[5]).to.equal(0);
+            expect(results[6]).to.equal(0);
         });
     });
 });

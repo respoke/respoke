@@ -53,7 +53,7 @@ brightstream.Client = function (params) {
      * @private
      * @type {string}
      */
-    var instanceId = brightstream.makeGUID();
+    var instanceId = params.instanceId || brightstream.makeGUID();
     params.instanceId = instanceId;
     var that = brightstream.Presentable(params);
     brightstream.instances[instanceId] = that;
@@ -251,11 +251,6 @@ brightstream.Client = function (params) {
         });
         that.endpointId = clientSettings.endpointId;
 
-        if (!clientSettings.token && !clientSettings.appId) {
-            throw new Error("Can't connect without either an appId, in which case developmentMode " +
-                "must be set to true, or an token");
-        }
-
         promise = actuallyConnect(params);
         promise.done(function successHandler() {
             /**
@@ -286,6 +281,13 @@ brightstream.Client = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
 
+        if (!clientSettings.token &&
+                (!clientSettings.appId || !clientSettings.endpointId || clientSettings.developmentMode !== true)) {
+            deferred.reject(new Error("Must pass either endpointID & appId & developmentMode=true, or a token, " +
+                "to client.connect()."));
+            return deferred.promise;
+        }
+
         signalingChannel.open({
             actuallyConnect: actuallyConnect,
             endpointId: that.endpointId,
@@ -294,7 +296,7 @@ brightstream.Client = function (params) {
             return signalingChannel.authenticate();
         }, function errorHandler(err) {
             log.error(err.message);
-            deferred.reject(new Error("Couldn't connect to brightstream: " + err.message));
+            deferred.reject(new Error(err.message));
         }).done(function successHandler() {
             that.connected = true;
             that.setOnline(); // Initiates presence.
@@ -304,19 +306,9 @@ brightstream.Client = function (params) {
              * not to be duplicated on reconnect.
              */
             that.listen('call', clientSettings.onCall);
-            that.listen('call', function (evt) {
-                evt.call.listen('hangup', function (evt) {
-                    removeCall({call: evt.target});
-                }, true);
-                addCall(evt);
-            }, true);
+            that.listen('call', removeCallOnHangup, true);
             that.listen('direct-connection', clientSettings.onDirectConnection);
-            that.listen('direct-connection', function (evt) {
-                addCall({call: evt.directConnection.call});
-                evt.directConnection.listen('close', function (evt) {
-                    removeCall({call: evt.target.call});
-                }, true);
-            }, true);
+            that.listen('direct-connection', removeDCCallOnHangup, true);
             that.listen('join', clientSettings.onJoin);
             that.listen('leave', clientSettings.onLeave);
             that.listen('message', clientSettings.onMessage);
@@ -342,6 +334,20 @@ brightstream.Client = function (params) {
 
     function setConnectedOnReconnect() {
         that.connected = true;
+    }
+
+    function removeCallOnHangup(evt) {
+        evt.call.listen('hangup', function (evt) {
+            removeCall({call: evt.target});
+        }, true);
+        addCall(evt);
+    }
+
+    function removeDCCallOnHangup(evt) {
+        addCall({call: evt.directConnection.call});
+        evt.directConnection.listen('close', function (evt) {
+            removeCall({call: evt.target.call});
+        }, true);
     }
 
     /**

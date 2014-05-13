@@ -73,20 +73,18 @@ brightstream.Presentable = function (params) {
             if (that.className === 'brightstream.Connection') {
                 that.getEndpoint().resolvePresence();
             }
-        } else if (!params.connectionId) {
-            throw new Error("Can't set Endpoint presence without a connectionId.");
-        } else {
-            connection = that.getConnection({connectionId: params.connectionId});
-            if (connection) {
-                connection.presence = params.presence;
-            } else {
-                connection = client.getConnection({
-                    connectionId: params.connectionId,
-                    skipCreate: false,
-                    endpointId: that.id
-                });
-                connection.presence = params.presence;
+        } else if (that.className === 'brightstream.Endpoint') {
+            if (!params.connectionId) {
+                throw new Error("Can't set Endpoint presence without a connectionId.");
             }
+
+            connection = that.getConnection({connectionId: params.connectionId}) || client.getConnection({
+                connectionId: params.connectionId,
+                skipCreate: false,
+                endpointId: that.id
+            });
+
+            connection.presence = params.presence;
             that.resolvePresence();
         }
 

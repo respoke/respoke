@@ -212,10 +212,6 @@ brightstream.SignalingChannel = function (params) {
             return null;
         }).then(function successHandler(newToken) {
             token = newToken || token;
-            if (!token) {
-                throw new TypeError("Must pass either endpointID & appId & developmentMode=true, or a token," +
-                    " to client.connect().");
-            }
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
@@ -270,7 +266,7 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.doOpen
      * @param {object} params
-     * @param {string} [params.token] - The Endpoint's auth token
+     * @param {string} params.token - The Endpoint's auth token
      * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -282,6 +278,11 @@ brightstream.SignalingChannel = function (params) {
         params = params || {};
         var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
         log.trace('SignalingChannel.doOpen', params);
+
+        if (!params.token) {
+            deferred.reject(new Error("Can't open connection to Brightstream without a token."));
+            return deferred.promise;
+        }
 
         call({
             path: '/v1/appauthsessions',

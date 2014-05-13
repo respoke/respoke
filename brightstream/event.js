@@ -22,15 +22,7 @@
 brightstream.EventEmitter = function (params) {
     "use strict";
     params = params || {};
-    /**
-     * @memberof! brightstream.EventEmitter
-     * @name instanceId
-     * @private
-     * @type {string}
-     */
-    var instanceId = params.instanceId;
     var that = brightstream.Class(params);
-    delete that.instanceId;
     /**
      * A name to identify the type of this object.
      * @memberof! brightstream.EventEmitter
