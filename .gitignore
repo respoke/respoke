@@ -1,4 +1,5 @@
 .idea
+*.iml
 confluence/
 docs/
 node_modules
