@@ -253,7 +253,7 @@ brightstream.Client = function (params) {
 
         if (!clientSettings.token && !clientSettings.appId) {
             throw new Error("Can't connect without either an appId, in which case developmentMode " +
-                "must be set to true, or an token");
+                "must be set to true, or a token");
         }
 
         promise = actuallyConnect(params);
