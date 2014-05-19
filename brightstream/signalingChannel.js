@@ -1493,7 +1493,7 @@ brightstream.SignalingChannel = function (params) {
         }
 
         if (!socket) {
-            deferred.reject(new Error("Can't make websocket request: no connection."));
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
 
