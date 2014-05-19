@@ -388,10 +388,10 @@ brightstream.Client = function (params) {
                     deferred.resolve();
                 }
             });
+            deferred.promise.then(afterDisconnect, afterDisconnect);
         } else {
             deferred.resolve();
         }
-        deferred.promise.then(afterDisconnect, afterDisconnect);
         return retVal;
     };
 
@@ -431,18 +431,17 @@ brightstream.Client = function (params) {
         var retVal;
         params = params || {};
         params.presence = params.presence || "available";
+
         log.info('sending my presence update ' + params.presence);
 
         promise = signalingChannel.sendPresence({
             presence: params.presence
         });
 
-        retVal = brightstream.handlePromise(promise, function successHandler(p) {
+        promise.then(function successHandler(p) {
             superClass.setPresence(params);
-            if (typeof params.onSuccess === 'function') {
-                params.onSuccess(p);
-            }
-        }, params.onError);
+        });
+        retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
         return retVal;
     };
 
@@ -570,8 +569,20 @@ brightstream.Client = function (params) {
      * @returns {Promise}
      */
     that.setOnline = function (params) {
+        var promise;
+        var retVal;
+
         params = params || {};
         params.presence = params.presence || 'available';
+
+        try {
+            verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
         return that.setPresence(params);
     };
 
@@ -590,6 +601,15 @@ brightstream.Client = function (params) {
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
+        var promise;
+        var retVal;
+        try {
+            verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
         var endpoint = that.getEndpoint({id: params.endpointId});
         delete params.endpointId;
         return endpoint.sendMessage(params);
@@ -638,10 +658,35 @@ brightstream.Client = function (params) {
      * @return {brightstream.Call}
      */
     that.startCall = function (params) {
-        var endpoint = that.getEndpoint({id: params.endpointId});
+        var promise;
+        var retVal;
+        var endpoint;
+
+        try {
+            verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        endpoint = that.getEndpoint({id: params.endpointId});
         delete params.endpointId;
         return endpoint.startCall(params);
     };
+
+    /**
+     * Assert that we are connected to the backend infrastructure.
+     * @memberof! brightstream.Client
+     * @method brightstream.Client.verifyConnected
+     * @private
+     * @throws {Error}
+     */
+    function verifyConnected() {
+        if (that.connected !== true || signalingChannel.connected !== true) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
+        }
+    }
 
     /**
      * Update TURN credentials.
@@ -657,8 +702,21 @@ brightstream.Client = function (params) {
      */
     function updateTurnCredentials() {
         var promise;
+        var retVal;
+
         if (that.callSettings.disableTurn === true) {
             return;
+        }
+
+        try {
+            if (typeof verifyConnected === 'undefined') {
+                throw new Error("verifyConnected is undefined");
+            }
+            verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
         }
 
         promise = getTurnCredentials();
@@ -691,6 +749,13 @@ brightstream.Client = function (params) {
     that.join = function (params) {
         var deferred = Q.defer();
         var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
+        try {
+            verifyConnected();
+        } catch (e) {
+            deferred.reject(e);
+            return retVal;
+        }
+
         if (!params.id) {
             deferred.reject(new Error("Can't join a group with no group id."));
             return retVal;
