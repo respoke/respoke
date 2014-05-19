@@ -192,18 +192,21 @@ brightstream.Endpoint = function (params) {
      * method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
      * only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
+        var promise;
+        var retVal;
         params = params || {};
 
-        return signalingChannel.sendMessage({
+        promise = signalingChannel.sendMessage({
             connectionId: params.connectionId,
             message: params.message,
-            recipient: that,
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            recipient: that
         });
+
+        retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
+        return retVal;
     };
 
     /**
@@ -470,12 +473,13 @@ brightstream.Endpoint = function (params) {
     that.startDirectConnection = function (params) {
         params = params || {};
         var combinedConnectionSettings = client.callSettings.clone();
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;
 
         if (that.directConnection) {
             deferred.resolve(that.directConnection);
-            return deferred.promise;
+            return retVal;
         }
 
         log.trace('Endpoint.startDirectConnection', params);
@@ -485,7 +489,7 @@ brightstream.Endpoint = function (params) {
 
         if (!that.id) {
             deferred.reject(new Error("Can't start a direct connection without endpoint ID!"));
-            return deferred.promise;
+            return retVal;
         }
 
         // Apply connection-specific callSettings to the app's defaults
@@ -551,7 +555,7 @@ brightstream.Endpoint = function (params) {
                         !call.hasListeners('direct-connection')) {
                     that.directConnection.reject();
                     deferred.reject(new Error("Got an incoming direct connection with no handlers to accept it!"));
-                    return deferred.promise;
+                    return;
                 }
 
                 deferred.resolve(that.directConnection);
@@ -564,7 +568,7 @@ brightstream.Endpoint = function (params) {
         if (params.caller === true) {
             call.answer(params);
         }
-        return deferred.promise;
+        return retVal;
     };
 
     /**

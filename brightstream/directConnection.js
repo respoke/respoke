@@ -387,10 +387,11 @@ brightstream.DirectConnection = function (params) {
      * of this method only.
      * @param {brightstream.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation
      * of this method only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         if (that.isActive()) {
             dataChannel.send(JSON.stringify(params.object || {
                 message: params.message
@@ -399,7 +400,7 @@ brightstream.DirectConnection = function (params) {
         } else {
             deferred.reject(new Error("dataChannel not in an open state."));
         }
-        return deferred.promise;
+        return retVal;
     };
 
     /**

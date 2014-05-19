@@ -58,6 +58,7 @@ brightstream.Client = function (params) {
     var that = brightstream.Presentable(params);
     brightstream.instances[instanceId] = that;
     delete that.instanceId;
+    that.connectTries = 0;
     /**
      * A name to identify this class
      * @memberof! brightstream.Client
@@ -241,8 +242,10 @@ brightstream.Client = function (params) {
      */
     that.connect = function (params) {
         var promise;
+        var retVal;
         params = params || {};
         log.trace('Client.connect');
+        that.connectTries += 1;
 
         Object.keys(params).forEach(function eachParam(key) {
             if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
@@ -252,7 +255,8 @@ brightstream.Client = function (params) {
         that.endpointId = clientSettings.endpointId;
 
         promise = actuallyConnect(params);
-        promise.done(function successHandler() {
+        retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
+        promise.then(function successHandler() {
             /**
              * This event is fired the first time the library connects to the cloud infrastructure.
              * @event brightstream.Client#connect
@@ -262,7 +266,7 @@ brightstream.Client = function (params) {
              */
             that.fire('connect');
         });
-        return promise;
+        return retVal;
     };
 
     /**
@@ -275,11 +279,11 @@ brightstream.Client = function (params) {
      * @param {connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     function actuallyConnect(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         if (!clientSettings.token &&
                 (!clientSettings.appId || !clientSettings.endpointId || clientSettings.developmentMode !== true)) {
@@ -325,6 +329,7 @@ brightstream.Client = function (params) {
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message);
         });
+
         return deferred.promise;
     }
 
@@ -354,7 +359,7 @@ brightstream.Client = function (params) {
      * Disconnect from the Digium infrastructure, leave all groups, invalidate the token, and disconnect the websocket.
      * @memberof! brightstream.Client
      * @method brightstream.Client.disconnect
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      * @param {object} params
      * @param {disconnectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -364,7 +369,8 @@ brightstream.Client = function (params) {
     that.disconnect = function (params) {
         // TODO: also call this on socket disconnect
         params = params || {};
-        var disconnectPromise = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
         if (signalingChannel.connected) {
             // do websocket stuff. If the websocket is already closed, we have to skip this stuff.
@@ -375,18 +381,18 @@ brightstream.Client = function (params) {
                 return signalingChannel.close();
             }, function errorHandler(err) {
                 // Possibly the socket got closed already and we couldn't leave our groups. Backend will clean this up.
-                disconnectPromise.resolve();
+                deferred.resolve();
             }).fin(function finallyHandler() {
-                if (!disconnectPromise.promise.isFulfilled()) {
+                if (!deferred.promise.isFulfilled()) {
                     // Successfully closed our socket after leaving all groups.
-                    disconnectPromise.resolve();
+                    deferred.resolve();
                 }
             });
         } else {
-            disconnectPromise.resolve();
+            deferred.resolve();
         }
-        disconnectPromise.promise.done(afterDisconnect, afterDisconnect);
-        return disconnectPromise.promise;
+        deferred.promise.then(afterDisconnect, afterDisconnect);
+        return retVal;
     };
 
     /**
@@ -418,23 +424,26 @@ brightstream.Client = function (params) {
      * this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @return {Promise}
+     * @return {Promise|undefined}
      */
     that.setPresence = function (params) {
+        var promise;
+        var retVal;
         params = params || {};
         params.presence = params.presence || "available";
         log.info('sending my presence update ' + params.presence);
 
-        return signalingChannel.sendPresence({
-            presence: params.presence,
-            onSuccess: function successHandler(p) {
-                superClass.setPresence(params);
-                if (typeof params.onSuccess === 'function') {
-                    params.onSuccess(p);
-                }
-            },
-            onError: params.onError
+        promise = signalingChannel.sendPresence({
+            presence: params.presence
         });
+
+        retVal = brightstream.handlePromise(promise, function successHandler(p) {
+            superClass.setPresence(params);
+            if (typeof params.onSuccess === 'function') {
+                params.onSuccess(p);
+            }
+        }, params.onError);
+        return retVal;
     };
 
     /**
@@ -653,8 +662,8 @@ brightstream.Client = function (params) {
         }
 
         promise = getTurnCredentials();
-        promise.done(params.onSuccess, params.onError);
-        promise.done(function successHandler(creds) {
+        promise.then(params.onSuccess, params.onError);
+        promise.then(function successHandler(creds) {
             that.callSettings = that.callSettings || {};
             that.callSettings.servers = that.callSettings.servers || {};
             that.callSettings.servers.iceServers = creds;
@@ -680,10 +689,11 @@ brightstream.Client = function (params) {
      * @fires brightstream.Client#join
      */
     that.join = function (params) {
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         if (!params.id) {
             deferred.reject(new Error("Can't join a group with no group id."));
-            return deferred.promise;
+            return retVal;
         }
 
         signalingChannel.joinGroup({
@@ -716,7 +726,7 @@ brightstream.Client = function (params) {
         }, function errorHandler(err) {
             deferred.reject(err);
         });
-        return deferred.promise;
+        return retVal;
     };
 
     /**

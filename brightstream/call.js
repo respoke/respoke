@@ -769,10 +769,8 @@ brightstream.Call = function (params) {
                 constraints: params.constraints
             });
             defModify = Q.defer();
-            defModify.promise.done(function modifyAccepted() {
+            defModify.promise.then(function modifyAccepted() {
                 doAddVideo(params);
-            }, function modifyRejected(err) {
-                throw err;
             });
         }
         return defModify.promise;
@@ -862,8 +860,6 @@ brightstream.Call = function (params) {
         defModify.promise.done(function onModifySuccess() {
             defMedia.resolve();
             defModify = undefined;
-        }, function onModifyError(err) {
-            throw err;
         });
     };
 
@@ -918,7 +914,7 @@ brightstream.Call = function (params) {
     function actuallyAddDirectConnection(params) {
         log.trace('Call.actuallyAddDirectConnection', params);
         params = params || {};
-        defMedia.promise.done(params.onSuccess, params.onError);
+        defMedia.promise.then(params.onSuccess, params.onError);
 
         if (directConnection && directConnection.isActive()) {
             if (defMedia.promise.isPending()) {
@@ -1203,8 +1199,6 @@ brightstream.Call = function (params) {
             actuallyAddDirectConnection().done(function successHandler(dc) {
                 directConnection = dc;
                 directConnection.accept();
-            }, function errorHandler(err) {
-                throw err;
             });
         } else if (evt.signal.directConnection === false) {
             if (directConnection) {

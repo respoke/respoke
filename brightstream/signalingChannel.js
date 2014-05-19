@@ -9,10 +9,7 @@
 /**
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
- * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise which
- * can be thenned directly, but to abstract that from developers who might prefer not to use Promises, they
- * also take callbacks named onSuccess and onError which the methods attach to the promises themselves so
- * that the developer doesn't have to.
+ * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class brightstream.SignalingChannel
  * @constructor
@@ -189,15 +186,11 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} [params.token] - The Endpoint's auth token
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.open = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
@@ -230,15 +223,11 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise<String>}
      */
     that.getToken = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('SignalingChannel.getToken', params);
 
         call({
@@ -267,16 +256,12 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.doOpen
      * @param {object} params
      * @param {string} params.token - The Endpoint's auth token
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      * @private
      */
     function doOpen(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('SignalingChannel.doOpen', params);
 
         if (!params.token) {
@@ -311,15 +296,11 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.close
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.close = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         clearInterval(heartbeat);
 
         wsCall({
@@ -351,14 +332,11 @@ brightstream.SignalingChannel = function (params) {
      * @param {string} params.presence - description, "unavailable", "available", "away", "xa", "dnd"
      * @param {string} [params.status] - Non-enumeration human-readable status.
      * @param {string} [params.show] - I can't remember what this is.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
+     * @returns {Promise}
      */
     that.sendPresence = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace("Signaling sendPresence");
 
         wsCall({
@@ -386,15 +364,11 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getGroup
      * @returns {Promise<brightstream.Group>}
      * @param {object} params
-     * @param {brightstream.SignalingChannel.groupHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} name
      */
     that.getGroup = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('signalingChannel.getGroup');
 
         wsCall({
@@ -420,14 +394,10 @@ brightstream.SignalingChannel = function (params) {
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      */
     that.leaveGroup = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         wsCall({
             path: '/v1/channels/%s/subscribers/',
@@ -449,14 +419,10 @@ brightstream.SignalingChannel = function (params) {
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      */
     that.joinGroup = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         wsCall({
             path: '/v1/channels/%s/subscribers/',
@@ -477,16 +443,12 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.publish
      * @returns {Promise}
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.id
      * @param {string} params.message
      */
     that.publish = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var message = brightstream.TextMessage({
             endpointId: params.id,
             message: params.message
@@ -532,14 +494,10 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.getGroupMembers
      * @returns {Promise<Array>}
      * @param {object} params
-     * @param {brightstream.SignalingChannel.groupListHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.id
      */
     that.getGroupMembers = function (params) {
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var promise;
 
         if (!params.id) {
@@ -569,15 +527,11 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.SignalingMessage} params.message - The string text message to send.
      * @param {brightstream.Endpoint} params.recipient
      * @param {string} [params.connectionId]
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var message = brightstream.TextMessage({
             endpointId: params.recipient.id,
             connectionId: params.connectionId,
@@ -602,10 +556,6 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendACK
      * @param {object} params
      * @param {brightstream.SignalingMessage} params.signal
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendACK = function (params) {
@@ -626,9 +576,7 @@ brightstream.SignalingChannel = function (params) {
             signalId: params.signal.signalId,
             sessionId: params.signal.sessionId,
             target: params.signal.target,
-            ackedSignalType: params.signal.signalType,
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            ackedSignalType: params.signal.signalType
         });
     };
 
@@ -638,15 +586,11 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendSignal
      * @param {object} params
      * @param {brightstream.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendSignal = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var signal;
 
         if (params.call) {
@@ -690,10 +634,6 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {Array<RTCIceCandidate>} params.iceCandidates - An array of ICE candidate.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendCandidate = function (params) {
@@ -710,10 +650,6 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {RTCSessionDescription} params.sdp - An SDP to JSONify and send.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendSDP = function (params) {
@@ -731,15 +667,11 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendReport
      * @param {object} params
      * @todo TODO document the params.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendReport = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var message = {
             debugData: params
         };
@@ -765,10 +697,6 @@ brightstream.SignalingChannel = function (params) {
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {string} params.reason - The reason the session is being hung up.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendHangup = function (params) {
@@ -783,10 +711,6 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.sendConnected
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendConnected = function (params) {
@@ -802,10 +726,6 @@ brightstream.SignalingChannel = function (params) {
      * @param {object} params
      * @param {brightstream.Endpoint} params.recipient - The recipient.
      * @param {string} params.action - The state of the modify request, one of: 'initiate', 'accept', 'reject'
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendModify = function (params) {
@@ -1252,9 +1172,9 @@ brightstream.SignalingChannel = function (params) {
      * Create a socket handler for the onConnect event with all the right things in scope.
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.generateConnectHandler
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * @param {brightstream.Client.successHandler} [onSuccess] - Success handler for this invocation of
      * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {brightstream.Client.errorHandler} [onError] - Error handler for this invocation of this
      * method only.
      * @private
      */
@@ -1357,6 +1277,8 @@ brightstream.SignalingChannel = function (params) {
                  * @property {brightstream.Client}
                  */
                 client.fire('reconnect');
+            }, function (err) {
+                log.error("Couldn't rejoin previous groups.", err.message, err.stack);
             });
         }, reconnectTimeout);
     }
@@ -1366,15 +1288,11 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.authenticate
      * @param {object} params
-     * @param {brightstream.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.authenticate = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var pieces = [];
         var protocol = null;
         var host = null;
@@ -1491,16 +1409,12 @@ brightstream.SignalingChannel = function (params) {
      * @memberof! brightstream.SignalingChannel
      * @method brightstream.SignalingChannel.getTurnCredentials
      * @param {object} params
-     * @param {brightstream.SignalingChannel.turnSuccessHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @private
      * @return {Promise<Array>}
      */
     function getTurnCredentials(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         wsCall({
             httpMethod: 'GET',
@@ -1547,10 +1461,6 @@ brightstream.SignalingChannel = function (params) {
      * @method brightstream.SignalingChannel.wsCall
      * @private
      * @param {object} params
-     * @param {brightstream.SignalingChannel.responseHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.httpMethod
      * @param {string} params.path
      * @param {string} params.objectId
@@ -1559,7 +1469,7 @@ brightstream.SignalingChannel = function (params) {
      */
     function wsCall(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         if (!params) {
             deferred.reject(new Error('No params.'));
@@ -2002,16 +1912,12 @@ brightstream.Group = function (params) {
      * @memberof! brightstream.Group
      * @method brightstream.Group.leave
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      * @fires brightstream.Client#leave
      */
     that.leave = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         signalingChannel.leaveGroup({
             id: that.id
         }).done(function successHandler() {
@@ -2118,10 +2024,6 @@ brightstream.Group = function (params) {
      * @memberof! brightstream.Group
      * @method brightstream.Group.sendMessage
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.message - The message.
      * @returns {Promise}
      */
@@ -2137,17 +2039,11 @@ brightstream.Group = function (params) {
      * @method brightstream.Group.getMembers
      * @returns {Promise<Array>} A promise to an array of Connections.
      * @param {object} params
-     * @param {brightstream.Group.connectionsHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @param {function} [onMessage] TODO
-     * @param {function} [onPresence] TODO
      * @fires brightstream.Group#join
      */
     that.getMembers = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         if (that.connections.length > 0) {
             deferred.resolve(that.connections);

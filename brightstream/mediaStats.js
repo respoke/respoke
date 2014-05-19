@@ -209,16 +209,17 @@ brightstream.MediaStatsParser = function (params) {
      * invocation of this method only.
      * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise<object>}
+     * @returns {Promise<object>|undefined}
      */
     that.getStats = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var args = [];
 
         if (!pc.getStats) {
             deferred.reject(new Error("no peer connection getStats()"));
-            return;
+            return retVal;
         }
 
         if (navigator.mozGetUserMedia) {
@@ -233,7 +234,7 @@ brightstream.MediaStatsParser = function (params) {
             deferred.reject(new Error("Can't get stats."));
         });
         pc.getStats.apply(pc, args);
-        return deferred.promise;
+        return retVal;
     };
 
     /**

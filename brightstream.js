@@ -152,17 +152,20 @@ brightstream.makeGUID = function () {
  * @private
  * @static
  * @member brightstream
- * @returns {number}
+ * @param {Promise} promise
+ * @param {function} onSuccess
+ * @param {function} onError
+ * @returns {Promise|undefined}
  */
-brightstream.makeDeferred = function (onSuccess, onError) {
+brightstream.handlePromise = function (promise, onSuccess, onError) {
     "use strict";
-    var deferred = Q.defer();
     if (onSuccess || onError) {
         onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
         onError = typeof onError === 'function' ? onError : function () {};
-        deferred.promise.done(onSuccess, onError);
+        promise.done(onSuccess, onError);
+        return;
     }
-    return deferred;
+    return promise;
 };
 
 /**

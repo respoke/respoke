@@ -393,7 +393,7 @@ brightstream.PeerConnection = function (params) {
      * statistics, we'll return a promise for the stats object.
      * @memberof! brightstream.PeerConnection
      * @method brightstream.PeerConnection.getStats
-     * @returns {Promise<{brightstream.MediaStatsParser}>}
+     * @returns {Promise<{brightstream.MediaStatsParser}>|undefined}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
      * @param {brightstream.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
@@ -403,43 +403,44 @@ brightstream.PeerConnection = function (params) {
      * @fires brightstream.PeerConnection#stats
      */
     function getStats(params) {
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
         if (!pc) {
             deferred.reject(new Error("Can't get stats, pc is null."));
-            return deferred.promise;
+            return retVal;
         }
 
-        if (brightstream.MediaStats) {
-            Q.all([defSDPOffer.promise, defSDPAnswer.promise]).done(function onSuccess() {
-                var stats = brightstream.MediaStatsParser({
-                    peerConnection: pc,
-                    interval: params.interval,
-                    onStats: function statsHandler(stats) {
-                        /**
-                         * @event brightstream.PeerConnection#stats
-                         * @type {brightstream.Event}
-                         * @property {object} stats - an object with stats in it.
-                         * @property {string} name - the event name.
-                         * @property {brightstream.PeerConnection}
-                         */
-                        that.fire('stats', {
-                            stats: stats
-                        });
-                        that.report.stats.push(stats);
-                    }
-                });
-                that.listen('close', function closeHandler(evt) {
-                    stats.stopStats();
-                }, true);
-                deferred.resolve();
-            }, function onError(err) {
-                log.warn("Call rejected.");
-            });
-        } else {
+        if (!brightstream.MediaStats) {
             deferred.reject(new Error("Statistics module is not loaded."));
+            return retVal;
         }
-        return deferred.promise;
+
+        Q.all([defSDPOffer.promise, defSDPAnswer.promise]).then(function onSuccess() {
+            var stats = brightstream.MediaStatsParser({
+                peerConnection: pc,
+                interval: params.interval,
+                onStats: function statsHandler(stats) {
+                    /**
+                     * @event brightstream.PeerConnection#stats
+                     * @type {brightstream.Event}
+                     * @property {object} stats - an object with stats in it.
+                     * @property {string} name - the event name.
+                     * @property {brightstream.PeerConnection}
+                     */
+                    that.fire('stats', {
+                        stats: stats
+                    });
+                    that.report.stats.push(stats);
+                }
+            });
+            that.listen('close', function closeHandler(evt) {
+                stats.stopStats();
+            }, true);
+            deferred.resolve();
+        });
+
+        return retVal;
     }
 
     if (brightstream.MediaStats) {
@@ -765,7 +766,7 @@ brightstream.PeerConnection = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-        defSDPAnswer.promise.done(processQueues, function successHandler() {
+        defSDPAnswer.promise.done(processQueues, function errorHandler() {
             log.error('set remote desc of answer failed', evt.signal.sdp);
             that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
             that.close();
@@ -830,7 +831,7 @@ brightstream.PeerConnection = function (params) {
      */
     that.startModify = function (params) {
         defModify = Q.defer();
-        defModify.promise.done(function successHandler() {
+        defModify.promise.then(function successHandler() {
             // No offer/answer when tearing down direct connection.
             if (params.directConnection !== false) {
                 defSDPOffer = Q.defer();
