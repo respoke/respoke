@@ -14,53 +14,55 @@ describe("brightstream.Client", function () {
         });
     });
 
-    it("extends brightstream.EventEmitter.", function () {
-        expect(typeof client.listen).to.equal('function');
-        expect(typeof client.ignore).to.equal('function');
-        expect(typeof client.fire).to.equal('function');
-    });
-
-    it("extends brightstream.Presentable.", function () {
-        expect(typeof client.getPresence).to.equal('function');
-        expect(typeof client.setPresence).to.equal('function');
-    });
-
-    it("has the correct class name.", function () {
-        expect(client.className).to.equal('brightstream.Client');
-    });
-
-    it("contains some important methods.", function () {
-        expect(typeof client.connect).to.equal('function');
-        expect(typeof client.disconnect).to.equal('function');
-        expect(typeof client.getCall).to.equal('function');
-        expect(typeof client.getConnection).to.equal('function');
-        expect(typeof client.getEndpoint).to.equal('function');
-        expect(typeof client.getEndpoints).to.equal('function');
-        expect(typeof client.getGroup).to.equal('function');
-        expect(typeof client.getGroups).to.equal('function');
-        expect(typeof client.join).to.equal('function');
-        expect(typeof client.setOnline).to.equal('function');
-        expect(typeof client.setPresence).to.equal('function');
-        expect(typeof client.startCall).to.equal('function');
-    });
-
-    it("saves unexpected developer-specified parameters.", function () {
-        expect(client.gloveColor).to.equal('white');
-    });
-
-    it("doesn't expose the signaling channel", function () {
-        expect(client.signalingChannel).to.not.exist;
-        expect(client.getSignalingChannel).to.not.exist;
-        Object.keys(client).forEach(function (key) {
-            expect(key).to.not.contain('signal');
+    describe("it's object structure", function () {
+        it("extends brightstream.EventEmitter.", function () {
+            expect(typeof client.listen).to.equal('function');
+            expect(typeof client.ignore).to.equal('function');
+            expect(typeof client.fire).to.equal('function');
         });
-    });
 
-    it("has default getUserMedia constraints", function () {
-        expect(client.callSettings).to.be.an.Object;
-        expect(client.callSettings.constraints).to.be.an.Object;
-        expect(client.callSettings.constraints.video).to.be.true;
-        expect(client.callSettings.constraints.audio).to.be.true;
+        it("extends brightstream.Presentable.", function () {
+            expect(typeof client.getPresence).to.equal('function');
+            expect(typeof client.setPresence).to.equal('function');
+        });
+
+        it("has the correct class name.", function () {
+            expect(client.className).to.equal('brightstream.Client');
+        });
+
+        it("contains some important methods.", function () {
+            expect(typeof client.connect).to.equal('function');
+            expect(typeof client.disconnect).to.equal('function');
+            expect(typeof client.getCall).to.equal('function');
+            expect(typeof client.getConnection).to.equal('function');
+            expect(typeof client.getEndpoint).to.equal('function');
+            expect(typeof client.getEndpoints).to.equal('function');
+            expect(typeof client.getGroup).to.equal('function');
+            expect(typeof client.getGroups).to.equal('function');
+            expect(typeof client.join).to.equal('function');
+            expect(typeof client.setOnline).to.equal('function');
+            expect(typeof client.setPresence).to.equal('function');
+            expect(typeof client.startCall).to.equal('function');
+        });
+
+        it("saves unexpected developer-specified parameters.", function () {
+            expect(client.gloveColor).to.equal('white');
+        });
+
+        it("doesn't expose the signaling channel", function () {
+            expect(client.signalingChannel).to.not.exist;
+            expect(client.getSignalingChannel).to.not.exist;
+            Object.keys(client).forEach(function (key) {
+                expect(key).to.not.contain('signal');
+            });
+        });
+
+        it("has default getUserMedia constraints", function () {
+            expect(client.callSettings).to.be.an.Object;
+            expect(client.callSettings.constraints).to.be.an.Object;
+            expect(client.callSettings.constraints.video).to.be.true;
+            expect(client.callSettings.constraints.audio).to.be.true;
+        });
     });
 
     describe("when not connected", function () {
@@ -136,17 +138,16 @@ describe("brightstream.Client", function () {
                 expect(oldConnected).to.equal(client.connected);
             });
 
-            // Disabled because it doesn't work with the minified library.
-            xit("doesn't fire the disconnect event", function (done) {
-                sinon.spy(client, 'fire');
+            it("doesn't fire the disconnect event", function (done) {
+                var handler = sinon.spy();
+                client.listen('disconnect', handler);
                 client.disconnect();
                 setTimeout(function () {
-                    expect(client.fire.notCalled).to.be.defined;
-                    if (client.fire.getCall(0)) {
-                        expect(client.fire.getCall(0).args[0]).to.be.ok;
-                        console.log(client.fire.getCall(0).args);
+                    expect(handler.notCalled).to.be.defined;
+                    if (handler.getCall(0)) {
+                        expect(handler.getCall(0).args[0]).to.be.ok;
+                        console.log(handler.getCall(0).args);
                     }
-                    client.fire.restore();
                     done();
                 }, 10);
             });
@@ -225,6 +226,41 @@ describe("brightstream.Client", function () {
                     id: brightstream.makeGUID()
                 });
                 expect(group).to.equal.undefined;
+            });
+        });
+
+        describe("getGroups()", function () {
+            it("returns an empty array", function () {
+                var groups = client.getGroups();
+                expect(typeof groups).to.equal('object');
+                expect(groups.length).to.equal(0);
+            });
+        });
+
+        describe("getEndpoint()", function () {
+            it("returns undefined", function () {
+                var endpoint = client.getEndpoint({
+                    id: brightstream.makeGUID()
+                });
+                expect(endpoint).to.equal.undefined;
+            });
+        });
+
+        describe("getEndpoints()", function () {
+            it("returns an empty array", function () {
+                var endpoints = client.getEndpoints();
+                expect(typeof endpoints).to.equal('object');
+                expect(endpoints.length).to.equal(0);
+            });
+        });
+
+        describe("getConnection()", function () {
+            it("returns undefined", function () {
+                var connection = client.getConnection({
+                    endpointId: brightstream.makeGUID(),
+                    connectionId: brightstream.makeGUID()
+                });
+                expect(connection).to.equal.undefined;
             });
         });
     });

@@ -358,6 +358,7 @@ brightstream.Endpoint = function (params) {
         params = params || {};
 
         log.trace('Endpoint.call');
+        client.verifyConnected();
         log.debug('Default callSettings is', combinedCallSettings);
         if (params.caller === undefined) {
             params.caller = true;

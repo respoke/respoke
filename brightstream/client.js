@@ -576,7 +576,7 @@ brightstream.Client = function (params) {
         params.presence = params.presence || 'available';
 
         try {
-            verifyConnected();
+            that.verifyConnected();
         } catch (e) {
             promise = Q.reject(e);
             retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
@@ -604,7 +604,7 @@ brightstream.Client = function (params) {
         var promise;
         var retVal;
         try {
-            verifyConnected();
+            that.verifyConnected();
         } catch (e) {
             promise = Q.reject(e);
             retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
@@ -663,7 +663,7 @@ brightstream.Client = function (params) {
         var endpoint;
 
         try {
-            verifyConnected();
+            that.verifyConnected();
         } catch (e) {
             promise = Q.reject(e);
             retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
@@ -679,14 +679,13 @@ brightstream.Client = function (params) {
      * Assert that we are connected to the backend infrastructure.
      * @memberof! brightstream.Client
      * @method brightstream.Client.verifyConnected
-     * @private
      * @throws {Error}
      */
-    function verifyConnected() {
+    that.verifyConnected = function () {
         if (that.connected !== true || signalingChannel.connected !== true) {
             throw new Error("Can't complete request when not connected. Please reconnect!");
         }
-    }
+    };
 
     /**
      * Update TURN credentials.
@@ -709,10 +708,10 @@ brightstream.Client = function (params) {
         }
 
         try {
-            if (typeof verifyConnected === 'undefined') {
-                throw new Error("verifyConnected is undefined");
+            if (typeof that.verifyConnected === 'undefined') {
+                throw new Error("that.verifyConnected is undefined");
             }
-            verifyConnected();
+            that.verifyConnected();
         } catch (e) {
             promise = Q.reject(e);
             retVal = brightstream.handlePromise(promise, params.onSuccess, params.onError);
@@ -750,7 +749,7 @@ brightstream.Client = function (params) {
         var deferred = Q.defer();
         var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         try {
-            verifyConnected();
+            that.verifyConnected();
         } catch (e) {
             deferred.reject(e);
             return retVal;
