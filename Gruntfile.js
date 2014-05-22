@@ -83,11 +83,18 @@ module.exports = function(grunt) {
                     {expand: true, cwd: '.', src: ['*.map'], action: 'upload'}
                 ]
             }
+        },
+        concat: {
+          dist: {
+            src: brightstreamFiles,
+            dest: 'brightstream.concat.js'
+          }
         }
     });
 
 
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-aws-s3');
 
 
