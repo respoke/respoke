@@ -120,5 +120,92 @@ describe("A brightstream.Endpoint", function () {
                 expect(call).to.be.undefined;
             });
         });
+
+        describe("startDirectConnection()", function () {
+            it("throws an error", function success() {
+                endpoint.startDirectConnection().then(function failure() {
+                    done(new Error("User presence succeeded with no connection!"));
+                }, function (err) {
+                    expect(err.message).to.contain("not connected");
+                    done();
+                });
+            });
+        });
+
+        describe("resolvePresence()", function () {
+            describe("when only one connection", function () {
+                ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'].forEach(function (presString) {
+                    describe("when presence is set to '" + presString + "'", function () {
+                        it("endpoint.presence equals '" + presString + "'", function () {
+                            endpoint.connections = [{presence: presString}]
+                            endpoint.resolvePresence();
+                            expect(endpoint.presence).to.equal(presString);
+                        });
+                    });
+                });
+            });
+
+            describe("when there are two connections", function () {
+                var presenceStrings = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
+                for (var i = 0; i < presenceStrings.length; i += 1) {
+                    var presString1 = presenceStrings[i];
+                    for (var j = i+1; j < presenceStrings.length; j += 1) {
+                        var presString2 = presenceStrings[j];
+
+                        if (presString1 === presString2) {
+                            return;
+                        }
+
+                        describe("when presence is set to '" + presString1 + "' and '" + presString2 + "'", function (){
+                            it("endpoint.presence equals the one that appears first in the array", function () {
+                                endpoint.connections = [{presence: presString1}, {presence: presString2}]
+                                endpoint.resolvePresence();
+                                expect(endpoint.presence).to.equal((function () {
+                                    if (presenceStrings.indexOf(presString1) > presenceStrings.indexOf(presString2)) {
+                                        return presString2;
+                                    }
+                                    return presString1;
+                                }()));
+                            });
+                        });
+                    };
+                };
+            });
+        });
+
+        describe("getConnection()", function () {
+            describe("when there is one connection", function () {
+                beforeEach(function () {
+                    endpoint.connections = [{
+                        id: brightstream.makeGUID()
+                    }];
+                });
+
+                describe("and no connectionId is specified", function () {
+                    it("returns the connection", function () {
+                        var connection = endpoint.getConnection();
+                        expect(connection.id).to.equal(endpoint.connections[0].id);
+                    });
+                });
+
+                describe("and the connectionId is specified", function () {
+                    it("returns the connection", function () {
+                        var connection = endpoint.getConnection({
+                            connectionId: endpoint.connections[0].id
+                        });
+                        expect(connection.id).to.equal(endpoint.connections[0].id);
+                    });
+                });
+
+                describe("and a wrong connectionId is specified", function () {
+                    it("returns undefined", function () {
+                        var connection = endpoint.getConnection({
+                            connectionId: brightstream.makeGUID()
+                        });
+                        expect(connection).to.be.undefined;
+                    });
+                });
+            });
+        });
     });
 });

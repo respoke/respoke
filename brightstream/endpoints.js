@@ -478,6 +478,13 @@ brightstream.Endpoint = function (params) {
         var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;
 
+        try {
+            client.verifyConnected();
+        } catch (err) {
+            deferred.reject(err);
+            return retVal;
+        }
+
         if (that.directConnection) {
             deferred.resolve(that.directConnection);
             return retVal;
@@ -617,6 +624,7 @@ brightstream.Endpoint = function (params) {
      */
     that.getConnection = function (params) {
         var connection;
+        params = params || {};
         if (that.connections.length === 1 &&
                 (!params.connectionId || that.connections[0] === params.connectionId)) {
             return that.connections[0];
