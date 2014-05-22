@@ -11,4 +11,5 @@ brightstream-stats.combine.js
 brightstream-stats.combine.map
 brightstream.combine.js
 brightstream.combine.map
+brightstream.concat.js
 *.sublime-*
