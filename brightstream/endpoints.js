@@ -869,7 +869,7 @@ brightstream.Connection = function (params) {
     that.startVideoCall = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return that.getEndpoint().call(params);
+        return that.getEndpoint().startCall(params);
     };
 
     /**

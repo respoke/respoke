@@ -40,6 +40,8 @@ describe("A brightstream.Endpoint", function () {
         it("contains some important methods.", function () {
             expect(typeof endpoint.sendMessage).to.equal('function');
             expect(typeof endpoint.resolvePresence).to.equal('function');
+            expect(typeof endpoint.startAudioCall).to.equal('function');
+            expect(typeof endpoint.startVideoCall).to.equal('function');
             expect(typeof endpoint.startCall).to.equal('function');
             expect(typeof endpoint.startDirectConnection).to.equal('function');
         });

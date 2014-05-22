@@ -132,6 +132,7 @@ module.exports = function(grunt) {
     grunt.registerTask('unit:client', 'Run client Unit tests', ['karma:devOrig', 'karma:devMin']);
 
     grunt.registerTask('unit', 'Run unit specs on bamboo', [
+        'uglify',
         'karma:devOrig',
         'karma:devMin'
     ]);
