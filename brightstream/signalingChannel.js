@@ -1918,6 +1918,11 @@ brightstream.Group = function (params) {
     that.leave = function (params) {
         params = params || {};
         var deferred = Q.defer();
+
+        if (!signalingChannel || !signalingChannel.connected) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
+        }
+
         signalingChannel.leaveGroup({
             id: that.id
         }).done(function successHandler() {
@@ -2030,6 +2035,11 @@ brightstream.Group = function (params) {
     that.sendMessage = function (params) {
         params = params || {};
         params.id = that.id;
+
+        if (!signalingChannel || !signalingChannel.connected) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
+        }
+
         return signalingChannel.publish(params);
     };
 
@@ -2048,6 +2058,10 @@ brightstream.Group = function (params) {
         if (that.connections.length > 0) {
             deferred.resolve(that.connections);
             return deferred.promise;
+        }
+
+        if (!signalingChannel || !signalingChannel.connected) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
         }
 
         signalingChannel.getGroupMembers({

@@ -763,14 +763,9 @@ brightstream.Client = function (params) {
         signalingChannel.joinGroup({
             id: params.id
         }).done(function successHandler() {
-            var group = brightstream.Group({
-                signalingChannel: signalingChannel,
-                instanceId: instanceId,
-                id: params.id,
-                onMessage: params.onMessage,
-                onJoin: params.onJoin,
-                onLeave: params.onLeave
-            });
+            params.signalingChannel = signalingChannel;
+            params.instanceId = instanceId;
+            var group = brightstream.Group(params);
             /**
              * This event is fired every time the client joins a group. If the client leaves
              * a group, this event will be fired again on the next time the client joins the group.
