@@ -34,7 +34,8 @@
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
  * media renegotiation.
- * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+ * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+ * element with the local audio and/or video attached.
  * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
  * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
@@ -354,7 +355,8 @@ respoke.Call = function (params) {
      * @param {object} params
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
@@ -377,7 +379,7 @@ respoke.Call = function (params) {
      * @fires respoke.Call#stats
      */
     function saveParameters(params) {
-        that.listen('local-stream-received', params.onLocalVideo);
+        that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
         that.listen('hangup', params.onHangup);
         that.listen('allow', params.onAllow);
@@ -423,7 +425,7 @@ respoke.Call = function (params) {
         delete that.signalReport;
         delete that.signalCandidate;
         delete that.onConnect;
-        delete that.onLocalVideo;
+        delete that.onLocalMedia;
         delete that.callSettings;
         delete that.directConnectionOnly;
     }
@@ -439,7 +441,8 @@ respoke.Call = function (params) {
      * @param {object} [params]
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
@@ -510,8 +513,8 @@ respoke.Call = function (params) {
      * @param {object} [params]
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
-     * video element.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the developer to receive the
      * remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
@@ -653,7 +656,8 @@ respoke.Call = function (params) {
      * @private
      * @param {object} params
      * @param {object} [params.constraints] - getUserMedia constraints
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @fires respoke.Call#requesting-media
@@ -747,7 +751,8 @@ respoke.Call = function (params) {
      * @param {boolean} [params.video=true]
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {respoke.Call.mediaSuccessHandler} [params.onSuccess]
@@ -785,7 +790,8 @@ respoke.Call = function (params) {
      * @param {boolean} [params.video=false]
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {respoke.Call.mediaSuccessHandler} [params.onSuccess]
@@ -1431,7 +1437,8 @@ respoke.Call = function (params) {
  * When on a call, receive local media when it becomes available. This is what you will need to provide if you want
  * to show the user their own video during a call. This callback is called every time
  * respoke.Call#local-stream-received is fired.
- * @callback respoke.Call.onLocalVideo
+ * @callback respoke.Call.onLocalMedia Callback for receiving an HTML5 Video
+ * element with the local audio and/or video attached.
  * @param {respoke.Event} evt
  * @param {Element} evt.element
  * @param {respoke.LocalMedia} evt.stream

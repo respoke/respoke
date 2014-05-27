@@ -637,7 +637,7 @@ respoke.Client = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video element
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
