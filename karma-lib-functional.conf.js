@@ -9,8 +9,10 @@ module.exports = function(config) {
         files: [
           'node_modules/chai/chai.js',
           'node_modules/sinon/pkg/sinon.js',
+          'node_modules/async/lib/async.js',
           'util/q.js',
           'util/loglevel.js',
+          'util/socket.io.js',
           'respoke.js',
           'respoke/event.js',
           'respoke/signalingChannel.js',
@@ -21,7 +23,12 @@ module.exports = function(config) {
           'respoke/mediaStats.js',
           'respoke/call.js',
           'respoke/directConnection.js',
-          'spec/unit/client/**/*.js'
+          'spec/util/mock_module.js', // Must be loaded after loglevel.js b/c of `module` check.
+          '../../../collective/lib/seeds_data.js',
+          '../../../collective/assets/js/jquery.js',
+          '../../../collective/spec/util/api_client.js',
+          '../../../collective/spec/util/fixture.js',
+          'spec/functional/*.js'
         ],
 
 
@@ -31,9 +38,9 @@ module.exports = function(config) {
 
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit'
-        reporters: ['spec', 'junit'],
+        reporters: ['spec','junit'],
         junitReporter: {
-            outputFile: 'build/unit-test-results.xml'
+            outputFile: 'build/functional-test-results.xml'
         },
 
         hostname: 'localhost',

@@ -1,0 +1,3 @@
+window.module = {
+    exports: {}
+};
