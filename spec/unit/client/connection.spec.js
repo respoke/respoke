@@ -1,21 +1,21 @@
 var expect = chai.expect;
 
-var instanceId = brightstream.makeGUID();
-var connectionId = brightstream.makeGUID();
-var endpointId = brightstream.makeGUID();
+var instanceId = respoke.makeGUID();
+var connectionId = respoke.makeGUID();
+var endpointId = respoke.makeGUID();
 log.setLevel('error');
 
-var client = brightstream.createClient({
+var client = respoke.createClient({
     instanceId: instanceId
 });
 
-describe("A brightstream.Connection", function () {
+describe("A respoke.Connection", function () {
     var connection;
     var connectionId;
 
     beforeEach(function () {
-        connectionId = brightstream.makeGUID();
-        endpointId = brightstream.makeGUID();
+        connectionId = respoke.makeGUID();
+        endpointId = respoke.makeGUID();
         connection = client.getConnection({
             connectionId: connectionId,
             endpointId: endpointId,
@@ -24,19 +24,19 @@ describe("A brightstream.Connection", function () {
     });
 
     describe("it's object structure", function () {
-        it("extends brightstream.EventEmitter.", function () {
+        it("extends respoke.EventEmitter.", function () {
             expect(typeof connection.listen).to.equal('function');
             expect(typeof connection.ignore).to.equal('function');
             expect(typeof connection.fire).to.equal('function');
         });
 
-        it("extends brightstream.Presentable.", function () {
+        it("extends respoke.Presentable.", function () {
             expect(typeof connection.getPresence).to.equal('function');
             expect(typeof connection.setPresence).to.equal('function');
         });
 
         it("has the correct class name.", function () {
-            expect(connection.className).to.equal('brightstream.Connection');
+            expect(connection.className).to.equal('respoke.Connection');
         });
 
         it("contains some important methods.", function () {
@@ -140,7 +140,7 @@ describe("A brightstream.Connection", function () {
             it("returns the endpoint associated with the connection", function () {
                 var endpoint = connection.getEndpoint();
                 expect(endpoint).not.to.be.undefined;
-                expect(endpoint.className).to.equal("brightstream.Endpoint");
+                expect(endpoint.className).to.equal("respoke.Endpoint");
                 expect(endpoint.id).to.equal(endpointId);
                 expect(endpoint.connections[0].id).to.equal(connectionId);
             });
