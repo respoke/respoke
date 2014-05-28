@@ -26,7 +26,8 @@ module.exports = function(grunt) {
             brightstream: {
                 options: {
                     compress: true,
-                    sourceMap: true
+                    sourceMap: true,
+                    sourceMapIncludeSources: true
                 },
                 files: {
                     'brightstream.min.js': brightstreamFiles
@@ -35,7 +36,8 @@ module.exports = function(grunt) {
             'brightstream-stats': {
                 options: {
                     compress: true,
-                    sourceMap: true
+                    sourceMap: true,
+                    sourceMapIncludeSources: true
                 },
                 files: {
                     'brightstream-stats.min.js': brightstreamMediaStatsFiles
@@ -43,6 +45,8 @@ module.exports = function(grunt) {
             },
             'brightstream-beautify': {
                 options: {
+                    compress: false,
+                    sourceMap: false,
                     beautify: true,
                     mangle: false
                 },
@@ -52,6 +56,8 @@ module.exports = function(grunt) {
             },
             'brightstream-beautify-stats': {
                 options: {
+                    compress: false,
+                    sourceMap: false,
                     beautify: true,
                     mangle: false
                 },
@@ -120,7 +126,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-stratos');
     grunt.loadNpmTasks('grunt-mocha-test');
-
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-aws-s3');
 

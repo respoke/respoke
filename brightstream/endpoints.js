@@ -153,6 +153,11 @@ brightstream.Endpoint = function (params) {
      * @private
      */
     var signalingChannel = params.signalingChannel;
+
+    var clone = function (source) {
+        return JSON.parse(JSON.stringify(source));
+    };
+
     delete that.signalingChannel;
     delete that.instanceId;
     delete that.connectionId;
@@ -354,7 +359,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var combinedCallSettings = client.callSettings.clone();
+        var combinedCallSettings = clone(client.callSettings);
         params = params || {};
 
         log.trace('Endpoint.call');
@@ -473,7 +478,7 @@ brightstream.Endpoint = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var combinedConnectionSettings = client.callSettings.clone();
+        var combinedConnectionSettings = clone(client.callSettings);
         var deferred = Q.defer();
         var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;

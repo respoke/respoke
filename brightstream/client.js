@@ -221,6 +221,7 @@ brightstream.Client = function (params) {
      * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
      * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
      * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
      * operation and will limit the services you will be able to use.
@@ -303,7 +304,9 @@ brightstream.Client = function (params) {
             deferred.reject(new Error(err.message));
         }).done(function successHandler() {
             that.connected = true;
-            that.setOnline(); // Initiates presence.
+
+            // set initial presence for the connection
+            that.setPresence({ presence: clientSettings.presence || 'available' });
 
             /*
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
@@ -435,7 +438,17 @@ brightstream.Client = function (params) {
         log.info('sending my presence update ' + params.presence);
 
         promise = signalingChannel.sendPresence({
-            presence: params.presence
+            presence: params.presence,
+            onSuccess: function successHandler(p) {
+                superClass.setPresence(params);
+                // save most recently set presence to use if a reconnect occurs
+                clientSettings.presence = params.presence;
+
+                if (typeof params.onSuccess === 'function') {
+                    params.onSuccess(p);
+                }
+            },
+            onError: params.onError
         });
 
         promise.then(function successHandler(p) {

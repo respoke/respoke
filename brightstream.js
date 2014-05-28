@@ -49,9 +49,17 @@ Q.stopUnhandledRejectionTracking();
  * @param {object} params
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
- * @param {string} [params.authToken]
- * @param {RTCConstraints} [params.constraints]
- * @param {RTCICEServers} [params.servers]
+ * @param {string} [params.token]
+ * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
+ * different parameters than the built-in defaults.
+ * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
+ * different parameters than the built-in defaults.
+ * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
+ * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
+ * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+ * operation and will limit the services you will be able to use.
+ * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+ * when a disconnect occurs.
  * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
  * @param {function} [params.onError] - Error handler for this invocation of this method only.
  * @param {function} [params.onJoin] - Callback for when this client's endpoint joins a group.
@@ -168,38 +176,6 @@ brightstream.handlePromise = function (promise, onSuccess, onError) {
     }
     return promise;
 };
-
-/**
- * Find out if a thing is a number.
- * @param {object} number An object to test.
- * @returns {boolean}
- * @static
- * @private
- */
-Object.defineProperty(Object.prototype, 'isNumber', {
-    value: function (number) {
-        "use strict";
-        return !isNaN(parseFloat(number)) && isFinite(number) && number.length === undefined;
-    },
-    enumerable: false,
-    configurable: false
-});
-
-/**
- * Simple clone by JSON encode/parse.
- * @param {object}
- * @returns {object}
- * @static
- * @private
- */
-Object.defineProperty(Object.prototype, 'clone', {
-    value: function () {
-        "use strict";
-        return JSON.parse(JSON.stringify(this));
-    },
-    enumerable: false,
-    configurable: false
-});
 
 /**
  * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
