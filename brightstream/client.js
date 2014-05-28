@@ -220,7 +220,7 @@ brightstream.Client = function (params) {
      * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {any} [params.presence] The initial presence to set once connected.
+     * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
      * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
      * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
      * operation and will limit the services you will be able to use.
