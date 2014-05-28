@@ -1589,7 +1589,7 @@ brightstream.SignalingChannel = function (params) {
         socket.emit(params.httpMethod, JSON.stringify({
             url: params.path,
             data: params.parameters,
-            headers: {'X-App-Token': appToken}
+            headers: {'App-Token': appToken}
         }), function handleResponse(response) {
             // Too many of these!
             if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
@@ -1677,7 +1677,7 @@ brightstream.SignalingChannel = function (params) {
             try {
                 xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
                 if (appToken) {
-                    xhr.setRequestHeader("X-App-Token", appToken);
+                    xhr.setRequestHeader("App-Token", appToken);
                 }
             } catch (e) {
                 throw new Error("Can't set content-type header in readyState " +
