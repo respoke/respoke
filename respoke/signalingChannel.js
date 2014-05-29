@@ -75,7 +75,7 @@ respoke.SignalingChannel = function (params) {
      */
     var clientSettings = params.clientSettings;
     delete that.clientSettings;
-    clientSettings.baseURL = clientSettings.baseURL || 'https://collective.respoke.io';
+    clientSettings.baseURL = clientSettings.baseURL || 'https://api.respoke.io';
     /**
      * A map to avoid duplicate endpoint presence registrations.
      * @memberof! respoke.SignalingChannel
