@@ -46,10 +46,10 @@ describe('System Events', function () {
 
     describe("Presentable Events", function () {
         /**
-         * @event brightstream.Presentable#presence
+         * @event respoke.Presentable#presence
          * @type {string}
          */
-        it("should receive event for brightstream.Presentable#presence on login", function (done) {
+        it("should receive event for respoke.Presentable#presence on login", function (done) {
             client1.listenOnEndpointEvent(username2, 'presence', 'endpointsPresence').then(function () {
                 client2.login(username2, password2).then(function (user) {
                     setTimeout(function () {
@@ -62,7 +62,7 @@ describe('System Events', function () {
             });
         });
 
-        it("should receive event for brightstream.Presentable#presence when sendPresence is called", function (done) {
+        it("should receive event for respoke.Presentable#presence when sendPresence is called", function (done) {
             client2.setPresence({presence: 'unavailable'}).then(function () {
                 setTimeout(function () {
                     client1.getValue('endpointsPresence').then(function (value) {
@@ -77,11 +77,11 @@ describe('System Events', function () {
     describe("Endpoint Events", function () {
 
         /*
-         * @event brightstream.Endpoint#message:received
+         * @event respoke.Endpoint#message:received
          * @type {object}
          */
 
-        it("should receive event for brightstream.Endpoint#message", function (done) {
+        it("should receive event for respoke.Endpoint#message", function (done) {
             client2.listenOnEndpointEvent(username1, 'message', 'messageReceived').then(function () {
                 client1.sendMessage(username2, 'Howdy!').then(function () {
                     setTimeout(function () {
@@ -95,148 +95,148 @@ describe('System Events', function () {
         });
 
         /**
-         * @event brightstream.Endpoint#signaling:sent
+         * @event respoke.Endpoint#signaling:sent
          * @type {object}
          */
-        xit("should receive event for brightstream.Endpoint#signaling:sent", function () {
+        xit("should receive event for respoke.Endpoint#signaling:sent", function () {
 
         });
 
         /*
-         * @event brightstream.Endpoint#signaling:received
+         * @event respoke.Endpoint#signaling:received
          * @type {object}
          */
-        xit("should receive event for brightstream.Endpoint#signaling:received", function () {
+        xit("should receive event for respoke.Endpoint#signaling:received", function () {
 
         });
     });
 
     xdescribe('SignalingChannel Events', function () {
         /**
-         * @event brightstream.SignalingChannel#received:offer
+         * @event respoke.SignalingChannel#received:offer
          * @type {RTCSessionDescription}
          */
-         it("should receive event for brightstream.SignalingChannel#received:offer", function (done) {
+         it("should receive event for respoke.SignalingChannel#received:offer", function (done) {
             done();
          });
 
         /**
-         * @event brightstream.SignalingChannel#received:answer
+         * @event respoke.SignalingChannel#received:answer
          * @type {RTCSessionDescription}
          */
-         it("should receive event for brightstream.SignalingChannel#received:answer", function (done) {
+         it("should receive event for respoke.SignalingChannel#received:answer", function (done) {
             done();
          });
 
         /**
-         * @event brightstream.SignalingChannel#received:candidate
+         * @event respoke.SignalingChannel#received:candidate
          * @type {RTCIceCandidate}
          */
-         it("should receive event for brightstream.SignalingChannel#received:candidate", function (done) {
+         it("should receive event for respoke.SignalingChannel#received:candidate", function (done) {
             done();
          });
 
         /**
-         * @event brightstream.SignalingChannel#received:bye
+         * @event respoke.SignalingChannel#received:bye
          */
-         it("should receive event for brightstream.SignalingChannel#received:bye", function (done) {
+         it("should receive event for respoke.SignalingChannel#received:bye", function (done) {
             done();
          });
     });
 
     xdescribe('MediaSession Events', function () {
     /**
-     * @event brightstream.MediaSession#stream:local:received
+     * @event respoke.MediaSession#stream:local:received
      * @type {DOM}
      */
 
     /**
-     * @event brightstream.MediaSession#stream:remote:received
+     * @event respoke.MediaSession#stream:remote:received
      * @type {DOM}
      */
 
     /**
-     * @event brightstream.MediaSession#stream:remote:removed
+     * @event respoke.MediaSession#stream:remote:removed
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#candidate:local
+     * @event respoke.MediaSession#candidate:local
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#candidate:remote
+     * @event respoke.MediaSession#candidate:remote
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#sdp:remote:received
+     * @event respoke.MediaSession#sdp:remote:received
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#sdp:remote:saved
+     * @event respoke.MediaSession#sdp:remote:saved
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#sdp:remote:error
+     * @event respoke.MediaSession#sdp:remote:error
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#sdp:local:created
+     * @event respoke.MediaSession#sdp:local:created
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#sdp:local:saved
+     * @event respoke.MediaSession#sdp:local:saved
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#sdp:local:error
+     * @event respoke.MediaSession#sdp:local:error
      * @type {object}
      */
 
     /**
-     * @event brightstream.MediaSession#hangup
+     * @event respoke.MediaSession#hangup
      * @type {boolean}
      */
 
     /**
-     * @event brightstream.MediaSession#video:muted
+     * @event respoke.MediaSession#video:muted
      */
 
     /**
-     * @event brightstream.MediaSession#video:unmuted
+     * @event respoke.MediaSession#video:unmuted
      */
 
     /**
-     * @event brightstream.MediaSession#audio:muted
+     * @event respoke.MediaSession#audio:muted
      */
 
     /**
-     * @event brightstream.MediaSession#audio:unmuted
+     * @event respoke.MediaSession#audio:unmuted
      */
     });
 
     xdescribe('MediaStream Events', function () {
     /**
-     * @event brightstream.MediaStream#video:muted
+     * @event respoke.MediaStream#video:muted
      */
 
     /**
-     * @event brightstream.MediaStream#video:unmuted
+     * @event respoke.MediaStream#video:unmuted
      */
 
     /**
-     * @event brightstream.MediaStream#audio:muted
+     * @event respoke.MediaStream#audio:muted
      */
 
     /**
-     * @event brightstream.MediaStream#audio:unmuted
+     * @event respoke.MediaStream#audio:unmuted
      */
     });
 

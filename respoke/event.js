@@ -8,39 +8,31 @@
 
 /**
  * Create a generic EventEmitter class for objects with events to extend. Most classes in this library
- * extend this class with the exception of classes which are simple POJOs like {brightstream.TextMessage},
- * {brightstream.SignalingMessage}, and {brightstream.Event}.
+ * extend this class with the exception of classes which are simple POJOs like {respoke.TextMessage},
+ * {respoke.SignalingMessage}, and {respoke.Event}.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.EventEmitter
- * @augments brightstream.Class
+ * @class respoke.EventEmitter
+ * @augments respoke.Class
  * @constructor
  * @param {object} params
  * @param {string} params.instanceId
- * @returns {brightstream.EventEmitter}
+ * @returns {respoke.EventEmitter}
  */
-/*global brightstream: false */
-brightstream.EventEmitter = function (params) {
+/*global respoke: false */
+respoke.EventEmitter = function (params) {
     "use strict";
     params = params || {};
-    /**
-     * @memberof! brightstream.EventEmitter
-     * @name instanceId
-     * @private
-     * @type {string}
-     */
-    var instanceId = params.instanceId;
-    var that = brightstream.Class(params);
-    delete that.instanceId;
+    var that = respoke.Class(params);
     /**
      * A name to identify the type of this object.
-     * @memberof! brightstream.EventEmitter
+     * @memberof! respoke.EventEmitter
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.EventEmitter';
+    that.className = 'respoke.EventEmitter';
 
     /**
-     * @memberof! brightstream.EventEmitter
+     * @memberof! respoke.EventEmitter
      * @name eventList
      * @private
      * @type {object}
@@ -52,10 +44,10 @@ brightstream.EventEmitter = function (params) {
      * listener is not already registered to this even and the listener is a function.  The third argument 'isInternal'
      * is used only internally by the library to indicate that this listener is a library-used listener and should not
      * count when we are trying to determine if an event has listeners placed by the developer.
-     * @memberof! brightstream.EventEmitter
-     * @method brightstream.EventEmitter.listen
+     * @memberof! respoke.EventEmitter
+     * @method respoke.EventEmitter.listen
      * @param {string} eventType - A developer-specified string identifying the event.
-     * @param {brightstream.EventEmitter.eventListener} listener - A function to call when the event is fire.
+     * @param {respoke.EventEmitter.eventListener} listener - A function to call when the event is fire.
      * @param {boolean} [isInternal] - A flag to indicate this listener was added by the library. This parameter should
      * not be used by developers who are using the library, only by developers who are working on the library itself.
      */
@@ -81,8 +73,8 @@ brightstream.EventEmitter = function (params) {
      * cleared. If an eventType is specified but no listener is specified, all listeners will be
      * removed from the specified eventType.  If a listener is also specified, only that listener
      * will be removed.
-     * @memberof! brightstream.EventEmitter
-     * @method brightstream.EventEmitter.ignore
+     * @memberof! respoke.EventEmitter
+     * @method respoke.EventEmitter.ignore
      * @param {string} [eventType] - An optional developer-specified string identifying the event.
      * @param {function} [listener] - An optional function to remove from the specified event.
      */
@@ -112,8 +104,8 @@ brightstream.EventEmitter = function (params) {
      * Trigger an event on an object. All listeners for the specified eventType will be called.
      * Listeners will be bound to the object ('this' will refer to the object), and additional
      * arguments to fire() will be passed into each listener.
-     * @memberof! brightstream.EventEmitter
-     * @method brightstream.EventEmitter.fire
+     * @memberof! respoke.EventEmitter
+     * @method respoke.EventEmitter.fire
      * @param {string} eventType - A developer-specified string identifying the event to fire.
      * @param {string|number|object|array} any - Any number of optional parameters to be passed to
      * the listener
@@ -130,7 +122,7 @@ brightstream.EventEmitter = function (params) {
         evt = evt || {};
         evt.name = eventType;
         evt.target = that;
-        evt = brightstream.buildEvent(evt);
+        evt = respoke.buildEvent(evt);
         eventList[eventType].forEach(function fireListener(listener) {
             if (typeof listener === 'function') {
                 try {
@@ -149,9 +141,9 @@ brightstream.EventEmitter = function (params) {
      * checks for the isInternal flag on each listener and doesn't count it toward an event being listened to. This
      * method is used in the library to handle situations where an action is needed if an event won't be acted on.
      * For instance, if a call comes in for the logged-in user, but the developer isn't listening to
-     * {brightstream.Client#call}, we'll need to reject the call immediately.
-     * @memberof! brightstream.EventEmitter
-     * @method brightstream.EventEmitter.hasListeners
+     * {respoke.Client#call}, we'll need to reject the call immediately.
+     * @memberof! respoke.EventEmitter
+     * @method respoke.EventEmitter.hasListeners
      * @param {string} eventType - The name of the event
      * @returns {boolean} Whether this event has any listeners that are external to this library.
      */
@@ -170,10 +162,10 @@ brightstream.EventEmitter = function (params) {
     };
 
     return that;
-}; // End brightstream.EventEmitter
+}; // End respoke.EventEmitter
 /**
- * @callback brightstream.EventEmitter.eventListener
- * @param {brightstream.Event} evt
+ * @callback respoke.EventEmitter.eventListener
+ * @param {respoke.Event} evt
  */
 
 /**
@@ -181,19 +173,19 @@ brightstream.EventEmitter = function (params) {
  * properties mentioned below (name and target), this object will contain other properties and objects meant to provide
  * context and easy access to certain objects and information that might be needed in handling the event.
  * @author Erin Spiceland <espiceland@digium.com>
- * @memberof! brightstream
- * @method brightstream.buildEvent
+ * @memberof! respoke
+ * @method respoke.buildEvent
  * @static
  * @private
- * @typedef {object} brightstream.Event
+ * @typedef {object} respoke.Event
  * @property {string} name
- * @property {brightstream.Class} target
- * @property {brightstream.DirectConnection] [directConnection]
- * @property {brightstream.Call] [call]
- * @property {brightstream.Endpoint] [endpoint]
- * @property {brightstream.Connection] [connection]
+ * @property {respoke.Class} target
+ * @property {respoke.DirectConnection] [directConnection]
+ * @property {respoke.Call] [call]
+ * @property {respoke.Endpoint] [endpoint]
+ * @property {respoke.Connection] [connection]
  */
-brightstream.buildEvent = function (that) {
+respoke.buildEvent = function (that) {
     "use strict";
 
     if (!that.name) {
@@ -205,4 +197,4 @@ brightstream.buildEvent = function (that) {
     }
 
     return that;
-}; // End brightstream.Event
+}; // End respoke.Event

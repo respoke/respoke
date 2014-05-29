@@ -1,49 +1,49 @@
-/*global module:false*/
+"use strict";
+
 module.exports = function(grunt) {
-    var brightstreamFiles = [
+    var respokeFiles = [
         'util/socket.io.js',
         'util/q.js',
         'util/loglevel.js',
         'util/adapter.js',
-        'brightstream.js',
-        'brightstream/event.js',
-        'brightstream/client.js',
-        'brightstream/endpoints.js',
-        'brightstream/signalingChannel.js',
-        'brightstream/call.js',
-        'brightstream/directConnection.js',
-        'brightstream/peerConnection.js',
-        'brightstream/localMedia.js'
+        'respoke.js',
+        'respoke/event.js',
+        'respoke/client.js',
+        'respoke/endpoints.js',
+        'respoke/signalingChannel.js',
+        'respoke/call.js',
+        'respoke/directConnection.js',
+        'respoke/peerConnection.js',
+        'respoke/localMedia.js'
     ];
 
-    var brightstreamMediaStatsFiles = [
-        'brightstream/mediaStats.js'
+    var respokeMediaStatsFiles = [
+        'respoke/mediaStats.js'
     ];
 
-    // Project configuration.
     grunt.initConfig({
         uglify: {
-            brightstream: {
+            respoke: {
                 options: {
                     compress: true,
                     sourceMap: true,
                     sourceMapIncludeSources: true
                 },
                 files: {
-                    'brightstream.min.js': brightstreamFiles
+                    'respoke.min.js': respokeFiles
                 }
             },
-            'brightstream-stats': {
+            'respoke-stats': {
                 options: {
                     compress: true,
                     sourceMap: true,
                     sourceMapIncludeSources: true
                 },
                 files: {
-                    'brightstream-stats.min.js': brightstreamMediaStatsFiles
+                    'respoke-stats.min.js': respokeMediaStatsFiles
                 }
             },
-            'brightstream-beautify': {
+            'respoke-beautify': {
                 options: {
                     compress: false,
                     sourceMap: false,
@@ -51,10 +51,10 @@ module.exports = function(grunt) {
                     mangle: false
                 },
                 files: {
-                    'brightstream.combine.js': brightstreamFiles
+                    'respoke.combine.js': respokeFiles
                 }
             },
-            'brightstream-beautify-stats': {
+            'respoke-beautify-stats': {
                 options: {
                     compress: false,
                     sourceMap: false,
@@ -62,7 +62,7 @@ module.exports = function(grunt) {
                     mangle: false
                 },
                 files: {
-                    'brightstream-stats.combine.js': brightstreamMediaStatsFiles
+                    'respoke-stats.combine.js': respokeMediaStatsFiles
                 }
             }
         },
@@ -77,18 +77,78 @@ module.exports = function(grunt) {
                     differential: true
                 },
                 files: [
-                    {expand: true, cwd: '.', src: ['brightstream*.min.js'], action: 'upload'},
+                    {expand: true, cwd: '.', src: ['respoke*.min.js'], action: 'upload'},
                     {expand: true, cwd: '.', src: ['*.map'], action: 'upload'}
                 ]
+            }
+        },
+
+        pkg: grunt.file.readJSON('package.json'),
+
+        stratos: {
+            startServer: false,
+            //nodeServer: '../app.js',
+            //nodeServerPort: 8081,
+            liftSails: true,
+            sailsDir: '../../../collective'
+        },
+        mochaTest: {
+            unit: {
+                options: {
+                    reporter: 'mocha-bamboo-reporter'
+                },
+                src: [
+                    './spec/functional/*.spec.js',
+                ]
+            }
+        },
+        karma: {
+            options: {
+                configFile: './karma-lib-orig.conf.js'
+            },
+            continuous: {
+                configFile: './karma-lib-orig.conf.js',
+                browsers: ['Chrome'],
+                singleRun: true,
+                reporters: ['junit']
+            },
+            devOrig: {
+                singleRun: true,
+                configFile: './karma-lib-orig.conf.js'
+            },
+            devMin: {
+                singleRun: true,
+                configFile: './karma-lib-min.conf.js'
             }
         }
     });
 
+    grunt.loadNpmTasks('grunt-karma');
+    grunt.loadNpmTasks('grunt-stratos');
+    grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-aws-s3');
 
-
     grunt.task.registerTask('s3', ['aws_s3']);
-    grunt.task.registerTask('dist', ['uglify:brightstream', 'uglify:brightstream-stats']);
-    grunt.task.registerTask('combine', ['uglify:brightstream-beautify', 'uglify:brightstream-beautify-stats']);
+    grunt.task.registerTask('dist', ['uglify:respoke', 'uglify:respoke-stats']);
+    grunt.task.registerTask('combine', ['uglify:respoke-beautify', 'uglify:respoke-beautify-stats']);
+
+    grunt.registerTask('default', 'karma:devOrig');
+    grunt.registerTask('unit:client', 'Run client Unit tests', ['karma:devOrig', 'karma:devMin']);
+
+    grunt.registerTask('unit', 'Run unit specs on bamboo', [
+        'dist',
+        'karma:devOrig',
+        'karma:devMin'
+    ]);
+
+    /*grunt.registerTask('start-server', 'Start a node server.', function() {
+        grunt.log.writeln('Starting node server...');
+        var done = this.async();
+        process.env['SERVER_PORT'] = grunt.config('stratos.nodeServerPort');
+        require(process.cwd() + '/' + grunt.config('stratos.nodeServer'));
+        setTimeout(function () {
+            done();
+        }, 3000);
+    });*/
 };

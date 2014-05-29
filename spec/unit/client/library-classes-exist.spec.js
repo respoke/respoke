@@ -1,27 +1,29 @@
 
 var expect = chai.expect;
 
-describe("The brightstream namespace", function() {
+describe("The respoke namespace", function() {
     it("contains all the library's classes.", function() {
-        expect(typeof brightstream).to.equal('object');
-        expect(typeof brightstream.Class).to.equal('function');
-        expect(typeof brightstream.EventEmitter).to.equal('function');
-        expect(typeof brightstream.Call).to.equal('function');
-        expect(typeof brightstream.MediaStream).to.equal('function');
-        expect(typeof brightstream.Client).to.equal('function');
-        expect(typeof brightstream.UserSession).to.equal('function');
-        expect(typeof brightstream.TextMessage).to.equal('function');
-        expect(typeof brightstream.Endpoint).to.equal('function');
-        expect(typeof brightstream.Group).to.equal('function');
-        expect(typeof brightstream.Presentable).to.equal('function');
-        expect(typeof brightstream.SignalingChannel).to.equal('function');
-        expect(typeof brightstream.SignalingMessage).to.equal('function');
-        expect(typeof brightstream.User).to.equal('function');
+        expect(typeof respoke).to.equal('object');
+        expect(typeof respoke.Call).to.equal('function');
+        expect(typeof respoke.Class).to.equal('function');
+        expect(typeof respoke.Client).to.equal('function');
+        expect(typeof respoke.Connection).to.equal('function');
+        expect(typeof respoke.DirectConnection).to.equal('function');
+        expect(typeof respoke.Endpoint).to.equal('function');
+        expect(typeof respoke.EventEmitter).to.equal('function');
+        expect(typeof respoke.Group).to.equal('function');
+        expect(typeof respoke.LocalMedia).to.equal('function');
+        expect(typeof respoke.MediaStats).to.equal('function');
+        expect(typeof respoke.MediaStatsParser).to.equal('function');
+        expect(typeof respoke.PeerConnection).to.equal('function');
+        expect(typeof respoke.Presentable).to.equal('function');
+        expect(typeof respoke.SignalingChannel).to.equal('function');
+        expect(typeof respoke.SignalingMessage).to.equal('function');
+        expect(typeof respoke.TextMessage).to.equal('function');
 
         //capability flags
-        expect(typeof brightstream.hasUserMedia).to.equal('function');
-        expect(typeof brightstream.hasRTCPeerConnection).to.equal('function');
-        expect(typeof brightstream.hasWebsocket).to.equal('function');
-        expect(typeof brightstream.hasMediaStream).to.equal('function');
+        expect(typeof respoke.hasUserMedia).to.equal('function');
+        expect(typeof respoke.hasRTCPeerConnection).to.equal('function');
+        expect(typeof respoke.hasWebsocket).to.equal('function');
     });
 });

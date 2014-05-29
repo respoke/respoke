@@ -8,14 +8,14 @@
 
 /**
  * @author Erin Spiceland <espiceland@digium.com>
- * @namespace brightstream
+ * @namespace respoke
  * @global
  */
-/*global Bugsnag: true, brightstream: true*/
+/*global Bugsnag: true, respoke: true*/
 /*jshint bitwise: false*/
-(function brightstreamInit() {
+(function respokeInit() {
     'use strict';
-    window.brightstream = {
+    window.respoke = {
         buildNumber: 'NO BUILD NUMBER',
         streams: {},
         instances: {}
@@ -45,7 +45,7 @@ Q.stopUnhandledRejectionTracking();
  * which represence your app's connection to the cloud infrastructure.  This method automatically calls the
  * client.connect() method after the client is created.
  * @static
- * @member brightstream
+ * @member respoke
  * @param {object} params
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
@@ -58,7 +58,7 @@ Q.stopUnhandledRejectionTracking();
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
  * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
  * operation and will limit the services you will be able to use.
- * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Brightstream service
+ * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
  * when a disconnect occurs.
  * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
  * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -70,31 +70,31 @@ Q.stopUnhandledRejectionTracking();
  * @param {function} [params.onCall] - Callback for when this client's user receives a call.
  * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
  * direct connection.
- * @returns {brightstream.Client}
- * @param {object} Parameters to the brightstream.Client constructor.
+ * @returns {respoke.Client}
+ * @param {object} Parameters to the respoke.Client constructor.
  */
-brightstream.connect = function (params) {
+respoke.connect = function (params) {
     "use strict";
-    var client = brightstream.Client(params);
+    var client = respoke.Client(params);
     client.connect(params);
     return client;
 };
 
 /**
  * @static
- * @member brightstream
- * @returns {brightstream.Client}
+ * @member respoke
+ * @returns {respoke.Client}
  * @param {number} The Client ID.
  */
-brightstream.getClient = function (id) {
+respoke.getClient = function (id) {
     "use strict";
     if (id === undefined) {
         log.debug("Can't call getClient with no client ID.", new Error().stack);
     }
-    if (!brightstream.instances[id]) {
+    if (!respoke.instances[id]) {
         log.debug("No client instance with id", id);
     }
-    return brightstream.instances[id];
+    return respoke.instances[id];
 };
 
 /**
@@ -103,28 +103,36 @@ brightstream.getClient = function (id) {
  * client.connect() method after the client is created, so your app will need to call it when it is ready to
  * connect.
  * @static
- * @member brightstream
+ * @member respoke
  * @param {object} params
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.authToken]
  * @param {RTCConstraints} [params.constraints]
  * @param {RTCICEServers} [params.servers]
- * @returns {brightstream.Client}
+ * @returns {respoke.Client}
  * @param {object} Parameters to the Client constructor
  */
-brightstream.createClient = function (params) {
+respoke.createClient = function (params) {
     "use strict";
-    return brightstream.Client(params);
+    var client;
+    params = params || {};
+    if (params.instanceId) {
+        client = respoke.getClient(params.instanceId);
+        if (client) {
+            return client;
+        }
+    }
+    return respoke.Client(params);
 };
 
 /**
  * @static
  * @private
- * @member brightstream
+ * @member respoke
  * @returns {number}
  */
-brightstream.makeGUID = function () {
+respoke.makeGUID = function () {
     "use strict";
     var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
     var uuid = new Array(36);
@@ -152,36 +160,39 @@ brightstream.makeGUID = function () {
  * It's not recommended that this method be used by developers and apps.
  * @private
  * @static
- * @member brightstream
- * @returns {number}
+ * @member respoke
+ * @param {Promise} promise
+ * @param {function} onSuccess
+ * @param {function} onError
+ * @returns {Promise|undefined}
  */
-brightstream.makeDeferred = function (onSuccess, onError) {
+respoke.handlePromise = function (promise, onSuccess, onError) {
     "use strict";
-    var deferred = Q.defer();
     if (onSuccess || onError) {
         onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
         onError = typeof onError === 'function' ? onError : function () {};
-        deferred.promise.done(onSuccess, onError);
+        promise.done(onSuccess, onError);
+        return;
     }
-    return deferred;
+    return promise;
 };
 
 /**
  * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
  * params that were passed in onto the base object. Add the class name.
- * @class brightstream.Class
+ * @class respoke.Class
  * @classdesc Empty base class.
  * @constructor
  * @private
  * @author Erin Spiceland <espiceland@digium.com>
  */
-brightstream.Class = function (params) {
+respoke.Class = function (params) {
     "use strict";
     params = params || {};
     var that = params.that || {};
     var client = params.client;
 
-    that.className = 'brightstream.Class';
+    that.className = 'respoke.Class';
     delete params.that;
     delete that.client;
 
@@ -195,11 +206,11 @@ brightstream.Class = function (params) {
 /**
  * Does the browser support UserMedia
  * @static
- * @member brightstream
+ * @member respoke
  * @returns {boolean}
  * @author Dan Jenkins <djenkins@digium.com>
  */
-brightstream.hasUserMedia = function () {
+respoke.hasUserMedia = function () {
     "use strict";
     return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) instanceof Function;
 };
@@ -207,11 +218,11 @@ brightstream.hasUserMedia = function () {
 /**
  * Does the browser support RTCPeerConnection
  * @static
- * @member brightstream
+ * @member respoke
  * @returns {boolean}
  * @author Dan Jenkins <djenkins@digium.com>
  */
-brightstream.hasRTCPeerConnection = function () {
+respoke.hasRTCPeerConnection = function () {
     "use strict";
     return (window.RTCPeerConnection || window.webkitRTCPeerConnection ||
             window.mozRTCPeerConnection) instanceof Function;
@@ -220,11 +231,11 @@ brightstream.hasRTCPeerConnection = function () {
 /**
  * Does the browser support WebSocket
  * @static
- * @member brightstream
+ * @member respoke
  * @returns {boolean}
  * @author Dan Jenkins <djenkins@digium.com>
  */
-brightstream.hasWebsocket = function () {
+respoke.hasWebsocket = function () {
     "use strict";
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
-};// End brightstream.Class
+};// End respoke.Class

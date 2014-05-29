@@ -6,60 +6,60 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
-/*global brightstream: false */
+/*global respoke: false */
 /**
  * The purpose of the class is so that Client and Endpoint can share the same presence.
  * @author Erin Spiceland <espiceland@digium.com>
  * @class
  * @constructor
- * @augments brightstream.EventEmitter
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId
  * @param {string} params.id
- * @returns {brightstream.Presentable}
+ * @returns {respoke.Presentable}
  */
-brightstream.Presentable = function (params) {
+respoke.Presentable = function (params) {
     "use strict";
     params = params || {};
     /**
-     * @memberof! brightstream.Presentable
+     * @memberof! respoke.Presentable
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = brightstream.EventEmitter(params);
+    var that = respoke.EventEmitter(params);
     delete that.instanceId;
     /**
      * A name to identify the type of this object.
-     * @memberof! brightstream.Presentable
+     * @memberof! respoke.Presentable
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.Presentable';
+    that.className = 'respoke.Presentable';
     /**
-     * @memberof! brightstream.Presentable
+     * @memberof! respoke.Presentable
      * @name presence
      * @type {string}
      */
     that.presence = 'unavailable';
 
     /**
-     * @memberof! brightstream.DirectConnection
+     * @memberof! respoke.DirectConnection
      * @name client
-     * @type {brightstream.Client}
+     * @type {respoke.Client}
      * @private
      */
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
 
     /**
      * Set the presence on the object and the session
-     * @memberof! brightstream.Presentable
-     * @method brightstream.Presentable.setPresence
+     * @memberof! respoke.Presentable
+     * @method respoke.Presentable.setPresence
      * @param {object} params
      * @param {string} params.presence
      * @param {string} params.connectionId
-     * @fires brightstream.Presentable#presence
+     * @fires respoke.Presentable#presence
      * @private
      */
     that.setPresence = function (params) {
@@ -68,35 +68,33 @@ brightstream.Presentable = function (params) {
         params.presence = params.presence || 'available';
         params.connectionId = params.connectionId || that.connectionId;
 
-        if (that.className === 'brightstream.Client' || that.className === 'brightstream.Connection') {
+        if (that.className === 'respoke.Client' || that.className === 'respoke.Connection') {
             that.presence = params.presence;
-            if (that.className === 'brightstream.Connection') {
+            if (that.className === 'respoke.Connection') {
                 that.getEndpoint().resolvePresence();
             }
-        } else if (!params.connectionId) {
-            throw new Error("Can't set Endpoint presence without a connectionId.");
-        } else {
-            connection = that.getConnection({connectionId: params.connectionId});
-            if (connection) {
-                connection.presence = params.presence;
-            } else {
-                connection = client.getConnection({
-                    connectionId: params.connectionId,
-                    skipCreate: false,
-                    endpointId: that.id
-                });
-                connection.presence = params.presence;
+        } else if (that.className === 'respoke.Endpoint') {
+            if (!params.connectionId) {
+                throw new Error("Can't set Endpoint presence without a connectionId.");
             }
+
+            connection = that.getConnection({connectionId: params.connectionId}) || client.getConnection({
+                connectionId: params.connectionId,
+                skipCreate: false,
+                endpointId: that.id
+            });
+
+            connection.presence = params.presence;
             that.resolvePresence();
         }
 
         /**
          * This event indicates that the presence for this endpoint has been updated.
-         * @event brightstream.Presentable#presence
-         * @type {brightstream.Event}
+         * @event respoke.Presentable#presence
+         * @type {respoke.Event}
          * @property {string} presence
          * @property {string} name - the event name.
-         * @property {brightstream.Presentable} target
+         * @property {respoke.Presentable} target
          */
         that.fire('presence', {
             presence: that.presence
@@ -105,8 +103,8 @@ brightstream.Presentable = function (params) {
 
     /**
      * Get the presence.
-     * @memberof! brightstream.Presentable
-     * @method brightstream.Presentable.getPresence
+     * @memberof! respoke.Presentable
+     * @method respoke.Presentable.getPresence
      * @returns {string} A string representing the current presence of this endpoint.
      */
     that.getPresence = function () {
@@ -114,7 +112,7 @@ brightstream.Presentable = function (params) {
     };
 
     return that;
-}; // End brightstream.Presentable
+}; // End respoke.Presentable
 
 /**
  * Represents remote Endpoints. Endpoints are users of this application that are not the one logged into this
@@ -124,40 +122,40 @@ brightstream.Presentable = function (params) {
  * a server.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments brightstream.Presentable
+ * @augments respoke.Presentable
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
- * @returns {brightstream.Endpoint}
+ * @returns {respoke.Endpoint}
  */
-brightstream.Endpoint = function (params) {
+respoke.Endpoint = function (params) {
     "use strict";
     params = params || {};
     /**
-     * @memberof! brightstream.Endpoint
+     * @memberof! respoke.Endpoint
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = brightstream.Presentable(params);
+    var that = respoke.Presentable(params);
     /**
-     * @memberof! brightstream.DirectConnection
+     * @memberof! respoke.DirectConnection
      * @name client
-     * @type {brightstream.Client}
+     * @type {respoke.Client}
      * @private
      */
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
     /**
-     * @memberof! brightstream.DirectConnection
+     * @memberof! respoke.DirectConnection
      * @name signalingChannel
-     * @type {brightstream.SignalingChannel}
+     * @type {respoke.SignalingChannel}
      * @private
      */
     var signalingChannel = params.signalingChannel;
 
     var clone = function (source) {
-      return JSON.parse(JSON.stringify(source));
+        return JSON.parse(JSON.stringify(source));
     };
 
     delete that.signalingChannel;
@@ -165,23 +163,23 @@ brightstream.Endpoint = function (params) {
     delete that.connectionId;
     /**
      * A name to identify the type of this object.
-     * @memberof! brightstream.Endpoint
+     * @memberof! respoke.Endpoint
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.Endpoint';
+    that.className = 'respoke.Endpoint';
     /**
      * A direct connection to this endpoint. This can be used to send direct messages.
-     * @memberof! brightstream.Endpoint
+     * @memberof! respoke.Endpoint
      * @name directConnection
-     * @type {brightstream.DirectConnection}
+     * @type {respoke.DirectConnection}
      */
     that.directConnection = null;
 
     /**
-     * @memberof! brightstream.Endpoint
+     * @memberof! respoke.Endpoint
      * @name connections
-     * @type {Array<brightstream.Connection>}
+     * @type {Array<respoke.Connection>}
      */
     that.connections = [];
     client.listen('disconnect', function disconnectHandler() {
@@ -190,57 +188,60 @@ brightstream.Endpoint = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.sendMessage
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.sendMessage
      * @param {object} params
      * @param {string} params.message
      * @param {string} [params.connectionId]
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of this
+     * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of this
      * method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
      * only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
+        var promise;
+        var retVal;
         params = params || {};
 
-        return signalingChannel.sendMessage({
+        promise = signalingChannel.sendMessage({
             connectionId: params.connectionId,
             message: params.message,
-            recipient: that,
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            recipient: that
         });
+
+        retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+        return retVal;
     };
 
     /**
      * Create a new audio-only call.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.startAudioCall
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.startAudioCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
-     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
-     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
-     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
-     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
-     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
-     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
-     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -251,7 +252,7 @@ brightstream.Endpoint = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @returns {brightstream.Call}
+     * @returns {respoke.Call}
      */
     that.startAudioCall = function (params) {
         params = params || {};
@@ -266,32 +267,32 @@ brightstream.Endpoint = function (params) {
 
     /**
      * Create a new call with audio and video.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.startVideoCall
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.startVideoCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
-     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
-     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
-     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
-     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
-     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
-     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
-     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -302,7 +303,7 @@ brightstream.Endpoint = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @returns {brightstream.Call}
+     * @returns {respoke.Call}
      */
     that.startVideoCall = function (params) {
         params = params || {};
@@ -317,31 +318,31 @@ brightstream.Endpoint = function (params) {
 
     /**
      * Create a new call.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.startCall
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.startCall
      * @param {object} params
-     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
-     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
-     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
-     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
-     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
-     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
-     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
@@ -354,7 +355,7 @@ brightstream.Endpoint = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @returns {brightstream.Call}
+     * @returns {respoke.Call}
      */
     that.startCall = function (params) {
         var call = null;
@@ -362,6 +363,7 @@ brightstream.Endpoint = function (params) {
         params = params || {};
 
         log.trace('Endpoint.call');
+        client.verifyConnected();
         log.debug('Default callSettings is', combinedCallSettings);
         if (params.caller === undefined) {
             params.caller = true;
@@ -433,7 +435,7 @@ brightstream.Endpoint = function (params) {
             log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams);
         };
-        call = brightstream.Call(params);
+        call = respoke.Call(params);
 
         if (params.caller === true) {
             call.answer();
@@ -448,41 +450,49 @@ brightstream.Endpoint = function (params) {
      * Information sent through a DirectConnection is not handled by the cloud infrastructure.  If there is already
      * a direct connection open, this method will resolve the promise with that direct connection instead of
      * attempting to create a new one.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.startDirectConnection
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.startDirectConnection
      * @param {object} params
-     * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess] - Success handler for this
+     * @param {respoke.Call.directConnectionSuccessHandler} [params.onSuccess] - Success handler for this
      * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @param {brightstream.DirectConnection.onStart} [params.onStart] - A callback for when setup of the direct
+     * @param {respoke.DirectConnection.onStart} [params.onStart] - A callback for when setup of the direct
      * connection begins. The direct connection will not be open yet.
-     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
+     * @param {respoke.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
      * the DirectConnection is open and ready to be used.
-     * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
+     * @param {respoke.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
      * connection.
-     * @param {brightstream.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
+     * @param {respoke.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
      * when the DirectConnection is closed and the two Endpoints are disconnected.
-     * @param {brightstream.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
+     * @param {respoke.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
      * request for a direct connection and setup begins.
-     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
+     * @param {respoke.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
      * through the DirectConnection.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
      * @param {string} [params.connectionId] - An optional connection ID to use for this connection. This allows
      * the connection to be made to a specific instance of an endpoint in the case that the same endpoint is logged
      * in from multiple locations.
-     * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
+     * @returns {respoke.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
     that.startDirectConnection = function (params) {
         params = params || {};
         var combinedConnectionSettings = clone(client.callSettings);
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;
+
+        try {
+            client.verifyConnected();
+        } catch (err) {
+            deferred.reject(err);
+            return retVal;
+        }
 
         if (that.directConnection) {
             deferred.resolve(that.directConnection);
-            return deferred.promise;
+            return retVal;
         }
 
         log.trace('Endpoint.startDirectConnection', params);
@@ -492,7 +502,7 @@ brightstream.Endpoint = function (params) {
 
         if (!that.id) {
             deferred.reject(new Error("Can't start a direct connection without endpoint ID!"));
-            return deferred.promise;
+            return retVal;
         }
 
         // Apply connection-specific callSettings to the app's defaults
@@ -549,7 +559,7 @@ brightstream.Endpoint = function (params) {
         };
         params.directConnectionOnly = true;
 
-        call = brightstream.Call(params);
+        call = respoke.Call(params);
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
             if (params.caller !== true) {
@@ -558,7 +568,7 @@ brightstream.Endpoint = function (params) {
                         !call.hasListeners('direct-connection')) {
                     that.directConnection.reject();
                     deferred.reject(new Error("Got an incoming direct connection with no handlers to accept it!"));
-                    return deferred.promise;
+                    return;
                 }
 
                 deferred.resolve(that.directConnection);
@@ -571,14 +581,14 @@ brightstream.Endpoint = function (params) {
         if (params.caller === true) {
             call.answer(params);
         }
-        return deferred.promise;
+        return retVal;
     };
 
     /**
      * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.resolvePresence
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.resolvePresence
      * @private
      */
     that.resolvePresence = function () {
@@ -610,15 +620,16 @@ brightstream.Endpoint = function (params) {
 
     /**
      * Get the Connection with the specified id. The connection ID is optional if only one connection exists.
-     * @memberof! brightstream.Endpoint
-     * @method brightstream.Endpoint.getConnection
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.getConnection
      * @private
      * @param {object} params
      * @param {string} [params.connectionId]
-     * @return {brightstream.Connection}
+     * @return {respoke.Connection}
      */
     that.getConnection = function (params) {
         var connection;
+        params = params || {};
         if (that.connections.length === 1 &&
                 (!params.connectionId || that.connections[0] === params.connectionId)) {
             return that.connections[0];
@@ -640,23 +651,23 @@ brightstream.Endpoint = function (params) {
     };
 
     return that;
-}; // End brightstream.Endpoint
+}; // End respoke.Endpoint
 /**
  * Handle messages sent to the logged-in user from this one Endpoint.  This callback is called every time
- * brightstream.Endpoint#message fires.
- * @callback brightstream.Endpoint.onMessage
- * @param {brightstream.Event} evt
- * @param {brightstream.TextMessage} evt.message - the message
- * @param {brightstream.Endpoint} evt.target
+ * respoke.Endpoint#message fires.
+ * @callback respoke.Endpoint.onMessage
+ * @param {respoke.Event} evt
+ * @param {respoke.TextMessage} evt.message - the message
+ * @param {respoke.Endpoint} evt.target
  * @param {string} evt.name - the event name
  */
 /**
  * Handle presence notifications from this one Endpoint.  This callback is called every time
- * brightstream.Endpoint#message fires.
- * @callback brightstream.Endpoint.onPresence
- * @param {brightstream.Event} evt
- * @param {brightstream.string} evt.presence - the Endpoint's presence
- * @param {brightstream.Endpoint} evt.target
+ * respoke.Endpoint#message fires.
+ * @callback respoke.Endpoint.onPresence
+ * @param {respoke.Event} evt
+ * @param {respoke.string} evt.presence - the Endpoint's presence
+ * @param {respoke.Endpoint} evt.target
  * @param {string} evt.name - the event name
  */
 
@@ -666,32 +677,32 @@ brightstream.Endpoint = function (params) {
  * with connections by calling them or sending them messages.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
- * @augments brightstream.Presentable
+ * @augments respoke.Presentable
  * @param {object} params
  * @param {string} params.id
- * @returns {brightstream.Connection}
+ * @returns {respoke.Connection}
  */
-brightstream.Connection = function (params) {
+respoke.Connection = function (params) {
     "use strict";
     params = params || {};
     /**
-     * @memberof! brightstream.Connection
+     * @memberof! respoke.Connection
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = brightstream.Presentable(params);
+    var that = respoke.Presentable(params);
     /**
-     * @memberof! brightstream.DirectConnection
+     * @memberof! respoke.DirectConnection
      * @name client
-     * @type {brightstream.Client}
+     * @type {respoke.Client}
      * @private
      */
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
 
     /**
-     * @memberof! brightstream.Connection
+     * @memberof! respoke.Connection
      * @name id
      * @type {string}
      */
@@ -704,21 +715,21 @@ brightstream.Connection = function (params) {
 
     /**
      * A name to identify the type of this object.
-     * @memberof! brightstream.Connection
+     * @memberof! respoke.Connection
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.Connection';
+    that.className = 'respoke.Connection';
 
     /**
      * Send a message to this connection of an endpoint only through the infrastructure.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.sendMessage
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.sendMessage
      * @param {object} params
      * @param {string} params.message
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation
+     * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation
      * of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @returns {Promise}
      */
@@ -731,31 +742,31 @@ brightstream.Connection = function (params) {
     /**
      * Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered
      * by another connection of this Endpoint.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.startCall
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.startCall
      * @param {object} params
-     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
-     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
-     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
-     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
-     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
-     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
-     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
@@ -766,7 +777,7 @@ brightstream.Connection = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @returns {brightstream.Call}
+     * @returns {respoke.Call}
      */
     that.startCall = function (params) {
         params = params || {};
@@ -776,32 +787,32 @@ brightstream.Connection = function (params) {
 
     /**
      * Create a new audio-only call.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.startAudioCall
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.startAudioCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
-     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
-     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
-     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
-     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
-     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
-     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
-     * @param {brightstream.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -810,7 +821,7 @@ brightstream.Connection = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @returns {brightstream.Call}
+     * @returns {respoke.Call}
      */
     that.startAudioCall = function (params) {
         params = params || {};
@@ -826,30 +837,30 @@ brightstream.Connection = function (params) {
 
     /**
      * Create a new call with audio and video.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.startVideoCall
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.startVideoCall
      * @param {object} params
      * @param {RTCServers} [params.servers]
-     * @param {brightstream.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {brightstream.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {brightstream.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
      * audio and/or video attached.
-     * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for being notified when the call has
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has
      * been hung up.
-     * @param {brightstream.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
-     * @param {brightstream.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
-     * @param {brightstream.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
-     * @param {brightstream.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
-     * @param {brightstream.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -858,12 +869,12 @@ brightstream.Connection = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @returns {brightstream.Call}
+     * @returns {respoke.Call}
      */
     that.startVideoCall = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        return that.getEndpoint().call(params);
+        return that.getEndpoint().startCall(params);
     };
 
     /**
@@ -871,27 +882,27 @@ brightstream.Connection = function (params) {
      * by another connection of this Endpoint.  This method creates a new Call as well, attaching this
      * DirectConnection to it for the purposes of creating a peer-to-peer link for sending data such as messages to
      * the other endpoint. Information sent through a DirectConnection is not handled by the cloud infrastructure.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.startDirectConnection
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.startDirectConnection
      * @param {object} params
-     * @param {brightstream.Call.directConnectionSuccessHandler} [params.onSuccess] - Success handler for this
+     * @param {respoke.Call.directConnectionSuccessHandler} [params.onSuccess] - Success handler for this
      * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @param {brightstream.DirectConnection.onStart} [params.onStart] - A callback for when setup of the direct
+     * @param {respoke.DirectConnection.onStart} [params.onStart] - A callback for when setup of the direct
      * connection begins. The direct connection will not be open yet.
-     * @param {brightstream.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
+     * @param {respoke.DirectConnection.onOpen} [params.onOpen] - A callback for receiving notification of when
      * the DirectConnection is open and ready to be used.
-     * @param {brightstream.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
+     * @param {respoke.DirectConnection.onError} [params.onError] - Callback for errors setting up the direct
      * connection.
-     * @param {brightstream.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
+     * @param {respoke.DirectConnection.onClose} [params.onClose] - A callback for receiving notification of
      * when the DirectConnection is closed and the two Endpoints are disconnected.
-     * @param {brightstream.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
+     * @param {respoke.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
      * through the DirectConnection.
-     * @param {brightstream.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
+     * @param {respoke.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
      * request for a direct connection and setup begins.
      * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
-     * @returns {brightstream.DirectConnection} The DirectConnection which can be used to send data and messages
+     * @returns {respoke.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
     that.startDirectConnection = function (params) {
@@ -902,13 +913,13 @@ brightstream.Connection = function (params) {
 
     /**
      * Get the Endpoint that this Connection belongs to.
-     * @memberof! brightstream.Connection
-     * @method brightstream.Connection.getEndpoint
-     * @returns {brightstream.Endpoint}
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.getEndpoint
+     * @returns {respoke.Endpoint}
      */
     that.getEndpoint = function () {
         return client.getEndpoint({id: that.endpointId});
     };
 
     return that;
-}; // End brightstream.Connection
+}; // End respoke.Connection

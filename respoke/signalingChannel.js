@@ -9,79 +9,76 @@
 /**
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
- * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise which
- * can be thenned directly, but to abstract that from developers who might prefer not to use Promises, they
- * also take callbacks named onSuccess and onError which the methods attach to the promises themselves so
- * that the developer doesn't have to.
+ * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.SignalingChannel
+ * @class respoke.SignalingChannel
  * @constructor
- * @augments brightstream.EventEmitter
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @private
- * @returns {brightstream.SignalingChannel}
+ * @returns {respoke.SignalingChannel}
  */
- /*global brightstream: false */
-brightstream.SignalingChannel = function (params) {
+ /*global respoke: false */
+respoke.SignalingChannel = function (params) {
     "use strict";
     params = params || {};
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = brightstream.EventEmitter(params);
+    var that = respoke.EventEmitter(params);
     delete that.instanceId;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.SignalingChannel';
+    that.className = 'respoke.SignalingChannel';
 
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name client
      * @private
-     * @type {brightstream.Client}
+     * @type {respoke.Client}
      */
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
     /**
      * The state of the signaling channel.
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name state
      * @type {boolean}
      */
     that.connected = false;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name socket
      * @private
      * @type {Socket.io.Socket}
      */
     var socket = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name heartbeat
      * @private
      * @type {number}
      */
     var heartbeat = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name clientSettings
      * @private
      * @type {object}
      */
     var clientSettings = params.clientSettings;
     delete that.clientSettings;
-    clientSettings.baseURL = clientSettings.baseURL || 'https://collective.brightstream.io';
+    clientSettings.baseURL = clientSettings.baseURL || 'https://collective.respoke.io';
     /**
      * A map to avoid duplicate endpoint presence registrations.
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name presenceRegistered
      * @private
      * @type {object}
@@ -90,63 +87,63 @@ brightstream.SignalingChannel = function (params) {
     /**
      * A reference to the private function Client.actuallyConnect that gets set in SignalingChannel.open() so we
      * don't have to make it public.
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name actuallyConnect
      * @private
      * @type {function}
      */
     var actuallyConnect = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name reconnectTimeout
      * @private
      * @type {number}
      */
     var reconnectTimeout = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name maxReconnectTimeout
      * @private
      * @type {number}
      */
     var maxReconnectTimeout = 5 * 60 * 1000;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name appId
      * @private
      * @type {string}
      */
     var appId = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name endpointId
      * @private
      * @type {string}
      */
     var endpointId = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name token
      * @private
      * @type {string}
      */
     var token = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name appToken
      * @private
      * @type {string}
      */
     var appToken = null;
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name xhr
      * @private
      * @type {XMLHttpRequest}
      */
     var xhr = new XMLHttpRequest();
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name routingMethods
      * @private
      * @type {object}
@@ -155,7 +152,7 @@ brightstream.SignalingChannel = function (params) {
      */
     var routingMethods = {};
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name handlerQueue
      * @private
      * @type {object}
@@ -166,7 +163,7 @@ brightstream.SignalingChannel = function (params) {
         'presence': []
     };
     /**
-     * @memberof! brightstream.SignalingChannel
+     * @memberof! respoke.SignalingChannel
      * @name errors
      * @private
      * @type {object}
@@ -183,21 +180,17 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Open a connection to the REST API and validate the app, creating an appauthsession.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.open
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.open
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.open = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
@@ -212,10 +205,6 @@ brightstream.SignalingChannel = function (params) {
             return null;
         }).then(function successHandler(newToken) {
             token = newToken || token;
-            if (!token) {
-                throw new TypeError("Must pass either endpointID & appId & developmentMode=true, or a token," +
-                    " to client.connect().");
-            }
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
@@ -229,20 +218,16 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Get a developer mode token for an endpoint. App must be in developer mode.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.getToken
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getToken
      * @param {object} params
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise<String>}
      */
     that.getToken = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('SignalingChannel.getToken', params);
 
         call({
@@ -267,21 +252,22 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Open a connection to the REST API and validate the app, creating an appauthsession.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.doOpen
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.doOpen
      * @param {object} params
-     * @param {string} [params.token] - The Endpoint's auth token
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
+     * @param {string} params.token - The Endpoint's auth token
      * @return {Promise}
      * @private
      */
     function doOpen(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('SignalingChannel.doOpen', params);
+
+        if (!params.token) {
+            deferred.reject(new Error("Can't open connection to Respoke without a token."));
+            return deferred.promise;
+        }
 
         call({
             path: '/v1/appauthsessions',
@@ -307,18 +293,14 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Close a connection to the REST API. Invalidate the appauthsession.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.close
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.close
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.close = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         clearInterval(heartbeat);
 
         wsCall({
@@ -344,20 +326,17 @@ brightstream.SignalingChannel = function (params) {
     /**
      * Generate and send a presence message representing the client's current status. This triggers
      * the server to send the client's endpoint's presence.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendPresence
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendPresence
      * @param {object} params
      * @param {string} params.presence - description, "unavailable", "available", "away", "xa", "dnd"
      * @param {string} [params.status] - Non-enumeration human-readable status.
      * @param {string} [params.show] - I can't remember what this is.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
+     * @returns {Promise}
      */
     that.sendPresence = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace("Signaling sendPresence");
 
         wsCall({
@@ -381,19 +360,15 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Get or create a group in the infrastructure.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.getGroup
-     * @returns {Promise<brightstream.Group>}
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getGroup
+     * @returns {Promise<respoke.Group>}
      * @param {object} params
-     * @param {brightstream.SignalingChannel.groupHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} name
      */
     that.getGroup = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         log.trace('signalingChannel.getGroup');
 
         wsCall({
@@ -414,19 +389,15 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Join a group.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.leaveGroup
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.leaveGroup
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      */
     that.leaveGroup = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         wsCall({
             path: '/v1/channels/%s/subscribers/',
@@ -443,19 +414,15 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Join a group.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.joinGroup
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.joinGroup
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      */
     that.joinGroup = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         wsCall({
             path: '/v1/channels/%s/subscribers/',
@@ -472,21 +439,17 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Publish a message to a group.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.publish
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.publish
      * @returns {Promise}
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.id
      * @param {string} params.message
      */
     that.publish = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var message = brightstream.TextMessage({
+        var deferred = Q.defer();
+        var message = respoke.TextMessage({
             endpointId: params.id,
             message: params.message
         });
@@ -506,8 +469,8 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Register as an observer of presence for the specified endpoint ids.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.registerPresence
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.registerPresence
      * @param {object} params
      * @param {Array<string>} params.endpointList
      */
@@ -527,18 +490,14 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Join a group.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.getGroupMembers
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getGroupMembers
      * @returns {Promise<Array>}
      * @param {object} params
-     * @param {brightstream.SignalingChannel.groupListHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.id
      */
     that.getGroupMembers = function (params) {
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var promise;
 
         if (!params.id) {
@@ -562,22 +521,18 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send a chat message.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendMessage
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendMessage
      * @param {object} params
-     * @param {brightstream.SignalingMessage} params.message - The string text message to send.
-     * @param {brightstream.Endpoint} params.recipient
+     * @param {respoke.SignalingMessage} params.message - The string text message to send.
+     * @param {respoke.Endpoint} params.recipient
      * @param {string} [params.connectionId]
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
-        var message = brightstream.TextMessage({
+        var deferred = Q.defer();
+        var message = respoke.TextMessage({
             endpointId: params.recipient.id,
             connectionId: params.connectionId,
             message: params.message
@@ -597,14 +552,10 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send an ACK signal to acknowlege reception of a signal.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendACK
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendACK
      * @param {object} params
-     * @param {brightstream.SignalingMessage} params.signal
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
+     * @param {respoke.SignalingMessage} params.signal
      * @return {Promise}
      */
     that.sendACK = function (params) {
@@ -625,27 +576,21 @@ brightstream.SignalingChannel = function (params) {
             signalId: params.signal.signalId,
             sessionId: params.signal.sessionId,
             target: params.signal.target,
-            ackedSignalType: params.signal.signalType,
-            onSuccess: params.onSuccess,
-            onError: params.onError
+            ackedSignalType: params.signal.signalType
         });
     };
 
     /**
      * Send a signaling message.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendSignal
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendSignal
      * @param {object} params
-     * @param {brightstream.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
+     * @param {respoke.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
      * @return {Promise}
      */
     that.sendSignal = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var signal;
 
         if (params.call) {
@@ -656,9 +601,9 @@ brightstream.SignalingChannel = function (params) {
         }
 
         try {
-            params.signalId = brightstream.makeGUID();
+            params.signalId = respoke.makeGUID();
             // This will strip off non-signaling attributes.
-            signal = brightstream.SignalingMessage(params);
+            signal = respoke.SignalingMessage(params);
         } catch (e) {
             deferred.reject(e);
             return deferred.promise;
@@ -683,16 +628,12 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send an ICE candidate.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendCandidate
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendCandidate
      * @param {object} params
-     * @param {brightstream.Endpoint} params.recipient - The recipient.
+     * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {Array<RTCIceCandidate>} params.iceCandidates - An array of ICE candidate.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendCandidate = function (params) {
@@ -703,16 +644,12 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send an SDP.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendSDP
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendSDP
      * @param {object} params
-     * @param {brightstream.Endpoint} params.recipient - The recipient.
+     * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {RTCSessionDescription} params.sdp - An SDP to JSONify and send.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendSDP = function (params) {
@@ -726,19 +663,15 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send a call report to the cloud infrastructure.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendReport
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendReport
      * @param {object} params
      * @todo TODO document the params.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendReport = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var message = {
             debugData: params
         };
@@ -758,16 +691,12 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send a message hanging up the WebRTC session.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendHangup
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendHangup
      * @param {object} params
-     * @param {brightstream.Endpoint} params.recipient - The recipient.
+     * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
      * @param {string} params.reason - The reason the session is being hung up.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendHangup = function (params) {
@@ -778,14 +707,10 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send a message to all connection ids indicating we have negotiated a call with one connection.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendConnected
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendConnected
      * @param {object} params
-     * @param {brightstream.Endpoint} params.recipient - The recipient.
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
+     * @param {respoke.Endpoint} params.recipient - The recipient.
      * @return {Promise}
      */
     that.sendConnected = function (params) {
@@ -796,15 +721,11 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Send a message to the remote party indicating a desire to renegotiate media.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.sendModify
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.sendModify
      * @param {object} params
-     * @param {brightstream.Endpoint} params.recipient - The recipient.
+     * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} params.action - The state of the modify request, one of: 'initiate', 'accept', 'reject'
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.sendModify = function (params) {
@@ -818,8 +739,8 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Uppercase the first letter of the word.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.firstUpper
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.firstUpper
      * @private
      */
     function firstUpper(str) {
@@ -828,19 +749,19 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Route different types of signaling messages via events.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routeSignal
-     * @param {brightstream.SignalingMessage} message - A message to route
-     * @fires brightstream.Call#offer
-     * @fires brightstream.Call#connected
-     * @fires brightstream.Call#answer
-     * @fires brightstream.Call#iceCandidates
-     * @fires brightstream.Call#hangup
-     * @fires brightstream.DirectConnection#offer
-     * @fires brightstream.DirectConnection#connected
-     * @fires brightstream.DirectConnection#answer
-     * @fires brightstream.DirectConnection#iceCandidates
-     * @fires brightstream.DirectConnection#hangup
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routeSignal
+     * @param {respoke.SignalingMessage} message - A message to route
+     * @fires respoke.Call#offer
+     * @fires respoke.Call#connected
+     * @fires respoke.Call#answer
+     * @fires respoke.Call#iceCandidates
+     * @fires respoke.Call#hangup
+     * @fires respoke.DirectConnection#offer
+     * @fires respoke.DirectConnection#connected
+     * @fires respoke.DirectConnection#answer
+     * @fires respoke.DirectConnection#iceCandidates
+     * @fires respoke.DirectConnection#hangup
      */
     that.routeSignal = function (signal) {
         var target = null;
@@ -903,21 +824,21 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doOffer
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.doOffer
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-offer
+     * @fires respoke.Call#signal-offer
      */
     routingMethods.doOffer = function (params) {
         params.call.connectionId = params.signal.connectionId;
         /**
-         * @event brightstream.Call#signal-offer
-         * @type {brightstream.Event}
+         * @event respoke.Call#signal-offer
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.Call} target
+         * @property {respoke.Call} target
          */
         params.call.fire('signal-offer', {
             signal: params.signal
@@ -925,20 +846,20 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doConnected
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.doConnected
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-connected
+     * @fires respoke.Call#signal-connected
      */
     routingMethods.doConnected = function (params) {
         /**
-         * @event brightstream.Call#signal-connected
-         * @type {brightstream.Event}
+         * @event respoke.Call#signal-connected
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.Call} target
+         * @property {respoke.Call} target
          */
         params.call.fire('signal-connected', {
             signal: params.signal
@@ -946,20 +867,20 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.dModify
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.dModify
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-modify
+     * @fires respoke.Call#signal-modify
      */
     routingMethods.doModify = function (params) {
         /**
-         * @event brightstream.Call#signal-modify
-         * @type {brightstream.Event}
+         * @event respoke.Call#signal-modify
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.Call} target
+         * @property {respoke.Call} target
          */
         params.call.fire('signal-modify', {
             signal: params.signal
@@ -967,21 +888,21 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doAnswer
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.doAnswer
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-answer
+     * @fires respoke.Call#signal-answer
      */
     routingMethods.doAnswer = function (params) {
         params.call.connectionId = params.signal.connectionId;
         /**
-         * @event brightstream.Call#signal-answer
-         * @type {brightstream.Event}
+         * @event respoke.Call#signal-answer
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.Call} target
+         * @property {respoke.Call} target
          */
         params.call.fire('signal-answer', {
             signal: params.signal
@@ -989,20 +910,20 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doIceCandidates
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.doIceCandidates
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-icecandidates
+     * @fires respoke.Call#signal-icecandidates
      */
     routingMethods.doIceCandidates = function (params) {
         /**
-         * @event brightstream.Call#signal-icecandidates
-         * @type {brightstream.Event}
+         * @event respoke.Call#signal-icecandidates
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.Call} target
+         * @property {respoke.Call} target
          */
         params.call.fire('signal-icecandidates', {
             signal: params.signal
@@ -1010,12 +931,12 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doHangup
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.doHangup
      * @private
      * @params {object} params
      * @params {object} params.signal
-     * @fires brightstream.Call#signal-hangup
+     * @fires respoke.Call#signal-hangup
      */
     routingMethods.doHangup = function (params) {
         /**
@@ -1027,11 +948,11 @@ brightstream.SignalingChannel = function (params) {
             return;
         }
         /**
-         * @event brightstream.Call#signal-hangup
-         * @type {brightstream.Event}
+         * @event respoke.Call#signal-hangup
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.Call} target
+         * @property {respoke.Call} target
          */
         params.call.fire('signal-hangup', {
             signal: params.signal
@@ -1039,8 +960,8 @@ brightstream.SignalingChannel = function (params) {
     };
 
     /**
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.routingMethods.doUnknown
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.routingMethods.doUnknown
      * @private
      * @params {object} params
      * @params {object} params.signal
@@ -1051,8 +972,8 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Add a handler to the connection for messages of different types.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.addHandler
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.addHandler
      * @param {object} params
      * @param {string} params.type - The type of socket message, i. e., 'message', 'presence', 'join'
      * @param {function} params.handler - A function to which to pass the message
@@ -1068,12 +989,12 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Socket handler for pub-sub messages.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.onPubSub
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.onPubSub
      * @param {object} The Socket.io message.
      * @private
-     * @fires brightstream.Group#message
-     * @fires brightstream.Client#message
+     * @fires respoke.Group#message
+     * @fires respoke.Client#message
      */
     var onPubSub = function onPubSub(message) {
         var group;
@@ -1083,33 +1004,33 @@ brightstream.SignalingChannel = function (params) {
             return;
         }
 
-        groupMessage = brightstream.TextMessage({
+        groupMessage = respoke.TextMessage({
             rawMessage: message
         });
 
         group = client.getGroup({id: message.header.channel});
         if (group) {
             /**
-             * @event brightstream.Group#message
-             * @type {brightstream.Event}
-             * @property {brightstream.TextMessage} message
+             * @event respoke.Group#message
+             * @type {respoke.Event}
+             * @property {respoke.TextMessage} message
              * @property {string} name - the event name.
-             * @property {brightstream.Group} target
+             * @property {respoke.Group} target
              */
             group.fire('message', {
                 message: groupMessage
             });
         }
         /**
-         * @event brightstream.Client#message
-         * @type {brightstream.Event}
-         * @property {brightstream.TextMessage} message
-         * @property {brightstream.Group} [group] - If the message is to a group we already know about,
+         * @event respoke.Client#message
+         * @type {respoke.Event}
+         * @property {respoke.TextMessage} message
+         * @property {respoke.Group} [group] - If the message is to a group we already know about,
          * this will be set. If null, the developer can use client.join({id: evt.message.header.channel}) to join
          * the group. From that point forward, Group#message will fire when a message is received as well. If
          * group is undefined instead of null, the message is not a group message at all.
          * @property {string} name - the event name.
-         * @property {brightstream.Client} target
+         * @property {respoke.Client} target
          */
         client.fire('message', {
             message: groupMessage,
@@ -1119,8 +1040,8 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Socket handler for join messages.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.onJoin
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.onJoin
      * @param {object} The Socket.io message.
      * @private
      */
@@ -1171,8 +1092,8 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Socket handler for leave messages.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.onLeave
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.onLeave
      * @param {object} The Socket.io message.
      * @private
      */
@@ -1203,16 +1124,16 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Socket handler for presence messages.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.onMessage
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.onMessage
      * @param {object} The Socket.io message.
      * @private
-     * @fires brightstream.Endpoint#message
-     * @fires brightstream.Client#message
+     * @fires respoke.Endpoint#message
+     * @fires respoke.Client#message
      */
     var onMessage = function onMessage(message) {
         var endpoint;
-        message = brightstream.TextMessage({rawMessage: message});
+        message = respoke.TextMessage({rawMessage: message});
         if (message.endpointId) {
             endpoint = client.getEndpoint({
                 id: message.endpointId,
@@ -1221,25 +1142,25 @@ brightstream.SignalingChannel = function (params) {
         }
         if (endpoint) {
             /**
-             * @event brightstream.Endpoint#message
-             * @type {brightstream.Event}
-             * @property {brightstream.TextMessage} message
+             * @event respoke.Endpoint#message
+             * @type {respoke.Event}
+             * @property {respoke.TextMessage} message
              * @property {string} name - the event name.
-             * @property {brightstream.Endpoint} target
+             * @property {respoke.Endpoint} target
              */
             endpoint.fire('message', {
                 message: message
             });
         }
         /**
-         * @event brightstream.Client#message
-         * @type {brightstream.Event}
-         * @property {brightstream.TextMessage} message
-         * @property {brightstream.Endpoint} [endpoint] - If the message is from an endpoint we already know about,
+         * @event respoke.Client#message
+         * @type {respoke.Event}
+         * @property {respoke.TextMessage} message
+         * @property {respoke.Endpoint} [endpoint] - If the message is from an endpoint we already know about,
          * this will be set. If null, the developer can use client.getEndpoint({id: evt.message.endpointId}) to get
          * the Endpoint. From that point forward, Endpoint#message will fire when a message is received as well.
          * @property {string} name - the event name.
-         * @property {brightstream.Client} target
+         * @property {respoke.Client} target
          */
         client.fire('message', {
             endpoint: endpoint || null,
@@ -1249,11 +1170,11 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Create a socket handler for the onConnect event with all the right things in scope.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.generateConnectHandler
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.generateConnectHandler
+     * @param {respoke.Client.successHandler} [onSuccess] - Success handler for this invocation of
      * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {respoke.Client.errorHandler} [onError] - Error handler for this invocation of this
      * method only.
      * @private
      */
@@ -1286,8 +1207,8 @@ brightstream.SignalingChannel = function (params) {
 
     /**
      * Socket handler for presence messages.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.onPresence
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.onPresence
      * @param {object} The Socket.io message.
      * @private
      */
@@ -1326,8 +1247,8 @@ brightstream.SignalingChannel = function (params) {
     /*
     * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
     * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
-    * @memberof! brightstream.SignalingChannel
-    * @method brightstream.SignalingChannel.reconnect
+    * @memberof! respoke.SignalingChannel
+    * @method respoke.SignalingChannel.reconnect
     * @private
     */
     function reconnect() {
@@ -1351,29 +1272,27 @@ brightstream.SignalingChannel = function (params) {
                 }));
             }).done(function successHandler(user) {
                 /**
-                 * @event brightstream.Client#reconnect
+                 * @event respoke.Client#reconnect
                  * @property {string} name - the event name.
-                 * @property {brightstream.Client}
+                 * @property {respoke.Client}
                  */
                 client.fire('reconnect');
+            }, function (err) {
+                log.error("Couldn't rejoin previous groups.", err.message, err.stack);
             });
         }, reconnectTimeout);
     }
 
     /**
      * Authenticate to the cloud and call the handler on state change.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.authenticate
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.authenticate
      * @param {object} params
-     * @param {brightstream.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
      */
     that.authenticate = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
         var pieces = [];
         var protocol = null;
         var host = null;
@@ -1447,7 +1366,7 @@ brightstream.SignalingChannel = function (params) {
             type: 'signal',
             handler: function signalHandler(message) {
                 var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'hangup'];
-                var signal = brightstream.SignalingMessage({
+                var signal = respoke.SignalingMessage({
                     rawMessage: message
                 });
 
@@ -1466,9 +1385,9 @@ brightstream.SignalingChannel = function (params) {
 
         socket.on('disconnect', function onDisconnect() {
             /**
-             * @event brightstream.Client#disconnect
+             * @event respoke.Client#disconnect
              * @property {string} name - the event name.
-             * @property {brightstream.Client} target
+             * @property {respoke.Client} target
              */
             client.fire('disconnect');
 
@@ -1487,19 +1406,15 @@ brightstream.SignalingChannel = function (params) {
      * in the Client so that credentials are ready to use quickly when a call begins. We
      * don't want to have to wait on a REST request to finish between the user clicking the
      * call button and the call beginning.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.getTurnCredentials
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getTurnCredentials
      * @param {object} params
-     * @param {brightstream.SignalingChannel.turnSuccessHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @private
      * @return {Promise<Array>}
      */
     function getTurnCredentials(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         wsCall({
             httpMethod: 'GET',
@@ -1542,14 +1457,10 @@ brightstream.SignalingChannel = function (params) {
      * is an associative array constructed by json.decode. The 'error' attriute is a message.
      * If the API call is successful but the server returns invalid JSON, error will be
      * "Invalid JSON." and response will be the unchanged content of the response body.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.wsCall
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.wsCall
      * @private
      * @param {object} params
-     * @param {brightstream.SignalingChannel.responseHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.httpMethod
      * @param {string} params.path
      * @param {string} params.objectId
@@ -1558,7 +1469,7 @@ brightstream.SignalingChannel = function (params) {
      */
     function wsCall(params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         if (!params) {
             deferred.reject(new Error('No params.'));
@@ -1582,7 +1493,7 @@ brightstream.SignalingChannel = function (params) {
         }
 
         if (!socket) {
-            deferred.reject(new Error("Can't make websocket request: no connection."));
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
 
@@ -1618,15 +1529,15 @@ brightstream.SignalingChannel = function (params) {
      * is an associative array constructed by json.decode. The 'error' attriute is a message.
      * If the API call is successful but the server returns invalid JSON, error will be
      * "Invalid JSON." and response will be the unchanged content of the response body.
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.call
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.call
      * @private
      * @param {object} params
      * @param {string} params.httpMethod
      * @param {string} params.objectId
      * @param {string} params.path
      * @param {object} params.parameters
-     * @param {brightstream.SignalingChannel.responseHandler} responseHandler
+     * @param {respoke.SignalingChannel.responseHandler} responseHandler
      * @todo TODO change this to return a promise
      */
     function call(params) {
@@ -1724,8 +1635,8 @@ brightstream.SignalingChannel = function (params) {
     /**
      * Turn key/value and key/list pairs into an HTTP URL parameter string.
      * var1=value1&var2=value2,value3,value4
-     * @memberof! brightstream.SignalingChannel
-     * @method brightstream.SignalingChannel.makeParamString
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.makeParamString
      * @private
      * @param {object} params - Arbitrary collection of strings and arrays to serialize.
      * @returns {string}
@@ -1754,41 +1665,41 @@ brightstream.SignalingChannel = function (params) {
     }
 
     return {signalingChannel: that, getTurnCredentials: getTurnCredentials};
-}; // End brightstream.SignalingChannel
+}; // End respoke.SignalingChannel
 /**
  * Handle an error that resulted from a method call.
- * @callback brightstream.SignalingChannel.errorHandler
+ * @callback respoke.SignalingChannel.errorHandler
  * @params {Error} err
  */
 /**
  * Handle sending successfully.
- * @callback brightstream.SignalingChannel.sendHandler
+ * @callback respoke.SignalingChannel.sendHandler
  */
 /**
  * Receive a group.
- * @callback brightstream.SignalingChannel.groupHandler
- * @param {brightstream.Group}
+ * @callback respoke.SignalingChannel.groupHandler
+ * @param {respoke.Group}
  */
 /**
  * Receive a list of groups.
- * @callback brightstream.SignalingChannel.groupListHandler
+ * @callback respoke.SignalingChannel.groupListHandler
  * @param {Array}
  */
 /**
  * Receive a list of TURN credentials.
- * @callback brightstream.SignalingChannel.turnSuccessHandler
+ * @callback respoke.SignalingChannel.turnSuccessHandler
  * @param {Array}
  */
 /**
  * Receive an HTTP response
- * @callback brightstream.SignalingChannel.responseHandler
+ * @callback respoke.SignalingChannel.responseHandler
  * @param {object}
  */
 
 /**
  * A text message and the information needed to route it.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.TextMessage
+ * @class respoke.TextMessage
  * @constructor
  * @param {object} params
  * @param {string} [params.endpointId] - If sending, endpoint ID of the thing we're sending a message to.
@@ -1796,17 +1707,17 @@ brightstream.SignalingChannel = function (params) {
  * @param {string} [params.message] - If sending, a message to send
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
  * @private
- * @returns {brightstream.TextMessage}
+ * @returns {respoke.TextMessage}
  */
-brightstream.TextMessage = function (params) {
+respoke.TextMessage = function (params) {
     "use strict";
     params = params || {};
     var that = {};
 
     /**
      * Parse rawMessage and set attributes required for message delivery.
-     * @memberof! brightstream.TextMessage
-     * @method brightstream.TextMessage.parse
+     * @memberof! respoke.TextMessage
+     * @method respoke.TextMessage.parse
      * @private
      */
     function parse() {
@@ -1835,18 +1746,18 @@ brightstream.TextMessage = function (params) {
 
     parse();
     return that;
-}; // End brightstream.TextMessage
+}; // End respoke.TextMessage
 
 /**
  * A signaling message and the information needed to route it.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.SignalingMessage
+ * @class respoke.SignalingMessage
  * @constructor
  * @param {object} params
  * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
  * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
  * @param {string} [params.signal] - If sending, a message to send
- * @param {brightstream.Endpoint} [params.recipient]
+ * @param {respoke.Endpoint} [params.recipient]
  * @param {string} [params.signalType]
  * @param {string} [params.sessionId] - A globally unique ID to identify this call.
  * @param {string} [params.target] - Either 'call' or 'directConnection', TODO remove the need for this.
@@ -1864,15 +1775,15 @@ brightstream.TextMessage = function (params) {
  * @param {string} [params.status] - "Ringing". Not implemented.
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
  * @private
- * @returns {brightstream.SignalingMessage}
+ * @returns {respoke.SignalingMessage}
  */
-brightstream.SignalingMessage = function (params) {
+respoke.SignalingMessage = function (params) {
     "use strict";
     params = params || {};
     var that = {};
     /**
      * Attributes without which we cannot build a signaling message.
-     * @memberof! brightstream.SignalingMessage
+     * @memberof! respoke.SignalingMessage
      * @name required
      * @private
      * @type {string}
@@ -1880,7 +1791,7 @@ brightstream.SignalingMessage = function (params) {
     var required = ['recipient', 'signalType', 'sessionId', 'target', 'signalId'];
     /**
      * Attributes which we will copy onto the signal if defined.
-     * @memberof! brightstream.SignalingMessage
+     * @memberof! respoke.SignalingMessage
      * @name required
      * @private
      * @type {string}
@@ -1892,8 +1803,8 @@ brightstream.SignalingMessage = function (params) {
 
     /**
      * Parse rawMessage and set attributes required for message delivery.
-     * @memberof! brightstream.SignalingMessage
-     * @method brightstream.SignalingMessage.parse
+     * @memberof! respoke.SignalingMessage
+     * @method respoke.SignalingMessage.parse
      * @private
      */
     function parse() {
@@ -1925,64 +1836,64 @@ brightstream.SignalingMessage = function (params) {
 
     parse();
     return that;
-}; // End brightstream.SignalingMessage
+}; // End respoke.SignalingMessage
 
 /**
  * A group, representing a collection of endpoints and the method by which to communicate with them.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.Group
+ * @class respoke.Group
  * @constructor
  * @param {object} params
  * @param {string} params.instanceId
- * @param {brightstream.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
+ * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
  * endpoint has joined the group. This callback does not get called when the client joins the group.
- * @param {brightstream.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
+ * @param {respoke.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
  * remote endpoints.
- * @param {brightstream.Group.onLeave} params.onLeave - A callback to receive notifications every time a new
+ * @param {respoke.Group.onLeave} params.onLeave - A callback to receive notifications every time a new
  * endpoint has left the group. This callback does not get called when the client leaves the group.
- * @returns {brightstream.Group}
+ * @returns {respoke.Group}
  */
-brightstream.Group = function (params) {
+respoke.Group = function (params) {
     "use strict";
     params = params || {};
 
-    var that = brightstream.EventEmitter(params);
+    var that = respoke.EventEmitter(params);
     /**
-     * @memberof! brightstream.Group
+     * @memberof! respoke.Group
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
 
     if (!that.id) {
         throw new Error("Can't create a group without an ID.");
     }
 
     /**
-     * @memberof! brightstream.Group
+     * @memberof! respoke.Group
      * @name signalingChannel
-     * @type brightstream.SignalingChannel
+     * @type respoke.SignalingChannel
      * @private
      */
     var signalingChannel = params.signalingChannel;
     delete params.signalingChannel;
 
     /**
-     * @memberof! brightstream.Group
+     * @memberof! respoke.Group
      * @name endpoints
-     * @type {array<brightstream.Endpoint>}
+     * @type {array<respoke.Endpoint>}
      * @desc A list of the members of this group.
      */
     that.connections = [];
     /**
      * A name to identify the type of this object.
-     * @memberof! brightstream.Group
+     * @memberof! respoke.Group
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.Group';
+    that.className = 'respoke.Group';
     that.listen('join', params.onJoin);
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
@@ -1998,29 +1909,30 @@ brightstream.Group = function (params) {
 
     /**
      * Leave this group.
-     * @memberof! brightstream.Group
-     * @method brightstream.Group.leave
+     * @memberof! respoke.Group
+     * @method respoke.Group.leave
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @return {Promise}
-     * @fires brightstream.Client#leave
+     * @fires respoke.Client#leave
      */
     that.leave = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+
+        if (!signalingChannel || !signalingChannel.connected) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
+        }
+
         signalingChannel.leaveGroup({
             id: that.id
         }).done(function successHandler() {
             /**
              * This event is fired when the client leaves a group.
-             * @event brightstream.Client#leave
-             * @type {brightstream.Event}
-             * @property {brightstream.Group} group
+             * @event respoke.Client#leave
+             * @type {respoke.Event}
+             * @property {respoke.Group} group
              * @property {string} name - the event name.
-             * @property {brightstream.Client} target
+             * @property {respoke.Client} target
              */
             client.fire('leave', {
                 group: that
@@ -2036,11 +1948,11 @@ brightstream.Group = function (params) {
      * Remove a Connection from a Group. This does not change the status of the remote Endpoint, it only changes the
      * internal representation of the Group membership. This method should only be used internally.
      * @private
-     * @memberof! brightstream.Group
-     * @method brightstream.Group.removeMember
+     * @memberof! respoke.Group
+     * @method respoke.Group.removeMember
      * @param {object} params
      * @param {string} [params.connectionId] - Endpoint's connection id
-     * @fires brightstream.Group#leave
+     * @fires respoke.Group#leave
      */
     that.removeMember = function (params) {
         params = params || {};
@@ -2053,11 +1965,11 @@ brightstream.Group = function (params) {
 
                 /**
                  * This event is fired when a member leaves a group the client is a member of.
-                 * @event brightstream.Group#leave
-                 * @type {brightstream.Event}
-                 * @property {brightstream.Connection} connection
+                 * @event respoke.Group#leave
+                 * @type {respoke.Event}
+                 * @property {respoke.Connection} connection
                  * @property {string} name - the event name.
-                 * @property {brightstream.Group} target
+                 * @property {respoke.Group} target
                  */
                 that.fire('leave', {
                     connection: conn
@@ -2071,12 +1983,12 @@ brightstream.Group = function (params) {
     /**
      * Add a Connection to a group. This does not change the status of the remote Endpoint, it only changes the
      * internal representation of the Group membership. This method should only be used internally.
-     * @memberof! brightstream.Group
+     * @memberof! respoke.Group
      * @private
-     * @method brightstream.Group.addMember
+     * @method respoke.Group.addMember
      * @param {object} params
-     * @param {brightstream.Connection} params.connection
-     * @fires brightstream.Group#join
+     * @param {respoke.Connection} params.connection
+     * @fires respoke.Group#join
      */
     that.addMember = function (params) {
         params = params || {};
@@ -2100,11 +2012,11 @@ brightstream.Group = function (params) {
             /**
              * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
              * of.
-             * @event brightstream.Group#join
-             * @type {brightstream.Event}
-             * @property {brightstream.Connection} connection
+             * @event respoke.Group#join
+             * @type {respoke.Event}
+             * @property {respoke.Connection} connection
              * @property {string} name - the event name.
-             * @property {brightstream.Group} target
+             * @property {respoke.Group} target
              */
             that.fire('join', {
                 connection: params.connection
@@ -2114,43 +2026,42 @@ brightstream.Group = function (params) {
 
     /**
      * Send a message to the entire group.
-     * @memberof! brightstream.Group
-     * @method brightstream.Group.sendMessage
+     * @memberof! respoke.Group
+     * @method respoke.Group.sendMessage
      * @param {object} params
-     * @param {brightstream.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
      * @param {string} params.message - The message.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
         params = params || {};
         params.id = that.id;
+
+        if (!signalingChannel || !signalingChannel.connected) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
+        }
+
         return signalingChannel.publish(params);
     };
 
     /**
      * Get an array containing the members of the group.
-     * @memberof! brightstream.Group
-     * @method brightstream.Group.getMembers
+     * @memberof! respoke.Group
+     * @method respoke.Group.getMembers
      * @returns {Promise<Array>} A promise to an array of Connections.
      * @param {object} params
-     * @param {brightstream.Group.connectionsHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @param {function} [onMessage] TODO
-     * @param {function} [onPresence] TODO
-     * @fires brightstream.Group#join
+     * @fires respoke.Group#join
      */
     that.getMembers = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
 
         if (that.connections.length > 0) {
             deferred.resolve(that.connections);
             return deferred.promise;
+        }
+
+        if (!signalingChannel || !signalingChannel.connected) {
+            throw new Error("Can't complete request when not connected. Please reconnect!");
         }
 
         signalingChannel.getGroupMembers({
@@ -2185,36 +2096,36 @@ brightstream.Group = function (params) {
     };
 
     return that;
-}; // End brightstream.Group
+}; // End respoke.Group
 /**
  * Receive notification that an endpoint has joined this group. This callback is called everytime
- * brightstream.Group#join is fired.
- * @callback brightstream.Group.onJoin
- * @param {brightstream.Event} evt
- * @param {brightstream.Connection} evt.connection
+ * respoke.Group#join is fired.
+ * @callback respoke.Group.onJoin
+ * @param {respoke.Event} evt
+ * @param {respoke.Connection} evt.connection
  * @param {string} evt.name - the event name.
- * @param {brightstream.Group} evt.target
+ * @param {respoke.Group} evt.target
  */
 /**
  * Receive notification that an endpoint has left this group. This callback is called everytime
- * brightstream.Group#leave is fired.
- * @callback brightstream.Group.onLeave
- * @param {brightstream.Event} evt
- * @param {brightstream.Connection} evt.connection
+ * respoke.Group#leave is fired.
+ * @callback respoke.Group.onLeave
+ * @param {respoke.Event} evt
+ * @param {respoke.Connection} evt.connection
  * @param {string} evt.name - the event name.
- * @param {brightstream.Group} evt.target
+ * @param {respoke.Group} evt.target
  */
 /**
  * Receive notification that a message has been received to a group. This callback is called every time
- * brightstream.Group#message is fired.
- * @callback brightstream.Group.onMessage
- * @param {brightstream.Event} evt
- * @param {brightstream.TextMessage} evt.message
+ * respoke.Group#message is fired.
+ * @callback respoke.Group.onMessage
+ * @param {respoke.Event} evt
+ * @param {respoke.TextMessage} evt.message
  * @param {string} evt.name - the event name.
- * @param {brightstream.Group} evt.target
+ * @param {respoke.Group} evt.target
  */
 /**
  * Get a list of the Connections which are members of this Group.
- * @callback brightstream.Group.connectionsHandler
- * @param {Array<brightstream.Connection>} connections
+ * @callback respoke.Group.connectionsHandler
+ * @param {Array<respoke.Connection>} connections
  */

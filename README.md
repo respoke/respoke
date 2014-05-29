@@ -1,6 +1,6 @@
 # transporter
 
-Client Side Library for connecting to the Digium Cloud's API / WebRTC
+Client Side Library for connecting to the Respoke API.
 
 ## Dependencies
 
@@ -28,16 +28,12 @@ grunt uglify
 
 ### Code Compliance
 
-This project uses jshint
+This project uses jshint.  The configuration for jshint can be found in the repo at `.jshintrc`.
 
 ```
-jshint brightstream.js brightstream/*.js
+jshint respoke.js respoke/*.js
 ```
 
-There is a pre commit hook in `githooks` which will run `jshint` global binary against `brightstream.js` and `brightstream/*.js`
-
-This will stop you commiting bad code which is against the coding standards - **Where is the coding guidelines document?**
-
-The standards for the project can be found in `.jshintrc`
-
-
+There is a pre commit hook in `githooks` which will run `jshint` global binary against `respoke.js` and `respoke/*.js`
+Please copy this file into your .git/hooks directory so that it runs before each commit.
+This will stop you commiting bad code which is against the [coding standards](http://wiki.digium.internal/wiki/display/MERCURY/Coding+Conventions).

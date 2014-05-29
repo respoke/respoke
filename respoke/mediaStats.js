@@ -11,31 +11,31 @@
  * with the latest live statistics.
  * @author Tim Panton <tpanton@digium.com>
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.MediaStatsParser
+ * @class respoke.MediaStatsParser
  * @constructor
- * @augments brightstream.Class
+ * @augments respoke.Class
  * @param {RTCPeerConnection} peerConnection
  */
-/*global brightstream: false */
-brightstream.MediaStatsParser = function (params) {
+/*global respoke: false */
+respoke.MediaStatsParser = function (params) {
     "use strict";
     params = params || {};
-    var that = brightstream.Class(params);
+    var that = respoke.Class(params);
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.MediaStatsParser';
+    that.className = 'respoke.MediaStatsParser';
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @private
      * @name oldStats
      * @type {boolean}
      */
     var oldStats = false;
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @private
      * @name pc
      * @type RTCPeerConnection
@@ -43,7 +43,7 @@ brightstream.MediaStatsParser = function (params) {
     var pc = params.peerConnection;
     delete params.peerConnection;
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @private
      * @name timer
      * @type {number}
@@ -51,7 +51,7 @@ brightstream.MediaStatsParser = function (params) {
      */
     var timer = 0;
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @private
      * @name statsInterval
      * @type {number}
@@ -76,7 +76,7 @@ brightstream.MediaStatsParser = function (params) {
      */
 
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @private
      * @name interestingStats
      * @type {object}
@@ -115,7 +115,7 @@ brightstream.MediaStatsParser = function (params) {
     };
 
     /**
-     * @memberof! brightstream.MediaStatsParser
+     * @memberof! respoke.MediaStatsParser
      * @private
      * @name deltas
      * @type {object}
@@ -129,8 +129,8 @@ brightstream.MediaStatsParser = function (params) {
 
     /**
      * Determine if a string starts with the given value.
-     * @memberof! brightstream.MediaStatsParser
-     * @method brightstream.MediaStatsParser.startsWith
+     * @memberof! respoke.MediaStatsParser
+     * @method respoke.MediaStatsParser.startsWith
      * @param {string} string
      * @param {string} value
      * @returns {boolean}
@@ -142,8 +142,8 @@ brightstream.MediaStatsParser = function (params) {
 
     /**
      * Parse the SDPs. Kick off continuous calling of getStats() every `interval` milliseconds.
-     * @memberof! brightstream.MediaStatsParser
-     * @method brightstream.MediaStatsParser.initStats
+     * @memberof! respoke.MediaStatsParser
+     * @method respoke.MediaStatsParser.initStats
      * @private
      */
     function initStats() {
@@ -202,23 +202,24 @@ brightstream.MediaStatsParser = function (params) {
 
     /**
      * Get one snapshot of stats from the call's PeerConnection.
-     * @memberof! brightstream.MediaStatsParser
-     * @method brightstream.MediaStatsParser.getStats
+     * @memberof! respoke.MediaStatsParser
+     * @method respoke.MediaStatsParser.getStats
      * @param {object} [params]
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
      * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise<object>}
+     * @returns {Promise<object>|undefined}
      */
     that.getStats = function (params) {
         params = params || {};
-        var deferred = brightstream.makeDeferred(params.onSuccess, params.onError);
+        var deferred = Q.defer();
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var args = [];
 
         if (!pc.getStats) {
             deferred.reject(new Error("no peer connection getStats()"));
-            return;
+            return retVal;
         }
 
         if (navigator.mozGetUserMedia) {
@@ -226,20 +227,20 @@ brightstream.MediaStatsParser = function (params) {
         }
 
         args.push(function successHandler(stats) {
-            deferred.resolve(brightstream.MediaStats(buildStats(stats)));
+            deferred.resolve(respoke.MediaStats(buildStats(stats)));
         });
         args.push(function errorHandler(err) {
             log.error(err);
             deferred.reject(new Error("Can't get stats."));
         });
         pc.getStats.apply(pc, args);
-        return deferred.promise;
+        return retVal;
     };
 
     /**
      * Stop fetching and processing of call stats.
-     * @memberof! brightstream.MediaStatsParser
-     * @method brightstream.MediaStatsParser.stopStats
+     * @memberof! respoke.MediaStatsParser
+     * @method respoke.MediaStatsParser.stopStats
      */
     that.stopStats = function () {
         clearInterval(timer);
@@ -247,8 +248,8 @@ brightstream.MediaStatsParser = function (params) {
 
     /**
      * Receive raw stats and parse them.
-     * @memberof! brightstream.MediaStatsParser
-     * @method brightstream.MediaStatsParser.buildStats
+     * @memberof! respoke.MediaStatsParser
+     * @method respoke.MediaStatsParser.buildStats
      * @param {object} rawStats
      * @private
      */
@@ -302,26 +303,26 @@ brightstream.MediaStatsParser = function (params) {
     initStats();
 
     return that;
-}; // End brightstream.MediaStatsParser
+}; // End respoke.MediaStatsParser
 /**
  * Success handler for methods that generate stats.
- * @callback brightstream.MediaStatsParser.statsHandler
- * @param {brightstream.MediaStats}
+ * @callback respoke.MediaStatsParser.statsHandler
+ * @param {respoke.MediaStats}
  */
 /**
  * A report containing statistical information about the flow of media.
  * with the latest live statistics.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.MediaStats
+ * @class respoke.MediaStats
  * @constructor
  * @param {object} params
  */
-brightstream.MediaStats = function (params) {
+respoke.MediaStats = function (params) {
     "use strict";
     params = JSON.parse(JSON.stringify(params || {}));
     /**
      * Information about the connection.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @type {object}
      * @name connection
      * @property {string} channelId - A string which identifies this media stream (which may contain several
@@ -341,7 +342,7 @@ brightstream.MediaStats = function (params) {
      */
     /**
      * Information about the local audio stream track.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @type {object}
      * @name localaudio
      * @property {string} audioInputLevel - Microphone volume.
@@ -354,7 +355,7 @@ brightstream.MediaStats = function (params) {
      */
     /**
      * Information about the local video stream track.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @type {object}
      * @name localvideo
      * @property {string} codec - Video codec in use.
@@ -366,7 +367,7 @@ brightstream.MediaStats = function (params) {
      */
     /**
      * Information about the remote audio stream track.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @type {object}
      * @name remoteaudio
      * @property {string} audioOutputLevel
@@ -380,7 +381,7 @@ brightstream.MediaStats = function (params) {
      */
     /**
      * Information about the remote video stream track.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @type {object}
      * @name remotevideo
      * @property {string} totalBytesReceived - Total number of bytes received since media first began flowing.
@@ -392,7 +393,7 @@ brightstream.MediaStats = function (params) {
      */
     /**
      * Information about connection state.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @type {object}
      * @name state
      * @property {string} iceConnectionState - Indicates where we are in terms of ICE network negotiation -- "hole
@@ -402,19 +403,19 @@ brightstream.MediaStats = function (params) {
      */
     /**
      * The date and time at which this stats snapshot was taken.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @name timestamp
      * @type {date}
      */
     /**
      * The time that has passed since the last stats snapshot was taken.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @name periodLength
      * @type {number}
      */
     /**
      * These aliases define what things should be renamed before report is sent.
-     * @memberof! brightstream.MediaStats
+     * @memberof! respoke.MediaStats
      * @private
      * @name aliases
      * @type {object}
@@ -466,8 +467,8 @@ brightstream.MediaStats = function (params) {
 
     /**
      * Rename report attributes to have more readable, understandable names.
-     * @memberof! brightstream.MediaStats
-     * @method brightstream.MediaStats.format
+     * @memberof! respoke.MediaStats
+     * @method respoke.MediaStats.format
      * @param {object} report
      * @param {object} aliases
      * @returns {object}
@@ -499,4 +500,4 @@ brightstream.MediaStats = function (params) {
         return report;
     }
     return format(params, aliases);
-}; // End brightstream.MediaStats
+}; // End respoke.MediaStats
