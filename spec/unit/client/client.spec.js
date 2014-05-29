@@ -4,30 +4,30 @@ var expect = chai.expect;
 var instanceId;
 log.setLevel('error');
 
-describe("brightstream.Client", function () {
+describe("respoke.Client", function () {
     var client;
     beforeEach(function () {
-        instanceId = brightstream.makeGUID();
-        client = brightstream.createClient({
+        instanceId = respoke.makeGUID();
+        client = respoke.createClient({
             instanceId: instanceId,
             gloveColor: "white"
         });
     });
 
     describe("it's object structure", function () {
-        it("extends brightstream.EventEmitter.", function () {
+        it("extends respoke.EventEmitter.", function () {
             expect(typeof client.listen).to.equal('function');
             expect(typeof client.ignore).to.equal('function');
             expect(typeof client.fire).to.equal('function');
         });
 
-        it("extends brightstream.Presentable.", function () {
+        it("extends respoke.Presentable.", function () {
             expect(typeof client.getPresence).to.equal('function');
             expect(typeof client.setPresence).to.equal('function');
         });
 
         it("has the correct class name.", function () {
-            expect(client.className).to.equal('brightstream.Client');
+            expect(client.className).to.equal('respoke.Client');
         });
 
         it("contains some important methods.", function () {
@@ -87,8 +87,8 @@ describe("brightstream.Client", function () {
             describe("when called without developmentMode", function () {
                 it("throws an error", function (done) {
                     client.connect({
-                        appId: brightstream.makeGUID(),
-                        endpointId: brightstream.makeGUID()
+                        appId: respoke.makeGUID(),
+                        endpointId: respoke.makeGUID()
                     }).then(function success() {
                         done(new Error("connect() succeeded with invalid params."));
                     }).catch(function failure(err) {
@@ -103,7 +103,7 @@ describe("brightstream.Client", function () {
                 it("throws an error", function (done) {
                     client.connect({
                         developmentMode: true,
-                        endpointId: brightstream.makeGUID()
+                        endpointId: respoke.makeGUID()
                     }).then(function success() {
                         done(new Error("connect() succeeded with invalid params."));
                     }).catch(function failure(err) {
@@ -117,7 +117,7 @@ describe("brightstream.Client", function () {
             describe("when called without endpointId", function () {
                 it("throws an error", function (done) {
                     client.connect({
-                        appId: brightstream.makeGUID(),
+                        appId: respoke.makeGUID(),
                         developmentMode: true
                     }).then(function success() {
                         done(new Error("connect() succeeded with invalid params."));
@@ -178,7 +178,7 @@ describe("brightstream.Client", function () {
         describe("sendMessage()", function () {
             it("throws an error", function (done) {
                 client.sendMessage({
-                    endpointId: brightstream.makeGUID(),
+                    endpointId: respoke.makeGUID(),
                     message: "The rent is TOO DAMN HIGH!"
                 }).done(function () {
                     done(new Error("Shouldn't be able to send a message when not connected!"));
@@ -192,7 +192,7 @@ describe("brightstream.Client", function () {
         describe("startCall()", function () {
             it("throws an error", function (done) {
                 client.startCall({
-                    endpointId: brightstream.makeGUID()
+                    endpointId: respoke.makeGUID()
                 }).done(function () {
                     done(new Error("Shouldn't be able to start a call when not connected!"));
                 }, function (err) {
@@ -207,7 +207,7 @@ describe("brightstream.Client", function () {
                 expect(typeof client.join).to.equal('function');
                 try {
                 client.join({
-                    id: brightstream.makeGUID()
+                    id: respoke.makeGUID()
                 }).done(function () {
                     done(new Error("Shouldn't be able to join a group when not connected!"));
                 }, function (err) {
@@ -223,7 +223,7 @@ describe("brightstream.Client", function () {
         describe("getGroup()", function () {
             it("returns undefined", function () {
                 var group = client.getGroup({
-                    id: brightstream.makeGUID()
+                    id: respoke.makeGUID()
                 });
                 expect(group).to.equal.undefined;
             });
@@ -240,7 +240,7 @@ describe("brightstream.Client", function () {
         describe("getEndpoint()", function () {
             it("returns undefined", function () {
                 var endpoint = client.getEndpoint({
-                    id: brightstream.makeGUID()
+                    id: respoke.makeGUID()
                 });
                 expect(endpoint).to.equal.undefined;
             });
@@ -257,8 +257,8 @@ describe("brightstream.Client", function () {
         describe("getConnection()", function () {
             it("returns undefined", function () {
                 var connection = client.getConnection({
-                    endpointId: brightstream.makeGUID(),
-                    connectionId: brightstream.makeGUID()
+                    endpointId: respoke.makeGUID(),
+                    connectionId: respoke.makeGUID()
                 });
                 expect(connection).to.equal.undefined;
             });

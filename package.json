@@ -2,7 +2,7 @@
   "name": "transporter",
   "version": "0.0.0",
   "description": "Client-side JavaScript library for Collective.",
-  "main": "brightstream.js",
+  "main": "respoke.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

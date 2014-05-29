@@ -9,8 +9,8 @@ module.exports = function(config) {
         files: [
           'node_modules/chai/chai.js',
           'node_modules/sinon/pkg/sinon.js',
-          'brightstream.min.js',
-          'brightstream-stats.min.js',
+          'respoke.min.js',
+          'respoke-stats.min.js',
           'spec/unit/client/**/*.js'
         ],
 

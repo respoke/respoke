@@ -9,86 +9,86 @@
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.LocalMedia
+ * @class respoke.LocalMedia
  * @constructor
- * @augments brightstream.EventEmitter
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {object} params.callSettings
- * @returns {brightstream.LocalMedia}
+ * @returns {respoke.LocalMedia}
  */
-/*global brightstream: false */
-brightstream.LocalMedia = function (params) {
+/*global respoke: false */
+respoke.LocalMedia = function (params) {
     "use strict";
     params = params || {};
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = brightstream.EventEmitter(params);
+    var that = respoke.EventEmitter(params);
     delete that.instanceId;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.LocalMedia';
+    that.className = 'respoke.LocalMedia';
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name id
      * @type {string}
      */
-    that.id = brightstream.makeGUID();
+    that.id = respoke.makeGUID();
 
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name client
      * @private
-     * @type {brightstream.getClient}
+     * @type {respoke.getClient}
      */
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name videoLocalElement
      * @private
      * @type {Video}
      */
     var videoLocalElement = null;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name videoIsMuted
      * @private
      * @type {boolean}
      */
     var videoIsMuted = false;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name audioIsMuted
      * @private
      * @type {boolean}
      */
     var audioIsMuted = false;
     /**
-     * A timer to make sure we only fire {brightstream.LocalMedia#requesting-media} if the browser doesn't
+     * A timer to make sure we only fire {respoke.LocalMedia#requesting-media} if the browser doesn't
      * automatically grant permission on behalf of the user. Timer is canceled in onReceiveUserMedia.
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name allowTimer
      * @private
      * @type {number}
      */
     var allowTimer = 0;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name callSettings
      * @private
      * @type {object}
      */
     var callSettings = params.callSettings;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name mediaOptions
      * @private
      * @type {object}
@@ -100,36 +100,36 @@ brightstream.LocalMedia = function (params) {
         ]
     };
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name pc
      * @private
-     * @type {brightstream.PeerConnection}
+     * @type {respoke.PeerConnection}
      */
     var pc = params.pc;
     delete that.pc;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name forceTurn
      * @private
      * @type {boolean}
      */
     var forceTurn;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name sendOnly
      * @private
      * @type {boolean}
      */
     var sendOnly;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name receiveOnly
      * @private
      * @type {boolean}
      */
     var receiveOnly;
     /**
-     * @memberof! brightstream.LocalMedia
+     * @memberof! respoke.LocalMedia
      * @name stream
      * @private
      * @type {RTCMediaStream}
@@ -138,10 +138,10 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Register any event listeners passed in as callbacks
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.saveParameters
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.saveParameters
      * @param {object} params
-     * @param {brightstream.Call.onHangup} [params.onHangup]
+     * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {object} [params.callSettings]
      * @param {object} [params.constraints]
      * @param {array} [params.servers]
@@ -167,11 +167,11 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Save the local stream. Kick off SDP creation.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.onReceiveUserMedia
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.onReceiveUserMedia
      * @private
      * @param {RTCMediaStream}
-     * @fires brightstream.LocalMedia#stream-received
+     * @fires respoke.LocalMedia#stream-received
      */
     function onReceiveUserMedia(theStream) {
         stream = theStream;
@@ -181,10 +181,10 @@ brightstream.LocalMedia = function (params) {
          * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
          * even if the allow process is automatic, i. e., permission and media is granted by the browser
          * without asking the user to approve it.
-         * @event brightstream.LocalMedia#allow
-         * @type {brightstream.Event}
+         * @event respoke.LocalMedia#allow
+         * @type {respoke.Event}
          * @property {string} name - the event name.
-         * @property {brightstream.LocalMedia} target
+         * @property {respoke.LocalMedia} target
          */
         that.fire('allow');
         log.debug('User gave permission to use media.');
@@ -192,15 +192,15 @@ brightstream.LocalMedia = function (params) {
 
         /**
          * Expose getAudioTracks.
-         * @memberof! brightstream.LocalMedia
-         * @method brightstream.LocalMedia.getAudioTracks
+         * @memberof! respoke.LocalMedia
+         * @method respoke.LocalMedia.getAudioTracks
          */
         that.getAudioTracks = stream.getAudioTracks.bind(stream);
 
         /**
          * Expose getVideoTracks.
-         * @memberof! brightstream.LocalMedia
-         * @method brightstream.LocalMedia.getVideoTracks
+         * @memberof! respoke.LocalMedia
+         * @method respoke.LocalMedia.getVideoTracks
          */
         that.getVideoTracks = stream.getVideoTracks.bind(stream);
 
@@ -217,15 +217,15 @@ brightstream.LocalMedia = function (params) {
         // will be needed. The first one passed back will contain media and the others will fake it. Media
         // will still be sent with every peer connection. Also need to study the use of getLocalElement
         // and the implications of passing back a video element with no media attached.
-        if (brightstream.streams[that.constraints]) {
-            brightstream.streams[that.constraints].numPc += 1;
+        if (respoke.streams[that.constraints]) {
+            respoke.streams[that.constraints].numPc += 1;
             /**
-             * @event brightstream.LocalMedia#stream-received
-             * @type {brightstream.Event}
+             * @event respoke.LocalMedia#stream-received
+             * @type {respoke.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
              * @property {RTCMediaStream} stream - the HTML5 Video stream
              * @property {string} name - the event name.
-             * @property {brightstream.LocalMedia} target
+             * @property {respoke.LocalMedia} target
              */
             that.fire('stream-received', {
                 element: videoLocalElement,
@@ -233,7 +233,7 @@ brightstream.LocalMedia = function (params) {
             });
         } else {
             stream.numPc = 1;
-            brightstream.streams[that.constraints] = stream;
+            respoke.streams[that.constraints] = stream;
 
             stream.id = client.endpointId;
             attachMediaStream(videoLocalElement, stream);
@@ -243,12 +243,12 @@ brightstream.LocalMedia = function (params) {
             videoLocalElement.used = true;
 
             /**
-             * @event brightstream.LocalMedia#stream-received
-             * @type {brightstream.Event}
+             * @event respoke.LocalMedia#stream-received
+             * @type {respoke.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
              * @property {RTCMediaStream} stream - the HTML5 Video stream
              * @property {string} name - the event name.
-             * @property {brightstream.LocalMedia} target
+             * @property {respoke.LocalMedia} target
              */
             that.fire('stream-received', {
                 element: videoLocalElement,
@@ -259,8 +259,8 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Return local video element.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.getElement
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getElement
      * @returns {Video}
      */
     that.getElement = function () {
@@ -269,8 +269,8 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.requestMedia
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.requestMedia
      * @private
      */
     function requestMedia() {
@@ -282,15 +282,15 @@ brightstream.LocalMedia = function (params) {
             throw new Error('No constraints.');
         }
 
-        if (brightstream.streams[that.constraints]) {
+        if (respoke.streams[that.constraints]) {
             log.debug('using old stream');
-            onReceiveUserMedia(brightstream.streams[that.constraints]);
+            onReceiveUserMedia(respoke.streams[that.constraints]);
             return;
         }
 
         try {
             log.debug("Running getUserMedia with constraints", that.constraints);
-            // TODO set brightstream.streams[that.constraints] = true as a flag that we are already
+            // TODO set respoke.streams[that.constraints] = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
             allowTimer = setTimeout(function allowTimer() {
@@ -298,10 +298,10 @@ brightstream.LocalMedia = function (params) {
                  * The browser is asking for permission to access the User's media. This would be an ideal time
                  * to modify the UI of the application so that the user notices the request for permissions
                  * and approves it.
-                 * @event brightstream.LocalMedia#requesting-media
-                 * @type {brightstream.Event}
+                 * @event respoke.LocalMedia#requesting-media
+                 * @type {respoke.Event}
                  * @property {string} name - the event name.
-                 * @property {brightstream.LocalMedia} target
+                 * @property {respoke.LocalMedia} target
                  */
                 that.fire('requesting-media');
             }, 500);
@@ -313,8 +313,8 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Handle any error that comes up during the process of getting user media.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.onUserMediaError
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.onUserMediaError
      * @private
      * @param {object}
      */
@@ -324,20 +324,20 @@ brightstream.LocalMedia = function (params) {
             log.warn("Permission denied.");
             /**
              * Indicate there has been an error obtaining media.
-             * @event brightstream.LocalMedia#requesting-media
-             * @type {brightstream.Event}
+             * @event respoke.LocalMedia#requesting-media
+             * @type {respoke.Event}
              * @property {string} name - the event name.
-             * @property {brightstream.LocalMedia} target
+             * @property {respoke.LocalMedia} target
              */
             that.fire('error', {error: 'Permission denied.'});
         } else {
             log.warn(p);
             /**
              * Indicate there has been an error obtaining media.
-             * @event brightstream.LocalMedia#requesting-media
-             * @type {brightstream.Event}
+             * @event respoke.LocalMedia#requesting-media
+             * @type {respoke.Event}
              * @property {string} name - the event name.
-             * @property {brightstream.LocalMedia} target
+             * @property {respoke.LocalMedia} target
              */
             that.fire('error', {error: p.code});
         }
@@ -345,9 +345,9 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Mute local video stream.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.muteVideo
-     * @fires brightstream.LocalMedia#mute
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.muteVideo
+     * @fires respoke.LocalMedia#mute
      */
     that.muteVideo = function () {
         if (videoIsMuted) {
@@ -357,9 +357,9 @@ brightstream.LocalMedia = function (params) {
             track.enabled = false;
         });
         /**
-         * @event brightstream.LocalMedia#mute
+         * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
-         * @property {brightstream.LocalMedia} target
+         * @property {respoke.LocalMedia} target
          * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
          * has been changed.
          * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
@@ -373,9 +373,9 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Unmute local video stream.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.unmuteVideo
-     * @fires brightstream.LocalMedia#mute
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.unmuteVideo
+     * @fires respoke.LocalMedia#mute
      */
     that.unmuteVideo = function () {
         if (!videoIsMuted) {
@@ -385,9 +385,9 @@ brightstream.LocalMedia = function (params) {
             track.enabled = true;
         });
         /**
-         * @event brightstream.LocalMedia#mute
+         * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
-         * @property {brightstream.LocalMedia} target
+         * @property {respoke.LocalMedia} target
          * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
          * has been changed.
          * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
@@ -401,9 +401,9 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Mute local audio stream.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.muteAudio
-     * @fires brightstream.LocalMedia#mute
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.muteAudio
+     * @fires respoke.LocalMedia#mute
      */
     that.muteAudio = function () {
         if (audioIsMuted) {
@@ -413,9 +413,9 @@ brightstream.LocalMedia = function (params) {
             track.enabled = false;
         });
         /**
-         * @event brightstream.LocalMedia#mute
+         * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
-         * @property {brightstream.LocalMedia} target
+         * @property {respoke.LocalMedia} target
          * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
          * has been changed.
          * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
@@ -429,9 +429,9 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Unmute local audio stream.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.unmuteAudio
-     * @fires brightstream.LocalMedia#mute
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.unmuteAudio
+     * @fires respoke.LocalMedia#mute
      */
     that.unmuteAudio = function () {
         if (!audioIsMuted) {
@@ -441,9 +441,9 @@ brightstream.LocalMedia = function (params) {
             track.enabled = true;
         });
         /**
-         * @event brightstream.LocalMedia#mute
+         * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
-         * @property {brightstream.LocalMedia} target
+         * @property {respoke.LocalMedia} target
          * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
          * has been changed.
          * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
@@ -457,9 +457,9 @@ brightstream.LocalMedia = function (params) {
 
     /**
      * Stop the stream.
-     * @memberof! brightstream.LocalMedia
-     * @method brightstream.LocalMedia.stop
-     * @fires brightstream.LocalMedia#stop
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.stop
+     * @fires respoke.LocalMedia#stop
      */
     that.stop = function () {
         if (stream === null) {
@@ -469,17 +469,17 @@ brightstream.LocalMedia = function (params) {
         stream.numPc -= 1;
         if (stream.numPc === 0) {
             stream.stop();
-            delete brightstream.streams[that.constraints];
+            delete respoke.streams[that.constraints];
         }
         stream = null;
         /**
-         * @event brightstream.LocalMedia#stop
+         * @event respoke.LocalMedia#stop
          * @property {string} name - the event name.
-         * @property {brightstream.LocalMedia} target
+         * @property {respoke.LocalMedia} target
          */
         that.fire('stop');
     };
 
     requestMedia();
     return that;
-}; // End brightstream.LocalMedia
+}; // End respoke.LocalMedia

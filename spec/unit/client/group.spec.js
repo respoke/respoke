@@ -6,30 +6,30 @@ var client;
 var instanceId;
 var group;
 
-describe("A brightstream.Group", function () {
+describe("A respoke.Group", function () {
     beforeEach(function () {
-        instanceId = brightstream.makeGUID();
-        client = brightstream.createClient({
+        instanceId = respoke.makeGUID();
+        client = respoke.createClient({
             instanceId: instanceId
         });
-        group = brightstream.Group({
+        group = respoke.Group({
             gloveColor: 'white',
             instanceId: instanceId,
-            id: brightstream.makeGUID()
+            id: respoke.makeGUID()
         });
         expect(typeof group).to.equal('object');
-        expect(group.className).to.equal('brightstream.Group');
+        expect(group.className).to.equal('respoke.Group');
     });
 
     describe("it's object structure", function () {
-        it("extends brightstream.EventEmitter.", function () {
+        it("extends respoke.EventEmitter.", function () {
             expect(typeof group.listen).to.equal('function');
             expect(typeof group.ignore).to.equal('function');
             expect(typeof group.fire).to.equal('function');
         });
 
         it("has the correct class name.", function () {
-            expect(group.className).to.equal('brightstream.Group');
+            expect(group.className).to.equal('respoke.Group');
         });
 
         it("contains some important methods.", function () {

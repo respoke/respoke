@@ -11,16 +11,16 @@
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
  * or the not-yet-implemented ScreenShare.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class brightstream.PeerConnection
+ * @class respoke.PeerConnection
  * @constructor
- * @augments brightstream.EventEmitter
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
  * candidates.
- * @param {brightstream.Call} params.call
+ * @param {respoke.Call} params.call
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
  * @param {function} params.signalConnected - Signaling action from SignalingChannel.
@@ -29,50 +29,50 @@
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {brightstream.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
- * @param {brightstream.MediaStatsParser.statsHandler} [params.onStats] - Callback for the developer to receive
+ * @param {respoke.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
+ * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for the developer to receive
  * statistics about the call. This is only used if call.getStats() is called and the stats module is loaded.
  * @param {object} [params.callSettings]
  * @param {object} [params.pcOptions]
  * @param {object} [params.offerOptions]
- * @returns {brightstream.PeerConnection}
+ * @returns {respoke.PeerConnection}
  */
-/*global brightstream: false */
-brightstream.PeerConnection = function (params) {
+/*global respoke: false */
+respoke.PeerConnection = function (params) {
     "use strict";
     params = params || {};
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name instanceId
      * @private
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = brightstream.EventEmitter(params);
+    var that = respoke.EventEmitter(params);
     delete that.instanceId;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name className
      * @type {string}
      */
-    that.className = 'brightstream.PeerConnection';
+    that.className = 'respoke.PeerConnection';
 
     /**
      * Whether or not we will send a 'hangup' signal to the other side during hangup.
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name toSendHangup
-     * @type {brightstream.Endpoint}
+     * @type {respoke.Endpoint}
      */
     var toSendHangup;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name state
      * @type {number}
      */
     that.state = -1;
 
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @private
      * @name pc
      * @type RTCPeerConnection
@@ -81,7 +81,7 @@ brightstream.PeerConnection = function (params) {
      */
     var pc = null;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name defSDPOffer
      * @private
      * @type {Promise}
@@ -90,7 +90,7 @@ brightstream.PeerConnection = function (params) {
      */
     var defSDPOffer = Q.defer();
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name defSDPAnswer
      * @private
      * @type {Promise}
@@ -99,7 +99,7 @@ brightstream.PeerConnection = function (params) {
      */
     var defSDPAnswer = Q.defer();
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name defApproved
      * @private
      * @type {Promise}
@@ -108,7 +108,7 @@ brightstream.PeerConnection = function (params) {
      */
     var defApproved = Q.defer();
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name defModify
      * @private
      * @type {Promise}
@@ -117,17 +117,17 @@ brightstream.PeerConnection = function (params) {
      */
     var defModify;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name previewLocalMedia
      * @private
-     * @type {brightstream.Call.previewLocalMedia}
+     * @type {respoke.Call.previewLocalMedia}
      * @desc A callback provided by the developer that we'll call after receiving local media and before
      * approve() is called.
      */
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
         params.previewLocalMedia : undefined;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name sendOnly
      * @private
      * @type {boolean}
@@ -135,7 +135,7 @@ brightstream.PeerConnection = function (params) {
      */
     var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name receiveOnly
      * @private
      * @type {boolean}
@@ -143,7 +143,7 @@ brightstream.PeerConnection = function (params) {
      */
     var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name forceTurn
      * @private
      * @type {boolean}
@@ -151,7 +151,7 @@ brightstream.PeerConnection = function (params) {
      */
     var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name candidateSendingQueue
      * @private
      * @type {array}
@@ -159,7 +159,7 @@ brightstream.PeerConnection = function (params) {
      */
     var candidateSendingQueue = [];
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name candidateReceivingQueue
      * @private
      * @type {array}
@@ -167,14 +167,14 @@ brightstream.PeerConnection = function (params) {
      */
     var candidateReceivingQueue = [];
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name client
      * @private
-     * @type {brightstream.Client}
+     * @type {respoke.Client}
      */
-    var client = brightstream.getClient(instanceId);
+    var client = respoke.getClient(instanceId);
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name callSettings
      * @private
      * @type {object}
@@ -182,7 +182,7 @@ brightstream.PeerConnection = function (params) {
      */
     var callSettings = params.callSettings || {};
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalOffer
      * @private
      * @type {function}
@@ -190,7 +190,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalOffer = params.signalOffer;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalConnected
      * @private
      * @type {function}
@@ -198,7 +198,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalConnected = params.signalConnected;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalModify
      * @private
      * @type {function}
@@ -206,7 +206,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalModify = params.signalModify;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalAnswer
      * @private
      * @type {function}
@@ -214,7 +214,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalAnswer = params.signalAnswer;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalHangup
      * @private
      * @type {function}
@@ -222,7 +222,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalHangup = params.signalHangup;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalReport
      * @private
      * @type {function}
@@ -230,7 +230,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalReport = params.signalReport;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalCandidateOrig
      * @private
      * @type {function}
@@ -238,7 +238,7 @@ brightstream.PeerConnection = function (params) {
      */
     var signalCandidateOrig = params.signalCandidate;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name signalCandidate
      * @private
      * @type {function}
@@ -252,14 +252,14 @@ brightstream.PeerConnection = function (params) {
     }
 
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name offerOptions
      * @private
      * @type {object}
      */
     var offerOptions = params.offerOptions || null;
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name pcOptions
      * @private
      * @type {object}
@@ -272,7 +272,7 @@ brightstream.PeerConnection = function (params) {
     };
 
     /**
-     * @memberof! brightstream.PeerConnection
+     * @memberof! respoke.PeerConnection
      * @name report
      * @type {object}
      */
@@ -296,9 +296,9 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Start the process of network and media negotiation. Called after local video approved.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.initOffer
-     * @fires brightstream.PeerConnection#initOffer
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.initOffer
+     * @fires respoke.PeerConnection#initOffer
      */
     that.initOffer = function () {
         log.info('creating offer', offerOptions);
@@ -309,8 +309,8 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Process a remote offer if we are not the caller.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.processOffer
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
      * @returns {Promise}
      */
@@ -341,10 +341,10 @@ brightstream.PeerConnection = function (params) {
                         that.report.callStoppedReason = err.message;
                         /**
                          * This event is fired on errors that occur during call setup or media negotiation.
-                         * @event brightstream.Call#error
-                         * @type {brightstream.Event}
+                         * @event respoke.Call#error
+                         * @type {respoke.Event}
                          * @property {string} reason - A human readable description about the error.
-                         * @property {brightstream.Call} target
+                         * @property {respoke.Call} target
                          * @property {string} name - the event name.
                          */
                         that.call.fire('error', {
@@ -357,10 +357,10 @@ brightstream.PeerConnection = function (params) {
                     that.report.callStoppedReason = err.message;
                     /**
                      * This event is fired on errors that occur during call setup or media negotiation.
-                     * @event brightstream.Call#error
-                     * @type {brightstream.Event}
+                     * @event respoke.Call#error
+                     * @type {respoke.Event}
                      * @property {string} reason - A human readable description about the error.
-                     * @property {brightstream.Call} target
+                     * @property {respoke.Call} target
                      * @property {string} name - the event name.
                      */
                     that.call.fire('error', {
@@ -374,10 +374,10 @@ brightstream.PeerConnection = function (params) {
             that.report.callStoppedReason = newErr.message;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
-             * @event brightstream.Call#error
-             * @type {brightstream.Event}
+             * @event respoke.Call#error
+             * @type {respoke.Event}
              * @property {string} reason - A human readable description about the error.
-             * @property {brightstream.Call} target
+             * @property {respoke.Call} target
              * @property {string} name - the event name.
              */
             that.call.fire('error', {
@@ -391,42 +391,42 @@ brightstream.PeerConnection = function (params) {
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
      * statistics, we'll return a promise for the stats object.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.getStats
-     * @returns {Promise<{brightstream.MediaStatsParser}>|undefined}
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.getStats
+     * @returns {Promise<{respoke.MediaStatsParser}>|undefined}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
-     * @param {brightstream.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onSuccess] - Success handler for this
      * invocation of this method only.
-     * @param {brightstream.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @fires brightstream.PeerConnection#stats
+     * @fires respoke.PeerConnection#stats
      */
     function getStats(params) {
         var deferred = Q.defer();
-        var retVal = brightstream.handlePromise(deferred.promise, params.onSuccess, params.onError);
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
         if (!pc) {
             deferred.reject(new Error("Can't get stats, pc is null."));
             return retVal;
         }
 
-        if (!brightstream.MediaStats) {
+        if (!respoke.MediaStats) {
             deferred.reject(new Error("Statistics module is not loaded."));
             return retVal;
         }
 
         Q.all([defSDPOffer.promise, defSDPAnswer.promise]).then(function onSuccess() {
-            var stats = brightstream.MediaStatsParser({
+            var stats = respoke.MediaStatsParser({
                 peerConnection: pc,
                 interval: params.interval,
                 onStats: function statsHandler(stats) {
                     /**
-                     * @event brightstream.PeerConnection#stats
-                     * @type {brightstream.Event}
+                     * @event respoke.PeerConnection#stats
+                     * @type {respoke.Event}
                      * @property {object} stats - an object with stats in it.
                      * @property {string} name - the event name.
-                     * @property {brightstream.PeerConnection}
+                     * @property {respoke.PeerConnection}
                      */
                     that.fire('stats', {
                         stats: stats
@@ -443,14 +443,14 @@ brightstream.PeerConnection = function (params) {
         return retVal;
     }
 
-    if (brightstream.MediaStats) {
+    if (respoke.MediaStats) {
         that.getStats = getStats;
     }
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.init
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.init
      * @param {object} params
      * @param {object} params.constraints
      * @param {array} params.servers
@@ -473,10 +473,10 @@ brightstream.PeerConnection = function (params) {
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
             /**
-             * @event brightstream.PeerConnection#connect
-             * @type {brightstream.Event}
+             * @event respoke.PeerConnection#connect
+             * @type {respoke.Event}
              * @property {string} name - the event name.
-             * @property {brightstream.PeerConnection}
+             * @property {respoke.PeerConnection}
              */
             that.fire('connect', {
                 stream: evt.stream
@@ -484,10 +484,10 @@ brightstream.PeerConnection = function (params) {
         };
         pc.onremovestream = function onremovestream(evt) {
             /**
-             * @event brightstream.PeerConnection#remote-stream-removed
-             * @type {brightstream.Event}
+             * @event respoke.PeerConnection#remote-stream-removed
+             * @type {respoke.Event}
              * @property {string} name - the event name.
-             * @property {brightstream.PeerConnection}
+             * @property {respoke.PeerConnection}
              */
             that.fire('remote-stream-removed', {
                 stream: evt.stream
@@ -497,10 +497,10 @@ brightstream.PeerConnection = function (params) {
             /**
              * CAUTION: This event is only called for the callee because RTCPeerConnection#ondatachannel
              * is only called for the callee.
-             * @event brightstream.PeerConnection#direct-connection
-             * @type {brightstream.Event}
+             * @event respoke.PeerConnection#direct-connection
+             * @type {respoke.Event}
              * @property {string} name - the event name.
-             * @property {brightstream.PeerConnection}
+             * @property {respoke.PeerConnection}
              */
             that.fire('direct-connection', {
                 channel: evt.channel
@@ -516,8 +516,8 @@ brightstream.PeerConnection = function (params) {
     };
 
     /**
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.addStream
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.addStream
      * Expose addStream.
      * @param {RTCMediaStream}
      */
@@ -525,10 +525,10 @@ brightstream.PeerConnection = function (params) {
         if (!pc) {
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
-             * @event brightstream.Call#error
-             * @type {brightstream.Event}
+             * @event respoke.Call#error
+             * @type {respoke.Event}
              * @property {string} reason - A human readable description about the error.
-             * @property {brightstream.Call} target
+             * @property {respoke.Call} target
              * @property {string} name - the event name.
              */
             that.call.fire('error', {
@@ -540,8 +540,8 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Process a local ICE Candidate
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.onIceCandidate
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.onIceCandidate
      * @private
      * @param {RTCIceCandidate}
      */
@@ -567,8 +567,8 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Handle renegotiation
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.onNegotiationNeeded
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.onNegotiationNeeded
      * @private
      */
     function onNegotiationNeeded() {
@@ -578,8 +578,8 @@ brightstream.PeerConnection = function (params) {
     /**
      * Process any ICE candidates that we received either from the browser or the other side while
      * we were trying to set up our RTCPeerConnection to handle them.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.processQueues
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.processQueues
      * @private
      */
     function processQueues() {
@@ -604,8 +604,8 @@ brightstream.PeerConnection = function (params) {
     /**
      * Save an SDP we've gotten from the browser which will be an offer and send it to the other
      * side.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.saveOfferAndSend
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.saveOfferAndSend
      * @param {RTCSessionDescription}
      * @private
      */
@@ -627,10 +627,10 @@ brightstream.PeerConnection = function (params) {
             var err = new Error('Error calling setLocalDescription on offer I created.');
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
-             * @event brightstream.Call#error
-             * @type {brightstream.Event}
+             * @event respoke.Call#error
+             * @type {respoke.Event}
              * @property {string} reason - A human readable description about the error.
-             * @property {brightstream.Call} target
+             * @property {respoke.Call} target
              * @property {string} name - the event name.
              */
             that.call.fire('error', {
@@ -643,8 +643,8 @@ brightstream.PeerConnection = function (params) {
     /**
      * Save our SDP we've gotten from the browser which will be an answer and send it to the
      * other side.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.saveAnswerAndSend
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.saveAnswerAndSend
      * @param {RTCSessionDescription}
      * @private
      */
@@ -666,10 +666,10 @@ brightstream.PeerConnection = function (params) {
             var err = new Error('Error calling setLocalDescription on answer I created.');
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
-             * @event brightstream.Call#error
-             * @type {brightstream.Event}
+             * @event respoke.Call#error
+             * @type {respoke.Event}
              * @property {string} reason - A human readable description about the error.
-             * @property {brightstream.Call} target
+             * @property {respoke.Call} target
              * @property {string} name - the event name.
              */
             that.call.fire('error', {
@@ -682,14 +682,14 @@ brightstream.PeerConnection = function (params) {
     /**
      * Tear down the call, release user media.  Send a hangup signal to the remote party if
      * signal is not false and we have not received a hangup signal from the remote party.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.close
-     * @fires brightstream.PeerConnection#destoy
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.close
+     * @fires respoke.PeerConnection#destoy
      * @param {object} param
      * @param {boolean} [param.signal] - Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side. This is set to false by the library if we're responding to a
      * hangup signal.
-     * @fires brightstream.PeerConnection#close
+     * @fires respoke.PeerConnection#close
      */
     that.close = function (params) {
         params = params || {};
@@ -724,11 +724,11 @@ brightstream.PeerConnection = function (params) {
         });
 
         /**
-         * @event brightstream.PeerConnection#close
-         * @type {brightstream.Event}
+         * @event respoke.PeerConnection#close
+         * @type {respoke.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
          * @property {string} name - the event name.
-         * @property {brightstream.PeerConnection}
+         * @property {respoke.PeerConnection}
          */
         that.fire('close', {
             sentSignal: toSendHangup
@@ -744,8 +744,8 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Indicate whether a call is being setup or is in progress.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.isActive
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.isActive
      * @returns {boolean}
      */
     that.isActive = function () {
@@ -754,8 +754,8 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Save the answer and tell the browser about it.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.listenAnswer
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.listenAnswer
      * @param {object} evt
      * @param {object} evt.signal - The signal, including the remote SDP and the connectionId of the endpoint who
      * answered the call.
@@ -792,10 +792,10 @@ brightstream.PeerConnection = function (params) {
                 that.report.callStoppedReason = newErr.message;
                 /**
                  * This event is fired on errors that occur during call setup or media negotiation.
-                 * @event brightstream.Call#error
-                 * @type {brightstream.Event}
+                 * @event respoke.Call#error
+                 * @type {respoke.Event}
                  * @property {string} reason - A human readable description about the error.
-                 * @property {brightstream.Call} target
+                 * @property {respoke.Call} target
                  * @property {string} name - the event name.
                  */
                 that.call.fire('error', {
@@ -809,8 +809,8 @@ brightstream.PeerConnection = function (params) {
     /**
      * Figure out who won the call. This necessary to prevent two connections of the same endpoint from thinking
      * they are both on the same call.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.listenConnected
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.listenConnected
      * @private
      */
     function listenConnected(evt) {
@@ -823,8 +823,8 @@ brightstream.PeerConnection = function (params) {
     /**
      * Send the initiate signal to start the modify process. This method is only called by the caller of the
      * renegotiation.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.startModify
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.startModify
      * @param {object} params
      * @param {object} [params.constraints] - Indicate this is a request for media and what type of media.
      * @param {boolean} [params.directConnection] - Indicate this is a request for a direct connection.
@@ -849,8 +849,8 @@ brightstream.PeerConnection = function (params) {
 
     /**
      * Indicate a desire from the other side to renegotiate media.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.listenModify
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.listenModify
      * @param {object} evt
      * @param {object} evt.signal
      * @private
@@ -864,10 +864,10 @@ brightstream.PeerConnection = function (params) {
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
-                 * @event brightstream.PeerConnection#modify-accept
-                 * @type {brightstream.Event}
+                 * @event respoke.PeerConnection#modify-accept
+                 * @type {respoke.Event}
                  * @property {string} name - the event name.
-                 * @property {brightstream.PeerConnection}
+                 * @property {respoke.PeerConnection}
                  */
                 that.fire('modify-accept', {signal: evt.signal});
             }
@@ -878,11 +878,11 @@ brightstream.PeerConnection = function (params) {
                 log.debug(err.message);
                 defModify.reject(err);
                 /**
-                 * @event brightstream.PeerConnection#modify-reject
-                 * @type {brightstream.Event}
+                 * @event respoke.PeerConnection#modify-reject
+                 * @type {respoke.Event}
                  * @property {Error} err
                  * @property {string} name - the event name.
-                 * @property {brightstream.PeerConnection}
+                 * @property {respoke.PeerConnection}
                  */
                 that.fire('modify-reject', {err: err});
             }
@@ -897,11 +897,11 @@ brightstream.PeerConnection = function (params) {
             log.debug(err.message);
             defModify.reject(err);
             /**
-             * @event brightstream.PeerConnection#modify-reject
-             * @type {brightstream.Event}
+             * @event respoke.PeerConnection#modify-reject
+             * @type {respoke.Event}
              * @property {Error} err
              * @property {string} name - the event name.
-             * @property {brightstream.PeerConnection}
+             * @property {respoke.PeerConnection}
              */
             that.fire('modify-reject', {err: err});
             signalModify({
@@ -916,11 +916,11 @@ brightstream.PeerConnection = function (params) {
         if (defSDPOffer.promise.isPending() || defSDPAnswer.promise.isPending()) {
             err = new Error("Got modify in a precall state.");
             /**
-             * @event brightstream.PeerConnection#modify-reject
-             * @type {brightstream.Event}
+             * @event respoke.PeerConnection#modify-reject
+             * @type {respoke.Event}
              * @property {Error} err
              * @property {string} name - the event name.
-             * @property {brightstream.PeerConnection}
+             * @property {respoke.PeerConnection}
              */
             that.fire('modify-reject', {err: err});
             signalModify({
@@ -939,11 +939,11 @@ brightstream.PeerConnection = function (params) {
         }
 
        /**
-         * @event brightstream.PeerConnection#modify-accept
-         * @type {brightstream.Event}
+         * @event respoke.PeerConnection#modify-accept
+         * @type {respoke.Event}
          * @property {object} signal
          * @property {string} name - the event name.
-         * @property {brightstream.PeerConnection}
+         * @property {respoke.PeerConnection}
          */
         that.fire('modify-accept', {signal: evt.signal});
         signalModify({
@@ -957,8 +957,8 @@ brightstream.PeerConnection = function (params) {
     /**
      * Save the candidate. If we initiated the call, place the candidate into the queue so
      * we can process them after we receive the answer.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.addRemoteCandidate
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.addRemoteCandidate
      * @param {object} params
      * @param {RTCIceCandidate} params.candidate
      */
@@ -992,4 +992,4 @@ brightstream.PeerConnection = function (params) {
     that.call.listen('signal-modify', listenModify, true);
 
     return that;
-}; // End brightstream.PeerConnection
+}; // End respoke.PeerConnection

@@ -1,19 +1,19 @@
 var expect = chai.expect;
 
-var instanceId = brightstream.makeGUID();
-var connectionId = brightstream.makeGUID();
+var instanceId = respoke.makeGUID();
+var connectionId = respoke.makeGUID();
 log.setLevel('error');
 
-var client = brightstream.createClient({
+var client = respoke.createClient({
     instanceId: instanceId
 });
 
-describe("A brightstream.Endpoint", function () {
+describe("A respoke.Endpoint", function () {
     var endpoint;
     var endpointId;
 
     beforeEach(function () {
-        endpointId = brightstream.makeGUID();
+        endpointId = respoke.makeGUID();
         endpoint = client.getEndpoint({
             connectionId: connectionId,
             id: endpointId,
@@ -22,19 +22,19 @@ describe("A brightstream.Endpoint", function () {
     });
 
     describe("it's object structure", function () {
-        it("extends brightstream.EventEmitter.", function () {
+        it("extends respoke.EventEmitter.", function () {
             expect(typeof endpoint.listen).to.equal('function');
             expect(typeof endpoint.ignore).to.equal('function');
             expect(typeof endpoint.fire).to.equal('function');
         });
 
-        it("extends brightstream.Presentable.", function () {
+        it("extends respoke.Presentable.", function () {
             expect(typeof endpoint.getPresence).to.equal('function');
             expect(typeof endpoint.setPresence).to.equal('function');
         });
 
         it("has the correct class name.", function () {
-            expect(endpoint.className).to.equal('brightstream.Endpoint');
+            expect(endpoint.className).to.equal('respoke.Endpoint');
         });
 
         it("contains some important methods.", function () {
@@ -179,7 +179,7 @@ describe("A brightstream.Endpoint", function () {
             describe("when there is one connection", function () {
                 beforeEach(function () {
                     endpoint.connections = [{
-                        id: brightstream.makeGUID()
+                        id: respoke.makeGUID()
                     }];
                 });
 
@@ -202,7 +202,7 @@ describe("A brightstream.Endpoint", function () {
                 describe("and a wrong connectionId is specified", function () {
                     it("returns undefined", function () {
                         var connection = endpoint.getConnection({
-                            connectionId: brightstream.makeGUID()
+                            connectionId: respoke.makeGUID()
                         });
                         expect(connection).to.be.undefined;
                     });

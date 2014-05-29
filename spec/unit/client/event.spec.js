@@ -1,14 +1,14 @@
 
 var expect = chai.expect;
 
-describe("A brightstream.EventEmitter", function () {
+describe("A respoke.EventEmitter", function () {
     var results = [];
-    var eventEmitter = brightstream.EventEmitter({
+    var eventEmitter = respoke.EventEmitter({
         "gloveColor": "white"
     });
 
     it("has the correct class name.", function () {
-        expect(eventEmitter.className).to.equal('brightstream.EventEmitter');
+        expect(eventEmitter.className).to.equal('respoke.EventEmitter');
     });
 
     it("contains some important methods.", function () {
