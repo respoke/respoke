@@ -137,6 +137,14 @@ respoke.Call = function (params) {
      */
     var defMedia = Q.defer();
     /**
+     * Promise used to trigger actions dependant upon having completed deferred initialization
+     * @memberof! respoke.Call
+     * @name defInit
+     * @private
+     * @type {Promise}
+     */
+    var defInit = Q.defer();
+    /**
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
      * or rejected as soon as the 'accept' or 'reject' signal is received. For the callee, it is
@@ -465,42 +473,45 @@ respoke.Call = function (params) {
      * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      */
     that.answer = function (params) {
-        params = params || {};
-        log.trace('Call.answer');
+        /* Answer can't be called until deferred initialization of the Call object is completed. */
+        defInit.promise.then(function realAnswer() {
+            params = params || {};
+            log.trace('Call.answer');
 
-        if (!defAnswered.promise.isPending()) {
-            return;
-        }
-        defAnswered.resolve();
+            if (!defAnswered.promise.isPending()) {
+                return;
+            }
+            defAnswered.resolve();
 
-        /**
-         * saveParameters will only be meaningful for the non-initiate,
-         * since the library calls this method for the initiate. Developers will use this method to pass in
-         * callbacks for the non-initiate.
-         */
-        saveParameters(params);
+            /**
+             * saveParameters will only be meaningful for the non-initiate,
+             * since the library calls this method for the initiate. Developers will use this method to pass in
+             * callbacks for the non-initiate.
+             */
+            saveParameters(params);
 
-        pc.listen('connect', onRemoteStreamAdded, true);
-        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
+            pc.listen('connect', onRemoteStreamAdded, true);
+            pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
-        /**
-         * @event respoke.Call#answer
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         */
-        that.fire('answer');
+            /**
+             * @event respoke.Call#answer
+             * @property {string} name - the event name.
+             * @property {respoke.Call} target
+             */
+            that.fire('answer');
 
-        /**
-         * There are a few situations in which we need to call approve automatically. Approve is for previewing
-         * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-         * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-         * previewLocalMedia callback to call, we will not wait for approval.
-         */
-        if (receiveOnly !== true && directConnectionOnly === null) {
-            doAddVideo(params);
-        } else if (typeof previewLocalMedia !== 'function') {
-            that.approve();
-        }
+            /**
+             * There are a few situations in which we need to call approve automatically. Approve is for previewing
+             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
+             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
+             * previewLocalMedia callback to call, we will not wait for approval.
+             */
+            if (receiveOnly !== true && directConnectionOnly === null) {
+                doAddVideo(params);
+            } else if (typeof previewLocalMedia !== 'function') {
+                that.approve();
+            }
+        });
     };
 
     /**
@@ -1411,10 +1422,13 @@ respoke.Call = function (params) {
         });
     }, true);
 
-    setTimeout(function initTimeout() {
+    client.updateTurnCredentials().done(function() {
+        callSettings.servers = client.callSettings.servers;
         saveParameters(params);
         init();
-    }, 0);
+        defInit.resolve();
+    });
+
     return that;
 }; // End respoke.Call
 
