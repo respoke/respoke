@@ -1,1 +1,17 @@
+.idea
+*.iml
+confluence/
+docs/
+build/
+node_modules
+respoke.min.js
+respoke-stats.min.js
+respoke.min.map
+respoke-stats.min.map
+respoke-stats.combine.js
+respoke-stats.combine.map
+respoke.combine.js
+respoke.combine.map
+respoke.concat.js
+*.sublime-*
 .dir-locals.el
