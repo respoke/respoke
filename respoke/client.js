@@ -741,6 +741,8 @@ respoke.Client = function (params) {
         return promise;
     }
 
+    that.updateTurnCredentials = updateTurnCredentials;
+
     /**
      * Join a Group and begin keeping track of it. Attach some event listeners.
      * @memberof! respoke.Client
