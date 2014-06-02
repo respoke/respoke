@@ -435,6 +435,9 @@ respoke.Endpoint = function (params) {
             log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams);
         };
+
+        params.signalingChannel = signalingChannel;
+
         call = respoke.Call(params);
 
         if (params.caller === true) {

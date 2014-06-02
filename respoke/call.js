@@ -199,6 +199,13 @@ respoke.Call = function (params) {
     var client = respoke.getClient(instanceId);
     /**
      * @memberof! respoke.Call
+     * @name signalingChannel
+     * @private
+     * @type {respoke.signalingChannel}
+     */
+    var signalingChannel = params.signalingChannel;
+    /**
+     * @memberof! respoke.Call
      * @name videoLocalElement
      * @private
      * @type {Video}
@@ -1424,8 +1431,9 @@ respoke.Call = function (params) {
         });
     }, true);
 
-    client.updateTurnCredentials().done(function() {
+    signalingChannel.getTurnCredentials().done(function(creds) {
         callSettings.servers = client.callSettings.servers;
+        callSettings.servers.iceServers = creds;
         saveParameters(params);
         init();
         defInit.resolve();

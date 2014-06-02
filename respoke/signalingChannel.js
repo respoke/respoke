@@ -1401,18 +1401,14 @@ respoke.SignalingChannel = function (params) {
     };
 
     /**
-     * Get ephemeral TURN credentials.  This method is called every 20 hours in setInterval
-     * in the Client so that credentials are ready to use quickly when a call begins. We
-     * don't want to have to wait on a REST request to finish between the user clicking the
-     * call button and the call beginning.
+     * Get ephemeral TURN credentials.  This method is called whenever a call is either
+     * sent or received, prior to creating a PeerConnection
+     *
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getTurnCredentials
-     * @param {object} params
-     * @private
      * @return {Promise<Array>}
      */
-    function getTurnCredentials(params) {
-        params = params || {};
+    that.getTurnCredentials = function () {
         var deferred = Q.defer();
 
         wsCall({
@@ -1669,7 +1665,7 @@ respoke.SignalingChannel = function (params) {
         }
     }
 
-    return {signalingChannel: that, getTurnCredentials: getTurnCredentials};
+    return {signalingChannel: that};
 }; // End respoke.SignalingChannel
 /**
  * Handle an error that resulted from a method call.
