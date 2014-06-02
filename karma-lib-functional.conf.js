@@ -23,6 +23,7 @@ module.exports = function(config) {
           'respoke/mediaStats.js',
           'respoke/call.js',
           'respoke/directConnection.js',
+          'spec/util/config.js',
           'spec/util/mock_module.js', // Must be loaded after loglevel.js b/c of `module` check.
           '../../../collective/lib/seeds_data.js',
           '../../../collective/assets/js/jquery.js',
