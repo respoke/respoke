@@ -50,24 +50,22 @@ describe("respoke.Client", function () {
     */
 
     before(function (done) {
-        testFixture.beforeTest(function (err, env) {
+        Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
             testEnv.tokens = [];
-            if (err) {
-                done(new Error(JSON.stringify(err)));
-                return;
-            }
-            testFixture.createApp(testEnv.httpClient, {}, {}, function (err, params) {
-                testFixture.createToken(testEnv.httpClient, {
-                    permissionsId: params.permissions.id,
-                    appId: params.app.id
-                }, function (err, tokenParams) {
-                    testEnv.tokens.push(tokenParams);
-                    client = respoke.createClient();
-                    done();
-                });
+            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
+        }).then(function (params) {
+            // create 2 tokens
+            return Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                permissionsId: params.permissions.id,
+                appId: params.app.id
             });
-        });
+        }).then(function (token) {
+            testEnv.tokens.push(token);
+
+            client = respoke.createClient();
+            done();
+        }).done(null, done);
     });
 
     describe("connecting to Respoke", function () {
