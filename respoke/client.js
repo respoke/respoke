@@ -192,11 +192,10 @@ respoke.Client = function (params) {
      * @type {respoke.SignalingChannel}
      * @private
      */
-    var result = respoke.SignalingChannel({
+    var signalingChannel = respoke.SignalingChannel({
         instanceId: instanceId,
         clientSettings: clientSettings
     });
-    var signalingChannel = result.signalingChannel;
 
     /**
      * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
