@@ -263,7 +263,7 @@ respoke.Call = function (params) {
                 { RtpDataChannels: false }
             ]
         },
-        offerOptions: null,
+        offerOptions: params.offerOptions || null,
         signalOffer: params.signalOffer,
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
