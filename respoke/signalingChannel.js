@@ -206,10 +206,10 @@ respoke.SignalingChannel = function (params) {
         }).then(function successHandler(newToken) {
             token = newToken || token;
             return doOpen({token: token});
-        }).done(function successHandler() {
+        }).then(function successHandler() {
             deferred.resolve();
             log.verbose('client', client);
-        }, function errorHandler(err) {
+        }).done(null, function errorHandler(err) {
             deferred.reject(err);
         });
 
@@ -256,6 +256,15 @@ respoke.SignalingChannel = function (params) {
             log.error("Network call failed:", err.message);
             deferred.reject(new Error("Couldn't get a developer mode token."));
         });
+=======
+        }
+
+        try {
+            call(callParams);
+        } catch (err) {
+            deferred.reject(err);
+        }
+>>>>>>> 6df2273... Fix reconnect.
         return deferred.promise;
     };
 
@@ -279,6 +288,7 @@ respoke.SignalingChannel = function (params) {
         }
 
         call({
+            deferred: deferred,
             path: '/v1/appauthsessions',
             httpMethod: 'POST',
             parameters: {
@@ -320,6 +330,7 @@ respoke.SignalingChannel = function (params) {
             objectId: client.endpointId
         }).fin(function finallyHandler() {
             return call({
+                deferred: deferred,
                 path: '/v1/appauthsessions',
                 httpMethod: 'DELETE'
             });
