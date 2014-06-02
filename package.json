@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://USERNAME@stash.digium.com/stash/scm/stratos/transporter.git"
+    "url": "http://stash.digium.com/stash/scm/stratos/transporter.git"
   },
   "author": "Erin Spiceland",
   "license": "Proprietary",
