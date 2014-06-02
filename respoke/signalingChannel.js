@@ -206,10 +206,10 @@ respoke.SignalingChannel = function (params) {
         }).then(function successHandler(newToken) {
             token = newToken || token;
             return doOpen({token: token});
-        }).done(function successHandler() {
+        }).then(function successHandler() {
             deferred.resolve();
             log.verbose('client', client);
-        }, function errorHandler(err) {
+        }).done(null, function errorHandler(err) {
             deferred.reject(err);
         });
 
@@ -230,7 +230,8 @@ respoke.SignalingChannel = function (params) {
         var deferred = Q.defer();
         log.trace('SignalingChannel.getToken', params);
 
-        call({
+        var callParams = {
+            deferred: deferred,
             path: '/v1/tokens',
             httpMethod: 'POST',
             parameters: {
@@ -246,7 +247,13 @@ respoke.SignalingChannel = function (params) {
                 }
                 deferred.reject(new Error("Couldn't get a developer mode token."));
             }
-        });
+        }
+
+        try {
+            call(callParams);
+        } catch (err) {
+            deferred.reject(err);
+        }
         return deferred.promise;
     };
 
@@ -270,6 +277,7 @@ respoke.SignalingChannel = function (params) {
         }
 
         call({
+            deferred: deferred,
             path: '/v1/appauthsessions',
             httpMethod: 'POST',
             parameters: {
@@ -309,6 +317,7 @@ respoke.SignalingChannel = function (params) {
             objectId: client.endpointId
         }).fin(function finallyHandler() {
             call({
+                deferred: deferred,
                 path: '/v1/appauthsessions',
                 httpMethod: 'DELETE',
                 responseHandler: function responseHandler(response) {
@@ -1251,13 +1260,15 @@ respoke.SignalingChannel = function (params) {
     * @private
     */
     function reconnect() {
+        appToken = undefined;
+        token = undefined;
         reconnectTimeout = (reconnectTimeout === null) ? 500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
             reconnectTimeout = maxReconnectTimeout;
         }
 
-        setTimeout(function actuallyReconnect() {
+        setTimeout(function doReconnect() {
             actuallyConnect().then(function successHandler() {
                 reconnectTimeout = null;
                 log.debug('socket reconnected');
@@ -1278,6 +1289,7 @@ respoke.SignalingChannel = function (params) {
                 client.fire('reconnect');
             }, function (err) {
                 log.error("Couldn't rejoin previous groups.", err.message, err.stack);
+                reconnect();
             });
         }, reconnectTimeout);
     }
@@ -1389,6 +1401,7 @@ respoke.SignalingChannel = function (params) {
              * @property {respoke.Client} target
              */
             client.fire('disconnect');
+            clearInterval(heartbeat);
 
             if (clientSettings.reconnect !== true) {
                 socket = null;
@@ -1545,6 +1558,8 @@ respoke.SignalingChannel = function (params) {
         /* Params go in the URI for GET, DELETE, same format for
          * POST and PUT, but they must be sent separately after the
          * request is opened. */
+        var deferred = params.deferred;
+        delete params.deferred;
         var paramString = null;
         var uri = null;
         var response = null;
@@ -1557,15 +1572,18 @@ respoke.SignalingChannel = function (params) {
         uri = clientSettings.baseURL + params.path;
 
         if (!params) {
-            throw new Error('No params.');
+            deferred.reject(new Error('No params.'));
+            return;
         }
 
         if (!params.httpMethod) {
-            throw new Error('No HTTP method.');
+            deferred.reject(new Error('No HTTP method.'));
+            return;
         }
 
         if (!params.path) {
-            throw new Error('No request path.');
+            deferred.reject(new Error('No request path.'));
+            return;
         }
 
         if (params.objectId) {
@@ -1592,25 +1610,30 @@ respoke.SignalingChannel = function (params) {
                     xhr.setRequestHeader("App-Token", appToken);
                 }
             } catch (e) {
-                throw new Error("Can't set content-type header in readyState " +
-                    xhr.readyState + ". " + e.message);
+                deferred.reject(new Error("Can't set content-type header in readyState " +
+                    xhr.readyState + ". " + e.message));
+                return;
             }
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
-            throw new Error('Illegal HTTP request method ' + params.httpMethod);
+            deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
+            return;
         }
         log.verbose('calling', params.httpMethod, uri, "with params", paramString);
 
         try {
             xhr.send(paramString);
-        } catch (e) {
-            log.warn("Can't call xhr.send. " + e.message);
+        } catch (err) {
+            deferred.reject(err);
+            return;
         }
+
         xhr.onreadystatechange = function () {
             if (this.readyState !== 4) {
                 return;
             }
             if (this.status === 0) {
-                throw new Error("Status is 0: Incomplete request, SSL error, or CORS error.");
+                deferred.reject(new Error("Status is 0: Incomplete request, SSL error, or CORS error."));
+                return;
             }
             if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
                 response.code = this.status;
@@ -1624,11 +1647,12 @@ respoke.SignalingChannel = function (params) {
                 }
                 log.verbose(response);
                 params.responseHandler(response, {
-                    'uri' : uri,
-                    'params' : params.parameters
+                    uri: uri,
+                    params: params.parameters
                 });
             } else {
-                throw new Error('unexpected response ' + this.status);
+                deferred.reject(new Error('unexpected response ' + this.status));
+                return;
             }
         };
     }

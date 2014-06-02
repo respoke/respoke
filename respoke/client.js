@@ -298,9 +298,6 @@ respoke.Client = function (params) {
             token: clientSettings.token
         }).then(function successHandler() {
             return signalingChannel.authenticate();
-        }, function errorHandler(err) {
-            log.error(err.message);
-            deferred.reject(new Error(err.message));
         }).done(function successHandler() {
             that.connected = true;
 
