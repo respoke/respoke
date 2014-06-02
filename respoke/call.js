@@ -204,6 +204,10 @@ respoke.Call = function (params) {
      * @type {respoke.signalingChannel}
      */
     var signalingChannel = params.signalingChannel;
+
+    delete params.signalingChannel;
+    delete that.signalingChannel;
+
     /**
      * @memberof! respoke.Call
      * @name videoLocalElement

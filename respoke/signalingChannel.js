@@ -1665,7 +1665,7 @@ respoke.SignalingChannel = function (params) {
         }
     }
 
-    return {signalingChannel: that};
+    return that;
 }; // End respoke.SignalingChannel
 /**
  * Handle an error that resulted from a method call.
