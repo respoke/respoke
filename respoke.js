@@ -45,7 +45,7 @@ Q.stopUnhandledRejectionTracking();
  * which represence your app's connection to the cloud infrastructure.  This method automatically calls the
  * client.connect() method after the client is created.
  * @static
- * @member respoke
+ * @memberof respoke
  * @param {object} params
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
@@ -82,7 +82,7 @@ respoke.connect = function (params) {
 
 /**
  * @static
- * @member respoke
+ * @memberof respoke
  * @returns {respoke.Client}
  * @param {number} The Client ID.
  */
@@ -103,7 +103,7 @@ respoke.getClient = function (id) {
  * client.connect() method after the client is created, so your app will need to call it when it is ready to
  * connect.
  * @static
- * @member respoke
+ * @memberof respoke
  * @param {object} params
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
@@ -129,7 +129,7 @@ respoke.createClient = function (params) {
 /**
  * @static
  * @private
- * @member respoke
+ * @memberof respoke
  * @returns {number}
  */
 respoke.makeGUID = function () {
@@ -160,7 +160,7 @@ respoke.makeGUID = function () {
  * It's not recommended that this method be used by developers and apps.
  * @private
  * @static
- * @member respoke
+ * @memberof respoke
  * @param {Promise} promise
  * @param {function} onSuccess
  * @param {function} onError
@@ -206,7 +206,7 @@ respoke.Class = function (params) {
 /**
  * Does the browser support UserMedia
  * @static
- * @member respoke
+ * @memberof respoke
  * @returns {boolean}
  * @author Dan Jenkins <djenkins@digium.com>
  */
@@ -218,7 +218,7 @@ respoke.hasUserMedia = function () {
 /**
  * Does the browser support RTCPeerConnection
  * @static
- * @member respoke
+ * @memberof respoke
  * @returns {boolean}
  * @author Dan Jenkins <djenkins@digium.com>
  */
@@ -231,7 +231,7 @@ respoke.hasRTCPeerConnection = function () {
 /**
  * Does the browser support WebSocket
  * @static
- * @member respoke
+ * @memberof respoke
  * @returns {boolean}
  * @author Dan Jenkins <djenkins@digium.com>
  */
