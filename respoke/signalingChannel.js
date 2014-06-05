@@ -206,10 +206,10 @@ respoke.SignalingChannel = function (params) {
         }).then(function successHandler(newToken) {
             token = newToken || token;
             return doOpen({token: token});
-        }).then(function successHandler() {
+        }).done(function successHandler() {
             deferred.resolve();
             log.verbose('client', client);
-        }).done(null, function errorHandler(err) {
+        }, function errorHandler(err) {
             deferred.reject(err);
         });
 
@@ -231,29 +231,26 @@ respoke.SignalingChannel = function (params) {
         log.trace('SignalingChannel.getToken', params);
 
         var callParams = {
-            deferred: deferred,
             path: '/v1/tokens',
             httpMethod: 'POST',
             parameters: {
                 appId: clientSettings.appId,
                 endpointId: params.endpointId,
                 ttl: 60 * 60 * 6
-            },
-            responseHandler: function responseHandler(response) {
-                if (response.code === 200 && response.result && response.result.tokenId) {
-                    token = response.result.tokenId;
-                    deferred.resolve(response.result.tokenId);
-                    return;
-                }
-                deferred.reject(new Error("Couldn't get a developer mode token."));
             }
-        }
+        };
 
-        try {
-            call(callParams);
-        } catch (err) {
-            deferred.reject(err);
-        }
+        call(callParams).done(function (response) {
+            if (response.code === 200 && response.result && response.result.tokenId) {
+                token = response.result.tokenId;
+                deferred.resolve(response.result.tokenId);
+                return;
+            }
+            deferred.reject(new Error("Couldn't get a developer mode token."));
+        }, function (err) {
+            log.error("Network call failed:", err.message);
+            deferred.reject(new Error("Couldn't get a developer mode token."));
+        });
         return deferred.promise;
     };
 
@@ -277,23 +274,24 @@ respoke.SignalingChannel = function (params) {
         }
 
         call({
-            deferred: deferred,
             path: '/v1/appauthsessions',
             httpMethod: 'POST',
             parameters: {
                 tokenId: params.token
-            },
-            responseHandler: function responseHandler(response) {
-                if (response.code === 200) {
-                    appToken = response.result.token;
-                    deferred.resolve();
-                    log.trace("Signaling connection open to", clientSettings.baseURL);
-                    that.connected = true;
-                } else {
-                    that.connected = false;
-                    deferred.reject(new Error("Couldn't authenticate app."));
-                }
             }
+        }).done(function (response) {
+            if (response.code === 200) {
+                appToken = response.result.token;
+                deferred.resolve();
+                log.trace("Signaling connection open to", clientSettings.baseURL);
+                that.connected = true;
+            } else {
+                that.connected = false;
+                deferred.reject(new Error("Couldn't authenticate app."));
+            }
+        }, function (err) {
+            log.error("Network call failed:", err.message);
+            deferred.reject(new Error("Couldn't authenticate app."));
         });
 
         return deferred.promise;
@@ -317,15 +315,16 @@ respoke.SignalingChannel = function (params) {
             objectId: client.endpointId
         }).fin(function finallyHandler() {
             call({
-                deferred: deferred,
                 path: '/v1/appauthsessions',
-                httpMethod: 'DELETE',
-                responseHandler: function responseHandler(response) {
-                    socket.removeAllListeners();
-                    socket.disconnect();
-                    that.connected = false;
-                    deferred.resolve();
-                }
+                httpMethod: 'DELETE'
+            }).done(function (response) {
+                socket.removeAllListeners();
+                socket.disconnect();
+                that.connected = false;
+                deferred.resolve();
+            }, function (err) {
+                log.error("Couldn't log out app. Network call failed:", err.message);
+                deferred.resolve();
             });
         });
 
@@ -1551,15 +1550,13 @@ respoke.SignalingChannel = function (params) {
      * @param {string} params.objectId
      * @param {string} params.path
      * @param {object} params.parameters
-     * @param {respoke.SignalingChannel.responseHandler} responseHandler
-     * @todo TODO change this to return a promise
+     * @returns {Promise}
      */
     function call(params) {
         /* Params go in the URI for GET, DELETE, same format for
          * POST and PUT, but they must be sent separately after the
          * request is opened. */
-        var deferred = params.deferred;
-        delete params.deferred;
+        var deferred = Q.defer();
         var paramString = null;
         var uri = null;
         var response = null;
@@ -1588,13 +1585,6 @@ respoke.SignalingChannel = function (params) {
 
         if (params.objectId) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
-        }
-
-        if (!params.responseHandler) {
-            params.responseHandler = function (response, data) {
-                log.verbose('default responseHandler');
-                log.verbose(response);
-            };
         }
 
         if (['GET', 'DELETE'].indexOf(params.httpMethod) > -1) {
@@ -1637,6 +1627,8 @@ respoke.SignalingChannel = function (params) {
             }
             if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
                 response.code = this.status;
+                response.uri = uri;
+                response.params = params.parameters;
                 if (this.response) {
                     try {
                         response.result = JSON.parse(this.response);
@@ -1646,15 +1638,14 @@ respoke.SignalingChannel = function (params) {
                     }
                 }
                 log.verbose(response);
-                params.responseHandler(response, {
-                    uri: uri,
-                    params: params.parameters
-                });
+                deferred.resolve(response);
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
                 return;
             }
         };
+
+        return deferred.promise;
     }
 
     /**
@@ -1714,11 +1705,6 @@ respoke.SignalingChannel = function (params) {
  * Receive a list of TURN credentials.
  * @callback respoke.SignalingChannel.turnSuccessHandler
  * @param {Array}
- */
-/**
- * Receive an HTTP response
- * @callback respoke.SignalingChannel.responseHandler
- * @param {object}
  */
 
 /**
