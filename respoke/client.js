@@ -327,7 +327,7 @@ respoke.Client = function (params) {
         }, function errorHandler(err) {
             that.connected = false;
             deferred.reject("Couldn't create an endpoint.");
-            log.error(err.message);
+            log.error(err.message, err.stack);
         });
 
         return deferred.promise;
