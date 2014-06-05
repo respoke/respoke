@@ -1050,6 +1050,7 @@ respoke.SignalingChannel = function (params) {
         var endpoint;
         var connection;
 
+        console.log("onJoin", message);
         if (message.endpoint === client.endpointId) {
             return;
         }
@@ -1101,12 +1102,12 @@ respoke.SignalingChannel = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpointId === client.endpointId) {
+        if (message.endpoint === client.endpointId) {
             return;
         }
 
         endpoint = client.getEndpoint({
-            id: message.endpointId
+            id: message.endpoint
         });
 
         endpoint.connections.every(function eachConnection(conn, index) {
@@ -1866,6 +1867,14 @@ respoke.Group = function (params) {
     var instanceId = params.instanceId;
     var client = respoke.getClient(instanceId);
 
+    /**
+     * @memberof! respoke.Group
+     * @name joined
+     * @private
+     * @type {boolean}
+     */
+    var joined = true;
+
     if (!that.id) {
         throw new Error("Can't create a group without an ID.");
     }
@@ -1907,24 +1916,55 @@ respoke.Group = function (params) {
     delete that.onLeave;
 
     /**
+     * Join this group.
+     * @memberof! respoke.Group
+     * @method respoke.Group.join
+     * @return {Promise|undefined}
+     * @param {object} params
+     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @fires respoke.Client#join
+     */
+    that.join = function () {
+        params.id = that.id;
+        var promise = client.join(params);
+        var retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+
+        promise.then(function () {
+            joined = true;
+        }, function () {
+            joined = false;
+        });
+
+        return retVal;
+    };
+
+    /**
      * Leave this group.
      * @memberof! respoke.Group
      * @method respoke.Group.leave
      * @param {object} params
-     * @return {Promise}
-     * @fires respoke.Client#leave
+     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @return {Promise|undefined}
+     * @fires respoke.Client#leave{})
      */
     that.leave = function (params) {
         params = params || {};
         var deferred = Q.defer();
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
         if (!signalingChannel || !signalingChannel.connected) {
-            throw new Error("Can't complete request when not connected. Please reconnect!");
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
         signalingChannel.leaveGroup({
             id: that.id
-        }).done(function successHandler() {
+        }).then(function successHandler() {
             /**
              * This event is fired when the client leaves a group.
              * @event respoke.Client#leave
@@ -1936,11 +1976,13 @@ respoke.Group = function (params) {
             client.fire('leave', {
                 group: that
             });
+            joined = false;
             deferred.resolve();
         }, function errorHandler(err) {
+            joined = true;
             deferred.reject();
         });
-        return deferred.promise;
+        return retVal;
     };
 
     /**
@@ -1955,9 +1997,14 @@ respoke.Group = function (params) {
      */
     that.removeMember = function (params) {
         params = params || {};
+        if (!joined) {
+            throw new Error("Can't remove a Connection from a group you're not a member of.");
+        }
+
         if (!params.connectionId) {
             throw new Error("Can't remove a Connection from a group without an id.");
         }
+
         that.connections.every(function eachConnection(conn, index) {
             if (conn.id === params.connectionId) {
                 that.connections.splice(index, 1);
@@ -1995,7 +2042,13 @@ respoke.Group = function (params) {
         var absent;
 
         if (!params.connection) {
-            throw new Error("Can't add member to a group without a connection.");
+            throw new Error("Can't add member to a group without the member's connection.");
+        }
+
+        if (!joined) {
+            var err = new Error("Not a member of this group anymore.");
+            console.log(err.message, err.stack);
+            throw err;
         }
 
         absent = that.connections.every(function eachConnection(conn) {
@@ -2034,11 +2087,6 @@ respoke.Group = function (params) {
     that.sendMessage = function (params) {
         params = params || {};
         params.id = that.id;
-
-        if (!signalingChannel || !signalingChannel.connected) {
-            throw new Error("Can't complete request when not connected. Please reconnect!");
-        }
-
         return signalingChannel.publish(params);
     };
 
@@ -2053,16 +2101,22 @@ respoke.Group = function (params) {
     that.getMembers = function (params) {
         params = params || {};
         var deferred = Q.defer();
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
-        if (that.connections.length > 0) {
-            deferred.resolve(that.connections);
-            return deferred.promise;
+        if (!joined) {
+            deferred.reject(new Error("Not a member of this group."));
+            return retVal;
         }
 
         if (!signalingChannel || !signalingChannel.connected) {
-            throw new Error("Can't complete request when not connected. Please reconnect!");
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return retVal;
         }
 
+        if (that.connections.length > 0) {
+            deferred.resolve(that.connections);
+            return retVal;
+        }
         signalingChannel.getGroupMembers({
             id: that.id
         }).done(function successHandler(list) {
@@ -2091,7 +2145,7 @@ respoke.Group = function (params) {
         }, function errorHandler(err) {
             deferred.reject(err);
         });
-        return deferred.promise;
+        return retVal;
     };
 
     return that;
