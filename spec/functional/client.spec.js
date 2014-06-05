@@ -72,7 +72,7 @@ describe("respoke.Client", function () {
         describe("with a valid token", function () {
             it("succeeds and assigns an endpointId", function (done) {
                 client.connect({
-                    baseURL: 'https://testing.digiumlabs.com:2001',
+                    baseURL: 'http://testing.digiumlabs.com:2001',
                     token: testEnv.tokens[0].tokenId
                 }).done(function onSuccess(params) {
                     expect(client.endpointId).not.to.be.undefined;
@@ -87,7 +87,7 @@ describe("respoke.Client", function () {
         describe("with a made-up token", function () {
             it("fails", function (done) {
                 client.connect({
-                    baseURL: 'https://testing.digiumlabs.com:2001',
+                    baseURL: 'http://testing.digiumlabs.com:2001',
                     token: 'blahblahblahblah'
                 }).done(function onSuccess(params) {
                     done(new Error("Connect with invalid token should not work!"));
