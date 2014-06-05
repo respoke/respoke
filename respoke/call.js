@@ -137,6 +137,14 @@ respoke.Call = function (params) {
      */
     var defMedia = Q.defer();
     /**
+     * Promise used to trigger actions dependant upon having completed deferred initialization
+     * @memberof! respoke.Call
+     * @name defInit
+     * @private
+     * @type {Promise}
+     */
+    var defInit = Q.defer();
+    /**
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
      * or rejected as soon as the 'accept' or 'reject' signal is received. For the callee, it is
@@ -189,6 +197,17 @@ respoke.Call = function (params) {
      * @type {respoke.getClient}
      */
     var client = respoke.getClient(instanceId);
+    /**
+     * @memberof! respoke.Call
+     * @name signalingChannel
+     * @private
+     * @type {respoke.signalingChannel}
+     */
+    var signalingChannel = params.signalingChannel;
+
+    delete params.signalingChannel;
+    delete that.signalingChannel;
+
     /**
      * @memberof! respoke.Call
      * @name videoLocalElement
@@ -297,6 +316,39 @@ respoke.Call = function (params) {
         if (defModify === undefined && directConnectionOnly === true) {
             actuallyAddDirectConnection(params);
         }
+
+        /* Must make sure that the deferred init and the call has been answered before calling this code */
+        Q.all([defInit.promise, defAnswered.promise]).spread(function initializedAndAnswerCalled(init, params) {
+            /**
+             * saveParameters will only be meaningful for the non-initiate,
+             * since the library calls this method for the initiate. Developers will use this method to pass in
+             * callbacks for the non-initiate.
+             */
+            saveParameters(params);
+
+            pc.listen('connect', onRemoteStreamAdded, true);
+            pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
+
+            /**
+             * @event respoke.Call#answer
+             * @property {string} name - the event name.
+             * @property {respoke.Call} target
+             */
+            that.fire('answer');
+
+            /**
+             * There are a few situations in which we need to call approve automatically. Approve is for previewing
+             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
+             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
+             * previewLocalMedia callback to call, we will not wait for approval.
+             */
+            if (receiveOnly !== true && directConnectionOnly === null) {
+                doAddVideo(params);
+            } else if (typeof previewLocalMedia !== 'function') {
+                that.approve();
+            }
+
+        }).done();
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
@@ -471,36 +523,8 @@ respoke.Call = function (params) {
         if (!defAnswered.promise.isPending()) {
             return;
         }
-        defAnswered.resolve();
 
-        /**
-         * saveParameters will only be meaningful for the non-initiate,
-         * since the library calls this method for the initiate. Developers will use this method to pass in
-         * callbacks for the non-initiate.
-         */
-        saveParameters(params);
-
-        pc.listen('connect', onRemoteStreamAdded, true);
-        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
-
-        /**
-         * @event respoke.Call#answer
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         */
-        that.fire('answer');
-
-        /**
-         * There are a few situations in which we need to call approve automatically. Approve is for previewing
-         * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-         * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-         * previewLocalMedia callback to call, we will not wait for approval.
-         */
-        if (receiveOnly !== true && directConnectionOnly === null) {
-            doAddVideo(params);
-        } else if (typeof previewLocalMedia !== 'function') {
-            that.approve();
-        }
+        defAnswered.resolve(params);
     };
 
     /**
@@ -1411,10 +1435,14 @@ respoke.Call = function (params) {
         });
     }, true);
 
-    setTimeout(function initTimeout() {
+    signalingChannel.getTurnCredentials().done(function(creds) {
+        callSettings.servers = client.callSettings.servers;
+        callSettings.servers.iceServers = creds;
         saveParameters(params);
         init();
-    }, 0);
+        defInit.resolve();
+    });
+
     return that;
 }; // End respoke.Call
 
