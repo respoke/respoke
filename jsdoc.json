@@ -1,0 +1,12 @@
+{
+    "source": {
+        "include": [
+            "respoke.js",
+            "respoke/"
+        ]
+    },
+    "opts": {
+        "encoding": "utf8",
+        "recurse": true
+    }
+}
