@@ -79,6 +79,8 @@ describe("Respoke groups", function () {
 
     describe("when an endpoint logs in", function () {
         var groupId = respoke.makeGUID();
+        var followerGroup;
+        var followeeGroup;
 
         it("there are no groups by default", function () {
             var groups = follower.getGroups();
@@ -87,26 +89,24 @@ describe("Respoke groups", function () {
         });
 
         describe("and joins a group", function () {
-            var group;
-
             beforeEach(function (done) {
                 follower.join({id: groupId}).done(function(theGroup) {
-                    group = theGroup;
+                    followerGroup = theGroup;
                     done();
                 }, done);
             });
 
             it("the group is given back", function () {
-                expect(group).not.to.be.undefined;
-                expect(group).to.be.an.Object;
+                expect(followerGroup).not.to.be.undefined;
+                expect(followerGroup).to.be.an.Object;
             });
 
             it("the group has the right id", function () {
-                expect(group.id).to.equal(groupId);
+                expect(followerGroup.id).to.equal(groupId);
             });
 
             it("the only member of the group is the me", function (done) {
-                group.getMembers().done(function (members) {
+                followerGroup.getMembers().done(function (members) {
                     expect(members).to.be.an.Array;
                     expect(members.length).to.equal(1);
                     expect(members[0].endpointId).to.equal(follower.endpointId);
@@ -114,11 +114,13 @@ describe("Respoke groups", function () {
                     done();
                 }, done);
             });
+
+            it("isJoined() returns true", function () {
+                expect(followerGroup.isJoined()).to.be.true;
+            });
         });
 
         describe("when a second endpoint logs in", function () {
-            var group;
-
             it("there are no groups by default", function () {
                 var groups = followee.getGroups();
                 expect(groups).to.be.an.Array;
@@ -127,27 +129,29 @@ describe("Respoke groups", function () {
 
             describe("and joins the same group", function () {
                 var joinSpy = sinon.spy();
-                var followerGroup;
 
                 beforeEach(function (done) {
                     followerGroup = follower.getGroups()[0];
                     followerGroup.listen('join', joinSpy);
                     followee.join({id: groupId}).done(function(theGroup) {
-                        group = theGroup;
-                        done();
+                        followeeGroup = theGroup;
+                        setTimeout(done, 50); // network traversal
                     }, done);
                 });
 
                 it("the group is given back", function () {
-                    expect(group).not.to.be.undefined;
-                    expect(group).to.be.an.Object;
+                    expect(followeeGroup.isJoined()).to.be.true;
+                    expect(followeeGroup).not.to.be.undefined;
+                    expect(followeeGroup).to.be.an.Object;
                 });
 
                 it("the group has the right id", function () {
-                    expect(group.id).to.equal(groupId);
+                    expect(followeeGroup.isJoined()).to.be.true;
+                    expect(followeeGroup.id).to.equal(groupId);
                 });
 
                 it("the only members of the group are both users", function (done) {
+                    expect(followeeGroup.isJoined()).to.be.true;
                     followerGroup.getMembers().done(function (members) {
                         expect(members).to.be.an.Array;
                         expect(members.length).to.equal(2);
@@ -159,11 +163,12 @@ describe("Respoke groups", function () {
                 });
 
                 it("the Group#join event is fired", function () {
+                    expect(followeeGroup.isJoined()).to.be.true;
                     expect(joinSpy.called).to.be.ok;
                 });
 
                 afterEach(function (done) {
-                    group.leave().done(function() {
+                    followeeGroup.leave().done(function() {
                         done();
                     }, done);
                 });
@@ -172,21 +177,20 @@ describe("Respoke groups", function () {
             describe("when the second endpoint leaves the group", function () {
                 var leaveSpy = sinon.spy();
                 var invalidSpy = sinon.spy();
-                var followerGroup;
 
                 beforeEach(function (done) {
                     followerGroup = follower.getGroups()[0];
                     followerGroup.listen('leave', leaveSpy);
                     followee.join({id: groupId}).then(function (theGroup) {
-                        group = theGroup;
-                        return group.leave();
+                        followeeGroup = theGroup;
+                        return followeeGroup.leave();
                     }).done(function() {
-                        done();
+                        setTimeout(done, 50); // network traversal
                     }, done);
                 });
 
                 it("group.getMembers() returns an error", function (done) {
-                    group.getMembers().done(function (members) {
+                    followeeGroup.getMembers().done(function (members) {
                         done(new Error("A group we're not a member of should error when getMembers() is called."));
                     }, function (err) {
                         expect(err).to.be.an.Error;
@@ -207,9 +211,13 @@ describe("Respoke groups", function () {
                     }, done);
                 });
 
+                it("isJoined() returns false", function () {
+                    expect(followeeGroup.isJoined()).to.be.false;
+                });
+
                 describe("when the first endpoint leaves the group", function () {
                     beforeEach(function (done) {
-                        group.listen('leave', invalidSpy);
+                        followeeGroup.listen('leave', invalidSpy);
                         followerGroup.leave().done(function() {
                             done();
                         }, done);
@@ -226,6 +234,16 @@ describe("Respoke groups", function () {
 
                     it("the second endpoint's Group#leave event is not fired", function () {
                         expect(invalidSpy.called).not.to.be.ok;
+                    });
+
+                    it("isJoined() returns false", function () {
+                        expect(followerGroup.isJoined()).to.be.false;
+                    });
+
+                    afterEach(function (done) {
+                        followerGroup.join({id: groupId}).done(function() {
+                            done();
+                        }, done);
                     });
                 });
             });

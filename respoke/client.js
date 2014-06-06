@@ -784,10 +784,14 @@ respoke.Client = function (params) {
             if (!group) {
                 group = respoke.Group(params);
                 addGroup(group);
-                group.listen('leave', function leaveHandler(evt) {
-                    checkEndpointForRemoval(evt.connection.getEndpoint());
-                });
             }
+            group.addMember({
+                connection: that.getConnection({
+                    endpointId: that.endpointId,
+                    connectionId: that.connectionId
+                })
+            });
+
             /**
              * This event is fired every time the client joins a group. If the client leaves
              * a group, this event will be fired again on the next time the client joins the group.
@@ -814,24 +818,15 @@ respoke.Client = function (params) {
      * @private
      */
     function addGroup(newGroup) {
-        var group;
         if (!newGroup || newGroup.className !== 'respoke.Group') {
             throw new Error("Can't add group to internal tracking without a group.");
         }
-        groups.every(function eachGroup(grp) {
-            if (grp.id === newGroup.id) {
-                group = grp;
-                return false;
-            }
-            return true;
-        });
 
-        if (!group) {
-            newGroup.listen('leave', function leaveHandler(evt) {
-                checkEndpointForRemoval(evt.connection.getEndpoint());
-            }, true);
-            groups.push(newGroup);
-        }
+        newGroup.listen('leave', function leaveHandler(evt) {
+            newGroup.removeMember({connectionId: evt.connection.id});
+            checkEndpointForRemoval(evt.connection.getEndpoint());
+        }, true);
+        groups.push(newGroup);
     }
 
     /**
@@ -939,7 +934,6 @@ respoke.Client = function (params) {
         var endpoint;
         if (!params || !params.id) {
             var err = new Error("Can't get an endpoint without endpoint id.");
-            console.log(err.message, err.stack);
             throw err;
         }
 
