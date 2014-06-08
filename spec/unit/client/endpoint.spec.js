@@ -172,6 +172,37 @@ describe("A respoke.Endpoint", function () {
                         });
                     };
                 };
+                describe("with custom resolve presence logic", function () {
+
+                    var customPresence1 = {'myRealPresence': 'not ready'};
+                    var customPresence2 = {'myRealPresence': 'not ready'};
+                    describe("that returns valid presence", function () {
+                        it("endpoint.presence equals expected presence", function () {
+                            var expectedPresence = {'myRealPresence': 'ready'};
+                            endpoint.connections = [{presence: customPresence1}, {presence: expectedPresence}, {presence: customPresence2}];
+                            endpoint.resolvePresenceLogic = function (presenceList) {
+                                expect(presenceList.length).to.equal(3);
+                                expect(presenceList.indexOf(customPresence1)).to.not.equal(-1);
+                                expect(presenceList.indexOf(customPresence2)).to.not.equal(-1);
+                                expect(presenceList.indexOf(expectedPresence)).to.not.equal(-1);
+                                return expectedPresence;
+                            };
+                            endpoint.resolvePresence();
+                            expect(endpoint.presence).to.equal(expectedPresence);
+                        });
+                    });
+                    describe("that returns invalid presence", function () {
+                        it("endpoint.presence equals expected presence", function () {
+                            var expectedPresence = 'available';
+                            endpoint.connections = [{presence: customPresence1}, {presence: expectedPresence}, {presence: customPresence2}];
+                            endpoint.resolvePresenceLogic = function (presenceList) {
+                                return 'not available';
+                            };
+                            endpoint.resolvePresence();
+                            expect(endpoint.presence).to.equal(expectedPresence);
+                        });
+                    });
+                });
             });
         });
 

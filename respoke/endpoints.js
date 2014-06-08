@@ -126,6 +126,7 @@ respoke.Presentable = function (params) {
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
+ * @param {function} [params.resolvePresenceLogic] An optional function for resolving presence for an endpoint.
  * @returns {respoke.Endpoint}
  */
 respoke.Endpoint = function (params) {
@@ -185,6 +186,13 @@ respoke.Endpoint = function (params) {
     client.listen('disconnect', function disconnectHandler() {
         that.connections = [];
     });
+
+    /**
+     * @memberof! respoke.Endpoint
+     * @name resolvePresenceLogic
+     * @type {function}
+     */
+    that.resolovePresenceLogic = params.resolvePresenceLogic;
 
     /**
      * Send a message to the endpoint through the infrastructure.
@@ -592,29 +600,44 @@ respoke.Endpoint = function (params) {
      * @private
      */
     that.resolvePresence = function () {
-        var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
-        var idList;
 
-        /*
-         * Sort the connections array by the priority of the value of the presence of that
-         * connectionId. This will cause the first element in the list to be the id of the
-         * session with the highest priority presence so we can access it by the 0 index.
-         * TODO: If we don't really care about the sorting and only about the highest priority
-         * we could use Array.prototype.every to improve this algorithm.
-         */
-        idList = that.connections.sort(function sorter(a, b) {
-            var indexA = options.indexOf(a.presence);
-            var indexB = options.indexOf(b.presence);
-            // Move it to the end of the list if it isn't one of our accepted presence values
-            indexA = indexA === -1 ? 1000 : indexA;
-            indexB = indexB === -1 ? 1000 : indexB;
-            return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
+        var presenceList = that.connections.map(function (connection) {
+            return connection.presence;
         });
 
-        if (idList[0]) {
-            that.presence = idList[0].presence;
+        var resolvedPresence;
+
+        if (that.resolvePresenceLogic) {
+            resolvedPresence = that.resolvePresenceLogic(presenceList);
+        }
+
+        if (resolvedPresence && presenceList.indexOf(resolvedPresence) !== -1) {
+            that.presence = resolvedPresence;
         } else {
-            that.presence = 'unavailable';
+            var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
+            var idList;
+
+            /*
+             * Sort the connections array by the priority of the value of the presence of that
+             * connectionId. This will cause the first element in the list to be the id of the
+             * session with the highest priority presence so we can access it by the 0 index.
+             * TODO: If we don't really care about the sorting and only about the highest priority
+             * we could use Array.prototype.every to improve this algorithm.
+             */
+            idList = that.connections.sort(function sorter(a, b) {
+                var indexA = options.indexOf(a.presence);
+                var indexB = options.indexOf(b.presence);
+                // Move it to the end of the list if it isn't one of our accepted presence values
+                indexA = indexA === -1 ? 1000 : indexA;
+                indexB = indexB === -1 ? 1000 : indexB;
+                return indexA < indexB ? -1 : (indexB < indexA ? 1 : 0);
+            });
+
+            if (idList[0]) {
+                that.presence = idList[0].presence;
+            } else {
+                that.presence = 'unavailable';
+            }
         }
     };
 
