@@ -192,7 +192,7 @@ respoke.Endpoint = function (params) {
      * @name resolvePresenceLogic
      * @type {function}
      */
-    that.resolovePresenceLogic = params.resolvePresenceLogic;
+    that.resolvePresenceLogic = params.resolvePresenceLogic;
 
     /**
      * Send a message to the endpoint through the infrastructure.
