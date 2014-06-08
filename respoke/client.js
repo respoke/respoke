@@ -426,7 +426,7 @@ respoke.Client = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.setPresence
      * @param {object} params
-     * @param {string} params.presence
+     * @param {string|number|object|Array} params.presence
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -575,7 +575,7 @@ respoke.Client = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.setOnline
      * @param {object} params
-     * @param {string} [params.presence] - The presence to set.
+     * @param {string|number|object|Array} [params.presence=available] - The presence to set.
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this

@@ -40,7 +40,7 @@ respoke.Presentable = function (params) {
     /**
      * @memberof! respoke.Presentable
      * @name presence
-     * @type {string}
+     * @type {string|number|object|Array}
      */
     that.presence = 'unavailable';
 
@@ -57,7 +57,7 @@ respoke.Presentable = function (params) {
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.setPresence
      * @param {object} params
-     * @param {string} params.presence
+     * @param {string|number|object|Array} [params.presence=available]
      * @param {string} params.connectionId
      * @fires respoke.Presentable#presence
      * @private
@@ -92,7 +92,7 @@ respoke.Presentable = function (params) {
          * This event indicates that the presence for this endpoint has been updated.
          * @event respoke.Presentable#presence
          * @type {respoke.Event}
-         * @property {string} presence
+         * @property {string|number|object|Array} presence
          * @property {string} name - the event name.
          * @property {respoke.Presentable} target
          */
@@ -105,7 +105,7 @@ respoke.Presentable = function (params) {
      * Get the presence.
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.getPresence
-     * @returns {string} A string representing the current presence of this endpoint.
+     * @returns {string|number|object|Array} the current presence of this endpoint.
      */
     that.getPresence = function () {
         return that.presence;
@@ -666,7 +666,7 @@ respoke.Endpoint = function (params) {
  * respoke.Endpoint#message fires.
  * @callback respoke.Endpoint.onPresence
  * @param {respoke.Event} evt
- * @param {respoke.string} evt.presence - the Endpoint's presence
+ * @param {string|number|object|Array} evt.presence - the Endpoint's presence
  * @param {respoke.Endpoint} evt.target
  * @param {string} evt.name - the event name
  */
