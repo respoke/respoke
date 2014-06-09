@@ -86,11 +86,12 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON('package.json'),
 
         stratos: {
-            startServer: false,
+            //startServer: false,
             //nodeServer: '../app.js',
             //nodeServerPort: 8081,
             liftSails: true,
-            sailsDir: '../../../collective'
+            sailsDir: '../../../collective/',
+            sailsPort: 2001
         },
         mochaTest: {
             unit: {
@@ -119,6 +120,10 @@ module.exports = function(grunt) {
             devMin: {
                 singleRun: true,
                 configFile: './karma-lib-min.conf.js'
+            },
+            functional: {
+                singleRun: true,
+                configFile: './karma-lib-functional.conf.js'
             }
         }
     });
@@ -130,25 +135,29 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-aws-s3');
 
     grunt.task.registerTask('s3', ['aws_s3']);
-    grunt.task.registerTask('dist', ['uglify:respoke', 'uglify:respoke-stats']);
-    grunt.task.registerTask('combine', ['uglify:respoke-beautify', 'uglify:respoke-beautify-stats']);
+    grunt.task.registerTask('dist', [
+        'uglify:respoke',
+        'uglify:respoke-stats'
+    ]);
+    grunt.task.registerTask('combine', [
+        'uglify:respoke-beautify',
+        'uglify:respoke-beautify-stats'
+    ]);
 
     grunt.registerTask('default', 'karma:devOrig');
-    grunt.registerTask('unit:client', 'Run client Unit tests', ['karma:devOrig', 'karma:devMin']);
-
-    grunt.registerTask('unit', 'Run unit specs on bamboo', [
+    grunt.registerTask('unit', 'Run unit specs', [
         'dist',
         'karma:devOrig',
         'karma:devMin'
     ]);
 
-    /*grunt.registerTask('start-server', 'Start a node server.', function() {
-        grunt.log.writeln('Starting node server...');
-        var done = this.async();
-        process.env['SERVER_PORT'] = grunt.config('stratos.nodeServerPort');
-        require(process.cwd() + '/' + grunt.config('stratos.nodeServer'));
-        setTimeout(function () {
-            done();
-        }, 3000);
-    });*/
+    grunt.registerTask('functional', 'Run client-side functional tests', [
+        'liftSails',
+        'karma:functional'
+    ]);
+
+    grunt.registerTask('ci', 'Run all tests', [
+        'unit',
+        'functional'
+    ]);
 };

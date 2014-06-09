@@ -7,14 +7,12 @@ if [ "$JSHINT_OUTPUT" != "" ]; then
 	exit 1
 fi
 
-# library minification
-grunt combine
-grunt dist
+grunt ci
 
 # Upgrade the pre-commit hook.
-if [ -d '.git/hooks/pre-commit' ]; then
+if [ -d '.git/hooks/' ]; then
     cp githooks/pre-commit .git/hooks/pre-commit
 fi
-if [ -d '../../.git/modules/javascript/transporter/hooks/pre-commit' ]; then
+if [ -d '../../.git/modules/javascript/transporter/hooks/' ]; then
     cp githooks/pre-commit ../../.git/modules/javascript/transporter/hooks/pre-commit
 fi

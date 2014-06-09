@@ -1457,7 +1457,7 @@ respoke.SignalingChannel = function (params) {
         });
 
         return deferred.promise;
-    }
+    };
 
     /**
      * Construct a websocket API call and return the formatted response and errors. The 'success'
