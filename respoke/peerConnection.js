@@ -327,6 +327,9 @@ respoke.PeerConnection = function (params) {
         }
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
+        //set flags for audio / video being offered
+        that.call.hasAudio = hasAudio(oOffer.sdp);
+        that.call.hasVideo = hasVideo(oOffer.sdp);
 
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
@@ -753,6 +756,30 @@ respoke.PeerConnection = function (params) {
     };
 
     /**
+     * Indicate whether sdp has Audio element
+     * @memberof! brightstream.PeerConnection
+     * @method brightstream.PeerConnection.hasAudio
+     * @param {sdp}
+     * @returns {boolean}
+     * @private
+     */
+    function hasAudio(sdp) {
+        return sdp.indexOf('m=audio') !== -1;
+    }
+
+    /**
+     * Indicate whether sdp has Video element
+     * @memberof! brightstream.PeerConnection
+     * @method brightstream.PeerConnection.hasVideo
+     * @param {sdp}
+     * @returns {boolean}
+     * @private
+     */
+    function hasVideo(sdp) {
+        return sdp.indexOf('m=video') !== -1;
+    }
+
+    /**
      * Save the answer and tell the browser about it.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.listenAnswer
@@ -775,6 +802,9 @@ respoke.PeerConnection = function (params) {
 
         that.report.sdpsReceived.push(evt.signal.sdp);
         that.report.lastSDPString = evt.signal.sdp.sdp;
+        //set flags for audio / video for answer
+        that.call.hasAudio = hasAudio(evt.signal.sdp.sdp);
+        that.call.hasVideo = hasVideo(evt.signal.sdp.sdp);
         if (that.call.initiator) {
             that.report.calleeconnection = evt.signal.connectionId;
         }
