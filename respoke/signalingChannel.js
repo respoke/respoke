@@ -1469,6 +1469,11 @@ respoke.SignalingChannel = function (params) {
     function wsCall(params) {
         params = params || {};
         var deferred = Q.defer();
+        var requestTimer = setTimeout(function () {
+            log.error('request timeout');
+            socket.disconnect();
+            deferred.reject(new Error("Request timeout. Disconnecting."));
+        }, 10 * 1000);
 
         if (!params) {
             deferred.reject(new Error('No params.'));
@@ -1501,6 +1506,7 @@ respoke.SignalingChannel = function (params) {
             data: params.parameters,
             headers: {'App-Token': appToken}
         }), function handleResponse(response) {
+            clearTimeout(requestTimer);
             // Too many of these!
             if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
                 log.verbose('socket response', params.httpMethod, params.path, response);
@@ -1509,7 +1515,7 @@ respoke.SignalingChannel = function (params) {
             try {
                 response = JSON.parse(response);
             } catch (e) {
-                throw new Error("Server response could not be parsed!", response);
+                deferred.reject(new Error("Server response could not be parsed!"));
             }
 
             if (response && response.error) {

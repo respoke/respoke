@@ -46,21 +46,21 @@ describe("Respoke messaging", function () {
     var messagesFolloweeReceived = [];
     var messagesFollowerSent = [];
     var messagesFolloweeSent = [];
+    var appId;
+    var permissionsId;
 
     function followerListener(evt) {
-        expect(evt.target.id).to.equal(follower.endpointId);
         messagesFolloweeReceived.push(evt.message.message);
     }
 
     function followeeListener(evt) {
-        expect(evt.target.id).to.equal(followee.endpointId);
         messagesFollowerReceived.push(evt.message.message);
     }
 
-    function sendTenGroupMessagesEach(done) {
+    function sendFiveGroupMessagesEach(done) {
         var message;
         var promises = [];
-        for (var i = 1; i <= 10; i += 1) {
+        for (var i = 1; i <= 5; i += 1) {
             message = {
                 message: respoke.makeGUID()
             };
@@ -70,17 +70,17 @@ describe("Respoke messaging", function () {
 
             promises.push(followeeGroup.sendMessage(message));
             messagesFollowerSent.push(message.message);
-
-            Q.all(promises).done(function () {
-                done();
-            }, done);
         }
+
+        Q.all(promises).done(function () {
+            done();
+        }, done);
     }
 
-    function sendTenMessagesEach(done) {
+    function sendFiveMessagesEach(done) {
         var message;
         var promises = [];
-        for (var i = 1; i <= 10; i += 1) {
+        for (var i = 1; i <= 5; i += 1) {
             message = {
                 message: respoke.makeGUID()
             };
@@ -90,11 +90,11 @@ describe("Respoke messaging", function () {
 
             promises.push(followeeEndpoint.sendMessage(message));
             messagesFollowerSent.push(message.message);
-
-            Q.all(promises).done(function () {
-                done();
-            }, done);
         }
+
+        Q.all(promises).done(function () {
+            done();
+        }, done);
     }
 
     function checkMessages(done) {
@@ -138,6 +138,8 @@ describe("Respoke messaging", function () {
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
         }).then(function (params) {
             // create 2 tokens
+            permissionsId = params.permissions.id;
+            appId = params.app.id;
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                 permissionsId: params.permissions.id,
                 appId: params.app.id
@@ -181,7 +183,7 @@ describe("Respoke messaging", function () {
 
         describe("point-to-point messaging", function () {
             it("all messages are received correctly", function (done) {
-                sendTenMessagesEach(function () {
+                sendFiveMessagesEach(function () {
                     setTimeout(function () {
                         checkMessages(done);
                     }, 50);
@@ -211,7 +213,7 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendTenMessagesEach(function () {
+                sendFiveMessagesEach(function () {
                     setTimeout(function () {
                         checkMessages(done);
                     }, 50);
@@ -231,7 +233,11 @@ describe("Respoke messaging", function () {
             });
 
             it("all group messages are received correctly", function (done) {
-                done();
+                sendFiveGroupMessagesEach(function () {
+                    setTimeout(function () {
+                        checkMessages(done);
+                    }, 50);
+                });
             });
 
             afterEach(function () {
@@ -264,7 +270,7 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendTenMessagesEach(function () {
+                sendFiveMessagesEach(function () {
                     setTimeout(function () {
                         checkMessages(done);
                     }, 50);
@@ -283,8 +289,17 @@ describe("Respoke messaging", function () {
                 followerGroup.listen('message', followeeListener);
             });
 
-            it("no group messages are received correctly", function (done) {
-                done();
+            it("no group messages are received", function (done) {
+                sendFiveGroupMessagesEach(function () {
+                    setTimeout(function () {
+                        checkMessages(function (err) {
+                            expect(err).to.be.defined;
+                            expect(err).to.be.an.Object;
+                            expect(err.message).to.be.defined;
+                            done();
+                        });
+                    }, 50);
+                });
             });
 
             afterEach(function () {
@@ -300,6 +315,104 @@ describe("Respoke messaging", function () {
         });
     });
 
+    describe("when both endpoints are disconnected", function () {
+        beforeEach(function (done) {
+            Q.all([follower.join({id: groupId}), followee.join({id: groupId})]).spread(function (group1, group2) {
+                followerGroup = group1;
+                followeeGroup = group2;
+                return [follower.disconnect(), followee.disconnect()];
+            }).done(function () {
+                done();
+            }, done);
+        });
+
+        describe("point-to-point messaging", function () {
+            beforeEach(function () {
+                followerEndpoint.listen('message', followerListener);
+                followeeEndpoint.listen('message', followeeListener);
+            });
+
+            it("no messages are received", function (done) { // dependant upon socket.io timeout
+                sendFiveMessagesEach(function () {
+                    setTimeout(function () {
+                        checkMessages(function (err) {
+                            expect(err).to.be.defined;
+                            expect(err.stack).to.be.undefined;
+                            expect(err).to.be.an.Object;
+                            expect(err.message).to.be.defined;
+                            done();
+                        });
+                    }, 16 * 1000);
+                });
+            });
+
+            afterEach(function (done) {
+                followerEndpoint.ignore('message', followerListener);
+                followeeEndpoint.ignore('message', followeeListener);
+            });
+        });
+
+        describe("group messaging", function () {
+            beforeEach(function () {
+                followeeGroup.listen('message', followerListener);
+                followerGroup.listen('message', followeeListener);
+            });
+
+            it("no group messages are received", function (done) { // dependant upon socket.io timeout
+                sendFiveGroupMessagesEach(function () {
+                    setTimeout(function () {
+                        checkMessages(function (err) {
+                            expect(err).to.be.defined;
+                            expect(err).to.be.an.Object;
+                            expect(err.message).to.be.defined;
+                            done();
+                        });
+                    }, 50);
+                });
+            });
+
+            afterEach(function () {
+                followeeGroup.ignore('message', followerListener);
+                followerGroup.ignore('message', followeeListener);
+            });
+        });
+/*
+        afterEach(function (done) {
+            Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                permissionsId: permissionsId,
+                appId: appId
+            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                permissionsId: permissionsId,
+                appId: appId
+            })]).spread(function (token1, token2) {
+                testEnv.tokens.push(token1);
+                testEnv.tokens.push(token2);
+
+                follower = respoke.createClient();
+                followee = respoke.createClient();
+
+                return Q.all([follower.connect({
+                    appId: Object.keys(testEnv.allApps)[0],
+                    baseURL: respokeTestConfig.baseURL,
+                    token: testEnv.tokens[0].tokenId
+                }), followee.connect({
+                    appId: Object.keys(testEnv.allApps)[0],
+                    baseURL: respokeTestConfig.baseURL,
+                    token: testEnv.tokens[1].tokenId
+                })]);
+            }).then(function () {
+                expect(follower.endpointId).not.to.be.undefined;
+                expect(follower.endpointId).to.equal(testEnv.tokens[0].endpointId);
+                expect(followee.endpointId).not.to.be.undefined;
+                expect(followee.endpointId).to.equal(testEnv.tokens[1].endpointId);
+            }).done(function () {
+                followerEndpoint = followee.getEndpoint({id: follower.endpointId});
+                followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
+                done();
+            }, done);
+        });
+*/
+    });
     afterEach(function () {
         messagesFollowerReceived = [];
         messagesFolloweeReceived = [];
