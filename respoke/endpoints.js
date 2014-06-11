@@ -71,7 +71,7 @@ respoke.Presentable = function (params) {
         if (that.className === 'respoke.Client' || that.className === 'respoke.Connection') {
             that.presence = params.presence;
             if (that.className === 'respoke.Connection') {
-                that.getEndpoint().resolvePresence();
+                that.getEndpoint().doResolvePresence();
             }
         } else if (that.className === 'respoke.Endpoint') {
             if (!params.connectionId) {
@@ -85,7 +85,7 @@ respoke.Presentable = function (params) {
             });
 
             connection.presence = params.presence;
-            that.resolvePresence();
+            that.doResolvePresence();
         }
 
         /**
@@ -126,7 +126,7 @@ respoke.Presentable = function (params) {
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
- * @param {function} [params.resolvePresenceLogic] An optional function for resolving presence for an endpoint.
+ * @param {respoke.client.resolvePresence} [params.resolvePresence] An optional function for resolving presence for an endpoint.
  * @returns {respoke.Endpoint}
  */
 respoke.Endpoint = function (params) {
@@ -187,12 +187,8 @@ respoke.Endpoint = function (params) {
         that.connections = [];
     });
 
-    /**
-     * @memberof! respoke.Endpoint
-     * @name resolvePresenceLogic
-     * @type {function}
-     */
-    that.resolvePresenceLogic = params.resolvePresenceLogic;
+
+    that.resolvePresence = params.resolvePresence;
 
     /**
      * Send a message to the endpoint through the infrastructure.
@@ -596,23 +592,17 @@ respoke.Endpoint = function (params) {
      * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
      * @memberof! respoke.Endpoint
-     * @method respoke.Endpoint.resolvePresence
+     * @method respoke.Endpoint.doResolvePresence
      * @private
      */
-    that.resolvePresence = function () {
+    that.doResolvePresence = function () {
 
         var presenceList = that.connections.map(function (connection) {
             return connection.presence;
         });
 
-        var resolvedPresence;
-
-        if (that.resolvePresenceLogic) {
-            resolvedPresence = that.resolvePresenceLogic(presenceList);
-        }
-
-        if (resolvedPresence && presenceList.indexOf(resolvedPresence) !== -1) {
-            that.presence = resolvedPresence;
+        if (that.resolvePresence !== undefined) {
+            that.presence = that.resolvePresence(presenceList);
         } else {
             var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
             var idList;
@@ -692,6 +682,12 @@ respoke.Endpoint = function (params) {
  * @param {string|number|object|Array} evt.presence - the Endpoint's presence
  * @param {respoke.Endpoint} evt.target
  * @param {string} evt.name - the event name
+ */
+ /**
+ * Handle resolving presence for this endpoint
+ * @callback respoke.Client.resolvePresence
+ * @param {Array<object>} connectionPresence
+ * @returns {object|string|number}
  */
 
 /**

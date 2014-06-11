@@ -223,6 +223,7 @@ respoke.Client = function (params) {
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
+     * @param {function} [params.resolvePresence] An optional function for resolving presence for an endpoint.
      * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
      * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
      * operation and will limit the services you will be able to use.
@@ -255,7 +256,6 @@ respoke.Client = function (params) {
             }
         });
         that.endpointId = clientSettings.endpointId;
-
         promise = actuallyConnect(params);
         retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
         promise.then(function successHandler() {
@@ -305,7 +305,6 @@ respoke.Client = function (params) {
             deferred.reject(new Error(err.message));
         }).done(function successHandler() {
             that.connected = true;
-
             // set initial presence for the connection
             if (clientSettings.presence) {
                 that.setPresence({presence: clientSettings.presence});
@@ -979,6 +978,8 @@ respoke.Client = function (params) {
         if (!endpoint && params && !params.skipCreate) {
             params.instanceId = instanceId;
             params.signalingChannel = signalingChannel;
+            params.resolvePresence = clientSettings.resolvePresence;
+
             endpoint = respoke.Endpoint(params);
             signalingChannel.registerPresence({
                 endpointList: [endpoint.id]

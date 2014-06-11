@@ -174,6 +174,40 @@ describe("Respoke presence", function () {
                 });
             });
 
+            describe("resolvePresence", function () {
+                var presence = respoke.makeGUID();
+                var client1 = respoke.createClient();
+                var client2 = respoke.createClient();
+                var endpont2;
+
+                beforeEach(function (done) {
+
+                    client1.connect({
+                        appId: Object.keys(testEnv.allApps)[0],
+                        baseURL: respokeTestConfig.baseURL,
+                        token: testEnv.tokens[0].tokenId,
+                        resolvePresence: function (presenceList) {
+                            return presence;
+                        }
+                    }).then(function () {
+                        client2.connect({
+                            appId: Object.keys(testEnv.allApps)[0],
+                            baseURL: respokeTestConfig.baseURL,
+                            token: testEnv.tokens[1].tokenId
+                        }).done(function () {
+                            endpoint2 = client1.getEndpoint({id: testEnv.tokens[1].endpointId});
+                            client2.setPresence({presence: 'nacho presence2'}).done(function () {
+                                setTimeout(done, 100);
+                            }, done);
+                        });
+                    });
+                });
+
+                it("and presence is resolved", function () {
+                    expect(endpoint2.presence).to.equal(presence);
+                });
+            });
+
             describe("a presence callback", function () {
                 var presenceListener = sinon.spy();
                 var presence = respoke.makeGUID();
