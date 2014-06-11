@@ -174,7 +174,7 @@ describe("Respoke presence", function () {
                 });
             });
 
-            describe("resolvePresence", function () {
+            describe("resolveEndpointPresence", function () {
                 var presence = respoke.makeGUID();
                 var client1 = respoke.createClient();
                 var client2 = respoke.createClient();
@@ -186,7 +186,7 @@ describe("Respoke presence", function () {
                         appId: Object.keys(testEnv.allApps)[0],
                         baseURL: respokeTestConfig.baseURL,
                         token: testEnv.tokens[0].tokenId,
-                        resolvePresence: function (presenceList) {
+                        resolveEndpointPresence: function (presenceList) {
                             return presence;
                         }
                     }).then(function () {

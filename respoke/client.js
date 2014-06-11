@@ -140,7 +140,8 @@ respoke.Client = function (params) {
         onDisconnect: params.onDisconnect,
         onReconnect: params.onReconnect,
         onCall: params.onCall,
-        onDirectConnection: params.onDirectConnection
+        onDirectConnection: params.onDirectConnection,
+        resolveEndpointPresence: params.resolveEndpointPresence
     };
     delete that.appId;
     delete that.baseURL;
@@ -223,7 +224,7 @@ respoke.Client = function (params) {
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
-     * @param {function} [params.resolvePresence] An optional function for resolving presence for an endpoint.
+     * @param {respoke.client.resolveEndpointPresence} [params.resolveEndpointPresence] An optional function for resolving presence for an endpoint.
      * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
      * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
      * operation and will limit the services you will be able to use.
@@ -978,7 +979,7 @@ respoke.Client = function (params) {
         if (!endpoint && params && !params.skipCreate) {
             params.instanceId = instanceId;
             params.signalingChannel = signalingChannel;
-            params.resolvePresence = clientSettings.resolvePresence;
+            params.resolveEndpointPresence = clientSettings.resolveEndpointPresence;
 
             endpoint = respoke.Endpoint(params);
             signalingChannel.registerPresence({

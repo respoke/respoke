@@ -39,7 +39,7 @@ describe("A respoke.Endpoint", function () {
 
         it("contains some important methods.", function () {
             expect(typeof endpoint.sendMessage).to.equal('function');
-            expect(typeof endpoint.doResolvePresence).to.equal('function');
+            expect(typeof endpoint.resolvePresence).to.equal('function');
             expect(typeof endpoint.startAudioCall).to.equal('function');
             expect(typeof endpoint.startVideoCall).to.equal('function');
             expect(typeof endpoint.startCall).to.equal('function');
@@ -134,13 +134,13 @@ describe("A respoke.Endpoint", function () {
             });
         });
 
-        describe("doResolvePresence()", function () {
+        describe("resolvePresence()", function () {
             describe("when only one connection", function () {
                 ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'].forEach(function (presString) {
                     describe("when presence is set to '" + presString + "'", function () {
                         it("endpoint.presence equals '" + presString + "'", function () {
                             endpoint.connections = [{presence: presString}]
-                            endpoint.doResolvePresence();
+                            endpoint.resolvePresence();
                             expect(endpoint.presence).to.equal(presString);
                         });
                     });
@@ -161,7 +161,7 @@ describe("A respoke.Endpoint", function () {
                         describe("when presence is set to '" + presString1 + "' and '" + presString2 + "'", function (){
                             it("endpoint.presence equals the one that appears first in the array", function () {
                                 endpoint.connections = [{presence: presString1}, {presence: presString2}]
-                                endpoint.doResolvePresence();
+                                endpoint.resolvePresence();
                                 expect(endpoint.presence).to.equal((function () {
                                     if (presenceStrings.indexOf(presString1) > presenceStrings.indexOf(presString2)) {
                                         return presString2;
@@ -172,34 +172,55 @@ describe("A respoke.Endpoint", function () {
                         });
                     };
                 };
-                describe("with custom resolve presence logic", function () {
+                describe("with custom resolve endpoint presence", function () {
 
                     var customPresence1 = {'myRealPresence': 'not ready'};
                     var customPresence2 = {'myRealPresence': 'not ready'};
+
                     describe("that returns valid presence", function () {
                         it("endpoint.presence equals expected presence", function () {
+                            var tempInstanceId = respoke.makeGUID();
+                            var tempConnectionId = respoke.makeGUID();
+                            var tempEndpointId = respoke.makeGUID();
                             var expectedPresence = {'myRealPresence': 'ready'};
-                            endpoint.connections = [{presence: customPresence1}, {presence: expectedPresence}, {presence: customPresence2}];
-                            endpoint.resolvePresence = function (presenceList) {
-                                expect(presenceList.length).to.equal(3);
-                                expect(presenceList.indexOf(customPresence1)).to.not.equal(-1);
-                                expect(presenceList.indexOf(customPresence2)).to.not.equal(-1);
-                                expect(presenceList.indexOf(expectedPresence)).to.not.equal(-1);
-                                return expectedPresence;
-                            };
-                            endpoint.doResolvePresence();
-                            expect(endpoint.presence).to.equal(expectedPresence);
+                            var tempClient = respoke.createClient({
+                                instanceId: tempInstanceId,
+                                resolveEndpointPresence: function (presenceList) {
+                                    expect(presenceList.length).to.equal(3);
+                                    expect(presenceList.indexOf(customPresence1)).to.not.equal(-1);
+                                    expect(presenceList.indexOf(customPresence2)).to.not.equal(-1);
+                                    expect(presenceList.indexOf(expectedPresence)).to.not.equal(-1);
+                                    return expectedPresence;
+                                }
+                            });
+                            var ep = tempClient.getEndpoint({
+                                connectionId: tempConnectionId,
+                                id: tempEndpointId
+                            });
+                            ep.connections = [{presence: customPresence1}, {presence: expectedPresence}, {presence: customPresence2}];
+                            ep.resolvePresence();
+                            expect(ep.presence).to.equal(expectedPresence);
                         });
                     });
                     describe("that returns custom presence", function () {
                         it("endpoint.presence equals expected presence", function () {
+                            var tempInstanceId = respoke.makeGUID();
+                            var tempConnectionId = respoke.makeGUID();
+                            var tempEndpointId = respoke.makeGUID();
                             var expectedPresence = 'always and forever';
-                            endpoint.connections = [{presence: customPresence1}, {presence: 'available'}, {presence: customPresence2}];
-                            endpoint.resolvePresence = function (presenceList) {
-                                return expectedPresence;
-                            };
-                            endpoint.doResolvePresence();
-                            expect(endpoint.presence).to.equal(expectedPresence);
+                            var tempClient = respoke.createClient({
+                                instanceId: tempInstanceId,
+                                resolveEndpointPresence: function (presenceList) {
+                                    return expectedPresence;
+                                }
+                            });
+                            var ep = tempClient.getEndpoint({
+                                connectionId: tempConnectionId,
+                                id: tempEndpointId
+                            });
+                            ep.connections = [{presence: customPresence1}, {presence: 'available'}, {presence: customPresence2}];
+                            ep.resolvePresence();
+                            expect(ep.presence).to.equal(expectedPresence);
                         });
                     });
                 });

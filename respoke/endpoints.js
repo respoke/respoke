@@ -71,7 +71,7 @@ respoke.Presentable = function (params) {
         if (that.className === 'respoke.Client' || that.className === 'respoke.Connection') {
             that.presence = params.presence;
             if (that.className === 'respoke.Connection') {
-                that.getEndpoint().doResolvePresence();
+                that.getEndpoint().resolvePresence();
             }
         } else if (that.className === 'respoke.Endpoint') {
             if (!params.connectionId) {
@@ -85,7 +85,7 @@ respoke.Presentable = function (params) {
             });
 
             connection.presence = params.presence;
-            that.doResolvePresence();
+            that.resolvePresence();
         }
 
         /**
@@ -188,7 +188,7 @@ respoke.Endpoint = function (params) {
     });
 
 
-    that.resolvePresence = params.resolvePresence;
+    var resolveEndpointPresence = params.resolveEndpointPresence;
 
     /**
      * Send a message to the endpoint through the infrastructure.
@@ -592,17 +592,17 @@ respoke.Endpoint = function (params) {
      * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
      * @memberof! respoke.Endpoint
-     * @method respoke.Endpoint.doResolvePresence
+     * @method respoke.Endpoint.resolvePresence
      * @private
      */
-    that.doResolvePresence = function () {
+    that.resolvePresence = function () {
 
         var presenceList = that.connections.map(function (connection) {
             return connection.presence;
         });
 
-        if (that.resolvePresence !== undefined) {
-            that.presence = that.resolvePresence(presenceList);
+        if (resolveEndpointPresence !== undefined) {
+            that.presence = resolveEndpointPresence(presenceList);
         } else {
             var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
             var idList;
@@ -685,7 +685,7 @@ respoke.Endpoint = function (params) {
  */
  /**
  * Handle resolving presence for this endpoint
- * @callback respoke.Client.resolvePresence
+ * @callback respoke.Client.resolveEndpointPresence
  * @param {Array<object>} connectionPresence
  * @returns {object|string|number}
  */
