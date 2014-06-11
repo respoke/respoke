@@ -1435,7 +1435,7 @@ respoke.Call = function (params) {
         });
     }, true);
 
-    signalingChannel.getTurnCredentials().done(function(creds) {
+    signalingChannel.getTurnCredentials().done(function (creds) {
         callSettings.servers = client.callSettings.servers;
         callSettings.servers.iceServers = creds;
         saveParameters(params);

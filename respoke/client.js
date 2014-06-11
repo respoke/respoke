@@ -297,9 +297,6 @@ respoke.Client = function (params) {
             token: clientSettings.token
         }).then(function successHandler() {
             return signalingChannel.authenticate();
-        }, function errorHandler(err) {
-            log.error(err.message);
-            deferred.reject(new Error(err.message));
         }).done(function successHandler() {
             that.connected = true;
 
@@ -328,7 +325,7 @@ respoke.Client = function (params) {
         }, function errorHandler(err) {
             that.connected = false;
             deferred.reject("Couldn't create an endpoint.");
-            log.error(err.message);
+            log.error(err.message, err.stack);
         });
 
         return deferred.promise;
