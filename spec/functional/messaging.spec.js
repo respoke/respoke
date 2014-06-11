@@ -42,6 +42,8 @@ describe("Respoke messaging", function () {
     var followeeEndpoint;
     var followerGroup;
     var followeeGroup;
+    var followerToken;
+    var followeeToken;
     var messagesFollowerReceived = [];
     var messagesFolloweeReceived = [];
     var messagesFollowerSent = [];
@@ -57,11 +59,12 @@ describe("Respoke messaging", function () {
         messagesFollowerReceived.push(evt.message.message);
     }
 
-    function sendFiveGroupMessagesEach(done) {
+    function sendFiveGroupMessagesEach(name) {
         var message;
         var promises = [];
         for (var i = 1; i <= 5; i += 1) {
             message = {
+                name: name,
                 message: respoke.makeGUID()
             };
 
@@ -72,16 +75,15 @@ describe("Respoke messaging", function () {
             messagesFollowerSent.push(message.message);
         }
 
-        Q.all(promises).done(function () {
-            done();
-        }, done);
+        return Q.all(promises);
     }
 
-    function sendFiveMessagesEach(done) {
+    function sendFiveMessagesEach(name) {
         var message;
         var promises = [];
         for (var i = 1; i <= 5; i += 1) {
             message = {
+                name: name,
                 message: respoke.makeGUID()
             };
 
@@ -92,48 +94,54 @@ describe("Respoke messaging", function () {
             messagesFollowerSent.push(message.message);
         }
 
-        Q.all(promises).done(function () {
-            done();
-        }, done);
+        return Q.all(promises);
     }
 
-    function checkMessages(done) {
+    function checkMessages() {
         var foundIndex;
         var i;
+        var deferred = Q.defer();
 
-        for (i = messagesFollowerReceived.length - 1; i >= 0; i -= 1) {
-            messagesFolloweeSent.every(function (item, index) {
-                if (messagesFollowerReceived[i] === item) {
-                    messagesFollowerReceived.splice(i, 1);
-                    messagesFolloweeSent.splice(index, 1);
-                    return false;
-                }
-                return true;
-            });
-        }
+        setTimeout(function check() {
+            for (i = messagesFollowerReceived.length - 1; i >= 0; i -= 1) {
+                messagesFolloweeSent.every(function (item, index) {
+                    if (messagesFollowerReceived[i] === item) {
+                        messagesFollowerReceived.splice(i, 1);
+                        messagesFolloweeSent.splice(index, 1);
+                        return false;
+                    }
+                    return true;
+                });
+            }
 
-        for (i = messagesFolloweeReceived.length - 1; i >= 0; i -= 1) {
-            messagesFollowerSent.every(function (item, index) {
-                if (messagesFolloweeReceived[i] === item) {
-                    messagesFolloweeReceived.splice(i, 1);
-                    messagesFollowerSent.splice(index, 1);
-                    return false;
-                }
-                return true;
-            });
-        }
+            for (i = messagesFolloweeReceived.length - 1; i >= 0; i -= 1) {
+                messagesFollowerSent.every(function (item, index) {
+                    if (messagesFolloweeReceived[i] === item) {
+                        messagesFolloweeReceived.splice(i, 1);
+                        messagesFollowerSent.splice(index, 1);
+                        return false;
+                    }
+                    return true;
+                });
+            }
 
-        expect(messagesFollowerReceived.length).to.equal(0);
-        expect(messagesFolloweeReceived.length).to.equal(0);
-        expect(messagesFollowerSent.length).to.equal(0);
-        expect(messagesFolloweeSent.length).to.equal(0);
-        done();
+            try {
+                expect(messagesFollowerReceived.length).to.equal(0);
+                expect(messagesFolloweeReceived.length).to.equal(0);
+                expect(messagesFollowerSent.length).to.equal(0);
+                expect(messagesFolloweeSent.length).to.equal(0);
+                deferred.resolve();
+            } catch (err) {
+                deferred.reject(err);
+            }
+        }, 500);
+
+        return deferred.promise;
     }
 
     before(function (done) {
         Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
-            testEnv.tokens = [];
 
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
         }).then(function (params) {
@@ -141,15 +149,15 @@ describe("Respoke messaging", function () {
             permissionsId = params.permissions.id;
             appId = params.app.id;
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
-                appId: params.app.id
+                permissionsId: permissionsId,
+                appId: appId
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
-                appId: params.app.id
+                permissionsId: permissionsId,
+                appId: appId
             })];
         }).spread(function (token1, token2) {
-            testEnv.tokens.push(token1);
-            testEnv.tokens.push(token2);
+            followerToken = token1;
+            followeeToken = token2;
 
             follower = respoke.createClient();
             followee = respoke.createClient();
@@ -157,17 +165,17 @@ describe("Respoke messaging", function () {
             return Q.all([follower.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
-                token: testEnv.tokens[0].tokenId
+                token: followerToken.tokenId
             }), followee.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
-                token: testEnv.tokens[1].tokenId
+                token: followeeToken.tokenId
             })]);
         }).then(function () {
             expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(testEnv.tokens[0].endpointId);
+            expect(follower.endpointId).to.equal(followerToken.endpointId);
             expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(testEnv.tokens[1].endpointId);
+            expect(followee.endpointId).to.equal(followeeToken.endpointId);
         }).then(function () {
             followerEndpoint = followee.getEndpoint({id: follower.endpointId});
             followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
@@ -183,11 +191,11 @@ describe("Respoke messaging", function () {
 
         describe("point-to-point messaging", function () {
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(done);
-                    }, 50);
-                });
+                sendFiveMessagesEach('1')
+                    .then(checkMessages)
+                    .done(function successHandler() {
+                        done();
+                    }, done);
             });
         });
 
@@ -203,7 +211,7 @@ describe("Respoke messaging", function () {
                 followerGroup = group1;
                 followeeGroup = group2;
                 done();
-            }, done);
+            }, done).done();
         });
 
         describe("point-to-point messaging", function () {
@@ -213,11 +221,11 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(done);
-                    }, 50);
-                });
+                sendFiveMessagesEach('2')
+                    .then(checkMessages)
+                    .done(function successHandler() {
+                        done();
+                    }, done);
             });
 
             afterEach(function () {
@@ -233,11 +241,11 @@ describe("Respoke messaging", function () {
             });
 
             it("all group messages are received correctly", function (done) {
-                sendFiveGroupMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(done);
-                    }, 50);
-                });
+                sendFiveGroupMessagesEach('3')
+                    .then(checkMessages)
+                    .done(function successHandler() {
+                        done();
+                    }, done);
             });
 
             afterEach(function () {
@@ -260,7 +268,7 @@ describe("Respoke messaging", function () {
                 followerGroup = group1;
                 followeeGroup = group2;
                 done();
-            }, done);
+            }, done).done();
         });
 
         describe("point-to-point messaging", function () {
@@ -270,11 +278,11 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(done);
-                    }, 50);
-                });
+                sendFiveMessagesEach('4')
+                    .then(checkMessages)
+                    .done(function successHandler() {
+                        done();
+                    }, done);
             });
 
             afterEach(function () {
@@ -290,16 +298,14 @@ describe("Respoke messaging", function () {
             });
 
             it("no group messages are received", function (done) {
-                sendFiveGroupMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(function (err) {
-                            expect(err).to.be.defined;
-                            expect(err).to.be.an.Object;
-                            expect(err.message).to.be.defined;
-                            done();
-                        });
-                    }, 50);
-                });
+                sendFiveGroupMessagesEach('5')
+                    .then(checkMessages)
+                    .done(function successHandler() {
+                        done(new Error("Not supposed to succeed"));
+                    }, function (err) {
+                        expect(err).to.be.an.Error;
+                        done();
+                    });
             });
 
             afterEach(function () {
@@ -316,14 +322,16 @@ describe("Respoke messaging", function () {
     });
 
     describe("when both endpoints are disconnected", function () {
+        this.timeout(30000);
+
         beforeEach(function (done) {
             Q.all([follower.join({id: groupId}), followee.join({id: groupId})]).spread(function (group1, group2) {
                 followerGroup = group1;
                 followeeGroup = group2;
-                return [follower.disconnect(), followee.disconnect()];
-            }).done(function () {
+                return Q.all([follower.disconnect(), followee.disconnect()]);
+            }).fin(function () {
                 done();
-            }, done);
+            }).done();
         });
 
         describe("point-to-point messaging", function () {
@@ -332,21 +340,19 @@ describe("Respoke messaging", function () {
                 followeeEndpoint.listen('message', followeeListener);
             });
 
-            it("no messages are received", function (done) { // dependant upon socket.io timeout
-                sendFiveMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(function (err) {
-                            expect(err).to.be.defined;
-                            expect(err.stack).to.be.undefined;
-                            expect(err).to.be.an.Object;
-                            expect(err.message).to.be.defined;
-                            done();
-                        });
-                    }, 16 * 1000);
-                });
+            it("no messages are received", function (done) {
+                expect(follower.connected).to.be.false;
+                expect(followee.connected).to.be.false;
+                sendFiveMessagesEach('6')
+                    .then(checkMessages).done(function successHandler() {
+                        done(new Error("Not supposed to succeed"));
+                    }, function (err) {
+                        expect(err).to.be.an.Error;
+                        done();
+                    });
             });
 
-            afterEach(function (done) {
+            afterEach(function () {
                 followerEndpoint.ignore('message', followerListener);
                 followeeEndpoint.ignore('message', followeeListener);
             });
@@ -358,17 +364,15 @@ describe("Respoke messaging", function () {
                 followerGroup.listen('message', followeeListener);
             });
 
-            it("no group messages are received", function (done) { // dependant upon socket.io timeout
-                sendFiveGroupMessagesEach(function () {
-                    setTimeout(function () {
-                        checkMessages(function (err) {
-                            expect(err).to.be.defined;
-                            expect(err).to.be.an.Object;
-                            expect(err.message).to.be.defined;
-                            done();
-                        });
-                    }, 50);
-                });
+            it("no group messages are received", function (done) {
+                sendFiveGroupMessagesEach('7')
+                    .then(checkMessages)
+                    .done(function successHandler() {
+                        done(new Error("Not supposed to succeed"));
+                    }, function (err) {
+                        expect(err).to.be.an.Error;
+                        done();
+                    });
             });
 
             afterEach(function () {
@@ -376,7 +380,7 @@ describe("Respoke messaging", function () {
                 followerGroup.ignore('message', followeeListener);
             });
         });
-/*
+
         afterEach(function (done) {
             Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                 permissionsId: permissionsId,
@@ -385,34 +389,31 @@ describe("Respoke messaging", function () {
                 permissionsId: permissionsId,
                 appId: appId
             })]).spread(function (token1, token2) {
-                testEnv.tokens.push(token1);
-                testEnv.tokens.push(token2);
-
-                follower = respoke.createClient();
-                followee = respoke.createClient();
+                followerToken = token1;
+                followeeToken = token2;
 
                 return Q.all([follower.connect({
                     appId: Object.keys(testEnv.allApps)[0],
                     baseURL: respokeTestConfig.baseURL,
-                    token: testEnv.tokens[0].tokenId
+                    token: followerToken.tokenId
                 }), followee.connect({
                     appId: Object.keys(testEnv.allApps)[0],
                     baseURL: respokeTestConfig.baseURL,
-                    token: testEnv.tokens[1].tokenId
+                    token: followeeToken.tokenId
                 })]);
             }).then(function () {
                 expect(follower.endpointId).not.to.be.undefined;
-                expect(follower.endpointId).to.equal(testEnv.tokens[0].endpointId);
+                expect(follower.endpointId).to.equal(followerToken.endpointId);
                 expect(followee.endpointId).not.to.be.undefined;
-                expect(followee.endpointId).to.equal(testEnv.tokens[1].endpointId);
+                expect(followee.endpointId).to.equal(followeeToken.endpointId);
             }).done(function () {
                 followerEndpoint = followee.getEndpoint({id: follower.endpointId});
                 followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
                 done();
             }, done);
         });
-*/
     });
+
     afterEach(function () {
         messagesFollowerReceived = [];
         messagesFolloweeReceived = [];
@@ -421,13 +422,13 @@ describe("Respoke messaging", function () {
     });
 
     after(function (done) {
-        follower.disconnect();
-        followee.disconnect();
-        testFixture.afterTest(function (err) {
-            if (err) {
-                return done(new Error(JSON.stringify(err)));
-            }
-            done();
-        });
+        Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
+            testFixture.afterTest(function (err) {
+                if (err) {
+                    return done(new Error(JSON.stringify(err)));
+                }
+                done();
+            });
+        }).done();
     });
 });
