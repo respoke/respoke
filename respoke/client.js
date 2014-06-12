@@ -193,12 +193,10 @@ respoke.Client = function (params) {
      * @type {respoke.SignalingChannel}
      * @private
      */
-    var result = respoke.SignalingChannel({
+    var signalingChannel = respoke.SignalingChannel({
         instanceId: instanceId,
         clientSettings: clientSettings
     });
-    var signalingChannel = result.signalingChannel;
-    var getTurnCredentials = result.getTurnCredentials;
 
     /**
      * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
@@ -300,9 +298,6 @@ respoke.Client = function (params) {
             token: clientSettings.token
         }).then(function successHandler() {
             return signalingChannel.authenticate();
-        }, function errorHandler(err) {
-            log.error(err.message);
-            deferred.reject(new Error(err.message));
         }).done(function successHandler() {
             that.connected = true;
 
@@ -333,7 +328,7 @@ respoke.Client = function (params) {
         }, function errorHandler(err) {
             that.connected = false;
             deferred.reject("Couldn't create an endpoint.");
-            log.error(err.message);
+            log.error(err.message, err.stack);
         });
 
         return deferred.promise;
@@ -518,21 +513,6 @@ respoke.Client = function (params) {
         if (that.calls.indexOf(evt.call) === -1) {
             that.calls.push(evt.call);
 
-            updateTurnCredentials().done(null, function (err) {
-                var message = "Couldn't get TURN credentials. Sure hope this call goes peer-to-peer!";
-                /**
-                 * This event is fired on errors that occur during call setup or media negotiation.
-                 * @event respoke.Call#error
-                 * @type {respoke.Event}
-                 * @property {string} reason - A human readable description about the error.
-                 * @property {respoke.Call} target
-                 * @property {string} name - the event name.
-                 */
-                that.fire('error', {
-                    reason: message
-                });
-            });
-
             if (evt.call.className === 'respoke.Call') {
                 if (!evt.call.caller && !that.hasListeners('call')) {
                     log.warn("Got a incoming call with no handlers to accept it!");
@@ -637,7 +617,7 @@ respoke.Client = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video element
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
@@ -699,47 +679,6 @@ respoke.Client = function (params) {
             throw new Error("Can't complete request when not connected. Please reconnect!");
         }
     };
-
-    /**
-     * Update TURN credentials.
-     * @memberof! respoke.Client
-     * @method respoke.Client.updateTurnCredentials
-     * @returns {Promise}
-     * @param {object} params
-     * @param {respoke.SignalingChannel.turnSuccessHandler} [params.onSuccess] - Success handler for this
-     * invocation of this method only.
-     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @private
-     */
-    function updateTurnCredentials() {
-        var promise;
-        var retVal;
-
-        if (that.callSettings.disableTurn === true) {
-            return;
-        }
-
-        try {
-            if (typeof that.verifyConnected === 'undefined') {
-                throw new Error("that.verifyConnected is undefined");
-            }
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
-        }
-
-        promise = getTurnCredentials();
-        promise.then(params.onSuccess, params.onError);
-        promise.then(function successHandler(creds) {
-            that.callSettings = that.callSettings || {};
-            that.callSettings.servers = that.callSettings.servers || {};
-            that.callSettings.servers.iceServers = creds;
-        }, null);
-        return promise;
-    }
 
     /**
      * Join a Group and begin keeping track of it. Attach some event listeners.
