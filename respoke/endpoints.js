@@ -480,11 +480,11 @@ respoke.Endpoint = function (params) {
      * directly to the other endpoint.
      */
     that.startDirectConnection = function (params) {
-        params = params || {};
         var combinedConnectionSettings = clone(client.callSettings);
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;
+        params = params || {};
 
         try {
             client.verifyConnected();

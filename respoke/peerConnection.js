@@ -781,30 +781,6 @@ respoke.PeerConnection = function (params) {
 
     /**
      * Save the answer and tell the browser about it.
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.hasAudio
-     * @param {sdp}
-     * @returns {boolean}
-     * @private
-     */
-    function hasAudio(sdp) {
-        return sdp.indexOf('m=audio') !== -1;
-    }
-
-    /**
-     * Indicate whether sdp has Video element
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.hasVideo
-     * @param {sdp}
-     * @returns {boolean}
-     * @private
-     */
-    function hasVideo(sdp) {
-        return sdp.indexOf('m=video') !== -1;
-    }
-
-    /**
-     * Save the answer and tell the browser about it.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.listenAnswer
      * @param {object} evt
