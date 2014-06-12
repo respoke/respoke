@@ -34,7 +34,8 @@
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
  * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
  * media renegotiation.
- * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+ * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+ * element with the local audio and/or video attached.
  * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
  * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
@@ -136,6 +137,14 @@ respoke.Call = function (params) {
      */
     var defMedia = Q.defer();
     /**
+     * Promise used to trigger actions dependant upon having completed deferred initialization
+     * @memberof! respoke.Call
+     * @name defInit
+     * @private
+     * @type {Promise}
+     */
+    var defInit = Q.defer();
+    /**
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
      * or rejected as soon as the 'accept' or 'reject' signal is received. For the callee, it is
@@ -188,6 +197,17 @@ respoke.Call = function (params) {
      * @type {respoke.getClient}
      */
     var client = respoke.getClient(instanceId);
+    /**
+     * @memberof! respoke.Call
+     * @name signalingChannel
+     * @private
+     * @type {respoke.signalingChannel}
+     */
+    var signalingChannel = params.signalingChannel;
+
+    delete params.signalingChannel;
+    delete that.signalingChannel;
+
     /**
      * @memberof! respoke.Call
      * @name videoLocalElement
@@ -262,7 +282,7 @@ respoke.Call = function (params) {
                 { RtpDataChannels: false }
             ]
         },
-        offerOptions: null,
+        offerOptions: params.offerOptions || null,
         signalOffer: params.signalOffer,
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
@@ -296,6 +316,39 @@ respoke.Call = function (params) {
         if (defModify === undefined && directConnectionOnly === true) {
             actuallyAddDirectConnection(params);
         }
+
+        /* Must make sure that the deferred init and the call has been answered before calling this code */
+        Q.all([defInit.promise, defAnswered.promise]).spread(function initializedAndAnswerCalled(init, params) {
+            /**
+             * saveParameters will only be meaningful for the non-initiate,
+             * since the library calls this method for the initiate. Developers will use this method to pass in
+             * callbacks for the non-initiate.
+             */
+            saveParameters(params);
+
+            pc.listen('connect', onRemoteStreamAdded, true);
+            pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
+
+            /**
+             * @event respoke.Call#answer
+             * @property {string} name - the event name.
+             * @property {respoke.Call} target
+             */
+            that.fire('answer');
+
+            /**
+             * There are a few situations in which we need to call approve automatically. Approve is for previewing
+             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
+             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
+             * previewLocalMedia callback to call, we will not wait for approval.
+             */
+            if (receiveOnly !== true && directConnectionOnly === null) {
+                doAddVideo(params);
+            } else if (typeof previewLocalMedia !== 'function') {
+                that.approve();
+            }
+
+        }).done();
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
@@ -354,7 +407,8 @@ respoke.Call = function (params) {
      * @param {object} params
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
@@ -377,7 +431,7 @@ respoke.Call = function (params) {
      * @fires respoke.Call#stats
      */
     function saveParameters(params) {
-        that.listen('local-stream-received', params.onLocalVideo);
+        that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
         that.listen('hangup', params.onHangup);
         that.listen('allow', params.onAllow);
@@ -423,7 +477,7 @@ respoke.Call = function (params) {
         delete that.signalReport;
         delete that.signalCandidate;
         delete that.onConnect;
-        delete that.onLocalVideo;
+        delete that.onLocalMedia;
         delete that.callSettings;
         delete that.directConnectionOnly;
     }
@@ -439,7 +493,8 @@ respoke.Call = function (params) {
      * @param {object} [params]
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the local video element.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
@@ -468,36 +523,8 @@ respoke.Call = function (params) {
         if (!defAnswered.promise.isPending()) {
             return;
         }
-        defAnswered.resolve();
 
-        /**
-         * saveParameters will only be meaningful for the non-initiate,
-         * since the library calls this method for the initiate. Developers will use this method to pass in
-         * callbacks for the non-initiate.
-         */
-        saveParameters(params);
-
-        pc.listen('connect', onRemoteStreamAdded, true);
-        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
-
-        /**
-         * @event respoke.Call#answer
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         */
-        that.fire('answer');
-
-        /**
-         * There are a few situations in which we need to call approve automatically. Approve is for previewing
-         * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-         * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-         * previewLocalMedia callback to call, we will not wait for approval.
-         */
-        if (receiveOnly !== true && directConnectionOnly === null) {
-            doAddVideo(params);
-        } else if (typeof previewLocalMedia !== 'function') {
-            that.approve();
-        }
+        defAnswered.resolve(params);
     };
 
     /**
@@ -510,8 +537,8 @@ respoke.Call = function (params) {
      * @param {object} [params]
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for the developer to receive the local
-     * video element.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the developer to receive the
      * remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
@@ -653,7 +680,8 @@ respoke.Call = function (params) {
      * @private
      * @param {object} params
      * @param {object} [params.constraints] - getUserMedia constraints
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @fires respoke.Call#requesting-media
@@ -747,7 +775,8 @@ respoke.Call = function (params) {
      * @param {boolean} [params.video=true]
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {respoke.Call.mediaSuccessHandler} [params.onSuccess]
@@ -785,7 +814,8 @@ respoke.Call = function (params) {
      * @param {boolean} [params.video=false]
      * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
      * an audio and/or video stream.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {respoke.Call.mediaSuccessHandler} [params.onSuccess]
@@ -1405,10 +1435,14 @@ respoke.Call = function (params) {
         });
     }, true);
 
-    setTimeout(function initTimeout() {
+    signalingChannel.getTurnCredentials().done(function (creds) {
+        callSettings.servers = client.callSettings.servers;
+        callSettings.servers.iceServers = creds;
         saveParameters(params);
         init();
-    }, 0);
+        defInit.resolve();
+    });
+
     return that;
 }; // End respoke.Call
 
@@ -1431,7 +1465,8 @@ respoke.Call = function (params) {
  * When on a call, receive local media when it becomes available. This is what you will need to provide if you want
  * to show the user their own video during a call. This callback is called every time
  * respoke.Call#local-stream-received is fired.
- * @callback respoke.Call.onLocalVideo
+ * @callback respoke.Call.onLocalMedia Callback for receiving an HTML5 Video
+ * element with the local audio and/or video attached.
  * @param {respoke.Event} evt
  * @param {Element} evt.element
  * @param {respoke.LocalMedia} evt.stream

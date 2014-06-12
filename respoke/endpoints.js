@@ -222,7 +222,7 @@ respoke.Endpoint = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
@@ -273,7 +273,7 @@ respoke.Endpoint = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
@@ -323,7 +323,7 @@ respoke.Endpoint = function (params) {
      * @param {object} params
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
@@ -435,6 +435,9 @@ respoke.Endpoint = function (params) {
             log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams);
         };
+
+        params.signalingChannel = signalingChannel;
+
         call = respoke.Call(params);
 
         if (params.caller === true) {
@@ -477,11 +480,11 @@ respoke.Endpoint = function (params) {
      * directly to the other endpoint.
      */
     that.startDirectConnection = function (params) {
-        params = params || {};
         var combinedConnectionSettings = clone(client.callSettings);
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;
+        params = params || {};
 
         try {
             client.verifyConnected();
@@ -505,10 +508,11 @@ respoke.Endpoint = function (params) {
             return retVal;
         }
 
-        // Apply connection-specific callSettings to the app's defaults
+        // Apply connection-specific connectionSettings to the app's defaults
+        combinedConnectionSettings.constraints = params.constraints || combinedConnectionSettings.constraints;
         combinedConnectionSettings.servers = params.servers || combinedConnectionSettings.servers;
 
-        params.connectionSettings = combinedConnectionSettings;
+        params.callSettings = combinedConnectionSettings;
         params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
@@ -558,6 +562,12 @@ respoke.Endpoint = function (params) {
             log.debug(signalParams.report);
         };
         params.directConnectionOnly = true;
+        // Don't include audio in the offer SDP
+        params.offerOptions = {
+            mandatory: {
+                OfferToReceiveAudio: false
+            }
+        };
 
         call = respoke.Call(params);
         call.listen('direct-connection', function directConnectionHandler(evt) {
@@ -747,7 +757,7 @@ respoke.Connection = function (params) {
      * @param {object} params
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
@@ -793,7 +803,7 @@ respoke.Connection = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
@@ -843,7 +853,7 @@ respoke.Connection = function (params) {
      * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onLocalVideo} [params.onLocalVideo] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
      * element with the remote
