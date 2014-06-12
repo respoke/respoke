@@ -147,6 +147,7 @@ respoke.Client = function (params) {
     delete that.baseURL;
     delete that.developmentMode;
     delete that.token;
+    delete that.resolveEndpointPresence;
 
     /**
      * @memberof! respoke.Client
@@ -224,7 +225,9 @@ respoke.Client = function (params) {
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
-     * @param {respoke.client.resolveEndpointPresence} [params.resolveEndpointPresence] An optional function for resolving presence for an endpoint.
+     * @param {respoke.client.resolveEndpointPresence} [params.resolveEndpointPresence] An optional function for
+     * resolving presence for an endpoint.  An endpoint can have multiple Connections this function will be used
+     * to decide which Connection's presence gets precedence for the Endpoint.
      * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
      * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
      * operation and will limit the services you will be able to use.

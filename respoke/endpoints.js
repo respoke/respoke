@@ -189,6 +189,8 @@ respoke.Endpoint = function (params) {
 
 
     var resolveEndpointPresence = params.resolveEndpointPresence;
+    delete that.resolveEndpointPresence;
+    
 
     /**
      * Send a message to the endpoint through the infrastructure.
