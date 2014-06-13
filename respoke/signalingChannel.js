@@ -354,7 +354,6 @@ respoke.SignalingChannel = function (params) {
                 'presence': {
                     show: params.show,
                     'status': params.status,
-                    namespace: clientSettings.appId,
                     type: params.presence || "available"
                 }
             }
@@ -483,13 +482,13 @@ respoke.SignalingChannel = function (params) {
      * @param {Array<string>} params.endpointList
      */
     that.registerPresence = function (params) {
-        wsCall({
+        return wsCall({
             httpMethod: 'POST',
             path: '/v1/presenceobservers',
             parameters: {
                 endpointList: params.endpointList
             }
-        }).done(function successHandler() {
+        }).then(function successHandler() {
             params.endpointList.forEach(function eachId(id) {
                 presenceRegistered[id] = true;
             });

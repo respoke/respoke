@@ -8,8 +8,8 @@
 
 /**
  * This is a top-level interface to the API. It handles authenticating the app to the
- * API server, receiving server-side app-specific information including callbacks and listeners, and interacting with
- * information the library keeps
+ * API server, receiving server-side app-specific information, keeping track of connection status and presence,
+ * accepting callbacks and listeners, and interacting with information the library keeps
  * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
  * connections as well as automatically reconnecting to the service when network activity is lost.
  * @author Erin Spiceland <espiceland@digium.com>
@@ -29,6 +29,7 @@
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
  * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
  * operation and will limit the services you will be able to use.
+ * @param {string|number|object|Array} [params.presence=unavailable] The initial presence to set once connected.
  * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
  * when a disconnect occurs.
  * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
@@ -301,7 +302,9 @@ respoke.Client = function (params) {
             that.connected = true;
 
             // set initial presence for the connection
-            that.setPresence({ presence: clientSettings.presence || 'available' });
+            if (clientSettings.presence) {
+                that.setPresence({presence: clientSettings.presence});
+            }
 
             /*
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
@@ -320,7 +323,7 @@ respoke.Client = function (params) {
             that.listen('reconnect', clientSettings.onReconnect);
             that.listen('reconnect', setConnectedOnReconnect, true);
 
-            log.info('logged in as ' + that.id, that);
+            log.info('logged in as ' + that.endpointId, that);
             deferred.resolve();
         }, function errorHandler(err) {
             that.connected = false;
@@ -401,6 +404,7 @@ respoke.Client = function (params) {
      */
     function afterDisconnect() {
         that.connected = false;
+        that.presence = 'unavailable';
         endpoints = [];
         groups = [];
         /**
@@ -428,26 +432,23 @@ respoke.Client = function (params) {
         var promise;
         var retVal;
         params = params || {};
-        params.presence = params.presence || "available";
+
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            return respoke.handlePromise(promise, params.onSuccess, params.onError);
+        }
 
         log.info('sending my presence update ' + params.presence);
 
         promise = signalingChannel.sendPresence({
-            presence: params.presence,
-            onSuccess: function successHandler(p) {
-                superClass.setPresence(params);
-                // save most recently set presence to use if a reconnect occurs
-                clientSettings.presence = params.presence;
-
-                if (typeof params.onSuccess === 'function') {
-                    params.onSuccess(p);
-                }
-            },
-            onError: params.onError
+            presence: params.presence
         });
 
         promise.then(function successHandler(p) {
             superClass.setPresence(params);
+            clientSettings.presence = params.presence;
         });
         retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
         return retVal;
@@ -563,7 +564,6 @@ respoke.Client = function (params) {
      */
     that.setOnline = function (params) {
         var promise;
-        var retVal;
 
         params = params || {};
         params.presence = params.presence || 'available';
@@ -572,8 +572,7 @@ respoke.Client = function (params) {
             that.verifyConnected();
         } catch (e) {
             promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
+            return respoke.handlePromise(promise, params.onSuccess, params.onError);
         }
 
         return that.setPresence(params);
@@ -596,6 +595,7 @@ respoke.Client = function (params) {
     that.sendMessage = function (params) {
         var promise;
         var retVal;
+        var endpoint;
         try {
             that.verifyConnected();
         } catch (e) {
@@ -603,7 +603,7 @@ respoke.Client = function (params) {
             retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
             return retVal;
         }
-        var endpoint = that.getEndpoint({id: params.endpointId});
+        endpoint = that.getEndpoint({id: params.endpointId});
         delete params.endpointId;
         return endpoint.sendMessage(params);
     };
@@ -919,6 +919,11 @@ respoke.Client = function (params) {
             params.instanceId = instanceId;
             params.signalingChannel = signalingChannel;
             endpoint = respoke.Endpoint(params);
+            signalingChannel.registerPresence({
+                endpointList: [endpoint.id]
+            }).done(null, function (err) {
+                log.error("Couldn't register for presence on", endpoint.id, err.message);
+            });
             endpoints.push(endpoint);
         }
 
