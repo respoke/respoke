@@ -33,12 +33,11 @@ describe("Respoke presence", function () {
                 baseURL: respokeTestConfig.baseURL,
                 token: followeeToken.tokenId
             })]);
-        }).then(function () {
+        }).done(function () {
             expect(follower.endpointId).not.to.be.undefined;
             expect(follower.endpointId).to.equal(followerToken.endpointId);
             expect(followee.endpointId).not.to.be.undefined;
             expect(followee.endpointId).to.equal(followeeToken.endpointId);
-        }).done(function () {
             followerEndpoint = followee.getEndpoint({id: follower.endpointId});
             followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
             done();
@@ -78,13 +77,13 @@ describe("Respoke presence", function () {
                 baseURL: respokeTestConfig.baseURL,
                 token: followeeToken.tokenId
             })]);
-        }).then(function () {
+        }).done(function () {
             expect(follower.endpointId).not.to.be.undefined;
             expect(follower.endpointId).to.equal(followerToken.endpointId);
             expect(followee.endpointId).not.to.be.undefined;
             expect(followee.endpointId).to.equal(followeeToken.endpointId);
             done();
-        }).done(null, done);
+        }, done);
     });
 
     describe("when an endpoint logs in", function () {
@@ -219,26 +218,25 @@ describe("Respoke presence", function () {
                 var endpont2;
 
                 beforeEach(function (done) {
-
                     client1.connect({
                         appId: Object.keys(testEnv.allApps)[0],
                         baseURL: respokeTestConfig.baseURL,
-                        token: testEnv.tokens[0].tokenId,
+                        token: followerToken.tokenId,
                         resolveEndpointPresence: function (presenceList) {
                             return presence;
                         }
                     }).then(function () {
-                        client2.connect({
+                        return client2.connect({
                             appId: Object.keys(testEnv.allApps)[0],
                             baseURL: respokeTestConfig.baseURL,
-                            token: testEnv.tokens[1].tokenId
-                        }).done(function () {
-                            endpoint2 = client1.getEndpoint({id: testEnv.tokens[1].endpointId});
-                            client2.setPresence({presence: 'nacho presence2'}).done(function () {
-                                setTimeout(done, 100);
-                            }, done);
-                        });
-                    });
+                            token: followeeToken.tokenId
+                        })
+                    }).then(function () {
+                        endpoint2 = client1.getEndpoint({id: followeeToken.endpointId});
+                        return client2.setPresence({presence: 'nacho presence2'});
+                    }).done(function () {
+                        setTimeout(done, 100);
+                    }, done);
                 });
 
                 it("and presence is resolved", function () {

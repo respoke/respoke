@@ -324,8 +324,10 @@ respoke.SignalingChannel = function (params) {
                 httpMethod: 'DELETE'
             });
         }).fin(function finallyHandler() {
-            socket.removeAllListeners();
-            socket.disconnect();
+            if (socket) {
+                socket.removeAllListeners();
+                socket.disconnect();
+            }
             that.connected = false;
             deferred.resolve();
         }).done();

@@ -161,7 +161,8 @@ module.exports = function(grunt) {
     grunt.registerTask('functional', 'Run client-side functional tests', [
         'env:test',
         'liftSails',
-        'karma:functional'
+        'karma:functional',
+        'lowerSails'
     ]);
 
     grunt.registerTask('ci', 'Run all tests', [

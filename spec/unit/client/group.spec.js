@@ -89,7 +89,7 @@ describe("A respoke.Group", function () {
         describe("leave()", function () {
             it("errors because of lack of connection", function (done) {
                 group.leave().done(function () {
-                    done(new Error("getMembers() succeeded when not connected."));
+                    done(new Error("leave() succeeded when not connected."));
                 }, function (err) {
                     expect(err).to.exist;
                     expect(err.message).to.contain("not connected");
@@ -99,7 +99,7 @@ describe("A respoke.Group", function () {
         });
 
         describe("isJoined()", function () {
-            it("returns false because of lack of connection", function () {
+            it("is false", function () {
                 expect(group.isJoined()).to.be.false;
             });
         });
