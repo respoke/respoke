@@ -376,48 +376,29 @@ respoke.Client = function (params) {
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
-        if (signalingChannel.connected) {
-            // do websocket stuff. If the websocket is already closed, we have to skip this stuff.
-            var leaveGroups = groups.map(function eachGroup(group) {
-                group.leave();
-            });
-            Q.all(leaveGroups).then(function successHandler() {
-                return signalingChannel.close();
-            }, function errorHandler(err) {
-                // Possibly the socket got closed already and we couldn't leave our groups. Backend will clean this up.
-                deferred.resolve();
-            }).fin(function finallyHandler() {
-                if (!deferred.promise.isFulfilled()) {
-                    // Successfully closed our socket after leaving all groups.
-                    deferred.resolve();
-                }
-            });
-            deferred.promise.then(afterDisconnect, afterDisconnect);
-        } else {
+        var leaveGroups = groups.map(function eachGroup(group) {
+            group.leave();
+        });
+
+        Q.all(leaveGroups).fin(function successHandler() {
+            return signalingChannel.close();
+        }).fin(function finallyHandler() {
+            that.connected = false;
+            that.presence = 'unavailable';
+            endpoints = [];
+            groups = [];
+            /**
+             * This event is fired when the library has disconnected from the cloud infrastructure.
+             * @event respoke.Client#disconnect
+             * @property {string} name - the event name.
+             * @property {respoke.Client} target
+             */
+            that.fire('disconnect');
             deferred.resolve();
-        }
+        }).done();
+
         return retVal;
     };
-
-    /**
-     * Clean up after an intentional disconnect.
-     * @memberof! respoke.Client
-     * @method respoke.Client.afterDisconnect
-     * @private
-     */
-    function afterDisconnect() {
-        that.connected = false;
-        that.presence = 'unavailable';
-        endpoints = [];
-        groups = [];
-        /**
-         * This event is fired when the library has disconnected from the cloud infrastructure.
-         * @event respoke.Client#disconnect
-         * @property {string} name - the event name.
-         * @property {respoke.Client} target
-         */
-        that.fire('disconnect');
-    }
 
     /**
      * Overrides Presentable.setPresence to send presence to the server before updating the object.

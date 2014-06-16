@@ -230,6 +230,11 @@ respoke.SignalingChannel = function (params) {
         var deferred = Q.defer();
         log.trace('SignalingChannel.getToken', params);
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         var callParams = {
             path: '/v1/tokens',
             httpMethod: 'POST',
@@ -314,19 +319,18 @@ respoke.SignalingChannel = function (params) {
             httpMethod: 'DELETE',
             objectId: client.endpointId
         }).fin(function finallyHandler() {
-            call({
+            return call({
                 path: '/v1/appauthsessions',
                 httpMethod: 'DELETE'
-            }).done(function (response) {
+            });
+        }).fin(function finallyHandler() {
+            if (socket) {
                 socket.removeAllListeners();
                 socket.disconnect();
-                that.connected = false;
-                deferred.resolve();
-            }, function (err) {
-                log.error("Couldn't log out app. Network call failed:", err.message);
-                deferred.resolve();
-            });
-        });
+            }
+            that.connected = false;
+            deferred.resolve();
+        }).done();
 
         return deferred.promise;
     };
@@ -346,6 +350,11 @@ respoke.SignalingChannel = function (params) {
         params = params || {};
         var deferred = Q.defer();
         log.trace("Signaling sendPresence");
+
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
 
         wsCall({
             path: '/v1/presence',
@@ -378,6 +387,11 @@ respoke.SignalingChannel = function (params) {
         var deferred = Q.defer();
         log.trace('signalingChannel.getGroup');
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         wsCall({
             httpMethod: 'POST',
             path: '/v1/channels/',
@@ -406,6 +420,11 @@ respoke.SignalingChannel = function (params) {
         params = params || {};
         var deferred = Q.defer();
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         wsCall({
             path: '/v1/channels/%s/subscribers/',
             objectId: params.id,
@@ -430,6 +449,11 @@ respoke.SignalingChannel = function (params) {
     that.joinGroup = function (params) {
         params = params || {};
         var deferred = Q.defer();
+
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
 
         wsCall({
             path: '/v1/channels/%s/subscribers/',
@@ -461,6 +485,11 @@ respoke.SignalingChannel = function (params) {
             message: params.message
         });
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         wsCall({
             path: '/v1/channels/%s/publish/',
             objectId: params.id,
@@ -482,6 +511,10 @@ respoke.SignalingChannel = function (params) {
      * @param {Array<string>} params.endpointList
      */
     that.registerPresence = function (params) {
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         return wsCall({
             httpMethod: 'POST',
             path: '/v1/presenceobservers',
@@ -506,6 +539,11 @@ respoke.SignalingChannel = function (params) {
     that.getGroupMembers = function (params) {
         var deferred = Q.defer();
         var promise;
+
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
 
         if (!params.id) {
             deferred.reject(new Error("Can't get group's endpoints without group ID."));
@@ -545,11 +583,16 @@ respoke.SignalingChannel = function (params) {
             message: params.message
         });
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         wsCall({
             path: '/v1/messages',
             httpMethod: 'POST',
             parameters: message
-        }).then(function successHandler() {
+        }).done(function successHandler() {
             deferred.resolve();
         }, function errorHandler(err) {
             deferred.reject(err);
@@ -568,13 +611,18 @@ respoke.SignalingChannel = function (params) {
     that.sendACK = function (params) {
         var endpoint;
         params = params || {};
+
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         if (!params.signal) {
-            return Q.reject("Can't send ACK, no signal was given.");
+            return Q.reject(new Error("Can't send ACK, no signal was given."));
         }
 
         endpoint = client.getEndpoint({id: params.signal.endpointId});
         if (!endpoint) {
-            return Q.reject("Can't send ACK, can't get endpoint.");
+            return Q.reject(new Error("Can't send ACK, can't get endpoint."));
         }
 
         return that.sendSignal({
@@ -599,6 +647,11 @@ respoke.SignalingChannel = function (params) {
         params = params || {};
         var deferred = Q.defer();
         var signal;
+
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
 
         if (params.call) {
             params.sessionId = params.call.id;
@@ -646,6 +699,11 @@ respoke.SignalingChannel = function (params) {
     that.sendCandidate = function (params) {
         params = params || {};
         params.signalType = 'iceCandidates';
+
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         return that.sendSignal(params);
     };
 
@@ -661,6 +719,11 @@ respoke.SignalingChannel = function (params) {
      */
     that.sendSDP = function (params) {
         params = params || {};
+
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         if (['offer', 'answer'].indexOf(params.signalType) === -1) {
             return Q.reject("Not an SDP type signal.");
         }
@@ -683,11 +746,16 @@ respoke.SignalingChannel = function (params) {
             debugData: params
         };
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         wsCall({
             path: '/v1/calldebugs',
             httpMethod: 'POST',
             parameters: message
-        }).then(function () {
+        }).done(function () {
             deferred.resolve();
         }, function (err) {
             deferred.reject(err);
@@ -709,6 +777,11 @@ respoke.SignalingChannel = function (params) {
     that.sendHangup = function (params) {
         params = params || {};
         params.signalType = 'hangup';
+
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         return that.sendSignal(params);
     };
 
@@ -723,6 +796,11 @@ respoke.SignalingChannel = function (params) {
     that.sendConnected = function (params) {
         params = params || {};
         params.signalType = 'connected';
+
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         return that.sendSignal(params);
     };
 
@@ -738,9 +816,15 @@ respoke.SignalingChannel = function (params) {
     that.sendModify = function (params) {
         params = params || {};
         params.signalType = 'modify';
+
         if (['initiate', 'accept', 'reject'].indexOf(params.action) === -1) {
             return Q.reject("No valid action in modify signal.");
         }
+
+        if (!that.connected) {
+            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        }
+
         return that.sendSignal(params);
     };
 
@@ -1203,7 +1287,7 @@ respoke.SignalingChannel = function (params) {
             wsCall({
                 path: '/v1/endpointconnections',
                 httpMethod: 'POST'
-            }).then(function successHandler(res) {
+            }).done(function successHandler(res) {
                 log.debug('endpointconnections result', res);
                 client.endpointId = res.endpointId;
                 client.connectionId = res.id;
@@ -1423,6 +1507,11 @@ respoke.SignalingChannel = function (params) {
     that.getTurnCredentials = function () {
         var deferred = Q.defer();
 
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
         wsCall({
             httpMethod: 'GET',
             path: '/v1/turn'
@@ -1477,6 +1566,12 @@ respoke.SignalingChannel = function (params) {
     function wsCall(params) {
         params = params || {};
         var deferred = Q.defer();
+        var requestTimer;
+
+        if (!that.connected) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
 
         if (!params) {
             deferred.reject(new Error('No params.'));
@@ -1504,11 +1599,18 @@ respoke.SignalingChannel = function (params) {
             return deferred.promise;
         }
 
+        requestTimer = setTimeout(function () {
+            log.error('request timeout');
+            socket.disconnect();
+            deferred.reject(new Error("Request timeout. Disconnecting."));
+        }, 5 * 1000);
+
         socket.emit(params.httpMethod, JSON.stringify({
             url: params.path,
             data: params.parameters,
             headers: {'App-Token': appToken}
         }), function handleResponse(response) {
+            clearTimeout(requestTimer);
             // Too many of these!
             if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
                 log.verbose('socket response', params.httpMethod, params.path, response);
@@ -1517,7 +1619,7 @@ respoke.SignalingChannel = function (params) {
             try {
                 response = JSON.parse(response);
             } catch (e) {
-                throw new Error("Server response could not be parsed!", response);
+                deferred.reject(new Error("Server response could not be parsed!"));
             }
 
             if (response && response.error) {
@@ -2005,8 +2107,13 @@ respoke.Group = function (params) {
      */
     that.removeMember = function (params) {
         params = params || {};
-        validateConnection();
-        validateMembership();
+
+        try {
+            validateConnection();
+            validateMembership();
+        } catch (err) {
+            return;
+        }
 
         if (!params.connectionId) {
             throw new Error("Can't remove a member to the group without it's Connection id.");

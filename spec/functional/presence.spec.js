@@ -8,25 +8,62 @@ describe("Respoke presence", function () {
     var testEnv;
     var follower;
     var followee;
+    var followerToken;
+    var followeeToken;
+    var permissionsId;
+    var appId;
+
+    function doReconnect(done) {
+        Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+            permissionsId: permissionsId,
+            appId: appId
+        }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+            permissionsId: permissionsId,
+            appId: appId
+        })]).spread(function (token1, token2) {
+            followerToken = token1;
+            followeeToken = token2;
+
+            return Q.all([follower.connect({
+                appId: Object.keys(testEnv.allApps)[0],
+                baseURL: respokeTestConfig.baseURL,
+                token: followerToken.tokenId
+            }), followee.connect({
+                appId: Object.keys(testEnv.allApps)[0],
+                baseURL: respokeTestConfig.baseURL,
+                token: followeeToken.tokenId
+            })]);
+        }).done(function () {
+            expect(follower.endpointId).not.to.be.undefined;
+            expect(follower.endpointId).to.equal(followerToken.endpointId);
+            expect(followee.endpointId).not.to.be.undefined;
+            expect(followee.endpointId).to.equal(followeeToken.endpointId);
+            followerEndpoint = followee.getEndpoint({id: follower.endpointId});
+            followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
+            done();
+        }, done);
+    }
 
     before(function (done) {
         Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
-            testEnv.tokens = [];
 
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
         }).then(function (params) {
             // create 2 tokens
+            permissionsId = params.permissions.id;
+            appId = params.app.id;
+
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
-                appId: params.app.id
+                permissionsId: permissionsId,
+                appId: appId
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
-                appId: params.app.id
+                permissionsId: permissionsId,
+                appId: appId
             })];
         }).spread(function (token1, token2) {
-            testEnv.tokens.push(token1);
-            testEnv.tokens.push(token2);
+            followerToken = token1;
+            followeeToken = token2;
 
             follower = respoke.createClient();
             followee = respoke.createClient();
@@ -34,19 +71,19 @@ describe("Respoke presence", function () {
             return Q.all([follower.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
-                token: testEnv.tokens[0].tokenId
+                token: followerToken.tokenId
             }), followee.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
-                token: testEnv.tokens[1].tokenId
+                token: followeeToken.tokenId
             })]);
-        }).then(function () {
+        }).done(function () {
             expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(testEnv.tokens[0].endpointId);
+            expect(follower.endpointId).to.equal(followerToken.endpointId);
             expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(testEnv.tokens[1].endpointId);
+            expect(followee.endpointId).to.equal(followeeToken.endpointId);
             done();
-        }).done(null, done);
+        }, done);
     });
 
     describe("when an endpoint logs in", function () {
@@ -112,7 +149,7 @@ describe("Respoke presence", function () {
             var endpoint;
 
             beforeEach(function () {
-                endpoint = follower.getEndpoint({id: testEnv.tokens[1].endpointId});
+                endpoint = follower.getEndpoint({id: followeeToken.endpointId});
             });
 
             it("presence is 'unavailable' by default", function () {
@@ -181,26 +218,25 @@ describe("Respoke presence", function () {
                 var endpont2;
 
                 beforeEach(function (done) {
-
                     client1.connect({
                         appId: Object.keys(testEnv.allApps)[0],
                         baseURL: respokeTestConfig.baseURL,
-                        token: testEnv.tokens[0].tokenId,
+                        token: followerToken.tokenId,
                         resolveEndpointPresence: function (presenceList) {
                             return presence;
                         }
                     }).then(function () {
-                        client2.connect({
+                        return client2.connect({
                             appId: Object.keys(testEnv.allApps)[0],
                             baseURL: respokeTestConfig.baseURL,
-                            token: testEnv.tokens[1].tokenId
-                        }).done(function () {
-                            endpoint2 = client1.getEndpoint({id: testEnv.tokens[1].endpointId});
-                            client2.setPresence({presence: 'nacho presence2'}).done(function () {
-                                setTimeout(done, 100);
-                            }, done);
-                        });
-                    });
+                            token: followeeToken.tokenId
+                        })
+                    }).then(function () {
+                        endpoint2 = client1.getEndpoint({id: followeeToken.endpointId});
+                        return client2.setPresence({presence: 'nacho presence2'});
+                    }).done(function () {
+                        setTimeout(done, 100);
+                    }, done);
                 });
 
                 it("and presence is resolved", function () {
@@ -232,8 +268,9 @@ describe("Respoke presence", function () {
 
                 describe("when the second user disconnects", function () {
                     beforeEach(function (done) {
-                        followee.disconnect();
-                        setTimeout(done, 100);
+                        follower.disconnect().fin(function () {
+                            setTimeout(done, 100);
+                        }).done();
                     });
 
                     it("fires with presence 'unavailable'", function () {
@@ -244,38 +281,44 @@ describe("Respoke presence", function () {
 
             describe("and then disconnects", function () {
                 beforeEach(function (done) {
-                    followee.disconnect();
-                    setTimeout(done, 100);
+                    followee.disconnect().fin(function () {
+                        setTimeout(done, 100);
+                    }).done();
                 });
 
                 it("presence is set to 'unavailable'", function () {
                     expect(endpoint.presence).to.equal('unavailable');
                     expect(endpoint.getPresence()).to.equal('unavailable');
                 });
+
+                afterEach(doReconnect);
             });
         });
 
         describe("and then disconnects", function () {
             beforeEach(function (done) {
-                follower.disconnect().done(function () {
-                    done();
-                }, done);
+                follower.disconnect().fin(function () {
+                    setTimeout(done, 100);
+                }).done();
             });
 
             it("presence is set to 'unavailable'", function () {
                 expect(follower.presence).to.equal('unavailable');
                 expect(follower.getPresence()).to.equal('unavailable');
             });
+
+            afterEach(doReconnect);
         });
     });
 
     after(function (done) {
-        follower.disconnect();
-        testFixture.afterTest(function (err) {
-            if (err) {
-                return done(new Error(JSON.stringify(err)));
-            }
-            done();
-        });
+        follower.disconnect().fin(function () {
+            testFixture.afterTest(function (err) {
+                if (err) {
+                    return done(new Error(JSON.stringify(err)));
+                }
+                done();
+            });
+        }).done();
     });
 });

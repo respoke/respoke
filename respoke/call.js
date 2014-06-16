@@ -523,7 +523,6 @@ respoke.Call = function (params) {
         if (!defAnswered.promise.isPending()) {
             return;
         }
-
         defAnswered.resolve(params);
     };
 
