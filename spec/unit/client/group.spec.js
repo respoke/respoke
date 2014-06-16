@@ -38,6 +38,7 @@ describe("A respoke.Group", function () {
             expect(typeof group.addMember).to.equal('function');
             expect(typeof group.sendMessage).to.equal('function');
             expect(typeof group.getMembers).to.equal('function');
+            expect(typeof group.isJoined).to.equal('function');
         });
 
         it("saves unexpected developer-specified parameters.", function () {
@@ -61,42 +62,45 @@ describe("A respoke.Group", function () {
     describe("when not connected", function () {
         describe("sendMessage()", function () {
             it("errors because of lack of connection", function (done) {
-                try {
-                    group.sendMessage({
-                        message: "There's no place like home"
-                    });
+                group.sendMessage({
+                    message: "There's no place like home"
+                }).done(function () {
                     done(new Error("sendMessage() succeeded when not connected."));
-                } catch (err) {
+                }, function (err) {
                     expect(err).to.exist;
                     expect(err.message).to.contain("not connected");
                     done();
-                }
+                });
             });
         });
 
         describe("getMembers()", function () {
             it("errors because of lack of connection", function (done) {
-                try {
-                    group.getMembers();
+                group.getMembers().done(function () {
                     done(new Error("getMembers() succeeded when not connected."));
-                } catch (err) {
+                }, function (err) {
                     expect(err).to.exist;
                     expect(err.message).to.contain("not connected");
                     done();
-                }
+                });
             });
         });
 
         describe("leave()", function () {
             it("errors because of lack of connection", function (done) {
-                try {
-                    group.leave();
-                    done(new Error("leave() succeeded when not connected."));
-                } catch (err) {
+                group.leave().done(function () {
+                    done(new Error("getMembers() succeeded when not connected."));
+                }, function (err) {
                     expect(err).to.exist;
                     expect(err.message).to.contain("not connected");
                     done();
-                }
+                });
+            });
+        });
+
+        describe("isJoined()", function () {
+            it("returns false because of lack of connection", function () {
+                expect(group.isJoined()).to.be.false;
             });
         });
     });

@@ -718,9 +718,22 @@ respoke.Client = function (params) {
         signalingChannel.joinGroup({
             id: params.id
         }).done(function successHandler() {
+            var group;
             params.signalingChannel = signalingChannel;
             params.instanceId = instanceId;
-            var group = respoke.Group(params);
+
+            group = that.getGroup({id: params.id});
+            if (!group) {
+                group = respoke.Group(params);
+                addGroup(group);
+            }
+            group.addMember({
+                connection: that.getConnection({
+                    endpointId: that.endpointId,
+                    connectionId: that.connectionId
+                })
+            });
+
             /**
              * This event is fired every time the client joins a group. If the client leaves
              * a group, this event will be fired again on the next time the client joins the group.
@@ -731,10 +744,6 @@ respoke.Client = function (params) {
              */
             that.fire('join', {
                 group: group
-            });
-            addGroup(group);
-            group.listen('leave', function leaveHandler(evt) {
-                checkEndpointForRemoval(evt.connection.getEndpoint());
             });
             deferred.resolve(group);
         }, function errorHandler(err) {
@@ -751,56 +760,15 @@ respoke.Client = function (params) {
      * @private
      */
     function addGroup(newGroup) {
-        var group;
         if (!newGroup || newGroup.className !== 'respoke.Group') {
             throw new Error("Can't add group to internal tracking without a group.");
         }
-        groups.every(function eachGroup(grp) {
-            if (grp.id === newGroup.id) {
-                group = grp;
-                return false;
-            }
-            return true;
-        });
 
-        if (!group) {
-            newGroup.listen('leave', function leaveHandler(evt) {
-                checkEndpointForRemoval(evt.connection.getEndpoint());
-            }, true);
-            groups.push(newGroup);
-        }
-    }
-
-    /**
-     * Remove a Group. This is called when we have left a group and no longer need to keep track of it.
-     * @memberof! respoke.Client
-     * @method respoke.Client.removeGroup
-     * @param {respoke.Group}
-     * @private
-     */
-    function removeGroup(newGroup) {
-        var index;
-        if (!newGroup || newGroup.className === 'respoke.Group') {
-            throw new Error("Can't remove group to internal tracking without a group.");
-        }
-
-        groups.every(function eachGroup(grp, i) {
-            if (grp.id === newGroup.id) {
-                index = i;
-                return false;
-            }
-            return true;
-        });
-
-        if (index !== undefined && index > -1) {
-            groups[index].getMembers().done(function successHandler(list) {
-                groups[index].ignore();
-                groups.splice(index, 1);
-                list.forEach(function eachConnection(connection) {
-                    checkEndpointForRemoval(connection.getEndpoint());
-                });
-            });
-        }
+        newGroup.listen('leave', function leaveHandler(evt) {
+            newGroup.removeMember({connectionId: evt.connection.id});
+            checkEndpointForRemoval(evt.connection.getEndpoint());
+        }, true);
+        groups.push(newGroup);
     }
 
     /**
@@ -907,7 +875,8 @@ respoke.Client = function (params) {
     that.getEndpoint = function (params) {
         var endpoint;
         if (!params || !params.id) {
-            throw new Error("Can't get an endpoint without endpoint id.");
+            var err = new Error("Can't get an endpoint without endpoint id.");
+            throw err;
         }
 
         endpoints.every(function eachEndpoint(ept) {
