@@ -241,7 +241,7 @@ describe("Respoke groups", function () {
                     });
 
                     afterEach(function (done) {
-                        followerGroup.join({id: groupId}).done(function() {
+                        followerGroup.join().done(function() {
                             done();
                         }, done);
                     });
@@ -250,18 +250,14 @@ describe("Respoke groups", function () {
         });
     });
 
-    afterEach(function () {
-        expect(follower).not.to.be.undefined;
-    });
-
     after(function (done) {
-        follower.disconnect();
-        followee.disconnect();
-        testFixture.afterTest(function (err) {
-            if (err) {
-                return done(new Error(JSON.stringify(err)));
-            }
-            done();
-        });
+        Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
+            testFixture.afterTest(function (err) {
+                if (err) {
+                    return done(new Error(JSON.stringify(err)));
+                }
+                done();
+            });
+        }).done();
     });
 });
