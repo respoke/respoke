@@ -324,8 +324,10 @@ respoke.SignalingChannel = function (params) {
                 httpMethod: 'DELETE'
             });
         }).fin(function finallyHandler() {
-            socket.removeAllListeners();
-            socket.disconnect();
+            if (socket) {
+                socket.removeAllListeners();
+                socket.disconnect();
+            }
             that.connected = false;
             deferred.resolve();
         }).done();
@@ -339,7 +341,7 @@ respoke.SignalingChannel = function (params) {
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendPresence
      * @param {object} params
-     * @param {string} params.presence - description, "unavailable", "available", "away", "xa", "dnd"
+     * @param {string|number|object|Array} [params.presence=available]
      * @param {string} [params.status] - Non-enumeration human-readable status.
      * @param {string} [params.show] - I can't remember what this is.
      * @returns {Promise}

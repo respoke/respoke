@@ -59,12 +59,11 @@ describe("Respoke messaging", function () {
         messagesFollowerReceived.push(evt.message.message);
     }
 
-    function sendFiveGroupMessagesEach(name) {
+    function sendFiveGroupMessagesEach() {
         var message;
         var promises = [];
         for (var i = 1; i <= 5; i += 1) {
             message = {
-                name: name,
                 message: respoke.makeGUID()
             };
 
@@ -78,12 +77,11 @@ describe("Respoke messaging", function () {
         return Q.all(promises);
     }
 
-    function sendFiveMessagesEach(name) {
+    function sendFiveMessagesEach() {
         var message;
         var promises = [];
         for (var i = 1; i <= 5; i += 1) {
             message = {
-                name: name,
                 message: respoke.makeGUID()
             };
 
@@ -191,7 +189,7 @@ describe("Respoke messaging", function () {
 
         describe("point-to-point messaging", function () {
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach('1')
+                sendFiveMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done();
@@ -221,7 +219,7 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach('2')
+                sendFiveMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done();
@@ -241,7 +239,7 @@ describe("Respoke messaging", function () {
             });
 
             it("all group messages are received correctly", function (done) {
-                sendFiveGroupMessagesEach('3')
+                sendFiveGroupMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done();
@@ -278,7 +276,7 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach('4')
+                sendFiveMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done();
@@ -298,7 +296,7 @@ describe("Respoke messaging", function () {
             });
 
             it("no group messages are received", function (done) {
-                sendFiveGroupMessagesEach('5')
+                sendFiveGroupMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done(new Error("Not supposed to succeed"));
@@ -343,7 +341,7 @@ describe("Respoke messaging", function () {
             it("no messages are received", function (done) {
                 expect(follower.connected).to.be.false;
                 expect(followee.connected).to.be.false;
-                sendFiveMessagesEach('6')
+                sendFiveMessagesEach()
                     .then(checkMessages).done(function successHandler() {
                         done(new Error("Not supposed to succeed"));
                     }, function (err) {
@@ -365,7 +363,7 @@ describe("Respoke messaging", function () {
             });
 
             it("no group messages are received", function (done) {
-                sendFiveGroupMessagesEach('7')
+                sendFiveGroupMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done(new Error("Not supposed to succeed"));

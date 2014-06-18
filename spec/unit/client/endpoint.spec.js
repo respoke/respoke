@@ -172,6 +172,58 @@ describe("A respoke.Endpoint", function () {
                         });
                     };
                 };
+                describe("with custom resolve endpoint presence", function () {
+
+                    var customPresence1 = {'myRealPresence': 'not ready'};
+                    var customPresence2 = {'myRealPresence': 'not ready'};
+
+                    describe("that returns valid presence", function () {
+                        it("endpoint.presence equals expected presence", function () {
+                            var tempInstanceId = respoke.makeGUID();
+                            var tempConnectionId = respoke.makeGUID();
+                            var tempEndpointId = respoke.makeGUID();
+                            var expectedPresence = {'myRealPresence': 'ready'};
+                            var tempClient = respoke.createClient({
+                                instanceId: tempInstanceId,
+                                resolveEndpointPresence: function (presenceList) {
+                                    expect(presenceList.length).to.equal(3);
+                                    expect(presenceList.indexOf(customPresence1)).to.not.equal(-1);
+                                    expect(presenceList.indexOf(customPresence2)).to.not.equal(-1);
+                                    expect(presenceList.indexOf(expectedPresence)).to.not.equal(-1);
+                                    return expectedPresence;
+                                }
+                            });
+                            var ep = tempClient.getEndpoint({
+                                connectionId: tempConnectionId,
+                                id: tempEndpointId
+                            });
+                            ep.connections = [{presence: customPresence1}, {presence: expectedPresence}, {presence: customPresence2}];
+                            ep.resolvePresence();
+                            expect(ep.presence).to.equal(expectedPresence);
+                        });
+                    });
+                    describe("that returns custom presence", function () {
+                        it("endpoint.presence equals expected presence", function () {
+                            var tempInstanceId = respoke.makeGUID();
+                            var tempConnectionId = respoke.makeGUID();
+                            var tempEndpointId = respoke.makeGUID();
+                            var expectedPresence = 'always and forever';
+                            var tempClient = respoke.createClient({
+                                instanceId: tempInstanceId,
+                                resolveEndpointPresence: function (presenceList) {
+                                    return expectedPresence;
+                                }
+                            });
+                            var ep = tempClient.getEndpoint({
+                                connectionId: tempConnectionId,
+                                id: tempEndpointId
+                            });
+                            ep.connections = [{presence: customPresence1}, {presence: 'available'}, {presence: customPresence2}];
+                            ep.resolvePresence();
+                            expect(ep.presence).to.equal(expectedPresence);
+                        });
+                    });
+                });
             });
         });
 

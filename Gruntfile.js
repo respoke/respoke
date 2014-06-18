@@ -22,6 +22,12 @@ module.exports = function(grunt) {
     ];
 
     grunt.initConfig({
+        env: {
+            test: {
+                NODE_ENV: 'test',
+                CLEAR_DB: 'true'
+            }
+        },
         uglify: {
             respoke: {
                 options: {
@@ -133,6 +139,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-aws-s3');
+    grunt.loadNpmTasks('grunt-env');
 
     grunt.task.registerTask('s3', ['aws_s3']);
     grunt.task.registerTask('dist', [
@@ -152,8 +159,10 @@ module.exports = function(grunt) {
     ]);
 
     grunt.registerTask('functional', 'Run client-side functional tests', [
+        'env:test',
         'liftSails',
-        'karma:functional'
+        'karma:functional',
+        'lowerSails'
     ]);
 
     grunt.registerTask('ci', 'Run all tests', [
