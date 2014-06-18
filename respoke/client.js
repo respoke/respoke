@@ -201,9 +201,9 @@ respoke.Client = function (params) {
     });
 
     /**
-     * Connect to the Digium infrastructure and authenticate using the `token`.  Store a new token to be used in API
+     * Connect to the Respoke infrastructure and authenticate using the `token`.  Store a new token to be used in API
      * requests. If no `token` is given and `developmentMode` is set to true, we will attempt to obtain a token
-     * automatically from the Digium infrastructure.  If `reconnect` is set to true, we will attempt to keep
+     * automatically from the Respoke infrastructure.  If `reconnect` is set to true, we will attempt to keep
      * reconnecting each time this token expires. Accept and attach quite a few event listeners for things like group
      * joining and connection statuses. Get the first set of TURN credentials and store them internally for later use.
      * @memberof! respoke.Client
@@ -360,7 +360,7 @@ respoke.Client = function (params) {
     }
 
     /**
-     * Disconnect from the Digium infrastructure, leave all groups, invalidate the token, and disconnect the websocket.
+     * Disconnect from the Respoke infrastructure, leave all groups, invalidate the token, and disconnect the websocket.
      * @memberof! respoke.Client
      * @method respoke.Client.disconnect
      * @returns {Promise|undefined}
