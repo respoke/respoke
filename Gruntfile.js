@@ -115,7 +115,6 @@ module.exports = function(grunt) {
             },
             continuous: {
                 configFile: './karma-lib-orig.conf.js',
-                browsers: ['Chrome'],
                 singleRun: true,
                 reporters: ['junit']
             },
@@ -128,7 +127,7 @@ module.exports = function(grunt) {
                 configFile: './karma-lib-min.conf.js'
             },
             functional: {
-                singleRun: true,
+                singleRun: false,
                 configFile: './karma-lib-functional.conf.js'
             }
         }

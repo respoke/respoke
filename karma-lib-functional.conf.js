@@ -13,6 +13,7 @@ module.exports = function(config) {
           'util/q.js',
           'util/loglevel.js',
           'util/socket.io.js',
+          'util/adapter.js',
           'respoke.js',
           'respoke/event.js',
           'respoke/signalingChannel.js',
@@ -29,7 +30,7 @@ module.exports = function(config) {
           '../../../collective/assets/js/jquery.js',
           '../../../collective/spec/util/api_client.js',
           '../../../collective/spec/util/fixture.js',
-          'spec/functional/*.js'
+          'spec/functional/calling.spec.js'
         ],
 
 
@@ -81,7 +82,14 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        browsers: ['Chrome', /*'Firefox'*/],
+        //browsers: ['Chrome', /*'Firefox'*/],
+                browsers: ['Chrome_autoaccept'],
+                customLaunchers: {
+                    Chrome_autoaccept: {
+                        base: 'Chrome',
+                        flags: ['--use-fake-ui-for-media-stream']
+                    }
+                },
 
 
         // If browser does not capture in given timeout [ms], kill it

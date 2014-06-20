@@ -34,7 +34,7 @@ describe("Respoke calling", function () {
             }
         ]
     };
-    var testFixture = fixture("Messaging Functional test", {
+    var testFixture = fixture("Calling Functional test", {
         permissionParams: groupPermissions
     });
 
@@ -102,7 +102,9 @@ describe("Respoke calling", function () {
     describe("when placing a call", function () {
         var call;
         function callListener(evt) {
-            evt.call.answer();
+            if (evt.call.intiator !== true) {
+                evt.call.answer();
+            }
         }
 
         beforeEach(function () {
@@ -112,6 +114,12 @@ describe("Respoke calling", function () {
         it("succeeds", function (done) {
             call = followeeEndpoint.startCall({
                 onLocalMedia: function (evt) {
+                    console.log("onLocalMedia");
+                    expect(evt.stream instanceof MediaStream).to.be.true;
+                    expect(evt.element instanceof Video).to.be.true;
+                },
+                onConnect: function (evt) {
+                    console.log("onConnect");
                     expect(evt.stream instanceof MediaStream).to.be.true;
                     expect(evt.element instanceof Video).to.be.true;
                     done();

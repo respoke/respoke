@@ -317,6 +317,14 @@ respoke.Call = function (params) {
             actuallyAddDirectConnection(params);
         }
 
+        defInit.promise.done(null, function (err) {
+            log.error("Couldn't initiate call.", err.message, err.stack);
+        });
+
+        defAnswered.promise.done(null, function (err) {
+            log.error("Couldn't answer call.", err.message, err.stack);
+        });
+
         /* Must make sure that the deferred init and the call has been answered before calling this code */
         Q.all([defInit.promise, defAnswered.promise]).spread(function initializedAndAnswerCalled(init, params) {
             /**
@@ -347,7 +355,6 @@ respoke.Call = function (params) {
             } else if (typeof previewLocalMedia !== 'function') {
                 that.approve();
             }
-
         }).done();
 
         if (that.caller !== true) {
@@ -1212,7 +1219,12 @@ respoke.Call = function (params) {
      */
     function onModifyAccept(evt) {
         that.caller = evt.signal.action === 'initiate' ? false : true;
-        init();
+        try {
+            init();
+        } catch (err) {
+            defModify.reject(err);
+            return;
+        }
 
         if (evt.signal.action !== 'initiate') {
             defModify.resolve(); // resolved later for callee
@@ -1434,11 +1446,17 @@ respoke.Call = function (params) {
         });
     }, true);
 
-    signalingChannel.getTurnCredentials().done(function (creds) {
-        callSettings.servers = client.callSettings.servers;
-        callSettings.servers.iceServers = creds;
+    signalingChannel.getTurnCredentials().fin(function (result) {
+        if (!(result instanceof Error)) {
+            callSettings.servers = client.callSettings.servers;
+            callSettings.servers.iceServers = result;
+        }
         saveParameters(params);
         init();
+    }).done(function () {
+        defInit.resolve();
+    }, function (err) {
+        log.warn("Relay service not available.");
         defInit.resolve();
     });
 
