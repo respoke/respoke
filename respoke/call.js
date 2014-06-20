@@ -431,6 +431,15 @@ respoke.Call = function (params) {
      * @fires respoke.Call#stats
      */
     function saveParameters(params) {
+        /* This happens when the call is hung up automatically, for instance due to the lack of an onCall
+         * handler. In this case, pc has been set to null in hangup. The call has already failed, and the
+         * invocation of this function is an artifact of async code not being finished yet, so we can just
+         * skip all of this setup.
+         */
+        if (!pc) {
+            return;
+        }
+
         that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
         that.listen('hangup', params.onHangup);
