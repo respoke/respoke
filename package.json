@@ -15,10 +15,8 @@
   },
   "author": "Erin Spiceland",
   "license": "Proprietary",
-  "dependencies": {
-    "uglify-js": "~2.4.0"
-  },
   "devDependencies": {
+    "uglify-js": "~2.4.0",
     "chai": "^1.8.1",
     "grunt": "~0.4.2",
     "grunt-aws-s3": "~0.8.1",
