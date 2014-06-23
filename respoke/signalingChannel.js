@@ -230,11 +230,6 @@ respoke.SignalingChannel = function (params) {
         var deferred = Q.defer();
         log.trace('SignalingChannel.getToken', params);
 
-        if (!that.connected) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
-            return deferred.promise;
-        }
-
         var callParams = {
             path: '/v1/tokens',
             httpMethod: 'POST',
