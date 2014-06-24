@@ -4,7 +4,8 @@
   "description": "Client-side JavaScript library for Collective.",
   "main": "index.js",
   "scripts": {
-    "build": "browserify respoke/respoke.js -s respoke --debug --detect-globals false -p [minifyify --map respoke.min.js.map --compressPath `pwd` --output respoke.min.js.map] > respoke.min.js",
+    "build": "browserify respoke/respoke.js -s respoke --debug --detect-globals false -p [minifyify --map respoke.min.map --compressPath `pwd` --output respoke.min.map] > respoke.min.js",
+    "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "doc": "jsdoc -c jsdoc.json",
     "doc-markdown": "jsdoc -c jsdoc.json -t ${JSDOC_TEMPLATES:=..}/jsdoc-markdown-template -d markdown",
     "doc-confluence": "jsdoc -c jsdoc.json -p -t ${JSDOC_TEMPLATES:=..}/confluence-jsdoc-template -d confluence"
