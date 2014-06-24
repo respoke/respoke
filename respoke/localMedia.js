@@ -190,7 +190,7 @@ module.exports = function (params) {
          */
         that.fire('allow');
         log.debug('User gave permission to use media.');
-        log.trace('onReceiveUserMedia');
+        log.debug('onReceiveUserMedia');
 
         /**
          * Expose getAudioTracks.
@@ -276,7 +276,7 @@ module.exports = function (params) {
      * @private
      */
     function requestMedia() {
-        log.trace('requestMedia');
+        log.debug('requestMedia');
 
         that.constraints = callSettings.constraints;
 
@@ -321,7 +321,7 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
-        log.trace('onUserMediaError');
+        log.debug('onUserMediaError');
         if (p.code === 1) {
             log.warn("Permission denied.");
             /**

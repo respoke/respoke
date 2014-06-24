@@ -252,7 +252,7 @@ module.exports = function (params) {
         var promise;
         var retVal;
         params = params || {};
-        log.trace('Client.connect');
+        log.debug('Client.connect');
         that.connectTries += 1;
 
         Object.keys(params).forEach(function eachParam(key) {

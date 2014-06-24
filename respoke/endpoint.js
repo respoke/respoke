@@ -264,7 +264,7 @@ module.exports = function (params) {
         var combinedCallSettings = clone(client.callSettings);
         params = params || {};
 
-        log.trace('Endpoint.call');
+        log.debug('Endpoint.call');
         client.verifyConnected();
         log.debug('Default callSettings is', combinedCallSettings);
         if (params.caller === undefined) {
@@ -400,7 +400,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        log.trace('Endpoint.startDirectConnection', params);
+        log.debug('Endpoint.startDirectConnection', params);
         if (params.caller === undefined) {
             params.caller = true;
         }

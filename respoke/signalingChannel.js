@@ -195,7 +195,7 @@ module.exports = function (params) {
     that.open = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('SignalingChannel.open', params, clientSettings);
+        log.debug('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
 
@@ -212,7 +212,7 @@ module.exports = function (params) {
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
-            log.trace('client', client);
+            log.debug('client', client);
         }, function errorHandler(err) {
             deferred.reject(err);
         });
@@ -232,7 +232,7 @@ module.exports = function (params) {
     that.getToken = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('SignalingChannel.getToken', params);
+        log.debug('SignalingChannel.getToken', params);
 
         var callParams = {
             path: '/v1/tokens',
@@ -270,7 +270,7 @@ module.exports = function (params) {
     function doOpen(params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('SignalingChannel.doOpen', params);
+        log.debug('SignalingChannel.doOpen', params);
 
         if (!params.token) {
             deferred.reject(new Error("Can't open connection to Respoke without a token."));
@@ -287,7 +287,7 @@ module.exports = function (params) {
             if (response.code === 200) {
                 appToken = response.result.token;
                 deferred.resolve();
-                log.trace("Signaling connection open to", clientSettings.baseURL);
+                log.debug("Signaling connection open to", clientSettings.baseURL);
                 that.connected = true;
             } else {
                 that.connected = false;
@@ -348,7 +348,7 @@ module.exports = function (params) {
     that.sendPresence = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace("Signaling sendPresence");
+        log.debug("Signaling sendPresence");
 
         if (!that.connected) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -384,7 +384,7 @@ module.exports = function (params) {
     that.getGroup = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('signalingChannel.getGroup');
+        log.debug('signalingChannel.getGroup');
 
         if (!that.connected) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -859,7 +859,7 @@ module.exports = function (params) {
         var method = 'do';
 
         if (signal.signalType !== 'iceCandidates') { // Too many of these!
-            log.trace(signal.signalType, signal);
+            log.debug(signal.signalType, signal);
         }
 
         // Only create if this signal is an offer.
@@ -1310,7 +1310,7 @@ module.exports = function (params) {
             // Skip ourselves
             return;
         }
-        log.trace('socket.on presence', message);
+        log.debug('socket.on presence', message);
 
         endpoint = client.getEndpoint({
             id: message.header.from,
@@ -1449,7 +1449,7 @@ module.exports = function (params) {
         });
 
         socket.on('error', function errorHandler(res) {
-            log.trace('Socket.io error.', res || "");
+            log.debug('Socket.io error.', res || "");
             if (!client.connected) {
                 reconnect();
             }
@@ -1590,7 +1590,7 @@ module.exports = function (params) {
 
         // Too many of these!
         if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-            log.trace('socket request', params.httpMethod, params.path, params.parameters);
+            log.debug('socket request', params.httpMethod, params.path, params.parameters);
         }
 
         if (!socket) {
@@ -1612,7 +1612,7 @@ module.exports = function (params) {
             clearTimeout(requestTimer);
             // Too many of these!
             if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-                log.trace('socket response', params.httpMethod, params.path, response);
+                log.debug('socket response', params.httpMethod, params.path, response);
             }
 
             try {
@@ -1703,7 +1703,7 @@ module.exports = function (params) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
             return;
         }
-        log.trace('calling', params.httpMethod, uri, "with params", paramString);
+        log.debug('calling', params.httpMethod, uri, "with params", paramString);
 
         try {
             xhr.send(paramString);
@@ -1732,7 +1732,7 @@ module.exports = function (params) {
                         response.error = "Invalid JSON.";
                     }
                 }
-                log.trace(response);
+                log.debug(response);
                 deferred.resolve(response);
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));

@@ -135,7 +135,7 @@ var EventEmitter = module.exports = function (params) {
                 }
             }
         });
-        log.trace("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
+        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 
     /**

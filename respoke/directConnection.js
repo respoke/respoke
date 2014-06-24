@@ -327,7 +327,7 @@ module.exports = function (params) {
      */
     that.accept = function (params) {
         params = params || {};
-        log.trace('DirectConnection.accept');
+        log.debug('DirectConnection.accept');
         saveParameters(params);
 
         log.debug("I am " + (that.call.caller ? '' : 'not ') + "the caller.");
@@ -353,7 +353,7 @@ module.exports = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        log.trace("DirectConnection.close");
+        log.debug("DirectConnection.close");
         if (dataChannel) {
             dataChannel.close();
         }

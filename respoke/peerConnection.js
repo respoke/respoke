@@ -319,7 +319,7 @@ module.exports = function (params) {
      * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
-        log.trace('processOffer', oOffer);
+        log.debug('processOffer', oOffer);
         if (that.call.caller) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
@@ -468,7 +468,7 @@ module.exports = function (params) {
         callSettings.servers = params.servers || callSettings.servers;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
-        log.trace('PC.init');
+        log.debug('PC.init');
 
         if (pc) {
             return;
@@ -701,7 +701,7 @@ module.exports = function (params) {
     that.close = function (params) {
         params = params || {};
         if (toSendHangup !== undefined) {
-            log.trace("PeerConnection.close got called twice.");
+            log.debug("PeerConnection.close got called twice.");
             return;
         }
         toSendHangup = true;
@@ -849,7 +849,7 @@ module.exports = function (params) {
      */
     function listenConnected(evt) {
         if (evt.signal.toConnection !== client.connectionId) {
-            log.trace("Hanging up because I didn't win the call.", evt.signal, client);
+            log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
     }
@@ -891,7 +891,7 @@ module.exports = function (params) {
      */
     function listenModify(evt) {
         var err;
-        log.trace('PC.listenModify', evt.signal);
+        log.debug('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
             that.call.caller = true;
@@ -1017,7 +1017,7 @@ module.exports = function (params) {
             log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
             return;
         }
-        log.trace('Got a remote candidate.', params.candidate);
+        log.debug('Got a remote candidate.', params.candidate);
         that.report.candidatesReceived.push(params.candidate);
     };
 

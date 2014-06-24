@@ -305,7 +305,7 @@ module.exports = function (params) {
      * @private
      */
     function init() {
-        log.trace('Call.init');
+        log.debug('Call.init');
 
         if (defModify !== undefined) {
             defSDPOffer = Q.defer();
@@ -530,7 +530,7 @@ module.exports = function (params) {
      */
     that.answer = function (params) {
         params = params || {};
-        log.trace('Call.answer');
+        log.debug('Call.answer');
 
         if (!defAnswered.promise.isPending()) {
             return;
@@ -576,7 +576,7 @@ module.exports = function (params) {
         if (!defApproved.promise.isPending()) {
             return;
         }
-        log.trace('Call.approve');
+        log.debug('Call.approve');
         /**
          * @event respoke.Call#approve
          * @type {respoke.Event}
@@ -600,7 +600,7 @@ module.exports = function (params) {
      * @param {object}
      */
     function onRemoteStreamRemoved(evt) {
-        log.trace('pc event: remote stream removed');
+        log.debug('pc event: remote stream removed');
     }
 
     /**
@@ -701,7 +701,7 @@ module.exports = function (params) {
      */
     function doAddVideo(params) {
         var stream;
-        log.trace('Call.doAddVideo');
+        log.debug('Call.doAddVideo');
         params = params || {};
         saveParameters(params);
         params.constraints = params.constraints || callSettings.constraints;
@@ -795,7 +795,7 @@ module.exports = function (params) {
      * @returns {Promise<respoke.LocalMedia>}
      */
     that.addVideo = function (params) {
-        log.trace('Call.addVideo');
+        log.debug('Call.addVideo');
         params = params || {};
         params.constraints = params.constraints || {video: true, audio: true};
         params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
@@ -878,7 +878,7 @@ module.exports = function (params) {
      */
     that.removeDirectConnection = function (params) {
         params = params || {};
-        log.trace('Call.removeDirectConnection');
+        log.debug('Call.removeDirectConnection');
 
         if (directConnection && directConnection.isActive()) {
             directConnection.close({skipRemove: true});
@@ -921,7 +921,7 @@ module.exports = function (params) {
      * @returns {Promise<respoke.DirectConnection>}
      */
     that.addDirectConnection = function (params) {
-        log.trace('Call.addDirectConnection');
+        log.debug('Call.addDirectConnection');
         pc.startModify({
             directConnection: true
         });
@@ -953,7 +953,7 @@ module.exports = function (params) {
      * @fires respoke.Call#direct-connection
      */
     function actuallyAddDirectConnection(params) {
-        log.trace('Call.actuallyAddDirectConnection', params);
+        log.debug('Call.actuallyAddDirectConnection', params);
         params = params || {};
         defMedia.promise.then(params.onSuccess, params.onError);
 
@@ -1071,7 +1071,7 @@ module.exports = function (params) {
      */
     that.hangup = function (params) {
         params = params || {};
-        log.trace('hangup', directConnection);
+        log.debug('hangup', directConnection);
 
         if (toSendHangup !== null) {
             log.info("call.hangup() called when call is already hung up.");
@@ -1154,7 +1154,7 @@ module.exports = function (params) {
      * @fires respoke.Call#modify
      */
     function listenOffer(evt) {
-        log.trace('listenOffer');
+        log.debug('listenOffer');
         var info = {};
         if (defModify && defModify.promise.isPending()) {
             if (directConnectionOnly === true) {
@@ -1194,7 +1194,7 @@ module.exports = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        log.trace('Call.listenAnswer');
+        log.debug('Call.listenAnswer');
         if (defSDPAnswer.promise.isFulfilled()) {
             log.debug("Ignoring duplicate answer.");
             return;
@@ -1209,7 +1209,7 @@ module.exports = function (params) {
      * @private
      */
     function listenModify(evt) {
-        log.trace('Call.listenModify', evt);
+        log.debug('Call.listenModify', evt);
         if (evt.signal.action === 'initiate') {
             defModify = Q.defer();
         }
