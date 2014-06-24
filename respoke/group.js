@@ -334,10 +334,6 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (that.connections.length > 0) {
-            deferred.resolve(that.connections);
-            return retVal;
-        }
         signalingChannel.getGroupMembers({
             id: that.id
         }).done(function successHandler(list) {
