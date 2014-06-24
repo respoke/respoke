@@ -6,6 +6,10 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+var Q = require('q');
+var respoke = require('./respoke');
+
 /**
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
@@ -37,8 +41,8 @@
  * @param {object} [params.offerOptions]
  * @returns {respoke.PeerConnection}
  */
-/*global respoke: false */
-respoke.PeerConnection = function (params) {
+
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -845,7 +849,7 @@ respoke.PeerConnection = function (params) {
      */
     function listenConnected(evt) {
         if (evt.signal.toConnection !== client.connectionId) {
-            log.verbose("Hanging up because I didn't win the call.", evt.signal, client);
+            log.trace("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
     }
@@ -1013,7 +1017,7 @@ respoke.PeerConnection = function (params) {
             log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
             return;
         }
-        log.verbose('Got a remote candidate.', params.candidate);
+        log.trace('Got a remote candidate.', params.candidate);
         that.report.candidatesReceived.push(params.candidate);
     };
 

@@ -6,6 +6,10 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var Q = require('q');
+var log = require('loglevel');
+var respoke = require('./respoke');
+
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @author Erin Spiceland <espiceland@digium.com>
@@ -53,8 +57,7 @@
  * @param {object} params.callSettings
  * @returns {respoke.Call}
  */
-/*global respoke: false */
-respoke.Call = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**

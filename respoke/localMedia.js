@@ -6,6 +6,9 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+var respoke = require('./respoke');
+
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
  * @author Erin Spiceland <espiceland@digium.com>
@@ -17,8 +20,7 @@
  * @param {object} params.callSettings
  * @returns {respoke.LocalMedia}
  */
-/*global respoke: false */
-respoke.LocalMedia = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -170,7 +172,7 @@ respoke.LocalMedia = function (params) {
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.onReceiveUserMedia
      * @private
-     * @param {RTCMediaStream}
+     * @param {RTCMediaStream} theStream
      * @fires respoke.LocalMedia#stream-received
      */
     function onReceiveUserMedia(theStream) {

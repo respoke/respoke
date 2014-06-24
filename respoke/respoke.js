@@ -1,3 +1,5 @@
+/*global Bugsnag: true*/
+/*jshint bitwise: false*/
 /**************************************************************************************************
  *
  * Copyright (c) 2014 Digium, Inc.
@@ -6,39 +8,53 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+log.setLevel('trace');
+
+var Q = require('q');
+Q.longStackSupport = true;
+Q.stackJumpLimit = 5;
+Q.longStackJumpLimit = 20;
+Q.stopUnhandledRejectionTracking();
+
+require('./deps/adapter');
+
 /**
  * @author Erin Spiceland <espiceland@digium.com>
  * @namespace respoke
  * @global
  */
-/*global Bugsnag: true, respoke: true*/
-/*jshint bitwise: false*/
-(function respokeInit() {
-    'use strict';
-    window.respoke = {
-        buildNumber: 'NO BUILD NUMBER',
-        streams: {},
-        instances: {}
+var respoke = module.exports = {
+    buildNumber: 'NO BUILD NUMBER',
+    streams: {},
+    instances: {}
+};
+
+respoke.EventEmitter = require('./event');
+respoke.Client = require('./client');
+respoke.Presentable = require('./presentable');
+respoke.Connection = require('./connection');
+respoke.Endpoint = require('./endpoint');
+respoke.TextMessage = require('./textMessage');
+respoke.SignalingMessage = require('./signalingMessage');
+respoke.Group = require('./group');
+respoke.SignalingChannel = require('./signalingChannel');
+respoke.DirectConnection = require('./directConnection');
+respoke.PeerConnection = require('./peerConnection');
+respoke.Call = require('./call');
+respoke.LocalMedia = require('./localMedia');
+
+if (!window.skipBugsnag) {
+    // Use bugsnag.
+    var bugsnag = document.createElement('script');
+    var first = document.getElementsByTagName('script')[0];
+    first.parentNode.insertBefore(bugsnag, first);
+
+    bugsnag.onload = function () {
+        Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
     };
-    log.setLevel('trace');
-
-    if (!window.skipBugsnag) {
-        // Use bugsnag.
-        var bugsnag = document.createElement('script');
-        var first = document.getElementsByTagName('script')[0];
-        first.parentNode.insertBefore(bugsnag, first);
-
-        bugsnag.onload = function () {
-            Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
-        };
-        bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';
-    }
-}());
-
-Q.longStackSupport = true;
-Q.stackJumpLimit = 5;
-Q.longStackJumpLimit = 20;
-Q.stopUnhandledRejectionTracking();
+    bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';
+}
 
 /**
  * This is one of two possible entry points for interating with the library. This method creates a new Client object
