@@ -433,7 +433,7 @@
             }
 
             args.push(function successHandler(stats) {
-                deferred.resolve(mediaStatsReport(buildStats(stats)));
+                deferred.resolve(respoke.MediaStats(buildStats(stats)));
             });
             args.push(function errorHandler(err) {
                 respoke.log.error(err);
