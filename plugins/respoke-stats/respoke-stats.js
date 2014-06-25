@@ -10,15 +10,15 @@
 (function (factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['respoke', 'q', 'loglevel'], factory);
+        define(['respoke'], factory);
     } else if (typeof exports === 'object') {
         // Node/CommonJS
-        factory(require('respoke'), require('q'), require('loglevel'));
+        factory(require('respoke'));
     } else {
         // Browser globals
-        factory(respoke, Q, log);
+        factory(respoke);
     }
-}(function (respoke, Q, log) {
+}(function (respoke) {
 
     /**
      * A report containing statistical information about the flow of media.
@@ -356,7 +356,7 @@
             var sdp = {};
             if (!pc || !pc.remoteDescription || !pc.remoteDescription.sdp ||
                 !pc.localDescription || !pc.localDescription.sdp) {
-                log.warn("missing info.");
+                respoke.log.warn("missing info.");
                 return;
             }
 
@@ -398,11 +398,11 @@
             if (params.onStats) {
                 timer = setInterval(function statsTimerHandler() {
                     that.getStats().done(params.onStats, function errorHandler(err) {
-                        log.error("error in getStats", err.message, err.stack);
+                        respoke.log.error("error in getStats", err.message, err.stack);
                     });
                 }, statsInterval);
             } else {
-                log.warn("Not starting stats, no onStats callback provided.");
+                respoke.log.warn("Not starting stats, no onStats callback provided.");
             }
         }
 
@@ -419,7 +419,7 @@
          */
         that.getStats = function (params) {
             params = params || {};
-            var deferred = Q.defer();
+            var deferred = respoke.Q.defer();
             var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
             var args = [];
 
@@ -436,7 +436,7 @@
                 deferred.resolve(mediaStatsReport(buildStats(stats)));
             });
             args.push(function errorHandler(err) {
-                log.error(err);
+                respoke.log.error(err);
                 deferred.reject(new Error("Can't get stats."));
             });
             pc.getStats.apply(pc, args);

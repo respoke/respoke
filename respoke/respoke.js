@@ -43,6 +43,8 @@ respoke.DirectConnection = require('./directConnection');
 respoke.PeerConnection = require('./peerConnection');
 respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
+respoke.log = log;
+respoke.Q = Q;
 
 if (!window.skipBugsnag) {
     // Use bugsnag.
