@@ -41,12 +41,6 @@ module.exports = function(grunt) {
             }
         },
         karma: {
-            continuous: {
-                configFile: './karma-lib-orig.conf.js',
-                browsers: ['Chrome'],
-                singleRun: true,
-                reporters: ['junit']
-            },
             unit: {
                 singleRun: true,
                 configFile: './karma-unit.conf.js'
@@ -65,8 +59,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-aws-s3');
     grunt.loadNpmTasks('grunt-env');
-
-    grunt.registerTask('s3', ['aws_s3']);
 
     grunt.registerTask('dist', [
         'webpack',
