@@ -761,9 +761,9 @@ module.exports = function (params) {
 
     /**
      * Indicate whether sdp has Audio element
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.hasAudio
-     * @param {sdp}
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.hasAudio
+     * @param {object} sdp
      * @returns {boolean}
      * @private
      */
@@ -773,9 +773,9 @@ module.exports = function (params) {
 
     /**
      * Indicate whether sdp has Video element
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.hasVideo
-     * @param {sdp}
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.hasVideo
+     * @param {object} sdp
      * @returns {boolean}
      * @private
      */
