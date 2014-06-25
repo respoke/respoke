@@ -21,7 +21,7 @@ module.exports = function(config) {
         // possible values: 'dots', 'progress', 'junit'
         reporters: ['spec', 'junit'],
         junitReporter: {
-            outputFile: 'build/unit-test-min-results.xml'
+            outputFile: 'build/unit-test-results.xml'
         },
 
         hostname: 'localhost',
