@@ -1,9 +1,10 @@
 var expect = chai.expect;
-log.setLevel('error');
+respoke.log.setLevel('error');
 
 describe("Respoke messaging", function () {
     this.timeout(30000);
 
+    var Q = respoke.Q;
     var testEnv;
     var follower = {};
     var followee = {};

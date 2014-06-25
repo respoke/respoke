@@ -47,7 +47,7 @@ module.exports = function(grunt) {
                 singleRun: true,
                 reporters: ['junit']
             },
-            devMin: {
+            unit: {
                 singleRun: true,
                 configFile: './karma-unit.conf.js'
             },

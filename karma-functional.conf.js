@@ -12,6 +12,7 @@ module.exports = function(config) {
         files: [
           'node_modules/chai/chai.js',
           'node_modules/sinon/pkg/sinon.js',
+          'node_modules/async/lib/async.js',
           'respoke.min.js',
           'respoke-stats.min.js',
           'spec/util/config.js',
