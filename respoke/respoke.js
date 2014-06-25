@@ -53,6 +53,7 @@ if (!window.skipBugsnag) {
     first.parentNode.insertBefore(bugsnag, first);
 
     bugsnag.onload = function () {
+        "use strict";
         Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
     };
     bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';

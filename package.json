@@ -4,7 +4,8 @@
   "description": "Client-side JavaScript library for Collective.",
   "main": "index.js",
   "scripts": {
-    "build": "browserify respoke/respoke.js -s respoke --debug --detect-globals false -p [minifyify --map respoke.min.map --compressPath `pwd` --output respoke.min.map] > respoke.min.js",
+    "build": "webpack",
+    "watch": "webpack --watch",
     "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "doc": "jsdoc -c jsdoc.json",
     "doc-markdown": "jsdoc -c jsdoc.json -t ${JSDOC_TEMPLATES:=..}/jsdoc-markdown-template -d markdown",
@@ -32,7 +33,9 @@
     "grunt-karma": "~0.8.3",
     "grunt-mocha-test": "~0.10.2",
     "grunt-stratos": "git+http://stash.digium.com/stash/scm/stratos/grunt-stratos.git",
+    "grunt-webpack": "^1.0.7",
     "jsdoc": "^3.3.0-alpha5",
+    "jshint": "^2.5.1",
     "karma": "~0.12.16",
     "karma-chrome-launcher": "^0.1.3",
     "karma-junit-reporter": "^0.2.2",
@@ -41,6 +44,9 @@
     "minifyify": "^3.0.9",
     "mocha-bamboo-reporter": "^1.0.5",
     "sinon": "^1.7.3",
-    "uglify-js": "~2.4.0"
+    "uglify-js": "~2.4.0",
+    "watchify": "^0.10.2",
+    "webpack": "^1.3.1-beta4",
+    "webpack-dev-server": "^1.4.3"
   }
 }

@@ -1,3 +1,4 @@
+/* global define: false, respoke: false */
 /**************************************************************************************************
  *
  * Copyright (c) 2014 Digium, Inc.
@@ -8,6 +9,7 @@
 
 // UMD wrapper to provide support for CommonJS, AMD, and browser globals
 (function (factory) {
+    "use strict";
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
         define(['respoke'], factory);
@@ -19,7 +21,7 @@
         factory(respoke);
     }
 }(function (respoke) {
-
+    "use strict";
     /**
      * A report containing statistical information about the flow of media.
      * with the latest live statistics.
@@ -29,7 +31,6 @@
      * @param {object} params
      */
     respoke.MediaStats = function (params) {
-        "use strict";
         params = JSON.parse(JSON.stringify(params || {}));
         /**
          * Information about the connection.
@@ -224,7 +225,6 @@
      * @param {RTCPeerConnection} peerConnection
      */
     respoke.MediaStatsParser = function (params) {
-        "use strict";
         params = params || {};
         var that = respoke.Class(params);
         /**
