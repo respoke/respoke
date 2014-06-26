@@ -4,6 +4,7 @@
  * All Rights Reserved. Licensed Software.
  *
  * @authors : Erin Spiceland <espiceland@digium.com>
+ * @api private
  */
 
 var log = require('loglevel');
@@ -21,7 +22,7 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @private
+ * @api private
  * @returns {respoke.SignalingChannel}
  */
 module.exports = function (params) {
@@ -40,6 +41,7 @@ module.exports = function (params) {
      * @memberof! respoke.SignalingChannel
      * @name className
      * @type {string}
+     * @api private
      */
     that.className = 'respoke.SignalingChannel';
 
@@ -53,6 +55,7 @@ module.exports = function (params) {
     /**
      * The state of the signaling channel.
      * @memberof! respoke.SignalingChannel
+     * @private
      * @name state
      * @type {boolean}
      */
@@ -186,6 +189,7 @@ module.exports = function (params) {
      * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.open
+     * @api private
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
@@ -224,6 +228,7 @@ module.exports = function (params) {
      * Get a developer mode token for an endpoint. App must be in developer mode.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getToken
+     * @api private
      * @param {object} params
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
@@ -305,6 +310,7 @@ module.exports = function (params) {
      * Close a connection to the REST API. Invalidate the appauthsession.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.close
+     * @api private
      * @param {object} params
      * @return {Promise}
      */
@@ -339,6 +345,7 @@ module.exports = function (params) {
      * the server to send the client's endpoint's presence.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendPresence
+     * @api private
      * @param {object} params
      * @param {string|number|object|Array} [params.presence=available]
      * @param {string} [params.status] - Non-enumeration human-readable status.
@@ -377,6 +384,7 @@ module.exports = function (params) {
      * Get or create a group in the infrastructure.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getGroup
+     * @api private
      * @returns {Promise<respoke.Group>}
      * @param {object} params
      * @param {string} name
@@ -410,6 +418,7 @@ module.exports = function (params) {
     /**
      * Join a group.
      * @memberof! respoke.SignalingChannel
+     * @api private
      * @method respoke.SignalingChannel.leaveGroup
      * @returns {Promise}
      * @param {object} params
@@ -441,6 +450,7 @@ module.exports = function (params) {
      * Join a group.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.joinGroup
+     * @api private
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
@@ -470,6 +480,7 @@ module.exports = function (params) {
     /**
      * Publish a message to a group.
      * @memberof! respoke.SignalingChannel
+     * @api private
      * @method respoke.SignalingChannel.publish
      * @returns {Promise}
      * @param {object} params
@@ -506,6 +517,7 @@ module.exports = function (params) {
      * Register as an observer of presence for the specified endpoint ids.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.registerPresence
+     * @api private
      * @param {object} params
      * @param {Array<string>} params.endpointList
      */
@@ -531,6 +543,7 @@ module.exports = function (params) {
      * Join a group.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getGroupMembers
+     * @api private
      * @returns {Promise<Array>}
      * @param {object} params
      * @param {string} params.id
@@ -567,6 +580,7 @@ module.exports = function (params) {
      * Send a chat message.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendMessage
+     * @api private
      * @param {object} params
      * @param {respoke.SignalingMessage} params.message - The string text message to send.
      * @param {respoke.Endpoint} params.recipient
@@ -603,6 +617,7 @@ module.exports = function (params) {
      * Send an ACK signal to acknowlege reception of a signal.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendACK
+     * @api private
      * @param {object} params
      * @param {respoke.SignalingMessage} params.signal
      * @return {Promise}
@@ -638,6 +653,7 @@ module.exports = function (params) {
      * Send a signaling message.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendSignal
+     * @api private
      * @param {object} params
      * @param {respoke.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
      * @return {Promise}
@@ -689,6 +705,7 @@ module.exports = function (params) {
      * Send an ICE candidate.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendCandidate
+     * @api private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
@@ -710,6 +727,7 @@ module.exports = function (params) {
      * Send an SDP.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendSDP
+     * @api private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
@@ -734,6 +752,7 @@ module.exports = function (params) {
      * Send a call report to the cloud infrastructure.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendReport
+     * @api private
      * @param {object} params
      * @todo TODO document the params.
      * @return {Promise}
@@ -767,6 +786,7 @@ module.exports = function (params) {
      * Send a message hanging up the WebRTC session.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendHangup
+     * @api private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
@@ -788,6 +808,7 @@ module.exports = function (params) {
      * Send a message to all connection ids indicating we have negotiated a call with one connection.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendConnected
+     * @api private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @return {Promise}
@@ -807,6 +828,7 @@ module.exports = function (params) {
      * Send a message to the remote party indicating a desire to renegotiate media.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendModify
+     * @api private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} params.action - The state of the modify request, one of: 'initiate', 'accept', 'reject'
@@ -841,6 +863,7 @@ module.exports = function (params) {
      * Route different types of signaling messages via events.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.routeSignal
+     * @api private
      * @param {respoke.SignalingMessage} message - A message to route
      * @fires respoke.Call#offer
      * @fires respoke.Call#connected
@@ -1064,6 +1087,7 @@ module.exports = function (params) {
      * Add a handler to the connection for messages of different types.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.addHandler
+     * @private
      * @param {object} params
      * @param {string} params.type - The type of socket message, i. e., 'message', 'presence', 'join'
      * @param {function} params.handler - A function to which to pass the message
@@ -1380,6 +1404,7 @@ module.exports = function (params) {
      * Authenticate to the cloud and call the handler on state change.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.authenticate
+     * @api private
      * @param {object} params
      * @return {Promise}
      */
@@ -1403,6 +1428,7 @@ module.exports = function (params) {
 
         /*
          * Try to connect for 2 seconds before failing.
+         * @private
          */
         var connectParams = {
             'connect timeout': 2000,
@@ -1500,6 +1526,7 @@ module.exports = function (params) {
      * sent or received, prior to creating a PeerConnection
      *
      * @memberof! respoke.SignalingChannel
+     * @api private
      * @method respoke.SignalingChannel.getTurnCredentials
      * @return {Promise<Array>}
      */
