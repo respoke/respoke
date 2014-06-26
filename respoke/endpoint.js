@@ -100,7 +100,7 @@ module.exports = function (params) {
      * method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
      * only.
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         var promise;

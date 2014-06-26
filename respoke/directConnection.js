@@ -168,7 +168,7 @@ module.exports = function (params) {
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.getStats
-     * @returns {Promise<object>|void}
+     * @returns {Promise<object>|undefined}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive the
@@ -396,7 +396,7 @@ module.exports = function (params) {
      * of this method only.
      * @param {respoke.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation
      * of this method only.
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         var deferred = Q.defer();

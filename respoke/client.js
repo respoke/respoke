@@ -246,7 +246,7 @@ module.exports = function (params) {
      * @param {respoke.Client.onCall} [params.onCall] - Callback for when this client receives a call.
      * @param {respoke.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this
      * client receives a request for a direct connection.
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      * @fires respoke.Client#connect
      */
     that.connect = function (params) {
@@ -288,7 +288,7 @@ module.exports = function (params) {
      * @param {connectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      */
     function actuallyConnect(params) {
         params = params || {};
@@ -369,7 +369,7 @@ module.exports = function (params) {
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.disconnect
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      * @param {object} params
      * @param {disconnectSuccessHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -417,7 +417,7 @@ module.exports = function (params) {
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @return {Promise|void}
+     * @return {Promise|undefined}
      */
     that.setPresence = function (params) {
         var promise;
@@ -552,7 +552,7 @@ module.exports = function (params) {
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      */
     that.setOnline = function (params) {
         var promise;
@@ -583,7 +583,7 @@ module.exports = function (params) {
      * @param {sendHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise|void}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         var promise;
@@ -688,7 +688,7 @@ module.exports = function (params) {
      * @param {respoke.Group.onJoin} [params.onJoin] - Join event listener for endpoints who join this group only.
      * @param {respoke.Group.onLeave} [params.onLeave] - Leave event listener for endpoints who leave
      * this group only.
-     * @returns {Promise<respoke.Group>|void} The instance of the respoke.Group which the client joined.
+     * @returns {Promise<respoke.Group>|undefined} The instance of the respoke.Group which the client joined.
      * @fires respoke.Client#join
      */
     that.join = function (params) {
