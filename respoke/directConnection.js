@@ -6,6 +6,10 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+var Q = require('q');
+var respoke = require('./respoke');
+
 /**
  * A direct connection via RTCDataChannel, including state and path negotation.
  * @author Erin Spiceland <espiceland@digium.com>
@@ -36,8 +40,7 @@
  * necessary to listen to this event if you are already listening to respoke.Endpoint#message.
  * @returns {respoke.DirectConnection}
  */
-/*global respoke: false */
-respoke.DirectConnection = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -324,7 +327,7 @@ respoke.DirectConnection = function (params) {
      */
     that.accept = function (params) {
         params = params || {};
-        log.trace('DirectConnection.accept');
+        log.debug('DirectConnection.accept');
         saveParameters(params);
 
         log.debug("I am " + (that.call.caller ? '' : 'not ') + "the caller.");
@@ -350,7 +353,7 @@ respoke.DirectConnection = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        log.trace("DirectConnection.close");
+        log.debug("DirectConnection.close");
         if (dataChannel) {
             dataChannel.close();
         }

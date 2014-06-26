@@ -6,6 +6,10 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+var Q = require('q');
+var respoke = require('./respoke');
+
 /**
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
@@ -37,8 +41,8 @@
  * @param {object} [params.offerOptions]
  * @returns {respoke.PeerConnection}
  */
-/*global respoke: false */
-respoke.PeerConnection = function (params) {
+
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -315,7 +319,7 @@ respoke.PeerConnection = function (params) {
      * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
-        log.trace('processOffer', oOffer);
+        log.debug('processOffer', oOffer);
         if (that.call.caller) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
@@ -464,7 +468,7 @@ respoke.PeerConnection = function (params) {
         callSettings.servers = params.servers || callSettings.servers;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
-        log.trace('PC.init');
+        log.debug('PC.init');
 
         if (pc) {
             return;
@@ -697,7 +701,7 @@ respoke.PeerConnection = function (params) {
     that.close = function (params) {
         params = params || {};
         if (toSendHangup !== undefined) {
-            log.trace("PeerConnection.close got called twice.");
+            log.debug("PeerConnection.close got called twice.");
             return;
         }
         toSendHangup = true;
@@ -757,9 +761,9 @@ respoke.PeerConnection = function (params) {
 
     /**
      * Indicate whether sdp has Audio element
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.hasAudio
-     * @param {sdp}
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.hasAudio
+     * @param {object} sdp
      * @returns {boolean}
      * @private
      */
@@ -769,9 +773,9 @@ respoke.PeerConnection = function (params) {
 
     /**
      * Indicate whether sdp has Video element
-     * @memberof! brightstream.PeerConnection
-     * @method brightstream.PeerConnection.hasVideo
-     * @param {sdp}
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.hasVideo
+     * @param {object} sdp
      * @returns {boolean}
      * @private
      */
@@ -845,7 +849,7 @@ respoke.PeerConnection = function (params) {
      */
     function listenConnected(evt) {
         if (evt.signal.toConnection !== client.connectionId) {
-            log.verbose("Hanging up because I didn't win the call.", evt.signal, client);
+            log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
     }
@@ -887,7 +891,7 @@ respoke.PeerConnection = function (params) {
      */
     function listenModify(evt) {
         var err;
-        log.trace('PC.listenModify', evt.signal);
+        log.debug('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
             that.call.caller = true;
@@ -1013,7 +1017,7 @@ respoke.PeerConnection = function (params) {
             log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
             return;
         }
-        log.verbose('Got a remote candidate.', params.candidate);
+        log.debug('Got a remote candidate.', params.candidate);
         that.report.candidatesReceived.push(params.candidate);
     };
 

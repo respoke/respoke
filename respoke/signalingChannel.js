@@ -6,6 +6,11 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+var Q = require('q');
+var io = require('socket.io-client');
+var respoke = require('./respoke');
+
 /**
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
@@ -19,8 +24,7 @@
  * @private
  * @returns {respoke.SignalingChannel}
  */
- /*global respoke: false */
-respoke.SignalingChannel = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -191,7 +195,7 @@ respoke.SignalingChannel = function (params) {
     that.open = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('SignalingChannel.open', params, clientSettings);
+        log.debug('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
 
@@ -208,7 +212,7 @@ respoke.SignalingChannel = function (params) {
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
-            log.verbose('client', client);
+            log.debug('client', client);
         }, function errorHandler(err) {
             deferred.reject(err);
         });
@@ -228,7 +232,7 @@ respoke.SignalingChannel = function (params) {
     that.getToken = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('SignalingChannel.getToken', params);
+        log.debug('SignalingChannel.getToken', params);
 
         var callParams = {
             path: '/v1/tokens',
@@ -266,7 +270,7 @@ respoke.SignalingChannel = function (params) {
     function doOpen(params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('SignalingChannel.doOpen', params);
+        log.debug('SignalingChannel.doOpen', params);
 
         if (!params.token) {
             deferred.reject(new Error("Can't open connection to Respoke without a token."));
@@ -283,7 +287,7 @@ respoke.SignalingChannel = function (params) {
             if (response.code === 200) {
                 appToken = response.result.token;
                 deferred.resolve();
-                log.trace("Signaling connection open to", clientSettings.baseURL);
+                log.debug("Signaling connection open to", clientSettings.baseURL);
                 that.connected = true;
             } else {
                 that.connected = false;
@@ -344,7 +348,7 @@ respoke.SignalingChannel = function (params) {
     that.sendPresence = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace("Signaling sendPresence");
+        log.debug("Signaling sendPresence");
 
         if (!that.connected) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -380,7 +384,7 @@ respoke.SignalingChannel = function (params) {
     that.getGroup = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.trace('signalingChannel.getGroup');
+        log.debug('signalingChannel.getGroup');
 
         if (!that.connected) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -855,7 +859,7 @@ respoke.SignalingChannel = function (params) {
         var method = 'do';
 
         if (signal.signalType !== 'iceCandidates') { // Too many of these!
-            log.verbose(signal.signalType, signal);
+            log.debug(signal.signalType, signal);
         }
 
         // Only create if this signal is an offer.
@@ -1306,7 +1310,7 @@ respoke.SignalingChannel = function (params) {
             // Skip ourselves
             return;
         }
-        log.verbose('socket.on presence', message);
+        log.debug('socket.on presence', message);
 
         endpoint = client.getEndpoint({
             id: message.header.from,
@@ -1445,7 +1449,7 @@ respoke.SignalingChannel = function (params) {
         });
 
         socket.on('error', function errorHandler(res) {
-            log.trace('Socket.io error.', res || "");
+            log.debug('Socket.io error.', res || "");
             if (!client.connected) {
                 reconnect();
             }
@@ -1586,7 +1590,7 @@ respoke.SignalingChannel = function (params) {
 
         // Too many of these!
         if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-            log.verbose('socket request', params.httpMethod, params.path, params.parameters);
+            log.debug('socket request', params.httpMethod, params.path, params.parameters);
         }
 
         if (!socket) {
@@ -1608,7 +1612,7 @@ respoke.SignalingChannel = function (params) {
             clearTimeout(requestTimer);
             // Too many of these!
             if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-                log.verbose('socket response', params.httpMethod, params.path, response);
+                log.debug('socket response', params.httpMethod, params.path, response);
             }
 
             try {
@@ -1699,7 +1703,7 @@ respoke.SignalingChannel = function (params) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
             return;
         }
-        log.verbose('calling', params.httpMethod, uri, "with params", paramString);
+        log.debug('calling', params.httpMethod, uri, "with params", paramString);
 
         try {
             xhr.send(paramString);
@@ -1728,7 +1732,7 @@ respoke.SignalingChannel = function (params) {
                         response.error = "Invalid JSON.";
                     }
                 }
-                log.verbose(response);
+                log.debug(response);
                 deferred.resolve(response);
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
@@ -1796,541 +1800,4 @@ respoke.SignalingChannel = function (params) {
  * Receive a list of TURN credentials.
  * @callback respoke.SignalingChannel.turnSuccessHandler
  * @param {Array}
- */
-
-/**
- * A text message and the information needed to route it.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class respoke.TextMessage
- * @constructor
- * @param {object} params
- * @param {string} [params.endpointId] - If sending, endpoint ID of the thing we're sending a message to.
- * @param {string} [params.connectionId] - If sending, connection ID of the thing we're sending a message to.
- * @param {string} [params.message] - If sending, a message to send
- * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
- * @private
- * @returns {respoke.TextMessage}
- */
-respoke.TextMessage = function (params) {
-    "use strict";
-    params = params || {};
-    var that = {};
-
-    /**
-     * Parse rawMessage and set attributes required for message delivery.
-     * @memberof! respoke.TextMessage
-     * @method respoke.TextMessage.parse
-     * @private
-     */
-    function parse() {
-        if (params.rawMessage) {
-            try {
-                that.endpointId = params.rawMessage.header.from;
-                that.connectionId = params.rawMessage.header.fromConnection;
-            } catch (e) {
-                throw new Error(e);
-            }
-            that.message = params.rawMessage.message || params.rawMessage.body;
-            if (params.rawMessage.header.channel) {
-                that.recipient = params.rawMessage.header.channel;
-            }
-        } else {
-            try {
-                that.to = params.endpointId;
-                that.toConnection = params.connectionId;
-                that.requestConnectionReply = (params.requestConnectionReply === true);
-            } catch (e) {
-                throw new Error(e);
-            }
-            that.message = params.message;
-        }
-    }
-
-    parse();
-    return that;
-}; // End respoke.TextMessage
-
-/**
- * A signaling message and the information needed to route it.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class respoke.SignalingMessage
- * @constructor
- * @param {object} params
- * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
- * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
- * @param {string} [params.signal] - If sending, a message to send
- * @param {respoke.Endpoint} [params.recipient]
- * @param {string} [params.signalType]
- * @param {string} [params.sessionId] - A globally unique ID to identify this call.
- * @param {string} [params.target] - Either 'call' or 'directConnection', TODO remove the need for this.
- * @param {string} [params.signalId] - A globally unique ID to identify this signal and it's ACK.
- * @param {string} [params.callerId] - Human readable caller ID. Not implemented.
- * @param {RTCSessionDescription} [params.sdp]
- * @param {Array<RTCIceCandidate>} [params.iceCandidates]
- * @param {object} [params.offering] - Object describing the media we're offering to send the remote party in a more
- * usable way than SDP. Not implemented.
- * @param {object} [params.requesting] - Object describing the media we're requesting from the remote party in a more
- * usable way than SDP. Not implemented.
- * @param {string} [params.reason] - Human readable reason for hanging up.
- * @param {string} [params.error] - String indicating that a previous signal was malformed or received in the wrong
- * state. Not implemented.
- * @param {string} [params.status] - "Ringing". Not implemented.
- * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
- * @private
- * @returns {respoke.SignalingMessage}
- */
-respoke.SignalingMessage = function (params) {
-    "use strict";
-    params = params || {};
-    var that = {};
-    /**
-     * Attributes without which we cannot build a signaling message.
-     * @memberof! respoke.SignalingMessage
-     * @name required
-     * @private
-     * @type {string}
-     */
-    var required = ['recipient', 'signalType', 'sessionId', 'target', 'signalId'];
-    /**
-     * Attributes which we will copy onto the signal if defined.
-     * @memberof! respoke.SignalingMessage
-     * @name required
-     * @private
-     * @type {string}
-     */
-    var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sdp', 'iceCandidates', 'offering', 'target', 'signalId',
-        'requesting', 'reason', 'error', 'status'
-    ];
-
-    /**
-     * Parse rawMessage and set attributes required for message delivery.
-     * @memberof! respoke.SignalingMessage
-     * @method respoke.SignalingMessage.parse
-     * @private
-     */
-    function parse() {
-        if (params.rawMessage) {
-            try {
-                that = JSON.parse(params.rawMessage.signal); // Incoming message
-                that.endpointId = params.rawMessage.header.from;
-                that.connectionId = params.rawMessage.header.fromConnection;
-            } catch (e) {
-                throw new Error(e);
-            }
-        } else {
-            required.forEach(function eachAttr(attr) {
-                if (params[attr] === 0 || !params[attr]) {
-                    throw new Error("Can't build a signaling without " + attr);
-                }
-            });
-
-            allowed.forEach(function eachAttr(attr) {
-                if (params[attr] === 0 || params[attr]) {
-                    that[attr] = params[attr];
-                }
-            });
-
-            that.to = params.recipient.id;
-            that.toConnection = params.connectionId;
-        }
-    }
-
-    parse();
-    return that;
-}; // End respoke.SignalingMessage
-
-/**
- * A group, representing a collection of endpoints and the method by which to communicate with them.
- * @author Erin Spiceland <espiceland@digium.com>
- * @class respoke.Group
- * @constructor
- * @param {object} params
- * @param {string} params.instanceId
- * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
- * endpoint has joined the group. This callback does not get called when the client joins the group.
- * @param {respoke.Group.onMessage} params.onMessage - A callback to receive messages sent to the group from
- * remote endpoints.
- * @param {respoke.Group.onLeave} params.onLeave - A callback to receive notifications every time a new
- * endpoint has left the group. This callback does not get called when the client leaves the group.
- * @returns {respoke.Group}
- */
-respoke.Group = function (params) {
-    "use strict";
-    params = params || {};
-
-    var that = respoke.EventEmitter(params);
-    /**
-     * @memberof! respoke.Group
-     * @name instanceId
-     * @private
-     * @type {string}
-     */
-    var instanceId = params.instanceId;
-    var client = respoke.getClient(instanceId);
-
-    if (!that.id) {
-        throw new Error("Can't create a group without an ID.");
-    }
-
-    /**
-     * @memberof! respoke.Group
-     * @name signalingChannel
-     * @type respoke.SignalingChannel
-     * @private
-     */
-    var signalingChannel = params.signalingChannel;
-    delete params.signalingChannel;
-
-    /**
-     * @memberof! respoke.Group
-     * @name endpoints
-     * @type {array<respoke.Endpoint>}
-     * @desc A list of the members of this group.
-     */
-    that.connections = [];
-    /**
-     * A name to identify the type of this object.
-     * @memberof! respoke.Group
-     * @name className
-     * @type {string}
-     */
-    that.className = 'respoke.Group';
-    that.listen('join', params.onJoin);
-    that.listen('message', params.onMessage);
-    that.listen('leave', params.onLeave);
-    client.listen('disconnect', function disconnectHandler() {
-        that.connections = [];
-    });
-
-    delete that.instanceId;
-    delete that.onMessage;
-    delete that.onPresence;
-    delete that.onJoin;
-    delete that.onLeave;
-
-    /**
-     * Join this group.
-     * @memberof! respoke.Group
-     * @method respoke.Group.join
-     * @return {Promise|undefined}
-     * @param {object} params
-     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @fires respoke.Client#join
-     */
-    that.join = function () {
-        var params = {
-            id: that.id
-        };
-        var promise;
-        var deferred;
-        var retVal;
-
-        try {
-            validateConnection();
-        } catch (err) {
-            deferred = Q.defer();
-            retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
-            deferred.reject(err);
-            return retVal;
-        }
-
-        promise = client.join(params);
-        retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-        return retVal;
-    };
-
-    /**
-     * Leave this group.
-     * @memberof! respoke.Group
-     * @method respoke.Group.leave
-     * @param {object} params
-     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
-     * this method only.
-     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
-     * method only.
-     * @return {Promise|undefined}
-     * @fires respoke.Client#leave
-     */
-    that.leave = function (params) {
-        params = params || {};
-        var deferred = Q.defer();
-        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
-
-        try {
-            validateConnection();
-            validateMembership();
-        } catch (err) {
-            deferred.reject(err);
-            return retVal;
-        }
-
-        signalingChannel.leaveGroup({
-            id: that.id
-        }).then(function successHandler() {
-            /**
-             * This event is fired when the client leaves a group.
-             * @event respoke.Client#leave
-             * @type {respoke.Event}
-             * @property {respoke.Group} group
-             * @property {string} name - the event name.
-             * @property {respoke.Client} target
-             */
-            client.fire('leave', {
-                group: that
-            });
-            that.connections = [];
-            deferred.resolve();
-        }, function errorHandler(err) {
-            deferred.reject();
-        });
-        return retVal;
-    };
-
-    /**
-     * Remove a Connection from a Group. This does not change the status of the remote Endpoint, it only changes the
-     * internal representation of the Group membership. This method should only be used internally.
-     * @private
-     * @memberof! respoke.Group
-     * @method respoke.Group.removeMember
-     * @param {object} params
-     * @param {string} [params.connectionId] - Endpoint's connection id
-     * @fires respoke.Group#leave
-     */
-    that.removeMember = function (params) {
-        params = params || {};
-
-        try {
-            validateConnection();
-            validateMembership();
-        } catch (err) {
-            return;
-        }
-
-        if (!params.connectionId) {
-            throw new Error("Can't remove a member to the group without it's Connection id.");
-        }
-
-        that.connections.every(function eachConnection(conn, index) {
-            if (conn.id === params.connectionId) {
-                that.connections.splice(index, 1);
-
-                /**
-                 * This event is fired when a member leaves a group the client is a member of.
-                 * @event respoke.Group#leave
-                 * @type {respoke.Event}
-                 * @property {respoke.Connection} connection
-                 * @property {string} name - the event name.
-                 * @property {respoke.Group} target
-                 */
-                that.fire('leave', {
-                    connection: conn
-                });
-                return false;
-            }
-            return true;
-        });
-    };
-
-    /**
-     * Return true if the logged-in user is a member of this group and false if not.
-     * @memberof! respoke.Group
-     * @method respoke.Group.isJoined
-     * @returns {boolean}
-     */
-    that.isJoined = function () {
-        // connections array contains some connections and ours is among them.
-        return (that.connections.length > 0 && !that.connections.every(function (conn) {
-            return conn.id !== client.connectionId;
-        }));
-    };
-
-    /**
-     * Add a Connection to a group. This does not change the status of the remote Endpoint, it only changes the
-     * internal representation of the Group membership. This method should only be used internally.
-     * @memberof! respoke.Group
-     * @private
-     * @method respoke.Group.addMember
-     * @param {object} params
-     * @param {respoke.Connection} params.connection
-     * @fires respoke.Group#join
-     */
-    that.addMember = function (params) {
-        params = params || {};
-        var absent;
-
-        validateConnection();
-
-        if (!params.connection) {
-            throw new Error("Can't add a member to the group without it's Connection object.");
-        }
-
-        absent = that.connections.every(function eachConnection(conn) {
-            return (conn.id !== params.connection.id);
-        });
-
-        if (absent) {
-            that.connections.push(params.connection);
-            if (params.skipEvent) {
-                return;
-            }
-
-            /**
-             * This event is fired when a member joins a Group that the currently logged-in endpoint is a member
-             * of.
-             * @event respoke.Group#join
-             * @type {respoke.Event}
-             * @property {respoke.Connection} connection
-             * @property {string} name - the event name.
-             * @property {respoke.Group} target
-             */
-            that.fire('join', {
-                connection: params.connection
-            });
-        }
-    };
-
-    /**
-     * Validate that the client is connected to the Respoke infrastructure.
-     * @memberof! respoke.Group
-     * @method respoke.Group.validateConnection
-     * @private
-     */
-    function validateConnection() {
-        if (!signalingChannel || !signalingChannel.connected) {
-            throw new Error("Can't complete request when not connected. Please reconnect!");
-        }
-    }
-
-    /**
-     * Validate that the client is a member of this group.
-     * @memberof! respoke.Group
-     * @method respoke.Group.validateMembership
-     * @private
-     */
-    function validateMembership() {
-        if (!that.isJoined()) {
-            throw new Error("Not a member of this group anymore.");
-        }
-    }
-
-    /**
-     * Send a message to the entire group.
-     * @memberof! respoke.Group
-     * @method respoke.Group.sendMessage
-     * @param {object} params
-     * @param {string} params.message - The message.
-     * @returns {Promise}
-     */
-    that.sendMessage = function (params) {
-        params = params || {};
-        params.id = that.id;
-        var retVal;
-        var deferred;
-
-        try {
-            validateConnection();
-            validateMembership();
-        } catch (err) {
-            deferred = Q.defer();
-            retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
-            deferred.reject(err);
-            return retVal;
-        }
-
-        return signalingChannel.publish(params);
-    };
-
-    /**
-     * Get an array containing the members of the group.
-     * @memberof! respoke.Group
-     * @method respoke.Group.getMembers
-     * @returns {Promise<Array>} A promise to an array of Connections.
-     * @param {object} params
-     * @fires respoke.Group#join
-     */
-    that.getMembers = function (params) {
-        params = params || {};
-        var deferred = Q.defer();
-        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
-
-        try {
-            validateConnection();
-            validateMembership();
-        } catch (err) {
-            deferred.reject(err);
-            return retVal;
-        }
-
-        if (that.connections.length > 0) {
-            deferred.resolve(that.connections);
-            return retVal;
-        }
-        signalingChannel.getGroupMembers({
-            id: that.id
-        }).done(function successHandler(list) {
-            var endpointList = [];
-            list.forEach(function eachMember(params) {
-                var connection = client.getConnection({
-                    endpointId: params.endpointId,
-                    connectionId: params.connectionId
-                });
-
-                if (endpointList.indexOf(params.endpointId) === -1) {
-                    endpointList.push(params.endpointId);
-                }
-                that.addMember({
-                    connection: connection,
-                    skipEvent: true
-                });
-            });
-
-            if (endpointList.length > 0) {
-                signalingChannel.registerPresence({
-                    endpointList: endpointList
-                });
-            }
-            deferred.resolve(that.connections);
-        }, function errorHandler(err) {
-            deferred.reject(err);
-        });
-        return retVal;
-    };
-
-    return that;
-}; // End respoke.Group
-/**
- * Receive notification that an endpoint has joined this group. This callback is called everytime
- * respoke.Group#join is fired.
- * @callback respoke.Group.onJoin
- * @param {respoke.Event} evt
- * @param {respoke.Connection} evt.connection
- * @param {string} evt.name - the event name.
- * @param {respoke.Group} evt.target
- */
-/**
- * Receive notification that an endpoint has left this group. This callback is called everytime
- * respoke.Group#leave is fired.
- * @callback respoke.Group.onLeave
- * @param {respoke.Event} evt
- * @param {respoke.Connection} evt.connection
- * @param {string} evt.name - the event name.
- * @param {respoke.Group} evt.target
- */
-/**
- * Receive notification that a message has been received to a group. This callback is called every time
- * respoke.Group#message is fired.
- * @callback respoke.Group.onMessage
- * @param {respoke.Event} evt
- * @param {respoke.TextMessage} evt.message
- * @param {string} evt.name - the event name.
- * @param {respoke.Group} evt.target
- */
-/**
- * Get a list of the Connections which are members of this Group.
- * @callback respoke.Group.connectionsHandler
- * @param {Array<respoke.Connection>} connections
  */

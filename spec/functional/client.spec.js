@@ -1,9 +1,10 @@
 var expect = chai.expect;
-log.setLevel('error');
+respoke.log.setLevel('error');
 
 describe("respoke.Client", function () {
     this.timeout(30000);
 
+    var Q = respoke.Q;
     var testFixture = fixture("Client Functional test");
     var testEnv;
     var client;

@@ -2,9 +2,11 @@
   "name": "transporter",
   "version": "0.0.0",
   "description": "Client-side JavaScript library for Collective.",
-  "main": "respoke.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "doc": "jsdoc -c jsdoc.json",
     "doc-markdown": "jsdoc -c jsdoc.json -t ${JSDOC_TEMPLATES:=..}/jsdoc-markdown-template -d markdown",
     "doc-confluence": "jsdoc -c jsdoc.json -p -t ${JSDOC_TEMPLATES:=..}/confluence-jsdoc-template -d confluence"
@@ -16,25 +18,31 @@
   "author": "Erin Spiceland",
   "license": "Proprietary",
   "dependencies": {
-    "uglify-js": "~2.4.0"
+    "loglevel": "^0.3.1",
+    "q": "^1.0.1",
+    "socket.io-client": "^0.9.16"
   },
   "devDependencies": {
+    "async": "~0.9.0",
     "chai": "^1.8.1",
     "grunt": "~0.4.2",
-    "grunt-aws-s3": "~0.8.1",
     "grunt-contrib-uglify": "~0.4.0",
+    "grunt-env": "~0.4.1",
     "grunt-karma": "~0.8.3",
     "grunt-mocha-test": "~0.10.2",
     "grunt-stratos": "git+http://stash.digium.com/stash/scm/stratos/grunt-stratos.git",
+    "grunt-webpack": "^1.0.7",
     "jsdoc": "^3.3.0-alpha5",
+    "jshint": "^2.5.1",
     "karma": "~0.12.16",
     "karma-chrome-launcher": "^0.1.3",
     "karma-junit-reporter": "^0.2.2",
     "karma-mocha": "^0.1.3",
     "karma-spec-reporter": "0.0.12",
     "mocha-bamboo-reporter": "^1.0.5",
-    "async": "~0.9.0",
     "sinon": "^1.7.3",
-    "grunt-env": "~0.4.1"
+    "uglify-js": "~2.4.0",
+    "webpack": "^1.3.1-beta4",
+    "webpack-dev-server": "^1.4.3"
   }
 }

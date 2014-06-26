@@ -6,6 +6,10 @@
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
+var log = require('loglevel');
+var Q = require('q');
+var respoke = require('./respoke');
+
 /**
  * This is a top-level interface to the API. It handles authenticating the app to the
  * API server, receiving server-side app-specific information, keeping track of connection status and presence,
@@ -44,8 +48,7 @@
  * receives a request for a direct connection.
  * @returns {respoke.Client}
  */
-/*global respoke: false */
-respoke.Client = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -249,7 +252,7 @@ respoke.Client = function (params) {
         var promise;
         var retVal;
         params = params || {};
-        log.trace('Client.connect');
+        log.debug('Client.connect');
         that.connectTries += 1;
 
         Object.keys(params).forEach(function eachParam(key) {

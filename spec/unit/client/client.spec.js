@@ -2,7 +2,7 @@
 var expect = chai.expect;
 
 var instanceId;
-log.setLevel('error');
+respoke.log.setLevel('error');
 
 describe("respoke.Client", function () {
     var client;

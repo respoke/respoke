@@ -1,0 +1,5 @@
+node_modules/**/*
+spec/**/*
+respoke.min.js
+respoke-stats.min.js
+respoke/deps/adapter.js
