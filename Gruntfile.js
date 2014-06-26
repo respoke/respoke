@@ -57,7 +57,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-stratos');
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-uglify');
-    grunt.loadNpmTasks('grunt-aws-s3');
     grunt.loadNpmTasks('grunt-env');
 
     grunt.registerTask('dist', [
