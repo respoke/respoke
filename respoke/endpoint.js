@@ -90,6 +90,7 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.sendMessage
      * @param {object} params
@@ -99,7 +100,7 @@ module.exports = function (params) {
      * method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
      * only.
-     * @returns {Promise|undefined}
+     * @returns {Promise|void}
      */
     that.sendMessage = function (params) {
         var promise;

@@ -183,7 +183,7 @@ respoke.makeGUID = function () {
  * @param {Promise} promise
  * @param {function} onSuccess
  * @param {function} onError
- * @returns {Promise|undefined}
+ * @returns {Promise|void}
  */
 respoke.handlePromise = function (promise, onSuccess, onError) {
     "use strict";

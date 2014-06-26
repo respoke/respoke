@@ -80,9 +80,10 @@ module.exports = function (params) {
 
     /**
      * Join this group.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Group
      * @method respoke.Group.join
-     * @return {Promise|undefined}
+     * @return {Promise|void}
      * @param {object} params
      * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
