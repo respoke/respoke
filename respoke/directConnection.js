@@ -195,7 +195,7 @@ module.exports = function (params) {
     /**
      * Detect datachannel errors for internal state.
      * @memberof! respoke.DirectConnection
-     * @api private
+     * @private
      * @method respoke.DirectConnection.onDataChannelError
      */
     function onDataChannelError(error) {
@@ -217,7 +217,7 @@ module.exports = function (params) {
      * Receive and route messages to the Endpoint.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelMessage
-     * @api private
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#message
      */
@@ -258,7 +258,7 @@ module.exports = function (params) {
      * Detect when the channel is open.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelOpen
-     * @api private
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#open
      */
@@ -277,7 +277,7 @@ module.exports = function (params) {
      * Detect when the channel is closed.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelClose
-     * @api private
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#close
      */

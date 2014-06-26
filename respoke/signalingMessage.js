@@ -4,7 +4,7 @@
  * All Rights Reserved. Licensed Software.
  *
  * @authors : Erin Spiceland <espiceland@digium.com>
- * @api private
+ * @private
  */
 
 /**
@@ -33,7 +33,7 @@
  * state. Not implemented.
  * @param {string} [params.status] - "Ringing". Not implemented.
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
- * @api private
+ * @private
  * @returns {respoke.SignalingMessage}
  */
 module.exports = function (params) {
