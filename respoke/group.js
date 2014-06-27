@@ -80,6 +80,7 @@ module.exports = function (params) {
 
     /**
      * Join this group.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Group
      * @method respoke.Group.join
      * @return {Promise|undefined}

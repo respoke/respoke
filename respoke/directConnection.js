@@ -165,9 +165,10 @@ module.exports = function (params) {
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
      * statistics, we'll return a promise for the stats object.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.getStats
-     * @returns {Promise<object>}
+     * @returns {Promise<object>|undefined}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive the
@@ -178,22 +179,23 @@ module.exports = function (params) {
      * @param {respoke.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation of
      * this method only.
      */
-    function getStats(params) {
+    that.getStats = function (params) {
         if (pc && pc.getStats) {
             that.listen('stats', params.onStats);
             delete params.onStats;
             return pc.getStats(params);
         }
         return null;
-    }
+    };
 
-    if (respoke.MediaStats) {
-        that.getStats = getStats;
+    if (!respoke.MediaStats) {
+        delete that.getStats;
     }
 
     /**
      * Detect datachannel errors for internal state.
      * @memberof! respoke.DirectConnection
+     * @private
      * @method respoke.DirectConnection.onDataChannelError
      */
     function onDataChannelError(error) {
@@ -215,6 +217,7 @@ module.exports = function (params) {
      * Receive and route messages to the Endpoint.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelMessage
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#message
      */
@@ -255,6 +258,7 @@ module.exports = function (params) {
      * Detect when the channel is open.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelOpen
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#open
      */
@@ -273,6 +277,7 @@ module.exports = function (params) {
      * Detect when the channel is closed.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelClose
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#close
      */
@@ -381,6 +386,7 @@ module.exports = function (params) {
     /**
      * Send a message over the datachannel in the form of a JSON-encoded plain old JavaScript object. Only one
      * attribute may be given: either a string 'message' or an object 'object'.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.sendMessage
      * @param {object} params

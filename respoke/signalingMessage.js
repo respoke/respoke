@@ -4,6 +4,7 @@
  * All Rights Reserved. Licensed Software.
  *
  * @authors : Erin Spiceland <espiceland@digium.com>
+ * @private
  */
 
 /**

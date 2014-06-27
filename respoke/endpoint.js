@@ -90,6 +90,7 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.sendMessage
      * @param {object} params
