@@ -8,27 +8,29 @@ describe("Respoke groups", function () {
     var testEnv;
     var follower = {};
     var followee = {};
+    var app;
+    var permissions;
     var groupPermissions = {
         name: 'fixturepermissions',
         permList: [
             {
-                resourceType: "channels:create",
+                resourceType: "groups:create",
                 actions: "allow",
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels',
+                resourceType: 'groups',
                 actions: 'publish',
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels',
+                resourceType: 'groups',
                 actions: 'subscribe',
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels',
+                resourceType: 'groups',
                 actions: 'unsubscribe',
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels:subscribers',
+                resourceType: 'groups:subscribers',
                 actions: 'get',
                 resourceIds: ['*']
             }
@@ -45,6 +47,8 @@ describe("Respoke groups", function () {
 
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
         }).then(function (params) {
+            app = params.app;
+            permissions = params.permissions;
             // create 2 tokens
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                 permissionsId: params.permissions.id,
@@ -245,6 +249,45 @@ describe("Respoke groups", function () {
                         followerGroup.join().done(function() {
                             done();
                         }, done);
+                    });
+                });
+            });
+        });
+        
+        describe("when an admin joins an endpoint to a group and then removes an endpoint from the group", function () {
+
+            it("the endpoint should receive join/leave notifications", function (done) {
+                var groupName = respoke.makeGUID();
+                var tokenOptions = { permissionsId: permissions.id, appId: app.id };
+                testFixture.createToken(testEnv.httpClient, tokenOptions, function (err, token) {
+                    var params = {
+                        username: testEnv.accountParams.username,
+                        password: testEnv.accountParams.password,
+                        endpointId: token.endpointId,
+                        groupName: groupName,
+                        appId: app.id
+                    };
+                    var client1 = respoke.createClient();
+                    client1.connect({
+                        appId: app.id,
+                        baseURL: respokeTestConfig.baseURL,
+                        token: token.tokenId,
+                        onJoin: function (evt) {
+                            expect(evt.group).to.not.be.undefined;
+                            expect(evt.group.id).to.equal(groupName);
+                            testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
+                                expect(err).to.be.undefined;
+                            })
+                        },
+                        onLeave: function (evt) {
+                            expect(evt.group).to.not.be.undefined;
+                            expect(evt.group.id).to.equal(groupName);
+                            done();
+                        }
+                    }).then(function () {
+                        testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
+                            expect(err).to.be.undefined;
+                        });
                     });
                 });
             });

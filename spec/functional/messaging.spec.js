@@ -13,23 +13,23 @@ describe("Respoke messaging", function () {
         name: 'fixturepermissions',
         permList: [
             {
-                resourceType: "channels:create",
+                resourceType: "groups:create",
                 actions: "allow",
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels',
+                resourceType: 'groups',
                 actions: 'publish',
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels',
+                resourceType: 'groups',
                 actions: 'subscribe',
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels',
+                resourceType: 'groups',
                 actions: 'unsubscribe',
                 resourceIds: ['*']
             }, {
-                resourceType: 'channels:subscribers',
+                resourceType: 'groups:subscribers',
                 actions: 'get',
                 resourceIds: ['*']
             }

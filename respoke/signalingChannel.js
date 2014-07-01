@@ -1142,41 +1142,52 @@ module.exports = function (params) {
         var connection;
 
         if (message.endpoint === client.endpointId) {
-            return;
-        }
-
-        endpoint = client.getEndpoint({
-            id: message.endpoint,
-            instanceId: instanceId,
-            name: message.endpoint
-        });
-
-        connection = endpoint.getConnection({connectionId: message.connectionId});
-
-        // Handle presence not associated with a channel
-        if (message.header.channel.indexOf('system') > -1 || !connection) {
-            endpoint.setPresence({
-                connectionId: message.connectionId
+            connection = client.getConnection({connectionId: message.connectionId, endpointId: message.endpoint});
+            group = respoke.Group({
+                id: message.header.channel,
+                instanceId: instanceId,
+                signalingChannel: that
             });
-            connection = client.getConnection({
-                connectionId: message.connectionId,
-                endpointId: message.endpoint
-            });
-            if (message.header.channel.indexOf('system') > -1) {
-                log.error("Still getting these weird join presence messages.", message);
-                return;
-            }
-        }
-
-        if (!presenceRegistered[message.endpoint]) {
-            that.registerPresence({endpointList: [message.endpoint]});
-        }
-        group = client.getGroup({id: message.header.channel});
-
-        if (group && connection) {
+            client.addGroup(group);
             group.addMember({connection: connection});
+            client.fire('join', {
+                group: group
+            });
         } else {
-            log.error("Can't add endpoint to group:", message, group, endpoint, connection);
+
+            endpoint = client.getEndpoint({
+                id: message.endpoint,
+                instanceId: instanceId,
+                name: message.endpoint
+            });
+
+            connection = endpoint.getConnection({connectionId: message.connectionId});
+
+            // Handle presence not associated with a channel
+            if (message.header.channel.indexOf('system') > -1 || !connection) {
+                endpoint.setPresence({
+                    connectionId: message.connectionId
+                });
+                connection = client.getConnection({
+                    connectionId: message.connectionId,
+                    endpointId: message.endpoint
+                });
+                if (message.header.channel.indexOf('system') > -1) {
+                    log.error("Still getting these weird join presence messages.", message);
+                    return;
+                }
+            }
+
+            if (!presenceRegistered[message.endpoint]) {
+                that.registerPresence({endpointList: [message.endpoint]});
+            }
+            group = client.getGroup({id: message.header.channel});
+
+            if (group && connection) {
+                group.addMember({connection: connection});
+            } else {
+                log.error("Can't add endpoint to group:", message, group, endpoint, connection);
+            }
         }
     };
 
@@ -1193,23 +1204,28 @@ module.exports = function (params) {
         var endpoint;
 
         if (message.endpoint === client.endpointId) {
-            return;
+            group = client.getGroup({id: message.header.channel});
+            // group.removeMember({connectionId: message.connectionId});
+            client.fire('leave', {
+                group: group
+            });
+        } else {
+
+            endpoint = client.getEndpoint({
+                id: message.endpoint
+            });
+
+            endpoint.connections.every(function eachConnection(conn, index) {
+                if (conn.id === message.connectionId) {
+                    endpoint.connections.splice(index, 1);
+                    return false;
+                }
+                return true;
+            });
+
+            group = client.getGroup({id: message.header.channel});
+            group.removeMember({connectionId: message.connectionId});
         }
-
-        endpoint = client.getEndpoint({
-            id: message.endpoint
-        });
-
-        endpoint.connections.every(function eachConnection(conn, index) {
-            if (conn.id === message.connectionId) {
-                endpoint.connections.splice(index, 1);
-                return false;
-            }
-            return true;
-        });
-
-        group = client.getGroup({id: message.header.channel});
-        group.removeMember({connectionId: message.connectionId});
     };
 
     /**

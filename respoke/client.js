@@ -752,8 +752,11 @@ module.exports = function (params) {
             newGroup.removeMember({connectionId: evt.connection.id});
             checkEndpointForRemoval(evt.connection.getEndpoint());
         }, true);
+
         groups.push(newGroup);
     }
+
+    that.addGroup = addGroup;
 
     /**
      * Get a list of all the groups we're currently a member of.
