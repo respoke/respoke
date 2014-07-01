@@ -1,8 +1,8 @@
 /**************************************************************************************************
- *
+ * 
  * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
- *
+ * @private
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
@@ -19,6 +19,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Client
  * @constructor
+ * @link https://www.respoke.io/min/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
@@ -167,7 +168,7 @@ module.exports = function (params) {
      */
     var endpoints = [];
     /**
-     * Array of calls in progress. This array should never be modified.
+     * Array of calls in progress. This array should never be modified directly.
      * @memberof! respoke.Client
      * @name calls
      * @type {array}
@@ -176,6 +177,18 @@ module.exports = function (params) {
     log.debug("Client ID is ", instanceId);
 
     /**
+     * Call settings:
+     * 
+     *      constraints: {
+     *          video : true,
+     *          audio : true,
+     *          optional: [],
+     *          mandatory: {}
+     *      },
+     *      servers: {
+     *          iceServers: []
+     *      }
+     * 
      * @memberof! respoke.Client
      * @name callSettings
      * @type {object}
@@ -204,9 +217,9 @@ module.exports = function (params) {
     });
 
     /**
-     * Connect to the Respoke infrastructure and authenticate using the `token`.  Store a new token to be used in API
-     * requests. If no `token` is given and `developmentMode` is set to true, we will attempt to obtain a token
-     * automatically from the Respoke infrastructure.  If `reconnect` is set to true, we will attempt to keep
+     * Connect to the Respoke infrastructure and authenticate using `params.token`.  Store a new token to be used in API
+     * requests. If no `params.token` is given and `developmentMode` is set to true, it will attempt to obtain a token
+     * automatically from the Respoke infrastructure.  If `reconnect` is set to true, it will attempt to keep
      * reconnecting each time this token expires. Accept and attach quite a few event listeners for things like group
      * joining and connection statuses. Get the first set of TURN credentials and store them internally for later use.
      * **Using callbacks** will disable promises.
@@ -279,7 +292,9 @@ module.exports = function (params) {
 
     /**
      * This function contains the meat of the connection, the portions which can be repeated again on reconnect.
+     * 
      * When `reconnect` is true, this function will be added in an event listener to the Client#disconnect event.
+     * 
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.actuallyConnect

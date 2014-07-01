@@ -1,10 +1,10 @@
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
 /**************************************************************************************************
- * @ignore
+ * 
  * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
- *
+ * @private
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
@@ -23,7 +23,9 @@ require('./deps/adapter');
  * A global static class which provides access to the Respoke functionality.
  * @author Erin Spiceland <espiceland@digium.com>
  * @namespace respoke
+ * @class respoke
  * @global
+ * @link https://www.respoke.io/min/respoke.min.js
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
