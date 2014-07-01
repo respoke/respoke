@@ -1205,7 +1205,6 @@ module.exports = function (params) {
 
         if (message.endpoint === client.endpointId) {
             group = client.getGroup({id: message.header.channel});
-            // group.removeMember({connectionId: message.connectionId});
             client.fire('leave', {
                 group: group
             });
