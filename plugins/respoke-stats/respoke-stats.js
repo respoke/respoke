@@ -439,7 +439,7 @@
          * invocation of this method only.
          * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
          * method only.
-         * @param {function} [params.onStats] - Callback accepting a single `event` argument.
+         * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback accepting a single `event` argument.
          * @returns {Promise<object>|undefined}
          */
         that.getStats = function (params) {
