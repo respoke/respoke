@@ -253,41 +253,54 @@ describe("Respoke groups", function () {
                 });
             });
         });
-        
-        describe("when an admin joins an endpoint to a group and then removes an endpoint from the group", function () {
 
-            it("the endpoint should receive join/leave notifications", function (done) {
-                var groupName = respoke.makeGUID();
+        describe("when an admin administers groups for an endpoint", function () {
+            var groupName = respoke.makeGUID();
+            var params;
+            var client;
+
+            before(function (done) {
                 var tokenOptions = { permissionsId: permissions.id, appId: app.id };
                 testFixture.createToken(testEnv.httpClient, tokenOptions, function (err, token) {
-                    var params = {
+                    params = {
                         username: testEnv.accountParams.username,
                         password: testEnv.accountParams.password,
                         endpointId: token.endpointId,
                         groupName: groupName,
                         appId: app.id
                     };
-                    var client1 = respoke.createClient();
-                    client1.connect({
+                    client = respoke.createClient();
+                    client.connect({
                         appId: app.id,
                         baseURL: respokeTestConfig.baseURL,
-                        token: token.tokenId,
-                        onJoin: function (evt) {
-                            expect(evt.group).to.not.be.undefined;
-                            expect(evt.group.id).to.equal(groupName);
-                            testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
-                                expect(err).to.be.undefined;
-                            })
-                        },
-                        onLeave: function (evt) {
-                            expect(evt.group).to.not.be.undefined;
-                            expect(evt.group.id).to.equal(groupName);
-                            done();
-                        }
-                    }).then(function () {
-                        testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
-                            expect(err).to.be.undefined;
-                        });
+                        token: token.tokenId
+                    }).then(done);
+                });
+            });
+            describe("and adds an endpoint to a group", function () {
+                it("the endpoint should receive join notification", function (done) {
+                    var onJoin = function (evt) {
+                        expect(evt.group).to.not.be.undefined;
+                        expect(evt.group.id).to.equal(groupName);
+                        done();
+                    };
+                    client.listen('join', onJoin)
+                    testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
+                        expect(err).to.be.undefined;
+                    });
+                });
+            });
+
+            describe("and removes an endpoint from a group", function () {
+                it("endpoint should receive leave notification", function (done) {
+                    var onLeave = function (evt) {
+                        expect(evt.group).to.not.be.undefined;
+                        expect(evt.group.id).to.equal(groupName);
+                        done();
+                    }
+                    client.listen('leave', onLeave);
+                    testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
+                        expect(err).to.be.undefined;
                     });
                 });
             });

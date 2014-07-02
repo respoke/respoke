@@ -1141,18 +1141,23 @@ module.exports = function (params) {
         var endpoint;
         var connection;
 
-        if (message.endpoint === client.endpointId) {
+        if (message.connectionId === client.connectionId) {
             connection = client.getConnection({connectionId: message.connectionId, endpointId: message.endpoint});
-            group = respoke.Group({
-                id: message.header.channel,
-                instanceId: instanceId,
-                signalingChannel: that
-            });
-            client.addGroup(group);
-            group.addMember({connection: connection});
-            client.fire('join', {
-                group: group
-            });
+            group = client.getGroup({id: message.header.channel});
+            if (!group) {
+                group = respoke.Group({
+                    id: message.header.channel,
+                    instanceId: instanceId,
+                    signalingChannel: that
+                });
+                client.addGroup(group);
+            }
+            if (!group.isJoined()) {
+                group.addMember({connection: connection});
+                client.fire('join', {
+                    group: group
+                });
+            }
         } else {
 
             endpoint = client.getEndpoint({
@@ -1202,8 +1207,7 @@ module.exports = function (params) {
         var group;
         var presenceMessage;
         var endpoint;
-
-        if (message.endpoint === client.endpointId) {
+        if (message.connectionId === client.connectionId) {
             group = client.getGroup({id: message.header.channel});
             client.fire('leave', {
                 group: group
