@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
- *
+ * @private
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
@@ -16,6 +16,7 @@ var respoke = require('./respoke');
  * @class respoke.DirectConnection
  * @constructor
  * @augments respoke.EventEmitter
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {string} params
  * @param {string} params.instanceId - client id
  * @param {respoke.Call} params.call - The call that is handling state for this direct connection.

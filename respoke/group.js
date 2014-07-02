@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
- *
+ * @private
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
@@ -14,6 +14,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Group
  * @constructor
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
