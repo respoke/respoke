@@ -66,8 +66,7 @@ class PushDocs:
                 "confluence/respoke.Presentable",
                 "confluence/respoke.TextMessage",
                 "confluence/respoke.SignalingChannel",
-                "confluence/respoke.SignalingMessage",
-                "confluence/respoke.User"
+                "confluence/respoke.SignalingMessage"
             ],
             'username': 'espiceland',
             'password': '',

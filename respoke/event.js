@@ -18,8 +18,11 @@
  * @param {string} params.instanceId
  * @returns {respoke.EventEmitter}
  */
-/*global respoke: false */
-respoke.EventEmitter = function (params) {
+
+var respoke = require('./respoke');
+var log = require('loglevel');
+
+var EventEmitter = module.exports = function (params) {
     "use strict";
     params = params || {};
     var that = respoke.Class(params);
@@ -107,7 +110,7 @@ respoke.EventEmitter = function (params) {
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.fire
      * @param {string} eventType - A developer-specified string identifying the event to fire.
-     * @param {string|number|object|array} any - Any number of optional parameters to be passed to
+     * @param {string|number|object|array} evt - Any number of optional parameters to be passed to
      * the listener
      */
     that.fire = function (eventType, evt) {
@@ -122,7 +125,6 @@ respoke.EventEmitter = function (params) {
         evt = evt || {};
         evt.name = eventType;
         evt.target = that;
-        evt = respoke.buildEvent(evt);
         eventList[eventType].forEach(function fireListener(listener) {
             if (typeof listener === 'function') {
                 try {
@@ -133,7 +135,7 @@ respoke.EventEmitter = function (params) {
                 }
             }
         });
-        log.verbose("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
+        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 
     /**
@@ -167,34 +169,3 @@ respoke.EventEmitter = function (params) {
  * @callback respoke.EventEmitter.eventListener
  * @param {respoke.Event} evt
  */
-
-/**
- * This is the factory for objects that EventEmitters pass to event listeners. In addition to the two mandatory
- * properties mentioned below (name and target), this object will contain other properties and objects meant to provide
- * context and easy access to certain objects and information that might be needed in handling the event.
- * @author Erin Spiceland <espiceland@digium.com>
- * @memberof! respoke
- * @method respoke.buildEvent
- * @static
- * @private
- * @typedef {object} respoke.Event
- * @property {string} name
- * @property {respoke.Class} target
- * @property {respoke.DirectConnection] [directConnection]
- * @property {respoke.Call] [call]
- * @property {respoke.Endpoint] [endpoint]
- * @property {respoke.Connection] [connection]
- */
-respoke.buildEvent = function (that) {
-    "use strict";
-
-    if (!that.name) {
-        throw new Error("Can't create an Event without an event name.");
-    }
-
-    if (!that.target) {
-        throw new Error("Can't create an Event without a target.");
-    }
-
-    return that;
-}; // End respoke.Event

@@ -2,9 +2,13 @@
  *
  * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
- *
+ * @private
  * @authors : Erin Spiceland <espiceland@digium.com>
  */
+
+var log = require('loglevel');
+var Q = require('q');
+var respoke = require('./respoke');
 
 /**
  * A direct connection via RTCDataChannel, including state and path negotation.
@@ -12,6 +16,7 @@
  * @class respoke.DirectConnection
  * @constructor
  * @augments respoke.EventEmitter
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {string} params
  * @param {string} params.instanceId - client id
  * @param {respoke.Call} params.call - The call that is handling state for this direct connection.
@@ -36,8 +41,7 @@
  * necessary to listen to this event if you are already listening to respoke.Endpoint#message.
  * @returns {respoke.DirectConnection}
  */
-/*global respoke: false */
-respoke.DirectConnection = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -162,9 +166,10 @@ respoke.DirectConnection = function (params) {
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
      * statistics, we'll return a promise for the stats object.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.getStats
-     * @returns {Promise<object>}
+     * @returns {Promise<object>|undefined}
      * @param {object} params
      * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive the
@@ -175,22 +180,23 @@ respoke.DirectConnection = function (params) {
      * @param {respoke.DirectConnection.errorHandler} [params.onError] - Error handler for this invocation of
      * this method only.
      */
-    function getStats(params) {
+    that.getStats = function (params) {
         if (pc && pc.getStats) {
             that.listen('stats', params.onStats);
             delete params.onStats;
             return pc.getStats(params);
         }
         return null;
-    }
+    };
 
-    if (respoke.MediaStats) {
-        that.getStats = getStats;
+    if (!respoke.MediaStats) {
+        delete that.getStats;
     }
 
     /**
      * Detect datachannel errors for internal state.
      * @memberof! respoke.DirectConnection
+     * @private
      * @method respoke.DirectConnection.onDataChannelError
      */
     function onDataChannelError(error) {
@@ -212,6 +218,7 @@ respoke.DirectConnection = function (params) {
      * Receive and route messages to the Endpoint.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelMessage
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#message
      */
@@ -252,6 +259,7 @@ respoke.DirectConnection = function (params) {
      * Detect when the channel is open.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelOpen
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#open
      */
@@ -270,6 +278,7 @@ respoke.DirectConnection = function (params) {
      * Detect when the channel is closed.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.onDataChannelClose
+     * @private
      * @param {MessageEvent}
      * @fires respoke.DirectConnection#close
      */
@@ -324,7 +333,7 @@ respoke.DirectConnection = function (params) {
      */
     that.accept = function (params) {
         params = params || {};
-        log.trace('DirectConnection.accept');
+        log.debug('DirectConnection.accept');
         saveParameters(params);
 
         log.debug("I am " + (that.call.caller ? '' : 'not ') + "the caller.");
@@ -350,7 +359,7 @@ respoke.DirectConnection = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        log.trace("DirectConnection.close");
+        log.debug("DirectConnection.close");
         if (dataChannel) {
             dataChannel.close();
         }
@@ -378,6 +387,7 @@ respoke.DirectConnection = function (params) {
     /**
      * Send a message over the datachannel in the form of a JSON-encoded plain old JavaScript object. Only one
      * attribute may be given: either a string 'message' or an object 'object'.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.sendMessage
      * @param {object} params
