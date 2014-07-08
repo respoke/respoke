@@ -1,10 +1,7 @@
 /* global define: false, respoke: false */
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Tim Panton <tpanton@digium.com>
+/**
+ * @ignore
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
  */
 
 // UMD wrapper to provide support for CommonJS, AMD, and browser globals

@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- * @private 
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * @ignore
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
  */
 
 var log = require('loglevel');
@@ -89,7 +86,7 @@ module.exports = function (params) {
 
     var resolveEndpointPresence = params.resolveEndpointPresence;
     delete that.resolveEndpointPresence;
-    
+
 
     /**
      * Send a message to the endpoint through the infrastructure.
