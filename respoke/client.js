@@ -1,6 +1,6 @@
 /**
- * @ignore
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
