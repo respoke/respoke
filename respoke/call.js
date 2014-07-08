@@ -55,6 +55,7 @@ var respoke = require('./respoke');
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
  * @param {object} params.callSettings
+ * @param {object} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.Call}
  */
 module.exports = function (params) {
@@ -614,7 +615,7 @@ module.exports = function (params) {
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
 
-        videoRemoteElement = document.createElement('video');
+        videoRemoteElement = params.videoRemoteElement || document.createElement('video');
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;

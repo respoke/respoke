@@ -18,6 +18,7 @@ var respoke = require('./respoke');
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {object} params.callSettings
+ * @param {object} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {
@@ -212,7 +213,7 @@ module.exports = function (params) {
             return;
         }
 
-        videoLocalElement = document.createElement('video');
+        videoLocalElement = params.videoLocalElement || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
         // back to the App. This is because we assume at the moment that only one local media video element

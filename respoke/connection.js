@@ -114,6 +114,8 @@ module.exports = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {object} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
+     * @param {object} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {
