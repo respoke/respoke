@@ -616,7 +616,11 @@ module.exports = function (params) {
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
 
-        videoRemoteElement = params.videoRemoteElement || videoRemoteElement || evt.target.callSettings.videoRemoteElement || document.createElement('video');
+        videoRemoteElement = params.videoRemoteElement 
+                           || videoRemoteElement 
+                           || evt.target.callSettings.videoRemoteElement 
+                           || document.createElement('video');
+                        
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
