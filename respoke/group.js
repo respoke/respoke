@@ -112,16 +112,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Leave the group
-     * 
-     * Leave the group this method is called upon.
-     * 
-     *      groupInstance
-     *      .leave()
-     *      .done(function () {
-     *
-     *      });
-     * 
+     * Leave this group.
      * @memberof! respoke.Group
      * @method respoke.Group.leave
      * @param {object} params
