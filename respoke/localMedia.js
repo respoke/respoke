@@ -22,7 +22,6 @@ var respoke = require('./respoke');
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {
-    console.log('respoke.LocalMedia', params);
     "use strict";
     params = params || {};
     /**

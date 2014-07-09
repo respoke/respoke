@@ -60,7 +60,6 @@ var respoke = require('./respoke');
  * @returns {respoke.Call}
  */
 module.exports = function (params) {
-    console.log('respoke.call', params);
     "use strict";
     params = params || {};
     /**
@@ -537,7 +536,6 @@ module.exports = function (params) {
     that.answer = function (params) {
         params = params || {};
         log.debug('Call.answer');
-        console.log('respoke.call.answer', params);
         if (!defAnswered.promise.isPending()) {
             return;
         }
@@ -619,7 +617,7 @@ module.exports = function (params) {
      */
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
-        console.log('respoke.call.onRemoteStreamAdded', evt);
+
         videoRemoteElement = params.videoRemoteElement || videoRemoteElement || evt.target.callSettings.videoRemoteElement || document.createElement('video');
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
@@ -706,7 +704,6 @@ module.exports = function (params) {
      * @fires respoke.Call#local-stream-received
      */
     function doAddVideo(params) {
-        console.log('doAddVideo1', params);
         var stream;
         log.debug('Call.doAddVideo');
         params = params || {};
@@ -714,7 +711,6 @@ module.exports = function (params) {
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
         params.instanceId = instanceId;
-        console.log('doAddVideo2', params);
 
         stream = respoke.LocalMedia(params);
         stream.listen('requesting-media', function waitAllowHandler(evt) {
