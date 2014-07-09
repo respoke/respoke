@@ -340,6 +340,17 @@ module.exports = function (params) {
             list.forEach(function eachMember(params) {
                 var connection = client.getConnection({
                     endpointId: params.endpointId,
+                    connectionId: params.connectionId,
+                    skipCreate: true
+                });
+
+                // Is this connection already known?
+                if (connection !== undefined) {
+                    return;
+                }
+
+                var connection = client.getConnection({
+                    endpointId: params.endpointId,
                     connectionId: params.connectionId
                 });
 
