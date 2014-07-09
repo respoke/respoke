@@ -616,8 +616,7 @@ module.exports = function (params) {
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
 
-        videoRemoteElement = params.videoRemoteElement 
-                           || videoRemoteElement 
+        videoRemoteElement = videoRemoteElement 
                            || evt.target.callSettings.videoRemoteElement 
                            || document.createElement('video');
                         
@@ -745,7 +744,7 @@ module.exports = function (params) {
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
-            videoLocalElement = videoLocalElement || evt.element;
+            videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
             } else {
