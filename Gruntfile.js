@@ -1,6 +1,6 @@
 "use strict";
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -15,7 +15,8 @@ module.exports = function(grunt) {
                 options: {
                     compress: true,
                     sourceMap: true,
-                    sourceMapIncludeSources: true
+                    sourceMapIncludeSources: true,
+                    banner: '/*! Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software. */'
                 },
                 files: {
                     'respoke-stats.min.js': 'plugins/respoke-stats/respoke-stats.js'

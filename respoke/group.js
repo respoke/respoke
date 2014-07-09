@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- * @private
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var Q = require('q');
@@ -341,6 +338,17 @@ module.exports = function (params) {
         }).done(function successHandler(list) {
             var endpointList = [];
             list.forEach(function eachMember(params) {
+                var connection = client.getConnection({
+                    endpointId: params.endpointId,
+                    connectionId: params.connectionId,
+                    skipCreate: true
+                });
+
+                // Is this connection already known?
+                if (connection !== undefined) {
+                    return;
+                }
+
                 var connection = client.getConnection({
                     endpointId: params.endpointId,
                     connectionId: params.connectionId
