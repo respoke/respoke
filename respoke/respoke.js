@@ -1,11 +1,8 @@
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -20,9 +17,12 @@ Q.stopUnhandledRejectionTracking();
 require('./deps/adapter');
 
 /**
+ * A global static class which provides access to the Respoke functionality.
  * @author Erin Spiceland <espiceland@digium.com>
  * @namespace respoke
+ * @class respoke
  * @global
+ * @link https://www.respoke.io/min/respoke.min.js
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
@@ -65,7 +65,7 @@ if (!window.skipBugsnag) {
  * client.connect() method after the client is created.
  * @static
  * @memberof respoke
- * @param {object} params
+ * @param {object} params Parameters to the respoke.Client constructor.
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.token]
@@ -90,7 +90,6 @@ if (!window.skipBugsnag) {
  * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
  * direct connection.
  * @returns {respoke.Client}
- * @param {object} Parameters to the respoke.Client constructor.
  */
 respoke.connect = function (params) {
     "use strict";
@@ -100,10 +99,11 @@ respoke.connect = function (params) {
 };
 
 /**
+ * Getter for the respoke client.
  * @static
  * @memberof respoke
+ * @param {number} id The Client ID.
  * @returns {respoke.Client}
- * @param {number} The Client ID.
  */
 respoke.getClient = function (id) {
     "use strict";
@@ -123,14 +123,13 @@ respoke.getClient = function (id) {
  * connect.
  * @static
  * @memberof respoke
- * @param {object} params
+ * @param {object} params Parameters to the respoke.Client constructor.
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.authToken]
  * @param {RTCConstraints} [params.constraints]
  * @param {RTCICEServers} [params.servers]
  * @returns {respoke.Client}
- * @param {object} Parameters to the Client constructor
  */
 respoke.createClient = function (params) {
     "use strict";
@@ -223,7 +222,7 @@ respoke.Class = function (params) {
 };
 
 /**
- * Does the browser support UserMedia
+ * Does the browser support `UserMedia`?
  * @static
  * @memberof respoke
  * @returns {boolean}
@@ -235,7 +234,7 @@ respoke.hasUserMedia = function () {
 };
 
 /**
- * Does the browser support RTCPeerConnection
+ * Does the browser support `RTCPeerConnection`?
  * @static
  * @memberof respoke
  * @returns {boolean}
@@ -248,7 +247,7 @@ respoke.hasRTCPeerConnection = function () {
 };
 
 /**
- * Does the browser support WebSocket
+ * Does the browser support `WebSocket`?
  * @static
  * @memberof respoke
  * @returns {boolean}

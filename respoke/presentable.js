@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var respoke = require('./respoke');
@@ -11,9 +8,10 @@ var respoke = require('./respoke');
 /**
  * The purpose of the class is so that Client and Endpoint can share the same presence.
  * @author Erin Spiceland <espiceland@digium.com>
- * @class
+ * @class respoke.Presentable
  * @constructor
  * @augments respoke.EventEmitter
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {string} params.id
@@ -39,6 +37,8 @@ module.exports = function (params) {
      */
     that.className = 'respoke.Presentable';
     /**
+     * Represents the presence status. Typically a string, but other types are supported.
+     * Defaults to `'unavailable'`.
      * @memberof! respoke.Presentable
      * @name presence
      * @type {string|number|object|Array}

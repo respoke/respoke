@@ -1,19 +1,18 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var respoke = require('./respoke');
 
 /**
- * Represents remote Connections which belong to an endpoint. An Endpoint can be authenticated from multiple devices,
+ * Represents remote Connections which belong to an Endpoint. An Endpoint can be authenticated from multiple devices,
  * browsers, or tabs. Each of these separate authentications is a Connection. The client can interact
  * with connections by calling them or sending them messages.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
+ * @class respoke.Connection
+ * @link https://www.respoke.io/min/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} params.id
@@ -39,6 +38,7 @@ module.exports = function (params) {
     var client = respoke.getClient(instanceId);
 
     /**
+     * The connection id.
      * @memberof! respoke.Connection
      * @name id
      * @type {string}
@@ -60,6 +60,7 @@ module.exports = function (params) {
 
     /**
      * Send a message to this connection of an endpoint only through the infrastructure.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Connection
      * @method respoke.Connection.sendMessage
      * @param {object} params
@@ -68,7 +69,7 @@ module.exports = function (params) {
      * of this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         params = params || {};

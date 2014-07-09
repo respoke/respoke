@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var Q = require('q');
@@ -14,6 +11,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Group
  * @constructor
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
@@ -80,6 +78,7 @@ module.exports = function (params) {
 
     /**
      * Join this group.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Group
      * @method respoke.Group.join
      * @return {Promise|undefined}
@@ -356,6 +355,17 @@ module.exports = function (params) {
         }).done(function successHandler(list) {
             var endpointList = [];
             list.forEach(function eachMember(params) {
+                var connection = client.getConnection({
+                    endpointId: params.endpointId,
+                    connectionId: params.connectionId,
+                    skipCreate: true
+                });
+
+                // Is this connection already known?
+                if (connection !== undefined) {
+                    return;
+                }
+
                 var connection = client.getConnection({
                     endpointId: params.endpointId,
                     connectionId: params.connectionId

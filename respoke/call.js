@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var Q = require('q');
@@ -16,6 +13,7 @@ var respoke = require('./respoke');
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call
@@ -636,6 +634,8 @@ module.exports = function (params) {
     }
 
     /**
+     * ## The plugin `respoke.MediaStats` must be loaded before using this method.
+     * 
      * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
      * Since we have to wait for both the answer and offer to be available before starting
      * statistics, the library returns a promise for the stats object. The statistics object does not contain the
@@ -785,6 +785,7 @@ module.exports = function (params) {
      * If audio is not desired, pass {audio: false}.
      * @memberof! respoke.Call
      * @method respoke.Call.addVideo
+     * @private 
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=true]
@@ -824,6 +825,7 @@ module.exports = function (params) {
      * Add an audio stream to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addAudio
+     * @private 
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=false]
@@ -879,6 +881,8 @@ module.exports = function (params) {
      * Remove a direct connection from the existing call. If there is no other media, this will hang up the call.
      * @memberof! respoke.Call
      * @method respoke.Call.removeDirectConnection
+     * @private
+     * @param {object} params
      */
     that.removeDirectConnection = function (params) {
         params = params || {};
@@ -912,6 +916,7 @@ module.exports = function (params) {
      * Add a direct connection to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addDirectConnection
+     * @private
      * @param {object} params
      * @param {respoke.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
      * closing the connection.

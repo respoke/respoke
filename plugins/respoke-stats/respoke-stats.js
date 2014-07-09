@@ -1,10 +1,7 @@
 /* global define: false, respoke: false */
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Tim Panton <tpanton@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 // UMD wrapper to provide support for CommonJS, AMD, and browser globals
@@ -23,11 +20,34 @@
 }(function (respoke) {
     "use strict";
     /**
-     * A report containing statistical information about the flow of media.
-     * with the latest live statistics.
+     * A report containing statistical information about the flow of media with the latest live statistics.
+     * 
+     * This is a **plugin** for respoke. To leverage it, include `<script src="https://www.respoke.io/min/respoke-stats.min.js"></script>`.
+     * 
+     * The plugin adds the methods `getStats()` and `stopStats()` to `respoke.Call`.
+     * 
+     * ## Usage
+     * 
+     * Once you have a `Call` instance after `endpoint.startCall()` or in the `client.on('call')` / `new Client({ onCall: yourCallHandler })` event listener:
+     * 
+     * **using callbacks**
+     *      
+     *      call.getStats({
+     *          onStats: function continualStatsHandler(evt) { . . . },
+     *          onSuccess: yourOnSuccessHandler,
+     *          onError: yourOnErrorHandler 
+     *      });
+     * 
+     * **or using a promise**
+     * 
+     *      call.getStats({
+     *          onStats: function continualStatsHandler(evt) { . . . },
+     *      }).done(onSuccess, onFailure);
+     * 
      * @author Erin Spiceland <espiceland@digium.com>
      * @class respoke.MediaStats
      * @constructor
+     * @link https://www.respoke.io/min/respoke-stats.min.js
      * @param {object} params
      */
     respoke.MediaStats = function (params) {
@@ -220,6 +240,7 @@
      * @author Tim Panton <tpanton@digium.com>
      * @author Erin Spiceland <espiceland@digium.com>
      * @class respoke.MediaStatsParser
+     * @private
      * @constructor
      * @augments respoke.Class
      * @param {RTCPeerConnection} peerConnection
@@ -415,6 +436,7 @@
          * invocation of this method only.
          * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
          * method only.
+         * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback accepting a single `event` argument.
          * @returns {Promise<object>|undefined}
          */
         that.getStats = function (params) {

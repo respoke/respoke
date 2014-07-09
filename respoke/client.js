@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -19,6 +16,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Client
  * @constructor
+ * @link https://www.respoke.io/min/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
@@ -167,7 +165,7 @@ module.exports = function (params) {
      */
     var endpoints = [];
     /**
-     * Array of calls in progress. This array should never be modified.
+     * Array of calls in progress. This array should never be modified directly.
      * @memberof! respoke.Client
      * @name calls
      * @type {array}
@@ -176,6 +174,18 @@ module.exports = function (params) {
     log.debug("Client ID is ", instanceId);
 
     /**
+     * Call settings:
+     * 
+     *      constraints: {
+     *          video : true,
+     *          audio : true,
+     *          optional: [],
+     *          mandatory: {}
+     *      },
+     *      servers: {
+     *          iceServers: []
+     *      }
+     * 
      * @memberof! respoke.Client
      * @name callSettings
      * @type {object}
@@ -204,11 +214,12 @@ module.exports = function (params) {
     });
 
     /**
-     * Connect to the Respoke infrastructure and authenticate using the `token`.  Store a new token to be used in API
-     * requests. If no `token` is given and `developmentMode` is set to true, we will attempt to obtain a token
-     * automatically from the Respoke infrastructure.  If `reconnect` is set to true, we will attempt to keep
+     * Connect to the Respoke infrastructure and authenticate using `params.token`.  Store a new token to be used in API
+     * requests. If no `params.token` is given and `developmentMode` is set to true, it will attempt to obtain a token
+     * automatically from the Respoke infrastructure.  If `reconnect` is set to true, it will attempt to keep
      * reconnecting each time this token expires. Accept and attach quite a few event listeners for things like group
      * joining and connection statuses. Get the first set of TURN credentials and store them internally for later use.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.connect
      * @param {object} params
@@ -245,7 +256,7 @@ module.exports = function (params) {
      * @param {respoke.Client.onCall} [params.onCall] - Callback for when this client receives a call.
      * @param {respoke.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this
      * client receives a request for a direct connection.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      * @fires respoke.Client#connect
      */
     that.connect = function (params) {
@@ -278,7 +289,10 @@ module.exports = function (params) {
 
     /**
      * This function contains the meat of the connection, the portions which can be repeated again on reconnect.
+     * 
      * When `reconnect` is true, this function will be added in an event listener to the Client#disconnect event.
+     * 
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.actuallyConnect
      * @private
@@ -364,6 +378,7 @@ module.exports = function (params) {
 
     /**
      * Disconnect from the Respoke infrastructure, leave all groups, invalidate the token, and disconnect the websocket.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.disconnect
      * @returns {Promise|undefined}
@@ -405,6 +420,7 @@ module.exports = function (params) {
 
     /**
      * Overrides Presentable.setPresence to send presence to the server before updating the object.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.setPresence
      * @param {object} params
@@ -539,6 +555,7 @@ module.exports = function (params) {
 
     /**
      * Set presence to available.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.setOnline
      * @param {object} params
@@ -547,7 +564,7 @@ module.exports = function (params) {
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.setOnline = function (params) {
         var promise;
@@ -567,6 +584,7 @@ module.exports = function (params) {
 
     /**
      * Send a message to an endpoint.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.sendMessage
      * @param {object} params
@@ -577,7 +595,7 @@ module.exports = function (params) {
      * @param {sendHandler} [params.onSuccess] - Success handler for this invocation of this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         var promise;
@@ -671,6 +689,7 @@ module.exports = function (params) {
 
     /**
      * Join a Group and begin keeping track of it. Attach some event listeners.
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.join
      * @param {object} params
@@ -683,7 +702,7 @@ module.exports = function (params) {
      * @param {respoke.Group.onJoin} [params.onJoin] - Join event listener for endpoints who join this group only.
      * @param {respoke.Group.onLeave} [params.onLeave] - Leave event listener for endpoints who leave
      * this group only.
-     * @returns {Promise<respoke.Group>} The instance of the respoke.Group which the client joined.
+     * @returns {Promise<respoke.Group>|undefined} The instance of the respoke.Group which the client joined.
      * @fires respoke.Client#join
      */
     that.join = function (params) {

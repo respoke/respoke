@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -18,7 +15,9 @@ var respoke = require('./respoke');
  * a server.
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
+ * @class respoke.Endpoint
  * @augments respoke.Presentable
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
@@ -74,6 +73,7 @@ module.exports = function (params) {
     that.directConnection = null;
 
     /**
+     * Array of connections for this endpoint.
      * @memberof! respoke.Endpoint
      * @name connections
      * @type {Array<respoke.Connection>}
@@ -86,10 +86,11 @@ module.exports = function (params) {
 
     var resolveEndpointPresence = params.resolveEndpointPresence;
     delete that.resolveEndpointPresence;
-    
+
 
     /**
      * Send a message to the endpoint through the infrastructure.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.sendMessage
      * @param {object} params
