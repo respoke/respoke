@@ -53,8 +53,8 @@ var respoke = require('./respoke');
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
  * @param {object} params.callSettings
- * @param {object} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
- * @param {object} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
+ * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
+ * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.Call}
  */
 module.exports = function (params) {

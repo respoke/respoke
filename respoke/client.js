@@ -653,8 +653,8 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @param {object} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
-     * @param {object} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
      * @return {respoke.Call}
      */
     that.startCall = function (params) {
