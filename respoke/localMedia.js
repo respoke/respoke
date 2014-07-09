@@ -22,6 +22,7 @@ var respoke = require('./respoke');
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {
+    console.log('respoke.LocalMedia', params);
     "use strict";
     params = params || {};
     /**
@@ -59,7 +60,7 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = null;
+    var videoLocalElement = params.videoLocalElement || document.createElement('video');
     /**
      * @memberof! respoke.LocalMedia
      * @name videoIsMuted
@@ -161,6 +162,7 @@ module.exports = function (params) {
         callSettings.servers = params.servers || callSettings.servers;
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
+        params.videoLocalElement = videoLocalElement;
     }
 
     /**
@@ -213,7 +215,7 @@ module.exports = function (params) {
             return;
         }
 
-        videoLocalElement = params.videoLocalElement || document.createElement('video');
+        videoLocalElement = params.videoLocalElement || videoLocalElement || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
         // back to the App. This is because we assume at the moment that only one local media video element

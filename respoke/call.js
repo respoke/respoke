@@ -55,10 +55,12 @@ var respoke = require('./respoke');
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
  * @param {object} params.callSettings
+ * @param {object} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
  * @param {object} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.Call}
  */
 module.exports = function (params) {
+    console.log('respoke.call', params);
     "use strict";
     params = params || {};
     /**
@@ -218,14 +220,14 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = null;
+    var videoLocalElement = params.videoLocalElement || null;
     /**
      * @memberof! respoke.Call
      * @name videoRemoteElement
      * @private
      * @type {Video}
      */
-    var videoRemoteElement = null;
+    var videoRemoteElement = params.videoRemoteElement || null;
     /**
      * @memberof! respoke.Call
      * @name videoIsMuted
@@ -466,6 +468,9 @@ module.exports = function (params) {
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
+        callSettings.videoRemoteElement = params.videoRemoteElement = videoRemoteElement || params.videoRemoteElement;
+        callSettings.videoLocalElement = params.videoLocalElement = videoLocalElement || params.videoLocalElement;
+
         pc.callSettings = callSettings;
         pc.forceTurn = forceTurn;
         pc.receiveOnly = receiveOnly;
@@ -532,7 +537,7 @@ module.exports = function (params) {
     that.answer = function (params) {
         params = params || {};
         log.debug('Call.answer');
-
+        console.log('respoke.call.answer', params);
         if (!defAnswered.promise.isPending()) {
             return;
         }
@@ -614,8 +619,8 @@ module.exports = function (params) {
      */
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
-
-        videoRemoteElement = params.videoRemoteElement || document.createElement('video');
+        console.log('respoke.call.onRemoteStreamAdded', evt);
+        videoRemoteElement = params.videoRemoteElement || videoRemoteElement || evt.target.callSettings.videoRemoteElement || document.createElement('video');
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
@@ -701,6 +706,7 @@ module.exports = function (params) {
      * @fires respoke.Call#local-stream-received
      */
     function doAddVideo(params) {
+        console.log('doAddVideo1', params);
         var stream;
         log.debug('Call.doAddVideo');
         params = params || {};
@@ -708,6 +714,7 @@ module.exports = function (params) {
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
         params.instanceId = instanceId;
+        console.log('doAddVideo2', params);
 
         stream = respoke.LocalMedia(params);
         stream.listen('requesting-media', function waitAllowHandler(evt) {
@@ -738,7 +745,7 @@ module.exports = function (params) {
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
-            videoLocalElement = evt.element;
+            videoLocalElement = videoLocalElement || evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
             } else {
