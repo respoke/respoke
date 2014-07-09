@@ -344,15 +344,13 @@ module.exports = function (params) {
                     skipCreate: true
                 });
 
-                // Is this connection already known?
-                if (connection !== undefined) {
-                    return;
+                if (!connection) {
+                    // Create the connection
+                    connection = client.getConnection({
+                        endpointId: params.endpointId,
+                        connectionId: params.connectionId
+                    });
                 }
-
-                var connection = client.getConnection({
-                    endpointId: params.endpointId,
-                    connectionId: params.connectionId
-                });
 
                 if (endpointList.indexOf(params.endpointId) === -1) {
                     endpointList.push(params.endpointId);
