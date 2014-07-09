@@ -56,7 +56,7 @@ if (!window.skipBugsnag) {
     first.parentNode.insertBefore(airbrake, first);
 
     airbrake.src = "https://ssljscdn.airbrake.io/airbrake-js-tracekit.min.js";
-    airbrake.setAttribute('defer');
+    airbrake.setAttribute('defer', 'defer');
     airbrake.setAttribute('data-airbrake-project-id', '98133');
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
