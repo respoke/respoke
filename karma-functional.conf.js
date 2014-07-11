@@ -21,7 +21,7 @@ module.exports = function(config) {
           '../../../collective/assets/js/jquery.js',
           '../../../collective/spec/util/api_client.js',
           '../../../collective/spec/util/fixture.js',
-          'spec/functional/calling.spec.js'
+          'spec/functional/*.spec.js'
         ],
 
         // test results reporter to use

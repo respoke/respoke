@@ -385,6 +385,7 @@ module.exports = function (params) {
                     reason: message
                 });
             });
+            that.answer();
         }
 
         if (directConnectionOnly === true) {
@@ -535,7 +536,6 @@ module.exports = function (params) {
      */
     that.answer = function (params) {
         params = params || {};
-        log.debug('Call.answer');
 
         if (!defAnswered.promise.isPending()) {
             return;
@@ -788,7 +788,7 @@ module.exports = function (params) {
      * If audio is not desired, pass {audio: false}.
      * @memberof! respoke.Call
      * @method respoke.Call.addVideo
-     * @private 
+     * @private
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=true]
@@ -1464,17 +1464,21 @@ module.exports = function (params) {
     }, true);
 
     signalingChannel.getTurnCredentials().fin(function (result) {
-        if (!(result instanceof Error)) {
+        if (!result) {
+            log.warn("Relay service not available.");
+            callSettings.servers = {
+                iceServers: []
+            };
+        } else {
             callSettings.servers = client.callSettings.servers;
             callSettings.servers.iceServers = result;
         }
         saveParameters(params);
         init();
-    }).done(function () {
+    }).fin(function () {
         defInit.resolve();
-    }, function (err) {
-        log.warn("Relay service not available.");
-        defInit.resolve();
+    }).done(null, function (err) {
+        // who cares
     });
 
     return that;

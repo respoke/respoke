@@ -1,5 +1,5 @@
 var expect = chai.expect;
-log.setLevel('error');
+respoke.log.setLevel('error');
 
 describe("Respoke calling", function () {
     this.timeout(30000);
@@ -8,34 +8,20 @@ describe("Respoke calling", function () {
     var follower = {};
     var followee = {};
     var groupId = respoke.makeGUID();
-    var groupPermissions = {
-        name: 'fixturepermissions',
-        permList: [
-            {
-                resourceType: "channels:create",
-                actions: "allow",
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'publish',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'subscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'unsubscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels:subscribers',
-                actions: 'get',
-                resourceIds: ['*']
+    var groupRole = {
+        name: 'fixturerole',
+        groups: {
+            "*": {
+                create: true,
+                publish: true,
+                subscribe: true,
+                unsubscribe: true,
+                getsubscribers: true
             }
-        ]
+        }
     };
     var testFixture = fixture("Calling Functional test", {
-        permissionParams: groupPermissions
+        roleParams: groupRole
     });
 
     var followerEndpoint;
@@ -49,22 +35,22 @@ describe("Respoke calling", function () {
     var messagesFollowerSent = [];
     var messagesFolloweeSent = [];
     var appId;
-    var permissionsId;
+    var roleId;
 
-    before(function (done) {
-        Q.nfcall(testFixture.beforeTest).then(function (env) {
+    beforeEach(function (done) {
+        respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
+            return respoke.Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
         }).then(function (params) {
             // create 2 tokens
-            permissionsId = params.permissions.id;
+            roleId = params.role.id;
             appId = params.app.id;
-            return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+            return [respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                roleId: roleId,
                 appId: appId
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+            }), respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                roleId: roleId,
                 appId: appId
             })];
         }).spread(function (token1, token2) {
@@ -74,7 +60,7 @@ describe("Respoke calling", function () {
             follower = respoke.createClient();
             followee = respoke.createClient();
 
-            return Q.all([follower.connect({
+            return respoke.Q.all([follower.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followerToken.tokenId
@@ -95,14 +81,14 @@ describe("Respoke calling", function () {
         }, function (err) {
             expect(err).to.be.defined;
             expect(err.message).to.be.defined;
-            done(new Error("test"));
+            done(err);
         });
     });
 
     describe("when placing a call", function () {
         var call;
         function callListener(evt) {
-            if (evt.call.intiator !== true) {
+            if (evt.call.initiator !== true) {
                 evt.call.answer();
             }
         }
@@ -114,15 +100,16 @@ describe("Respoke calling", function () {
         it("succeeds", function (done) {
             call = followeeEndpoint.startCall({
                 onLocalMedia: function (evt) {
-                    console.log("onLocalMedia");
-                    expect(evt.stream instanceof MediaStream).to.be.true;
-                    expect(evt.element instanceof Video).to.be.true;
+                    expect(evt.stream).to.be.ok;
+                    expect(evt.element).to.be.ok;
                 },
                 onConnect: function (evt) {
-                    console.log("onConnect");
-                    expect(evt.stream instanceof MediaStream).to.be.true;
-                    expect(evt.element instanceof Video).to.be.true;
-                    done();
+                    try {
+                        expect(evt.element).to.be.ok;
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
                 }
             });
         });
@@ -135,17 +122,17 @@ describe("Respoke calling", function () {
 
     /*
         afterEach(function (done) {
-            Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+            respoke.Q.all([respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                roleId: roleId,
                 appId: appId
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+            }), respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                roleId: roleId,
                 appId: appId
             })]).spread(function (token1, token2) {
                 followerToken = token1;
                 followeeToken = token2;
 
-                return Q.all([follower.connect({
+                return respoke.Q.all([follower.connect({
                     appId: Object.keys(testEnv.allApps)[0],
                     baseURL: respokeTestConfig.baseURL,
                     token: followerToken.tokenId
@@ -167,11 +154,12 @@ describe("Respoke calling", function () {
         });
         */
 
-    after(function (done) {
-        Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
+    afterEach(function (done) {
+        respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {
-                    return done(new Error(JSON.stringify(err)));
+                    done(new Error(JSON.stringify(err)));
+                    return;
                 }
                 done();
             });
