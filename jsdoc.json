@@ -1,8 +1,8 @@
 {
     "source": {
         "include": [
-            "respoke.js",
-            "respoke/"
+            "respoke/",
+            "plugins/"
         ]
     },
     "opts": {

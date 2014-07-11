@@ -1,44 +1,63 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
- */
-
-/**
- * @author Erin Spiceland <espiceland@digium.com>
- * @namespace respoke
- * @global
- */
-/*global Bugsnag: true, respoke: true*/
+/*global Bugsnag: true*/
 /*jshint bitwise: false*/
-(function respokeInit() {
-    'use strict';
-    window.respoke = {
-        buildNumber: 'NO BUILD NUMBER',
-        streams: {},
-        instances: {}
-    };
-    log.setLevel('trace');
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
+ */
 
-    if (!window.skipBugsnag) {
-        // Use bugsnag.
-        var bugsnag = document.createElement('script');
-        var first = document.getElementsByTagName('script')[0];
-        first.parentNode.insertBefore(bugsnag, first);
+var log = require('loglevel');
+log.setLevel('trace');
 
-        bugsnag.onload = function () {
-            Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
-        };
-        bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';
-    }
-}());
-
+var Q = require('q');
 Q.longStackSupport = true;
 Q.stackJumpLimit = 5;
 Q.longStackJumpLimit = 20;
 Q.stopUnhandledRejectionTracking();
+
+require('./deps/adapter');
+
+/**
+ * A global static class which provides access to the Respoke functionality.
+ * @author Erin Spiceland <espiceland@digium.com>
+ * @namespace respoke
+ * @class respoke
+ * @global
+ * @link https://www.respoke.io/min/respoke.min.js
+ */
+var respoke = module.exports = {
+    buildNumber: 'NO BUILD NUMBER',
+    streams: {},
+    instances: {}
+};
+
+respoke.EventEmitter = require('./event');
+respoke.Client = require('./client');
+respoke.Presentable = require('./presentable');
+respoke.Connection = require('./connection');
+respoke.Endpoint = require('./endpoint');
+respoke.TextMessage = require('./textMessage');
+respoke.SignalingMessage = require('./signalingMessage');
+respoke.Group = require('./group');
+respoke.SignalingChannel = require('./signalingChannel');
+respoke.DirectConnection = require('./directConnection');
+respoke.PeerConnection = require('./peerConnection');
+respoke.Call = require('./call');
+respoke.LocalMedia = require('./localMedia');
+respoke.log = log;
+respoke.Q = Q;
+
+if (!window.skipBugsnag) {
+    // Use bugsnag.
+    var bugsnag = document.createElement('script');
+    var first = document.getElementsByTagName('script')[0];
+    first.parentNode.insertBefore(bugsnag, first);
+
+    bugsnag.onload = function () {
+        "use strict";
+        Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
+    };
+    bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';
+}
 
 /**
  * This is one of two possible entry points for interating with the library. This method creates a new Client object
@@ -46,7 +65,7 @@ Q.stopUnhandledRejectionTracking();
  * client.connect() method after the client is created.
  * @static
  * @memberof respoke
- * @param {object} params
+ * @param {object} params Parameters to the respoke.Client constructor.
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.token]
@@ -71,7 +90,6 @@ Q.stopUnhandledRejectionTracking();
  * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
  * direct connection.
  * @returns {respoke.Client}
- * @param {object} Parameters to the respoke.Client constructor.
  */
 respoke.connect = function (params) {
     "use strict";
@@ -81,10 +99,11 @@ respoke.connect = function (params) {
 };
 
 /**
+ * Getter for the respoke client.
  * @static
  * @memberof respoke
+ * @param {number} id The Client ID.
  * @returns {respoke.Client}
- * @param {number} The Client ID.
  */
 respoke.getClient = function (id) {
     "use strict";
@@ -104,14 +123,13 @@ respoke.getClient = function (id) {
  * connect.
  * @static
  * @memberof respoke
- * @param {object} params
+ * @param {object} params Parameters to the respoke.Client constructor.
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.authToken]
  * @param {RTCConstraints} [params.constraints]
  * @param {RTCICEServers} [params.servers]
  * @returns {respoke.Client}
- * @param {object} Parameters to the Client constructor
  */
 respoke.createClient = function (params) {
     "use strict";
@@ -204,7 +222,7 @@ respoke.Class = function (params) {
 };
 
 /**
- * Does the browser support UserMedia
+ * Does the browser support `UserMedia`?
  * @static
  * @memberof respoke
  * @returns {boolean}
@@ -216,7 +234,7 @@ respoke.hasUserMedia = function () {
 };
 
 /**
- * Does the browser support RTCPeerConnection
+ * Does the browser support `RTCPeerConnection`?
  * @static
  * @memberof respoke
  * @returns {boolean}
@@ -229,7 +247,7 @@ respoke.hasRTCPeerConnection = function () {
 };
 
 /**
- * Does the browser support WebSocket
+ * Does the browser support `WebSocket`?
  * @static
  * @memberof respoke
  * @returns {boolean}

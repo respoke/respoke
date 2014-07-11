@@ -1,10 +1,11 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
+
+var Q = require('q');
+var log = require('loglevel');
+var respoke = require('./respoke');
 
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
@@ -12,6 +13,7 @@
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
+ * @link https://www.respoke.io/min/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call
@@ -53,8 +55,7 @@
  * @param {object} params.callSettings
  * @returns {respoke.Call}
  */
-/*global respoke: false */
-respoke.Call = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -302,7 +303,7 @@ respoke.Call = function (params) {
      * @private
      */
     function init() {
-        log.trace('Call.init');
+        log.debug('Call.init');
 
         if (defModify !== undefined) {
             defSDPOffer = Q.defer();
@@ -438,6 +439,15 @@ respoke.Call = function (params) {
      * @fires respoke.Call#stats
      */
     function saveParameters(params) {
+        /* This happens when the call is hung up automatically, for instance due to the lack of an onCall
+         * handler. In this case, pc has been set to null in hangup. The call has already failed, and the
+         * invocation of this function is an artifact of async code not being finished yet, so we can just
+         * skip all of this setup.
+         */
+        if (!pc) {
+            return;
+        }
+
         that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
         that.listen('hangup', params.onHangup);
@@ -525,7 +535,7 @@ respoke.Call = function (params) {
      */
     that.answer = function (params) {
         params = params || {};
-        log.trace('Call.answer');
+        log.debug('Call.answer');
 
         if (!defAnswered.promise.isPending()) {
             return;
@@ -571,7 +581,7 @@ respoke.Call = function (params) {
         if (!defApproved.promise.isPending()) {
             return;
         }
-        log.trace('Call.approve');
+        log.debug('Call.approve');
         /**
          * @event respoke.Call#approve
          * @type {respoke.Event}
@@ -595,7 +605,7 @@ respoke.Call = function (params) {
      * @param {object}
      */
     function onRemoteStreamRemoved(evt) {
-        log.trace('pc event: remote stream removed');
+        log.debug('pc event: remote stream removed');
     }
 
     /**
@@ -627,6 +637,8 @@ respoke.Call = function (params) {
     }
 
     /**
+     * ## The plugin `respoke.MediaStats` must be loaded before using this method.
+     * 
      * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
      * Since we have to wait for both the answer and offer to be available before starting
      * statistics, the library returns a promise for the stats object. The statistics object does not contain the
@@ -696,7 +708,7 @@ respoke.Call = function (params) {
      */
     function doAddVideo(params) {
         var stream;
-        log.trace('Call.doAddVideo');
+        log.debug('Call.doAddVideo');
         params = params || {};
         saveParameters(params);
         params.constraints = params.constraints || callSettings.constraints;
@@ -776,6 +788,7 @@ respoke.Call = function (params) {
      * If audio is not desired, pass {audio: false}.
      * @memberof! respoke.Call
      * @method respoke.Call.addVideo
+     * @private 
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=true]
@@ -790,7 +803,7 @@ respoke.Call = function (params) {
      * @returns {Promise<respoke.LocalMedia>}
      */
     that.addVideo = function (params) {
-        log.trace('Call.addVideo');
+        log.debug('Call.addVideo');
         params = params || {};
         params.constraints = params.constraints || {video: true, audio: true};
         params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
@@ -815,6 +828,7 @@ respoke.Call = function (params) {
      * Add an audio stream to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addAudio
+     * @private 
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=false]
@@ -870,10 +884,12 @@ respoke.Call = function (params) {
      * Remove a direct connection from the existing call. If there is no other media, this will hang up the call.
      * @memberof! respoke.Call
      * @method respoke.Call.removeDirectConnection
+     * @private
+     * @param {object} params
      */
     that.removeDirectConnection = function (params) {
         params = params || {};
-        log.trace('Call.removeDirectConnection');
+        log.debug('Call.removeDirectConnection');
 
         if (directConnection && directConnection.isActive()) {
             directConnection.close({skipRemove: true});
@@ -903,6 +919,7 @@ respoke.Call = function (params) {
      * Add a direct connection to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addDirectConnection
+     * @private
      * @param {object} params
      * @param {respoke.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
      * closing the connection.
@@ -916,7 +933,7 @@ respoke.Call = function (params) {
      * @returns {Promise<respoke.DirectConnection>}
      */
     that.addDirectConnection = function (params) {
-        log.trace('Call.addDirectConnection');
+        log.debug('Call.addDirectConnection');
         pc.startModify({
             directConnection: true
         });
@@ -948,7 +965,7 @@ respoke.Call = function (params) {
      * @fires respoke.Call#direct-connection
      */
     function actuallyAddDirectConnection(params) {
-        log.trace('Call.actuallyAddDirectConnection', params);
+        log.debug('Call.actuallyAddDirectConnection', params);
         params = params || {};
         defMedia.promise.then(params.onSuccess, params.onError);
 
@@ -1066,7 +1083,7 @@ respoke.Call = function (params) {
      */
     that.hangup = function (params) {
         params = params || {};
-        log.trace('hangup', directConnection);
+        log.debug('hangup', directConnection);
 
         if (toSendHangup !== null) {
             log.info("call.hangup() called when call is already hung up.");
@@ -1149,7 +1166,7 @@ respoke.Call = function (params) {
      * @fires respoke.Call#modify
      */
     function listenOffer(evt) {
-        log.trace('listenOffer');
+        log.debug('listenOffer');
         var info = {};
         if (defModify && defModify.promise.isPending()) {
             if (directConnectionOnly === true) {
@@ -1189,7 +1206,7 @@ respoke.Call = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        log.trace('Call.listenAnswer');
+        log.debug('Call.listenAnswer');
         if (defSDPAnswer.promise.isFulfilled()) {
             log.debug("Ignoring duplicate answer.");
             return;
@@ -1204,7 +1221,7 @@ respoke.Call = function (params) {
      * @private
      */
     function listenModify(evt) {
-        log.trace('Call.listenModify', evt);
+        log.debug('Call.listenModify', evt);
         if (evt.signal.action === 'initiate') {
             defModify = Q.defer();
         }

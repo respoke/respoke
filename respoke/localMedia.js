@@ -1,10 +1,10 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
+
+var log = require('loglevel');
+var respoke = require('./respoke');
 
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
@@ -17,8 +17,7 @@
  * @param {object} params.callSettings
  * @returns {respoke.LocalMedia}
  */
-/*global respoke: false */
-respoke.LocalMedia = function (params) {
+module.exports = function (params) {
     "use strict";
     params = params || {};
     /**
@@ -170,7 +169,7 @@ respoke.LocalMedia = function (params) {
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.onReceiveUserMedia
      * @private
-     * @param {RTCMediaStream}
+     * @param {RTCMediaStream} theStream
      * @fires respoke.LocalMedia#stream-received
      */
     function onReceiveUserMedia(theStream) {
@@ -188,7 +187,7 @@ respoke.LocalMedia = function (params) {
          */
         that.fire('allow');
         log.debug('User gave permission to use media.');
-        log.trace('onReceiveUserMedia');
+        log.debug('onReceiveUserMedia');
 
         /**
          * Expose getAudioTracks.
@@ -274,7 +273,7 @@ respoke.LocalMedia = function (params) {
      * @private
      */
     function requestMedia() {
-        log.trace('requestMedia');
+        log.debug('requestMedia');
 
         that.constraints = callSettings.constraints;
 
@@ -319,7 +318,7 @@ respoke.LocalMedia = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
-        log.trace('onUserMediaError');
+        log.debug('onUserMediaError');
         if (p.code === 1) {
             log.warn("Permission denied.");
             /**

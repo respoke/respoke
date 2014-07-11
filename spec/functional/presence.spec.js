@@ -1,9 +1,10 @@
 var expect = chai.expect;
-log.setLevel('error');
+respoke.log.setLevel('error');
 
 describe("Respoke presence", function () {
     this.timeout(30000);
 
+    var Q = respoke.Q;
     var testFixture = fixture("Presence Functional test");
     var testEnv;
     var follower;

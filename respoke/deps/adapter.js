@@ -1,9 +1,9 @@
-var RTCPeerConnection = null;
-var getUserMedia = null;
-var attachMediaStream = null;
-var reattachMediaStream = null;
-var webrtcDetectedBrowser = null;
-var webrtcDetectedVersion = null;
+window.RTCPeerConnection = null;
+window.getUserMedia = null;
+window.attachMediaStream = null;
+window.reattachMediaStream = null;
+window.webrtcDetectedBrowser = null;
+window.webrtcDetectedVersion = null;
 
 function trace(text) {
   // This function is used for logging.
