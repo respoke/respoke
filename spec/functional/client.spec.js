@@ -17,7 +17,7 @@ describe("respoke.Client", function () {
         }).then(function (params) {
             // create 2 tokens
             return Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
+                roleId: params.role.id,
                 appId: params.app.id
             });
         }).then(function (token) {
