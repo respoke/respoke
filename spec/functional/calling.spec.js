@@ -37,6 +37,16 @@ describe("Respoke calling", function () {
     var appId;
     var roleId;
 
+    function doneOnceBuilder(done){
+        var called = false;
+        return function (err) {
+            if (!called) {
+                called = true;
+                done(err);
+            }
+        };
+    };
+
     beforeEach(function (done) {
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
@@ -93,66 +103,56 @@ describe("Respoke calling", function () {
             }
         }
 
-        beforeEach(function () {
-            followee.listen('call', callListener);
-        });
+        describe("with call listener specified", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
 
-        it("succeeds", function (done) {
-            call = followeeEndpoint.startCall({
-                onLocalMedia: function (evt) {
-                    expect(evt.stream).to.be.ok;
-                    expect(evt.element).to.be.ok;
-                },
-                onConnect: function (evt) {
-                    try {
-                        expect(evt.element).to.be.ok;
-                        done();
-                    } catch (e) {
-                        done(e);
+            it("succeeds", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startCall({
+                    onLocalMedia: function (evt) {
+                        try {
+                            expect(evt.stream).to.be.ok;
+                            expect(evt.element).to.be.ok;
+                        } catch (e) {
+                            doneOnce(e);
+                        }
+                    },
+                    onConnect: function (evt) {
+                        try {
+                            expect(evt.element).to.be.ok;
+                            doneOnce();
+                        } catch (e) {
+                            doneOnce(e);
+                        }
                     }
-                }
+                });
+            });
+
+            afterEach(function () {
+                followee.ignore('call', callListener);
+                call.hangup();
             });
         });
 
-        afterEach(function () {
-            followee.ignore('call', callListener);
-            call.hangup();
+        describe("without a call listener specified", function () {
+            it("fails", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                setTimeout(function () {
+                    doneOnce(new Error("Call was supposed to fail immediately!"));
+                }, 5000);
+
+                call = followeeEndpoint.startCall({
+                    onHangup: function (evt) {
+                        doneOnce();
+                    }
+                });
+            });
         });
     });
-
-    /*
-        afterEach(function (done) {
-            respoke.Q.all([respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            }), respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            })]).spread(function (token1, token2) {
-                followerToken = token1;
-                followeeToken = token2;
-
-                return respoke.Q.all([follower.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
-                    token: followerToken.tokenId
-                }), followee.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
-                    token: followeeToken.tokenId
-                })]);
-            }).then(function () {
-                expect(follower.endpointId).not.to.be.undefined;
-                expect(follower.endpointId).to.equal(followerToken.endpointId);
-                expect(followee.endpointId).not.to.be.undefined;
-                expect(followee.endpointId).to.equal(followeeToken.endpointId);
-            }).done(function () {
-                followerEndpoint = followee.getEndpoint({id: follower.endpointId});
-                followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
-                done();
-            }, done);
-        });
-        */
 
     afterEach(function (done) {
         respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
