@@ -9,34 +9,20 @@ describe("Respoke messaging", function () {
     var follower = {};
     var followee = {};
     var groupId = respoke.makeGUID();
-    var groupPermissions = {
-        name: 'fixturepermissions',
-        permList: [
-            {
-                resourceType: "channels:create",
-                actions: "allow",
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'publish',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'subscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'unsubscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels:subscribers',
-                actions: 'get',
-                resourceIds: ['*']
+    var groupRole = {
+        name: 'fixturerole',
+        groups: {
+            "*": {
+                create: true,
+                publish: true,
+                subscribe: true,
+                unsubscribe: true,
+                getsubscribers: true
             }
-        ]
+        }
     };
     var testFixture = fixture("Messaging Functional test", {
-        permissionParams: groupPermissions
+        roleParams: groupRole
     });
 
     var followerEndpoint;
@@ -50,7 +36,7 @@ describe("Respoke messaging", function () {
     var messagesFollowerSent = [];
     var messagesFolloweeSent = [];
     var appId;
-    var permissionsId;
+    var roleId;
 
     function followerListener(evt) {
         messagesFolloweeReceived.push(evt.message.message);
@@ -142,16 +128,16 @@ describe("Respoke messaging", function () {
         Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
+            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
         }).then(function (params) {
             // create 2 tokens
-            permissionsId = params.permissions.id;
+            roleId = params.role.id;
             appId = params.app.id;
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             })];
         }).spread(function (token1, token2) {
@@ -382,10 +368,10 @@ describe("Respoke messaging", function () {
 
         afterEach(function (done) {
             Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             })]).spread(function (token1, token2) {
                 followerToken = token1;
