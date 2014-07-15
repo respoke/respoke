@@ -360,7 +360,7 @@ module.exports = function (params) {
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
-                if (oOffer && oOffer.sdp) {
+                if (pc && oOffer && oOffer.sdp) {
                     pc.processOffer(oOffer.sdp);
                 }
             }, function errorHandler(err) {
@@ -628,10 +628,12 @@ module.exports = function (params) {
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
          * @property {Element} element - the HTML5 Video element with the new stream attached.
+         * @property {MediaStream} stream - the media stream
          * @property {string} name - the event name.
          * @property {respoke.Call} target
          */
         that.fire('connect', {
+            stream: evt.stream,
             element: videoRemoteElement
         });
     }
@@ -747,9 +749,8 @@ module.exports = function (params) {
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
-            } else {
-                that.approve();
             }
+
             /**
              * @event respoke.Call#local-stream-received
              * @type {respoke.Event}
@@ -762,6 +763,10 @@ module.exports = function (params) {
                 element: evt.element,
                 stream: stream
             });
+
+            if (typeof previewLocalMedia !== 'function') {
+                that.approve();
+            }
         }, true);
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
@@ -1150,7 +1155,7 @@ module.exports = function (params) {
      */
     that.isActive = function () {
         // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
-        return (pc.isActive() && (
+        return !!(pc.isActive() && (
             (localStreams.length > 0) ||
             (directConnection && directConnection.isActive())
         ));

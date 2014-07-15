@@ -5,6 +5,7 @@ describe("Respoke calling", function () {
     this.timeout(30000);
 
     var testEnv;
+    var call;
     var follower = {};
     var followee = {};
     var groupId = respoke.makeGUID();
@@ -30,14 +31,10 @@ describe("Respoke calling", function () {
     var followeeGroup;
     var followerToken;
     var followeeToken;
-    var messagesFollowerReceived = [];
-    var messagesFolloweeReceived = [];
-    var messagesFollowerSent = [];
-    var messagesFolloweeSent = [];
     var appId;
     var roleId;
 
-    function doneOnceBuilder(done){
+    function doneOnceBuilder(done) {
         var called = false;
         return function (err) {
             if (!called) {
@@ -96,7 +93,6 @@ describe("Respoke calling", function () {
     });
 
     describe("when placing a call", function () {
-        var call;
         function callListener(evt) {
             if (evt.call.initiator !== true) {
                 evt.call.answer();
@@ -127,12 +123,18 @@ describe("Respoke calling", function () {
                         } catch (e) {
                             doneOnce(e);
                         }
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
                     }
                 });
             });
 
-            afterEach(function () {
+            afterEach(function (done) {
                 followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
                 call.hangup();
             });
         });
@@ -147,8 +149,837 @@ describe("Respoke calling", function () {
 
                 call = followeeEndpoint.startCall({
                     onHangup: function (evt) {
+                        call.ignore('hangup');
                         doneOnce();
                     }
+                });
+            });
+        });
+
+        describe("with only audio", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
+
+            describe("by constraints", function () {
+                it("only sends audio and not video", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        constraints: {
+                            video : false,
+                            audio : true,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onLocalMedia: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.empty;
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("only receives audio and not video", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        constraints: {
+                            video : false,
+                            audio : true,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.empty;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+
+            describe("by the Endpoint.startAudioCall method", function () {
+                it("only sends audio and not video", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startAudioCall({
+                        onLocalMedia: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.empty;
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("only receives audio and not video", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startAudioCall({
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.empty;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+        });
+
+        describe("with only video", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
+
+            describe("by constraints", function () {
+                it("only sends video and not audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        constraints: {
+                            video : true,
+                            audio : false,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onLocalMedia: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.empty;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("only receives video and not audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        constraints: {
+                            video : true,
+                            audio : false,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.empty;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+        });
+
+        describe("with video and audio", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
+
+            describe("by constraints", function () {
+                it("sends both video and audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        constraints: {
+                            video : true,
+                            audio : true,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onLocalMedia: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("receives both video and audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        constraints: {
+                            video : true,
+                            audio : true,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+
+            describe("by the Endpoint.startVideoCall method", function () {
+                it("sends both video and audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startVideoCall({
+                        onLocalMedia: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.element).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("receives both video and audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startVideoCall({
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+        });
+
+        describe("when previewLocalMedia is specified", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("Call.approve is not called automatically", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startCall({
+                    onApprove: function (evt) {
+                        doneOnce(new Error("Approve was called immediately!"));
+                    },
+                    previewLocalMedia: function (element, call) {
+                        call.ignore('approve');
+                        doneOnce();
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
+                    }
+                });
+            });
+
+            describe("when Call.approve is called", function () {
+                beforeEach(function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        previewLocalMedia: function (element, call) {
+                            doneOnce();
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("succeeds", function (done) {
+                    call.listen('local-stream-received', function (evt) {
+                        done();
+                    });
+                    call.listen('requesting-media', function (evt) {
+                        call.approve();
+                    });
+                });
+            });
+
+            // Can't actually test this because we are using the fake gUM UI flag which doesn't give any time
+            // between asking for media and receiving it. We have a 500ms delay between asking for media and
+            // firing requesting-media so that the UI doesn't flash a request to click the button when no
+            // additional permissions are needed. Maybe we can test this another way in the future.
+            xdescribe("the onRequestingMedia callback", function () {
+                it("gets called before onLocalMedia", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        onRequestingMedia: function (evt) {
+                            doneOnce();
+                        },
+                        onLocalMedia: function (evt) {
+                            doneOnce(new Error("onLocalMedia got called first."));
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("gets called before onAllow", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        onRequestingMedia: function (evt) {
+                            doneOnce();
+                        },
+                        onAllow: function (evt) {
+                            doneOnce(new Error("onAllow got called first."));
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+        });
+
+        // Can't test this because:
+        //   1. We are on the same machine so hole-punching will always find a path, even without ICE!
+        //   2. We don't have access to the peer connection, so we can't observe whether we get any relay candidates.
+        xdescribe("when forceTurn is turned on", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
+
+            afterEach(function () {
+                followee.ignore('call', callListener);
+            });
+
+            it("fails because the test suite can't get TURN credentials", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startCall({
+                    forceTurn: true,
+                    onHangup: function (evt) {
+                        doneOnce();
+                    },
+                    onConnect: function (evt) {
+                        doneOnce(new Error("This is impossible."));
+                    }
+                });
+            });
+        });
+
+        describe("the onLocalMedia callback", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("gets called before onApprove", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startCall({
+                    onLocalMedia: function (evt) {
+                        doneOnce();
+                    },
+                    onApprove: function (evt) {
+                        doneOnce(new Error("onApprove got called first."));
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
+                    }
+                });
+            });
+
+            it("gets called before onConnect", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startCall({
+                    onLocalMedia: function (evt) {
+                        doneOnce();
+                    },
+                    onConnect: function (evt) {
+                        doneOnce(new Error("onConnect got called first."));
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
+                    }
+                });
+            });
+        });
+
+        describe("the hangup method", function () {
+            beforeEach(function () {
+                followee.listen('call', callListener);
+                call = followeeEndpoint.startCall({ constraints: {
+                    video: true,
+                    audio: true,
+                    optional: [],
+                    mandatory: {}
+                }});
+            });
+
+            afterEach(function () {
+                followee.ignore('call', callListener);
+            });
+
+            it("causes the hangup event to fire", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call.listen('hangup', function (evt) {
+                    doneOnce();
+                });
+                setTimeout(function () {
+                    doneOnce(new Error("hangup event didn't fire."));
+                }, 1000);
+                call.hangup();
+            });
+
+            it("causes the call not to be active", function (done) {
+                call.listen('hangup', function (evt) {
+                    try {
+                        expect(call.isActive()).to.be.false;
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                });
+                call.hangup();
+            });
+        });
+
+        describe("muting", function () {
+            var localMedia;
+            var muteSpy = sinon.spy();
+
+            beforeEach(function (done) {
+                followee.listen('call', callListener);
+                call = followeeEndpoint.startCall({
+                    onLocalMedia: function (evt) {
+                        localMedia = evt.stream;
+                    },
+                    onConnect: function (evt) {
+                        done();
+                    },
+                    onMute: muteSpy
+                });
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            describe("video", function () {
+                beforeEach(function () {
+                    call.muteVideo();
+                });
+
+                it("disables the video stream", function () {
+                    var videoTracks = localMedia.getVideoTracks();
+                    expect(videoTracks.length).to.equal(1);
+                    expect(videoTracks[0].enabled).to.equal(false);
+                });
+
+                it("causes the mute event to fire", function () {
+                    expect(muteSpy.called).to.be.ok;
+                });
+            });
+
+            describe("audio", function () {
+                beforeEach(function () {
+                    call.muteAudio();
+                });
+
+                // broke
+                xit("disables the audio stream", function () {
+                    var audioTracks = localMedia.getAudioTracks();
+                    expect(audioTracks.length).to.equal(1);
+                    expect(audioTracks[0].enabled).to.equal(false);
+                });
+
+                it("causes the mute event to fire", function () {
+                    expect(muteSpy.called).to.be.ok;
+                });
+            });
+        });
+    });
+
+    describe("when receiving a call", function () {
+        describe("with call listener specified", function () {
+            beforeEach(function () {
+                followeeEndpoint.startCall();
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call');
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("succeeds", function (done) {
+                followee.listen('call', function (evt) {
+                    call = evt.call;
+                    done();
+                });
+
+                setTimeout(function () {
+                    done(new Error("Call didn't come in."));
+                }, 2000);
+            });
+        });
+
+        describe("with only audio", function () {
+            afterEach(function (done) {
+                followee.ignore('call');
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            describe("by constraints in answer()", function () {
+                var constraints = {
+                    video : false,
+                    audio : true,
+                    optional: [],
+                    mandatory: {
+                        offerToReceiveVideo: true
+                    }
+                };
+
+                beforeEach(function () {
+                    followeeEndpoint.startCall();
+                });
+
+                // broke
+                xit("only sends audio and not video", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.empty;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+
+                it("receives both audio and video", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+
+            describe("by leaning on caller's SDP", function () {
+                beforeEach(function () {
+                    followeeEndpoint.startAudioCall();
+                });
+
+                // broke
+                xit("only sends audio and not video", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.empty;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+
+                // broke
+                xit("only receives audio and not video", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.empty;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+        });
+
+        describe("with only video", function () {
+            var constraints = {
+                video: true,
+                audio: false,
+                optional: [],
+                mandatory: {
+                    offerToReceiveAudio: true
+                }
+            };
+
+            describe("by constraints", function () {
+                beforeEach(function () {
+                    followeeEndpoint.startCall();
+                });
+
+                // broke
+                xit("only sends video and not audio", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.empty;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+
+                it("receives both audio and video", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+
+            describe("by leaning on caller's SDP", function () {
+                beforeEach(function () {
+                    followeeEndpoint.startCall({
+                        constraints: constraints
+                    });
+                });
+
+                // broke
+                xit("only sends video and not audio", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.empty;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+
+                it("receives both audio and video", function (done) {
+                    followee.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
                 });
             });
         });
