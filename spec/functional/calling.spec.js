@@ -141,16 +141,10 @@ describe("Respoke calling", function () {
 
         describe("without a call listener specified", function () {
             it("fails", function (done) {
-                var doneOnce = doneOnceBuilder(done);
-
-                setTimeout(function () {
-                    doneOnce(new Error("Call was supposed to fail immediately!"));
-                }, 5000);
-
                 call = followeeEndpoint.startCall({
                     onHangup: function (evt) {
                         call.ignore('hangup');
-                        doneOnce();
+                        done();
                     }
                 });
             });
@@ -663,14 +657,9 @@ describe("Respoke calling", function () {
             });
 
             it("causes the hangup event to fire", function (done) {
-                var doneOnce = doneOnceBuilder(done);
-
                 call.listen('hangup', function (evt) {
-                    doneOnce();
+                    done();
                 });
-                setTimeout(function () {
-                    doneOnce(new Error("hangup event didn't fire."));
-                }, 1000);
                 call.hangup();
             });
 
@@ -766,10 +755,6 @@ describe("Respoke calling", function () {
                     call = evt.call;
                     done();
                 });
-
-                setTimeout(function () {
-                    done(new Error("Call didn't come in."));
-                }, 2000);
             });
         });
 
