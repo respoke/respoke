@@ -21,8 +21,7 @@ module.exports = function(config) {
           '../../../collective/assets/js/jquery.js',
           '../../../collective/spec/util/api_client.js',
           '../../../collective/spec/util/fixture.js',
-          'spec/functional/calling.spec.js'
-          //'spec/functional/*.spec.js'
+          'spec/functional/*.spec.js'
         ],
 
         // test results reporter to use
@@ -64,14 +63,14 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        //browsers: ['Chrome', /*'Firefox'*/],
         browsers: ['Chrome_autoaccept'],
         customLaunchers: {
-        Chrome_autoaccept: {
+            Chrome_autoaccept: {
                 base: 'Chrome',
                 flags: ['--use-fake-ui-for-media-stream', '--disable-web-security']
             }
         },
+
         // If browser does not capture in given timeout [ms], kill it
         captureTimeout: 60000
     });

@@ -320,14 +320,6 @@ module.exports = function (params) {
             actuallyAddDirectConnection(params);
         }
 
-        defInit.promise.done(null, function (err) {
-            log.error("Couldn't initiate call.", err.message, err.stack);
-        });
-
-        defAnswered.promise.done(null, function (err) {
-            log.error("Couldn't answer call.", err.message, err.stack);
-        });
-
         /* Must make sure that the deferred init and the call has been answered before calling this code */
         Q.all([defInit.promise, defAnswered.promise]).spread(function initializedAndAnswerCalled(init, params) {
             /**
