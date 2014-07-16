@@ -55,8 +55,6 @@ var respoke = require('./respoke');
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
  * @param {object} params.callSettings
- * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
- * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.Call}
  */
 module.exports = function (params) {
@@ -244,14 +242,14 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = params.videoLocalElement || null;
+    var videoLocalElement = null;
     /**
      * @memberof! respoke.Call
      * @name videoRemoteElement
      * @private
      * @type {Video}
      */
-    var videoRemoteElement = params.videoRemoteElement || null;
+    var videoRemoteElement = null;
     /**
      * @memberof! respoke.Call
      * @name videoIsMuted
@@ -494,9 +492,6 @@ module.exports = function (params) {
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
-        callSettings.videoRemoteElement = params.videoRemoteElement = videoRemoteElement || params.videoRemoteElement;
-        callSettings.videoLocalElement = params.videoLocalElement = videoLocalElement || params.videoLocalElement;
-
         pc.callSettings = callSettings;
         pc.forceTurn = forceTurn;
         pc.receiveOnly = receiveOnly;
@@ -563,6 +558,7 @@ module.exports = function (params) {
     that.answer = function (params) {
         params = params || {};
         log.debug('Call.answer');
+
         if (!defAnswered.promise.isPending()) {
             return;
         }
