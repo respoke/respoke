@@ -286,7 +286,10 @@ module.exports = function (params) {
     }
 
     /**
+     * Message the group
+     * 
      * Send a message to the entire group.
+     * 
      * @memberof! respoke.Group
      * @method respoke.Group.sendMessage
      * @param {object} params
@@ -313,12 +316,17 @@ module.exports = function (params) {
     };
 
     /**
-     * Get an array containing the members of the group.
+     * Get group members
+     * 
+     * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
+     * or a promise.
+     * 
      * @memberof! respoke.Group
      * @method respoke.Group.getMembers
-     * @returns {Promise<Array>} A promise to an array of Connections.
      * @param {object} params
-     * @fires respoke.Group#join
+     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Success handler for this invocation of this method only.
+     * @returns {Promise<Array>} A promise to an array of Connections.
      */
     that.getMembers = function (params) {
         params = params || {};
