@@ -624,7 +624,7 @@ module.exports = function (params) {
             oSession.type = 'offer';
             signalOffer({
                 call: that.call,
-                sdp: oSession
+                sessionDescription: oSession
             });
             defSDPOffer.resolve(oSession);
         }, function errorHandler(p) {
@@ -662,7 +662,7 @@ module.exports = function (params) {
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
             signalAnswer({
-                sdp: oSession,
+                sessionDescription: oSession,
                 call: that.call
             });
             defSDPAnswer.resolve(oSession);
@@ -795,17 +795,17 @@ module.exports = function (params) {
             return;
         }
         defSDPAnswer.promise.done(processQueues, function errorHandler() {
-            log.error('set remote desc of answer failed', evt.signal.sdp);
+            log.error('set remote desc of answer failed', evt.signal.sessionDescription);
             that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
             that.close();
         });
         log.debug('got answer', evt.signal);
 
-        that.report.sdpsReceived.push(evt.signal.sdp);
-        that.report.lastSDPString = evt.signal.sdp.sdp;
+        that.report.sdpsReceived.push(evt.signal.sessionDescription);
+        that.report.lastSDPString = evt.signal.sessionDescription.sdp;
         //set flags for audio / video for answer
-        that.call.hasAudio = hasAudio(evt.signal.sdp.sdp);
-        that.call.hasVideo = hasVideo(evt.signal.sdp.sdp);
+        that.call.hasAudio = hasAudio(evt.signal.sessionDescription.sdp);
+        that.call.hasVideo = hasVideo(evt.signal.sessionDescription.sdp);
         if (that.call.initiator) {
             that.report.calleeconnection = evt.signal.connectionId;
         }
@@ -815,9 +815,9 @@ module.exports = function (params) {
         });
 
         pc.setRemoteDescription(
-            new RTCSessionDescription(evt.signal.sdp),
+            new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
-                defSDPAnswer.resolve(evt.signal.sdp);
+                defSDPAnswer.resolve(evt.signal.sessionDescription);
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
