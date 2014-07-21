@@ -11,15 +11,15 @@ describe("Respoke presence", function () {
     var followee;
     var followerToken;
     var followeeToken;
-    var permissionsId;
+    var roleId;
     var appId;
 
     function doReconnect(done) {
         Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-            permissionsId: permissionsId,
+            roleId: roleId,
             appId: appId
         }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-            permissionsId: permissionsId,
+            roleId: roleId,
             appId: appId
         })]).spread(function (token1, token2) {
             followerToken = token1;
@@ -52,14 +52,14 @@ describe("Respoke presence", function () {
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
         }).then(function (params) {
             // create 2 tokens
-            permissionsId = params.permissions.id;
+            roleId = params.role.id;
             appId = params.app.id;
 
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             })];
         }).spread(function (token1, token2) {

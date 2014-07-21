@@ -342,14 +342,7 @@ module.exports = function (params) {
         };
 
         params.signalingChannel = signalingChannel;
-
-        call = respoke.Call(params);
-
-        if (params.caller === true) {
-            call.answer();
-        }
-
-        return call;
+        return respoke.Call(params);
     };
 
     /**

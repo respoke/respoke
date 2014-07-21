@@ -1622,7 +1622,7 @@ module.exports = function (params) {
         }
 
         requestTimer = setTimeout(function () {
-            log.error('request timeout');
+            log.error('request timed out', params);
             socket.disconnect();
             deferred.reject(new Error("Request timeout. Disconnecting."));
         }, 5 * 1000);

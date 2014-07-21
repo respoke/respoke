@@ -8,34 +8,20 @@ describe("Respoke groups", function () {
     var testEnv;
     var follower = {};
     var followee = {};
-    var groupPermissions = {
-        name: 'fixturepermissions',
-        permList: [
-            {
-                resourceType: "channels:create",
-                actions: "allow",
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'publish',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'subscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels',
-                actions: 'unsubscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'channels:subscribers',
-                actions: 'get',
-                resourceIds: ['*']
+    var groupRole = {
+        name: 'fixturerole',
+        groups: {
+            "*": {
+                create: true,
+                publish: true,
+                subscribe: true,
+                unsubscribe: true,
+                getsubscribers: true
             }
-        ]
+        }
     };
     var testFixture = fixture("Groups Functional test", {
-        permissionParams: groupPermissions
+        roleParams: groupRole
     });
 
     before(function (done) {
@@ -43,14 +29,14 @@ describe("Respoke groups", function () {
             testEnv = env;
             testEnv.tokens = [];
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
+            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
         }).then(function (params) {
             // create 2 tokens
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
+                roleId: params.role.id,
                 appId: params.app.id
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
+                roleId: params.role.id,
                 appId: params.app.id
             })];
         }).spread(function (token1, token2) {

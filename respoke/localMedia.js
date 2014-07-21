@@ -481,6 +481,7 @@ module.exports = function (params) {
         that.fire('stop');
     };
 
-    requestMedia();
+    // give devs a chance to attach listeners before kicking of media retrieval.
+    setTimeout(requestMedia);
     return that;
 }; // End respoke.LocalMedia
