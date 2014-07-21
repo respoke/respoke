@@ -5,7 +5,6 @@
 
 /**
  * A text message and the information needed to route it.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.TextMessage
  * @constructor
  * @param {object} params

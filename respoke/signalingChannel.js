@@ -12,7 +12,6 @@ var respoke = require('./respoke');
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
  * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.SignalingChannel
  * @constructor
  * @augments respoke.EventEmitter

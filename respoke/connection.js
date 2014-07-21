@@ -9,7 +9,6 @@ var respoke = require('./respoke');
  * Represents remote Connections which belong to an Endpoint. An Endpoint can be authenticated from multiple devices,
  * browsers, or tabs. Each of these separate authentications is a Connection. The client can interact
  * with connections by calling them or sending them messages.
- * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @class respoke.Connection
  * @link https://www.respoke.io/min/respoke.min.js

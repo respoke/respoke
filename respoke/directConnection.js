@@ -9,7 +9,6 @@ var respoke = require('./respoke');
 
 /**
  * A direct connection via RTCDataChannel, including state and path negotation.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.DirectConnection
  * @constructor
  * @augments respoke.EventEmitter

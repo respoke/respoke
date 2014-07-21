@@ -11,7 +11,6 @@ var respoke = require('./respoke');
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
  * or the not-yet-implemented ScreenShare.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.PeerConnection
  * @constructor
  * @augments respoke.EventEmitter

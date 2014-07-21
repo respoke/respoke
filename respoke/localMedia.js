@@ -8,7 +8,6 @@ var respoke = require('./respoke');
 
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.LocalMedia
  * @constructor
  * @augments respoke.EventEmitter

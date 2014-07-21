@@ -5,7 +5,6 @@
 
 /**
  * A signaling message and the information needed to route it.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.SignalingMessage
  * @constructor
  * @param {object} params
