@@ -13,7 +13,6 @@ var respoke = require('./respoke');
  * accepting callbacks and listeners, and interacting with information the library keeps
  * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
  * connections as well as automatically reconnecting to the service when network activity is lost.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Client
  * @constructor
  * @link https://www.respoke.io/min/respoke.min.js

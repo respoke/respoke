@@ -13,7 +13,6 @@ var respoke = require('./respoke');
  * which is represented by a Connection. The client can interact with endpoints by calling them or
  * sending them messages. An endpoint can be a person using an app from a browser or a script using the APIs on
  * a server.
- * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @class respoke.Endpoint
  * @augments respoke.Presentable

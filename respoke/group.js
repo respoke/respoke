@@ -8,7 +8,6 @@ var respoke = require('./respoke');
 
 /**
  * A group, representing a collection of endpoints and the method by which to communicate with them.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Group
  * @constructor
  * @link https://www.respoke.io/min/respoke.min.js

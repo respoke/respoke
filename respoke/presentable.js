@@ -7,7 +7,6 @@ var respoke = require('./respoke');
 
 /**
  * The purpose of the class is so that Client and Endpoint can share the same presence.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Presentable
  * @constructor
  * @augments respoke.EventEmitter
