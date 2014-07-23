@@ -68,6 +68,14 @@ respoke.SignalingChannel = function (params) {
      */
     var heartbeat = null;
     /**
+     * Keep track of whether or not we have a websocket pending so we don't kick of a connection while one is pending.
+     * @memberof! respoke.SignalingChannel
+     * @name isConnecting
+     * @private
+     * @type {boolean}
+     */
+    var isConnecting = false;
+    /**
      * @memberof! respoke.SignalingChannel
      * @name clientSettings
      * @private
@@ -1253,16 +1261,16 @@ respoke.SignalingChannel = function (params) {
     }
 
     /*
-    * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-    * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
-    * @memberof! respoke.SignalingChannel
-    * @method respoke.SignalingChannel.reconnect
-    * @private
-    */
+     * On reconnect, start with a reconnect interval of 2000ms. Every time reconnect fails, the interval
+     * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.reconnect
+     * @private
+     */
     function reconnect() {
         appToken = undefined;
         token = undefined;
-        reconnectTimeout = (reconnectTimeout === null) ? 500 : 2 * reconnectTimeout;
+        reconnectTimeout = (reconnectTimeout === null) ? 2500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
             reconnectTimeout = maxReconnectTimeout;
@@ -1324,8 +1332,6 @@ respoke.SignalingChannel = function (params) {
          */
         var connectParams = {
             'connect timeout': 2000,
-            'reconnection limit': 5 * 60 * 60 * 1000,
-            'max reconnection attempts': Infinity,
             'force new connection': true, // Don't try to reuse old connection.
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: false,
@@ -1336,9 +1342,14 @@ respoke.SignalingChannel = function (params) {
             query: 'app-token=' + appToken
         };
 
+        if (client.connected || isConnecting === true) {
+            return;
+        }
+        isConnecting = true;
         socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
+            isConnecting = false;
             deferred.resolve();
             heartbeat = setInterval(function heartbeatHandler() {
                 that.sendMessage({
@@ -1352,6 +1363,7 @@ respoke.SignalingChannel = function (params) {
                 });
             }, 5000);
         }, function onError(err) {
+            isConnecting = false;
             deferred.reject(err);
         }));
 
@@ -1363,6 +1375,7 @@ respoke.SignalingChannel = function (params) {
 
         socket.on('connect_failed', function connectFailedHandler(res) {
             log.error('Socket.io connect failed.', res || "");
+            isConnecting = false;
             reconnect();
         });
 
