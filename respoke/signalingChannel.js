@@ -1169,14 +1169,14 @@ module.exports = function (params) {
         var endpoint;
         var connection;
 
-        if (message.endpoint === client.endpointId) {
+        if (message.endpointId === client.endpointId) {
             return;
         }
 
         endpoint = client.getEndpoint({
-            id: message.endpoint,
+            id: message.endpointId,
             instanceId: instanceId,
-            name: message.endpoint
+            name: message.endpointId
         });
 
         connection = endpoint.getConnection({connectionId: message.connectionId});
@@ -1188,7 +1188,7 @@ module.exports = function (params) {
             });
             connection = client.getConnection({
                 connectionId: message.connectionId,
-                endpointId: message.endpoint
+                endpointId: message.endpointId
             });
             if (message.header.channel.indexOf('system') > -1) {
                 log.error("Still getting these weird join presence messages.", message);
@@ -1196,8 +1196,8 @@ module.exports = function (params) {
             }
         }
 
-        if (!presenceRegistered[message.endpoint]) {
-            that.registerPresence({endpointList: [message.endpoint]});
+        if (!presenceRegistered[message.endpointId]) {
+            that.registerPresence({endpointList: [message.endpointId]});
         }
         group = client.getGroup({id: message.header.channel});
 
@@ -1220,12 +1220,12 @@ module.exports = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpoint === client.endpointId) {
+        if (message.endpointId === client.endpointId) {
             return;
         }
 
         endpoint = client.getEndpoint({
-            id: message.endpoint
+            id: message.endpointId
         });
 
         endpoint.connections.every(function eachConnection(conn, index) {
