@@ -7,7 +7,6 @@
  * Create a generic EventEmitter class for objects with events to extend. Most classes in this library
  * extend this class with the exception of classes which are simple POJOs like {respoke.TextMessage},
  * {respoke.SignalingMessage}, and {respoke.Event}.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.EventEmitter
  * @augments respoke.Class
  * @constructor

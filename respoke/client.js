@@ -13,7 +13,6 @@ var respoke = require('./respoke');
  * accepting callbacks and listeners, and interacting with information the library keeps
  * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
  * connections as well as automatically reconnecting to the service when network activity is lost.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Client
  * @constructor
  * @link https://www.respoke.io/min/respoke.min.js
@@ -653,6 +652,8 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
      * @return {respoke.Call}
      */
     that.startCall = function (params) {

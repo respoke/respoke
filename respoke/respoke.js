@@ -18,7 +18,6 @@ require('./deps/adapter');
 
 /**
  * A global static class which provides access to the Respoke functionality.
- * @author Erin Spiceland <espiceland@digium.com>
  * @namespace respoke
  * @class respoke
  * @global
@@ -202,7 +201,6 @@ respoke.handlePromise = function (promise, onSuccess, onError) {
  * @classdesc Empty base class.
  * @constructor
  * @private
- * @author Erin Spiceland <espiceland@digium.com>
  */
 respoke.Class = function (params) {
     "use strict";
@@ -226,7 +224,6 @@ respoke.Class = function (params) {
  * @static
  * @memberof respoke
  * @returns {boolean}
- * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasUserMedia = function () {
     "use strict";
@@ -238,7 +235,6 @@ respoke.hasUserMedia = function () {
  * @static
  * @memberof respoke
  * @returns {boolean}
- * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasRTCPeerConnection = function () {
     "use strict";
@@ -251,7 +247,6 @@ respoke.hasRTCPeerConnection = function () {
  * @static
  * @memberof respoke
  * @returns {boolean}
- * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasWebsocket = function () {
     "use strict";

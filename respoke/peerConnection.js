@@ -11,7 +11,6 @@ var respoke = require('./respoke');
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
  * or the not-yet-implemented ScreenShare.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.PeerConnection
  * @constructor
  * @augments respoke.EventEmitter
@@ -302,6 +301,10 @@ module.exports = function (params) {
      * @fires respoke.PeerConnection#initOffer
      */
     that.initOffer = function () {
+        if (!pc) {
+            return;
+        }
+
         log.info('creating offer', offerOptions);
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
@@ -326,6 +329,11 @@ module.exports = function (params) {
             defSDPOffer.reject();
             return;
         }
+
+        if (!pc) {
+            return;
+        }
+
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
         //set flags for audio / video being offered
@@ -335,6 +343,10 @@ module.exports = function (params) {
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
                 function successHandler() {
+                    if (!pc) {
+                        return;
+                    }
+
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
                         saveAnswerAndSend(oSession);
@@ -538,6 +550,7 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: "Got local stream in a precall state."
             });
+            return;
         }
         pc.addStream(stream);
     };
@@ -615,7 +628,7 @@ module.exports = function (params) {
      */
     function saveOfferAndSend(oSession) {
         oSession.type = 'offer';
-        if (!defSDPOffer.promise.isPending()) {
+        if (!pc || !defSDPOffer.promise.isPending()) {
             return;
         }
         log.debug('setting and sending offer', oSession);
@@ -658,6 +671,9 @@ module.exports = function (params) {
         that.report.sdpsSent.push(oSession);
         if (!that.call.initiator) {
             that.report.callerconnection = that.call.connectionId;
+        }
+        if (!pc) {
+            return;
         }
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
@@ -753,7 +769,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        return (pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
+        return !!(pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**
@@ -790,8 +806,7 @@ module.exports = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        if (!defSDPAnswer.promise.isPending()) {
-            log.debug("Ignoring duplicate answer.");
+        if (!pc || !defSDPAnswer.promise.isPending()) {
             return;
         }
         defSDPAnswer.promise.done(processQueues, function errorHandler() {
@@ -995,7 +1010,7 @@ module.exports = function (params) {
      */
     that.addRemoteCandidate = function (params) {
         params = params || {};
-        if (!params.candidate) {
+        if (!params.candidate || !that.isActive()) {
             return;
         }
 

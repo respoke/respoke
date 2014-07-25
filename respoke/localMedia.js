@@ -8,13 +8,13 @@ var respoke = require('./respoke');
 
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.LocalMedia
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {object} params.callSettings
+ * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {
@@ -55,7 +55,7 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = null;
+    var videoLocalElement = params.videoLocalElement || document.createElement('video');
     /**
      * @memberof! respoke.LocalMedia
      * @name videoIsMuted
@@ -157,6 +157,7 @@ module.exports = function (params) {
         callSettings.servers = params.servers || callSettings.servers;
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
+        params.videoLocalElement = videoLocalElement;
     }
 
     /**
@@ -209,7 +210,7 @@ module.exports = function (params) {
             return;
         }
 
-        videoLocalElement = document.createElement('video');
+        videoLocalElement = params.videoLocalElement || videoLocalElement || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
         // back to the App. This is because we assume at the moment that only one local media video element
@@ -479,6 +480,7 @@ module.exports = function (params) {
         that.fire('stop');
     };
 
-    requestMedia();
+    // give devs a chance to attach listeners before kicking of media retrieval.
+    setTimeout(requestMedia);
     return that;
 }; // End respoke.LocalMedia

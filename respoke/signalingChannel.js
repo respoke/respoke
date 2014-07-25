@@ -12,7 +12,6 @@ var respoke = require('./respoke');
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
  * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.SignalingChannel
  * @constructor
  * @augments respoke.EventEmitter
@@ -70,6 +69,14 @@ module.exports = function (params) {
      * @type {number}
      */
     var heartbeat = null;
+    /**
+     * Keep track of whether or not we have a websocket pending so we don't kick of a connection while one is pending.
+     * @memberof! respoke.SignalingChannel
+     * @name isConnecting
+     * @private
+     * @type {boolean}
+     */
+    var isConnecting = false;
     /**
      * @memberof! respoke.SignalingChannel
      * @name clientSettings
@@ -1355,16 +1362,16 @@ module.exports = function (params) {
     }
 
     /*
-    * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-    * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
-    * @memberof! respoke.SignalingChannel
-    * @method respoke.SignalingChannel.reconnect
-    * @private
-    */
+     * On reconnect, start with a reconnect interval of 2000ms. Every time reconnect fails, the interval
+     * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.reconnect
+     * @private
+     */
     function reconnect() {
         appToken = undefined;
         token = undefined;
-        reconnectTimeout = (reconnectTimeout === null) ? 500 : 2 * reconnectTimeout;
+        reconnectTimeout = (reconnectTimeout === null) ? 2500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
             reconnectTimeout = maxReconnectTimeout;
@@ -1428,8 +1435,6 @@ module.exports = function (params) {
          */
         var connectParams = {
             'connect timeout': 2000,
-            'reconnection limit': 5 * 60 * 60 * 1000,
-            'max reconnection attempts': Infinity,
             'force new connection': true, // Don't try to reuse old connection.
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: false,
@@ -1440,9 +1445,14 @@ module.exports = function (params) {
             query: 'app-token=' + appToken
         };
 
+        if (client.connected || isConnecting === true) {
+            return;
+        }
+        isConnecting = true;
         socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
+            isConnecting = false;
             deferred.resolve();
             heartbeat = setInterval(function heartbeatHandler() {
                 that.sendMessage({
@@ -1456,6 +1466,7 @@ module.exports = function (params) {
                 });
             }, 5000);
         }, function onError(err) {
+            isConnecting = false;
             deferred.reject(err);
         }));
 
@@ -1467,6 +1478,7 @@ module.exports = function (params) {
 
         socket.on('connect_failed', function connectFailedHandler(res) {
             log.error('Socket.io connect failed.', res || "");
+            isConnecting = false;
             reconnect();
         });
 
@@ -1622,7 +1634,7 @@ module.exports = function (params) {
         }
 
         requestTimer = setTimeout(function () {
-            log.error('request timeout');
+            log.error('request timed out', params);
             socket.disconnect();
             deferred.reject(new Error("Request timeout. Disconnecting."));
         }, 5 * 1000);

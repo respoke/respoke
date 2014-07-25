@@ -50,7 +50,13 @@ module.exports = function (grunt) {
                 singleRun: true,
                 configFile: './karma-functional.conf.js'
             }
-        }
+        },
+        watch: {
+            scripts: {
+                files: ['respoke/**/*.js','plugins/**/*.js'],
+                tasks: ['dist']
+            }
+        },
     });
 
     grunt.loadNpmTasks('grunt-webpack');
@@ -59,6 +65,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-env');
+    grunt.loadNpmTasks('grunt-contrib-watch');
 
     grunt.registerTask('dist', [
         'webpack',

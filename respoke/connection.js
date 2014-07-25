@@ -9,7 +9,6 @@ var respoke = require('./respoke');
  * Represents remote Connections which belong to an Endpoint. An Endpoint can be authenticated from multiple devices,
  * browsers, or tabs. Each of these separate authentications is a Connection. The client can interact
  * with connections by calling them or sending them messages.
- * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @class respoke.Connection
  * @link https://www.respoke.io/min/respoke.min.js
@@ -115,6 +114,8 @@ module.exports = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {

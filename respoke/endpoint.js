@@ -13,7 +13,6 @@ var respoke = require('./respoke');
  * which is represented by a Connection. The client can interact with endpoints by calling them or
  * sending them messages. An endpoint can be a person using an app from a browser or a script using the APIs on
  * a server.
- * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @class respoke.Endpoint
  * @augments respoke.Presentable
@@ -258,6 +257,8 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {
@@ -340,14 +341,7 @@ module.exports = function (params) {
         };
 
         params.signalingChannel = signalingChannel;
-
-        call = respoke.Call(params);
-
-        if (params.caller === true) {
-            call.answer();
-        }
-
-        return call;
+        return respoke.Call(params);
     };
 
     /**
