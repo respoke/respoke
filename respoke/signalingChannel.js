@@ -1628,13 +1628,8 @@ module.exports = function (params) {
             log.debug('socket request', params.httpMethod, params.path, params.parameters);
         }
 
-        if (!socket) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
-            return deferred.promise;
-        }
-
         requestTimer = setTimeout(function () {
-            log.error('request timeout');
+            log.error('socket request timeout', params.httpMethod, params.path, params.parameters);
             socket.disconnect();
             deferred.reject(new Error("Request timeout. Disconnecting."));
         }, 5 * 1000);
