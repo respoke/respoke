@@ -667,6 +667,15 @@ module.exports = function (params) {
     };
 
     /**
+     * Check whether we are connected to the backend infrastructure.
+     * @memberof! respoke.Client
+     * @method respoke.Client.isConnected
+     */
+    that.isConnected = function () {
+        return signalingChannel.isConnected();
+    };
+
+    /**
      * Join a Group and begin keeping track of it. Attach some event listeners.
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
