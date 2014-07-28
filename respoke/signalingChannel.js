@@ -48,14 +48,6 @@ module.exports = function (params) {
      */
     var client = respoke.getClient(instanceId);
     /**
-     * The state of the signaling channel.
-     * @memberof! respoke.SignalingChannel
-     * @private
-     * @name state
-     * @type {boolean}
-     */
-    that.connected = false;
-    /**
      * @memberof! respoke.SignalingChannel
      * @name socket
      * @private
@@ -69,14 +61,6 @@ module.exports = function (params) {
      * @type {number}
      */
     var heartbeat = null;
-    /**
-     * Keep track of whether or not we have a websocket pending so we don't kick of a connection while one is pending.
-     * @memberof! respoke.SignalingChannel
-     * @name isConnecting
-     * @private
-     * @type {boolean}
-     */
-    var isConnecting = false;
     /**
      * @memberof! respoke.SignalingChannel
      * @name clientSettings
@@ -189,6 +173,27 @@ module.exports = function (params) {
     };
 
     /**
+     * Indicate whether the signaling channel has a valid connection to Respoke.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.isConnected
+     * @return {boolean}
+     */
+    that.isConnected = function () {
+        return !!(socket && socket.socket.connected);
+    }
+
+    /**
+     * Indicate whether the signaling channel is currently waiting on a websocket to connect.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.isConnecting
+     * @private
+     * @return {boolean}
+     */
+    function isConnecting() {
+        return !!(socket && socket.socket.connecting);
+    }
+
+    /**
      * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.open
@@ -296,9 +301,7 @@ module.exports = function (params) {
                 appToken = response.result.token;
                 deferred.resolve();
                 log.debug("Signaling connection open to", clientSettings.baseURL);
-                that.connected = true;
             } else {
-                that.connected = false;
                 deferred.reject(new Error("Couldn't authenticate app."));
             }
         }, function (err) {
@@ -336,7 +339,6 @@ module.exports = function (params) {
                 socket.removeAllListeners();
                 socket.disconnect();
             }
-            that.connected = false;
             deferred.resolve();
         }).done();
 
@@ -360,7 +362,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         log.debug("Signaling sendPresence");
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -397,7 +399,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         log.debug('signalingChannel.getGroup');
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -431,7 +433,7 @@ module.exports = function (params) {
         params = params || {};
         var deferred = Q.defer();
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -462,7 +464,7 @@ module.exports = function (params) {
         params = params || {};
         var deferred = Q.defer();
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -498,7 +500,7 @@ module.exports = function (params) {
             message: params.message
         });
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -525,7 +527,7 @@ module.exports = function (params) {
      * @param {Array<string>} params.endpointList
      */
     that.registerPresence = function (params) {
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -555,7 +557,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var promise;
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -599,7 +601,7 @@ module.exports = function (params) {
             message: params.message
         });
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -629,7 +631,7 @@ module.exports = function (params) {
         var endpoint;
         params = params || {};
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -666,7 +668,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var signal;
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -719,7 +721,7 @@ module.exports = function (params) {
         params = params || {};
         params.signalType = 'iceCandidates';
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -740,7 +742,7 @@ module.exports = function (params) {
     that.sendSDP = function (params) {
         params = params || {};
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -767,7 +769,7 @@ module.exports = function (params) {
             debugData: params
         };
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -800,7 +802,7 @@ module.exports = function (params) {
         params = params || {};
         params.signalType = 'hangup';
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -820,7 +822,7 @@ module.exports = function (params) {
         params = params || {};
         params.signalType = 'connected';
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -845,7 +847,7 @@ module.exports = function (params) {
             return Q.reject("No valid action in modify signal.");
         }
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -1168,14 +1170,14 @@ module.exports = function (params) {
         var endpoint;
         var connection;
 
-        if (message.endpoint === client.endpointId) {
+        if (message.endpointId === client.endpointId) {
             return;
         }
 
         endpoint = client.getEndpoint({
-            id: message.endpoint,
+            id: message.endpointId,
             instanceId: instanceId,
-            name: message.endpoint
+            name: message.endpointId
         });
 
         connection = endpoint.getConnection({connectionId: message.connectionId});
@@ -1187,7 +1189,7 @@ module.exports = function (params) {
             });
             connection = client.getConnection({
                 connectionId: message.connectionId,
-                endpointId: message.endpoint
+                endpointId: message.endpointId
             });
             if (message.header.channel.indexOf('system') > -1) {
                 log.error("Still getting these weird join presence messages.", message);
@@ -1195,8 +1197,8 @@ module.exports = function (params) {
             }
         }
 
-        if (!presenceRegistered[message.endpoint]) {
-            that.registerPresence({endpointList: [message.endpoint]});
+        if (!presenceRegistered[message.endpointId]) {
+            that.registerPresence({endpointList: [message.endpointId]});
         }
         group = client.getGroup({id: message.header.channel});
 
@@ -1219,12 +1221,12 @@ module.exports = function (params) {
         var presenceMessage;
         var endpoint;
 
-        if (message.endpoint === client.endpointId) {
+        if (message.endpointId === client.endpointId) {
             return;
         }
 
         endpoint = client.getEndpoint({
-            id: message.endpoint
+            id: message.endpointId
         });
 
         endpoint.connections.every(function eachConnection(conn, index) {
@@ -1445,14 +1447,12 @@ module.exports = function (params) {
             query: 'app-token=' + appToken
         };
 
-        if (client.connected || isConnecting === true) {
+        if (that.isConnected() || isConnecting()) {
             return;
         }
-        isConnecting = true;
         socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
-            isConnecting = false;
             deferred.resolve();
             heartbeat = setInterval(function heartbeatHandler() {
                 that.sendMessage({
@@ -1466,7 +1466,6 @@ module.exports = function (params) {
                 });
             }, 5000);
         }, function onError(err) {
-            isConnecting = false;
             deferred.reject(err);
         }));
 
@@ -1476,17 +1475,17 @@ module.exports = function (params) {
         socket.on('message', onMessage);
         socket.on('presence', onPresence);
 
+        // connection timeout
         socket.on('connect_failed', function connectFailedHandler(res) {
-            log.error('Socket.io connect failed.', res || "");
-            isConnecting = false;
+            deferred.reject(new Error("WebSocket connection failed."));
+            log.error('Socket.io connect timeout.', res || "");
             reconnect();
         });
 
+        // handshake error, 403
         socket.on('error', function errorHandler(res) {
-            log.debug('Socket.io error.', res || "");
-            if (!client.connected) {
-                reconnect();
-            }
+            log.debug('Socket.io request failed.', res || "");
+            reconnect();
         });
 
         that.addHandler({
@@ -1541,7 +1540,7 @@ module.exports = function (params) {
     that.getTurnCredentials = function () {
         var deferred = Q.defer();
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -1602,7 +1601,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var requestTimer;
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -1628,13 +1627,8 @@ module.exports = function (params) {
             log.debug('socket request', params.httpMethod, params.path, params.parameters);
         }
 
-        if (!socket) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
-            return deferred.promise;
-        }
-
         requestTimer = setTimeout(function () {
-            log.error('request timed out', params);
+            log.error('request timeout', params.httpMethod, params.path, params.parameters);
             socket.disconnect();
             deferred.reject(new Error("Request timeout. Disconnecting."));
         }, 5 * 1000);

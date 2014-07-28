@@ -267,7 +267,7 @@ module.exports = function (params) {
      * @private
      */
     function validateConnection() {
-        if (!signalingChannel || !signalingChannel.connected) {
+        if (!signalingChannel || !signalingChannel.isConnected()) {
             throw new Error("Can't complete request when not connected. Please reconnect!");
         }
     }
