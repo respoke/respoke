@@ -736,7 +736,7 @@ module.exports = function (params) {
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
-     * @param {RTCSessionDescription} params.sdp - An SDP to JSONify and send.
+     * @param {RTCSessionDescription} params.sessionDescription - An SDP to JSONify and send.
      * @return {Promise}
      */
     that.sendSDP = function (params) {

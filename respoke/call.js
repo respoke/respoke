@@ -353,8 +353,8 @@ module.exports = function (params) {
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
-                if (pc && oOffer && oOffer.sdp) {
-                    pc.processOffer(oOffer.sdp);
+                if (pc && oOffer && oOffer.sessionDescription) {
+                    pc.processOffer(oOffer.sessionDescription);
                 }
             }, function errorHandler(err) {
                 log.warn("Call rejected.");
@@ -615,10 +615,10 @@ module.exports = function (params) {
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
 
-        videoRemoteElement = videoRemoteElement 
-                           || evt.target.callSettings.videoRemoteElement 
+        videoRemoteElement = videoRemoteElement
+                           || evt.target.callSettings.videoRemoteElement
                            || document.createElement('video');
-                        
+
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
@@ -639,7 +639,7 @@ module.exports = function (params) {
 
     /**
      * ## The plugin `respoke.MediaStats` must be loaded before using this method.
-     * 
+     *
      * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
      * Since we have to wait for both the answer and offer to be available before starting
      * statistics, the library returns a promise for the stats object. The statistics object does not contain the
@@ -832,7 +832,7 @@ module.exports = function (params) {
      * Add an audio stream to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addAudio
-     * @private 
+     * @private
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=false]
@@ -1215,7 +1215,7 @@ module.exports = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-        defSDPAnswer.resolve(evt.signal.sdp);
+        defSDPAnswer.resolve(evt.signal.sessionDescription);
     }
 
     /**

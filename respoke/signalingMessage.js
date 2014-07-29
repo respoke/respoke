@@ -51,7 +51,7 @@ module.exports = function (params) {
      * @type {string}
      */
     var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sdp', 'iceCandidates', 'offering', 'target', 'signalId',
+        'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
         'requesting', 'reason', 'error', 'status'
     ];
 
@@ -64,7 +64,7 @@ module.exports = function (params) {
     function parse() {
         if (params.rawMessage) {
             try {
-                that = JSON.parse(params.rawMessage.signal); // Incoming message
+                that = JSON.parse(params.rawMessage.body); // Incoming message
                 that.endpointId = params.rawMessage.header.from;
                 that.connectionId = params.rawMessage.header.fromConnection;
             } catch (e) {
