@@ -15,7 +15,7 @@ var respoke = require('./respoke');
  * connections as well as automatically reconnecting to the service when network activity is lost.
  * @class respoke.Client
  * @constructor
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
@@ -81,13 +81,6 @@ module.exports = function (params) {
      * @private
      */
     var port = window.location.port;
-    /**
-     * Whether the client is connected to the cloud infrastructure.
-     * @memberof! respoke.Client
-     * @name connected
-     * @type {boolean}
-     */
-    that.connected = false;
     /**
      * A simple POJO to store some methods we will want to override but reference later.
      * @memberof! respoke.Client
@@ -319,7 +312,6 @@ module.exports = function (params) {
         }).then(function successHandler() {
             return signalingChannel.authenticate();
         }).done(function successHandler() {
-            that.connected = true;
             // set initial presence for the connection
             if (clientSettings.presence) {
                 that.setPresence({presence: clientSettings.presence});
@@ -338,27 +330,16 @@ module.exports = function (params) {
             that.listen('message', clientSettings.onMessage);
             that.listen('connect', clientSettings.onConnect);
             that.listen('disconnect', clientSettings.onDisconnect);
-            that.listen('disconnect', setConnectedOnDisconnect, true);
             that.listen('reconnect', clientSettings.onReconnect);
-            that.listen('reconnect', setConnectedOnReconnect, true);
 
             log.info('logged in as ' + that.endpointId, that);
             deferred.resolve();
         }, function errorHandler(err) {
-            that.connected = false;
             deferred.reject("Couldn't create an endpoint.");
             log.error(err.message, err.stack);
         });
 
         return deferred.promise;
-    }
-
-    function setConnectedOnDisconnect() {
-        that.connected = false;
-    }
-
-    function setConnectedOnReconnect() {
-        that.connected = true;
     }
 
     function removeCallOnHangup(evt) {
@@ -400,7 +381,6 @@ module.exports = function (params) {
         Q.all(leaveGroups).fin(function successHandler() {
             return signalingChannel.close();
         }).fin(function finallyHandler() {
-            that.connected = false;
             that.presence = 'unavailable';
             endpoints = [];
             groups = [];
@@ -681,9 +661,18 @@ module.exports = function (params) {
      * @throws {Error}
      */
     that.verifyConnected = function () {
-        if (that.connected !== true || signalingChannel.connected !== true) {
+        if (!signalingChannel.isConnected()) {
             throw new Error("Can't complete request when not connected. Please reconnect!");
         }
+    };
+
+    /**
+     * Check whether we are connected to the backend infrastructure.
+     * @memberof! respoke.Client
+     * @method respoke.Client.isConnected
+     */
+    that.isConnected = function () {
+        return signalingChannel.isConnected();
     };
 
     /**

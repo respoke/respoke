@@ -46,7 +46,7 @@
      * 
      * @class respoke.MediaStats
      * @constructor
-     * @link https://www.respoke.io/min/respoke-stats.min.js
+     * @link https://cdn.respoke.io/respoke-stats.min.js
      * @param {object} params
      */
     respoke.MediaStats = function (params) {

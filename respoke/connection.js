@@ -11,7 +11,7 @@ var respoke = require('./respoke');
  * with connections by calling them or sending them messages.
  * @constructor
  * @class respoke.Connection
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} params.id

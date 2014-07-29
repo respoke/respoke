@@ -21,7 +21,7 @@ require('./deps/adapter');
  * @namespace respoke
  * @class respoke
  * @global
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
