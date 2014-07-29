@@ -16,7 +16,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Client
  * @constructor
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to

@@ -11,7 +11,7 @@ var respoke = require('./respoke');
  * @class respoke.Presentable
  * @constructor
  * @augments respoke.EventEmitter
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {string} params.id

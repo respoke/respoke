@@ -13,7 +13,7 @@ var respoke = require('./respoke');
  * @class respoke.DirectConnection
  * @constructor
  * @augments respoke.EventEmitter
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {string} params
  * @param {string} params.instanceId - client id
  * @param {respoke.Call} params.call - The call that is handling state for this direct connection.

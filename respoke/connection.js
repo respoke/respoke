@@ -12,7 +12,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
  * @class respoke.Connection
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} params.id

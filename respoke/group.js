@@ -11,7 +11,7 @@ var respoke = require('./respoke');
  * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Group
  * @constructor
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new

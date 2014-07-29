@@ -13,7 +13,7 @@ var respoke = require('./respoke');
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call

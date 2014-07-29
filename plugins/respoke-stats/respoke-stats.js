@@ -21,9 +21,9 @@
     "use strict";
     /**
      * A report containing statistical information about the flow of media with the latest live statistics.
-     * 
-     * This is a **plugin** for respoke. To leverage it, include `<script src="https://www.respoke.io/min/respoke-stats.min.js"></script>`.
-     * 
+     *
+     * This is a **plugin** for respoke. To leverage it, include `<script src="https://cdn.respoke.io/respoke-stats.min.js"></script>`.
+     *
      * The plugin adds the methods `getStats()` and `stopStats()` to `respoke.Call`.
      * 
      * ## Usage
@@ -47,7 +47,7 @@
      * @author Erin Spiceland <espiceland@digium.com>
      * @class respoke.MediaStats
      * @constructor
-     * @link https://www.respoke.io/min/respoke-stats.min.js
+     * @link https://cdn.respoke.io/respoke-stats.min.js
      * @param {object} params
      */
     respoke.MediaStats = function (params) {
