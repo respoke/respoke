@@ -326,8 +326,8 @@ describe("Respoke messaging", function () {
             });
 
             it("no messages are received", function (done) {
-                expect(follower.connected).to.be.false;
-                expect(followee.connected).to.be.false;
+                expect(follower.isConnected()).to.be.false;
+                expect(followee.isConnected()).to.be.false;
                 sendFiveMessagesEach()
                     .then(checkMessages).done(function successHandler() {
                         done(new Error("Not supposed to succeed"));
