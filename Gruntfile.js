@@ -116,9 +116,11 @@ module.exports = function (grunt) {
     grunt.registerTask('ci', 'Run all tests', [
         'dist',
         'env:test',
+        'start-saucer-section',
         'liftSails',
         'karma:unit',
         'karma:functional',
-        'lowerSails'
+        'lowerSails',
+        'stop-saucer-section'
     ]);
 };
