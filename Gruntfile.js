@@ -2,6 +2,13 @@
 
 module.exports = function (grunt) {
     var saucerSection;
+    function killSaucerSection() {
+        if (saucerSection) {
+            saucerSection.kill();
+            saucerSection = null;
+        }
+    }
+    
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         env: {
@@ -88,6 +95,10 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('saucerSection.dir'))) {
             throw grunt.util.error('saucer-section dir not available.  Please setup saucer-section.');
         }
+        process.on('exit', function() {
+            //ensure saucer-section child process is dead
+             killSaucerSection();
+        });
         saucerSection = grunt.util.spawn({
             grunt: true,
             args: ['default'],
@@ -98,9 +109,7 @@ module.exports = function (grunt) {
     });
 
     grunt.registerTask('stop-saucer-section', 'Start saucer-section', function () {
-        if (saucerSection) {
-            saucerSection.kill();
-        }
+        killSaucerSection();
     });
 
     grunt.registerTask('functional', 'Run client-side functional tests', [
