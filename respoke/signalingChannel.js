@@ -1716,18 +1716,12 @@ module.exports = function (params) {
         }
 
         xhr.open(params.httpMethod, uri);
+        if (appToken) {
+            xhr.setRequestHeader("App-Token", appToken);
+        }
         if (['POST', 'PUT'].indexOf(params.httpMethod) > -1) {
             paramString = JSON.stringify(params.parameters);
-            try {
-                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                if (appToken) {
-                    xhr.setRequestHeader("App-Token", appToken);
-                }
-            } catch (e) {
-                deferred.reject(new Error("Can't set content-type header in readyState " +
-                    xhr.readyState + ". " + e.message));
-                return;
-            }
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
             return;
