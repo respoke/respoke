@@ -42,6 +42,7 @@ var respoke = require('./respoke');
  * @param {respoke.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect.
  * @param {respoke.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
  * @param {respoke.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user
+ * @param {boolean} [params.enableCallDebugReport=true] - Optional indicator used to disable the sending of call debug information to the api. Only applies when media stats plugin is loaded.
  * receives a request for a direct connection.
  * @returns {respoke.Client}
  */
@@ -193,6 +194,16 @@ module.exports = function (params) {
             iceServers: []
         }
     };
+
+    /**
+     * Upon finishing a call, should the client send debugging information to the API?
+     * By default this is set to `true`.
+     * Pass in `{enableCallDebugReport: false}` during `respoke.createClient()` to disable it.
+     * 
+     * @memberof! respoke.Client
+     * @type {boolean}
+     */
+    that.enableCallDebugReport = typeof params.enableCallDebugReport === 'boolean' ? params.enableCallDebugReport : true;
 
     /**
      * @memberof! respoke.Client

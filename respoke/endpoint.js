@@ -336,8 +336,10 @@ module.exports = function (params) {
             });
         };
         params.signalReport = function (signalParams) {
-            log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            if (client.enableCallDebugReport) {
+                log.debug("Sending debug report", signalParams.report);
+                signalingChannel.sendReport(signalParams);
+            }
         };
 
         params.signalingChannel = signalingChannel;
