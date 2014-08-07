@@ -1,7 +1,14 @@
 "use strict";
 
 module.exports = function (grunt) {
-
+    var saucerSection;
+    function killSaucerSection() {
+        if (saucerSection) {
+            saucerSection.kill();
+            saucerSection = null;
+        }
+    }
+    
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         env: {
@@ -30,6 +37,10 @@ module.exports = function (grunt) {
             liftSails: true,
             sailsDir: '../../../collective/',
             sailsPort: 2001
+        },
+        saucerSection: {
+            dir: '../../../saucer-section',
+            port: 3000
         },
         mochaTest: {
             unit: {
@@ -79,20 +90,46 @@ module.exports = function (grunt) {
         'karma:unit'
     ]);
 
+    grunt.registerTask('start-saucer-section', 'Start saucer-section', function () {
+        process.env.CONNECT_PORT = grunt.config('saucerSection.port');
+        if (!grunt.file.isDir(grunt.config('saucerSection.dir'))) {
+            throw grunt.util.error('saucer-section dir not available.  Please setup saucer-section.');
+        }
+        process.on('exit', function() {
+            //ensure saucer-section child process is dead
+             killSaucerSection();
+        });
+        saucerSection = grunt.util.spawn({
+            grunt: true,
+            args: ['default'],
+            opts: {
+                cwd: grunt.config('saucerSection.dir')
+            }
+        });
+    });
+
+    grunt.registerTask('stop-saucer-section', 'Start saucer-section', function () {
+        killSaucerSection();
+    });
+
     grunt.registerTask('functional', 'Run client-side functional tests', [
         'dist',
         'env:test',
+        'start-saucer-section',
         'liftSails',
         'karma:functional',
-        'lowerSails'
+        'lowerSails',
+        'stop-saucer-section'
     ]);
 
     grunt.registerTask('ci', 'Run all tests', [
         'dist',
         'env:test',
+        'start-saucer-section',
         'liftSails',
         'karma:unit',
         'karma:functional',
-        'lowerSails'
+        'lowerSails',
+        'stop-saucer-section'
     ]);
 };
