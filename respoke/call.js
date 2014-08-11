@@ -108,14 +108,6 @@ module.exports = function (params) {
      */
     var defSDPOffer = Q.defer();
     /**
-     * Promise used to trigger actions dependant upon having received an answer.
-     * @memberof! respoke.Call
-     * @name defSDPAnswer
-     * @private
-     * @type {Promise}
-     */
-    var defSDPAnswer = Q.defer();
-    /**
      * Promise used to trigger actions dependant upon the call having been answered.
      * @memberof! respoke.Call
      * @name defAnswered
@@ -334,7 +326,6 @@ module.exports = function (params) {
 
         if (defModify !== undefined) {
             defSDPOffer = Q.defer();
-            defSDPAnswer = Q.defer();
             defApproved = Q.defer();
             defAnswered = Q.defer();
             defMedia = Q.defer();
@@ -1006,8 +997,9 @@ module.exports = function (params) {
         if (directConnection && directConnection.isActive()) {
             if (defMedia.promise.isPending()) {
                 defMedia.resolve(directConnection);
+            } else {
+                log.warn("Not creating a new direct connection.");
             }
-            log.warn("Not creating a new direct connection.");
             return defMedia.promise;
         }
 
@@ -1229,24 +1221,6 @@ module.exports = function (params) {
             that.fire('modify', info);
         }
         defSDPOffer.resolve(evt.signal);
-    }
-
-    /**
-     * Save the answer and tell the browser about it.
-     * @memberof! respoke.Call
-     * @method respoke.Call.listenAnswer
-     * @param {object} evt
-     * @param {object} evt.signal - The offer signal including the sdp and the connectionId of the endpoint who
-     * answered the call.
-     * @private
-     */
-    function listenAnswer(evt) {
-        log.debug('Call.listenAnswer');
-        if (defSDPAnswer.promise.isFulfilled()) {
-            log.debug("Ignoring duplicate answer.");
-            return;
-        }
-        defSDPAnswer.resolve(evt.signal.sessionDescription);
     }
 
     /**
@@ -1484,7 +1458,6 @@ module.exports = function (params) {
     }
 
     that.listen('signal-offer', listenOffer, true);
-    that.listen('signal-answer', listenAnswer, true);
     that.listen('signal-hangup', listenHangup, true);
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);

@@ -52,7 +52,7 @@ describe("respoke.CallState", function () {
                 state = respoke.CallState({call: call});
 
                 state.run({
-                    debug_off: function () {
+                    debug: function () {
                         console.log.apply(console, arguments);
                     }
                 });
@@ -173,10 +173,13 @@ describe("respoke.CallState", function () {
 
                             describe("event 'approve'", function () {
                                 var offeringEntrySpy;
+                                var approvingContentExitSpy;
 
                                 beforeEach(function () {
                                     offeringEntrySpy = sinon.spy();
+                                    approvingContentExitSpy = sinon.spy();
                                     state.listen('offering:entry', offeringEntrySpy);
+                                    state.listen('approving-content:exit', approvingContentExitSpy);
                                     state.dispatch('approve');
                                 });
 
@@ -188,14 +191,33 @@ describe("respoke.CallState", function () {
                                     expect(state.currentState().name).to.equal('offering');
                                 });
 
+                                it("fires 'approving-content:exit'", function () {
+                                    expect(approvingContentExitSpy.called).to.be.true;
+                                });
+
                                 it("fires 'offering:entry'", function () {
                                     expect(offeringEntrySpy.called).to.be.true;
                                 });
                             });
 
                             describe("event 'reject'", function () {
+                                var approvingContentExitSpy;
+                                var negotiatingExitSpy;
+
                                 beforeEach(function () {
+                                    approvingContentExitSpy = sinon.spy();
+                                    negotiatingExitSpy = sinon.spy();
+                                    state.listen('approving-content:exit', approvingContentExitSpy);
+                                    state.listen('negotiating:exit', negotiatingExitSpy);
                                     state.dispatch("reject", call);
+                                });
+
+                                it("fires 'approving-content:exit'", function () {
+                                    expect(approvingContentExitSpy.called).to.be.true;
+                                });
+
+                                it("fires 'negotiating:exit'", function () {
+                                    expect(approvingContentExitSpy.called).to.be.true;
                                 });
 
                                 it("leads to 'terminated'", function () {

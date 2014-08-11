@@ -158,11 +158,17 @@ module.exports = function (params) {
                                 approve: [{
                                     target: 'offering',
                                     guard: function () {
+                                        // Why doesn't it call offering's entry event when exiting answering?
+                                        // see spec/unit/client/call-state.spec.js
+                                        that.fire('offering:entry');
                                         return that.call.caller === true;
                                     }
                                 }, {
                                     target: 'connecting',
                                     guard: function () {
+                                        // Why doesn't it call connecting's entry event when exiting answering?
+                                        // see spec/unit/client/call-state.spec.js
+                                        that.fire('connecting:entry');
                                         return that.call.caller === false;
                                     }
                                 }]
@@ -180,7 +186,6 @@ module.exports = function (params) {
                             answerTimer = setTimeout(function () {
                                 that.dispatch('reject');
                             }, answerTimeout);
-                            that.fire('offering:entry');
                         },
                         // Event
                         receiveAnswer: {
