@@ -336,9 +336,11 @@ module.exports = function (params) {
 
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
+
         //set flags for audio / video being offered
-        that.call.hasAudio = hasAudio(oOffer.sdp);
-        that.call.hasVideo = hasVideo(oOffer.sdp);
+        that.call.hasAudio = respoke.sdpHasAudio(oOffer.sdp);
+        that.call.hasVideo = respoke.sdpHasVideo(oOffer.sdp);
+        that.call.hasDataChannel = respoke.sdpHasDataChannel(oOffer.sdp);
 
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
@@ -773,30 +775,6 @@ module.exports = function (params) {
     };
 
     /**
-     * Indicate whether sdp has Audio element
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.hasAudio
-     * @param {object} sdp
-     * @returns {boolean}
-     * @private
-     */
-    function hasAudio(sdp) {
-        return sdp.indexOf('m=audio') !== -1;
-    }
-
-    /**
-     * Indicate whether sdp has Video element
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.hasVideo
-     * @param {object} sdp
-     * @returns {boolean}
-     * @private
-     */
-    function hasVideo(sdp) {
-        return sdp.indexOf('m=video') !== -1;
-    }
-
-    /**
      * Save the answer and tell the browser about it.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.listenAnswer
@@ -819,8 +797,9 @@ module.exports = function (params) {
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
         that.report.lastSDPString = evt.signal.sessionDescription.sdp;
         //set flags for audio / video for answer
-        that.call.hasAudio = hasAudio(evt.signal.sessionDescription.sdp);
-        that.call.hasVideo = hasVideo(evt.signal.sessionDescription.sdp);
+        that.call.hasAudio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
+        that.call.hasVideo = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
+        that.call.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
         if (that.call.initiator) {
             that.report.calleeconnection = evt.signal.connectionId;
         }

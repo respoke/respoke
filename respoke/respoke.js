@@ -110,7 +110,7 @@ require('./deps/adapter');
  * @namespace respoke
  * @class respoke
  * @global
- * @link https://cdn.respoke.io/respoke.min.js
+ * @link https://www.respoke.io/min/respoke.min.js
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
@@ -139,9 +139,9 @@ respoke.Group = require('./group');
 respoke.SignalingChannel = require('./signalingChannel');
 respoke.DirectConnection = require('./directConnection');
 respoke.PeerConnection = require('./peerConnection');
+respoke.CallState = require('./callState');
 respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
-respoke.CallState = require('./callState');
 respoke.log = log;
 respoke.Q = Q;
 
@@ -316,6 +316,7 @@ respoke.handlePromise = function (promise, onSuccess, onError) {
  * @classdesc Empty base class.
  * @constructor
  * @private
+ * @author Erin Spiceland <espiceland@digium.com>
  */
 respoke.Class = function (params) {
     "use strict";
@@ -332,13 +333,14 @@ respoke.Class = function (params) {
     });
 
     return that;
-};
+}; // end of respoke.Class
 
 /**
  * Does the browser support `UserMedia`?
  * @static
  * @memberof respoke
  * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasUserMedia = function () {
     "use strict";
@@ -350,6 +352,7 @@ respoke.hasUserMedia = function () {
  * @static
  * @memberof respoke
  * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasRTCPeerConnection = function () {
     "use strict";
@@ -362,8 +365,48 @@ respoke.hasRTCPeerConnection = function () {
  * @static
  * @memberof respoke
  * @returns {boolean}
+ * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasWebsocket = function () {
     "use strict";
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
-};// End respoke.Class
+};
+
+/**
+ * Does the sdp indicate an audio stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ * @author Matt Smith<msmith@digium.com>
+ */
+respoke.sdpHasAudio = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=audio') !== -1;
+};
+
+/**
+ * Does the sdp indicate a video stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ * @author Matt Smith<msmith@digium.com>
+ */
+respoke.sdpHasVideo = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=video') !== -1;
+};
+
+/**
+ * Does the sdp indicate a data channel?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ * @author Erin Spiceland <espiceland@digium.com>
+ */
+respoke.sdpHasDataChannel = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=application') !== -1;
+};
