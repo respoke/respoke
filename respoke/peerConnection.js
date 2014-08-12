@@ -769,7 +769,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        return !!(pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
+        return !!(pc && ['completed', 'connected', 'new', 'checking'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**
@@ -1010,11 +1010,12 @@ module.exports = function (params) {
      */
     that.addRemoteCandidate = function (params) {
         params = params || {};
-        if (!params.candidate || !that.isActive()) {
+        if (!that.isActive()) {
+            log.info("Skipping candidate when call is inactive.");
             return;
         }
 
-        if (!params.candidate.hasOwnProperty('sdpMLineIndex')) {
+        if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
             log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }

@@ -6,7 +6,7 @@
  */
 
 var log = require('loglevel');
-log.setLevel('trace');
+log.setLevel('warn');
 
 var Q = require('q');
 Q.longStackSupport = true;
