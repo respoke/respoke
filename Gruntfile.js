@@ -2,13 +2,22 @@
 
 module.exports = function (grunt) {
     var saucerSection;
+    var webhookService;
+
     function killSaucerSection() {
         if (saucerSection) {
             saucerSection.kill();
             saucerSection = null;
         }
     }
-    
+
+    function killWebhookService() {
+        if (webhookService) {
+            webhookService.kill();
+            webhookService = null;
+        }
+    }
+
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         env: {
@@ -42,6 +51,9 @@ module.exports = function (grunt) {
             dir: '../../../saucer-section',
             port: 3000
         },
+        webhookService: {
+            dir: '../../../webhook-service'
+        },
         mochaTest: {
             unit: {
                 options: {
@@ -67,7 +79,7 @@ module.exports = function (grunt) {
                 files: ['respoke/**/*.js','plugins/**/*.js'],
                 tasks: ['dist']
             }
-        },
+        }
     });
 
     grunt.loadNpmTasks('grunt-webpack');
@@ -89,6 +101,27 @@ module.exports = function (grunt) {
         'dist',
         'karma:unit'
     ]);
+
+    grunt.registerTask('start-webhook-service', 'Start webhook-service', function () {
+        if (!grunt.file.isDir(grunt.config('webhookService.dir'))) {
+            throw grunt.util.error('webhook-service dir not available.  Please setup webhook-service.');
+        }
+        process.on('exit', function() {
+            //ensure webhook-service child process is dead
+            killWebhookService();
+        });
+        webhookService = grunt.util.spawn({
+            cmd: 'node',
+            args: ['app.js'],
+            opts: {
+                cwd: grunt.config('webhookService.dir')
+            }
+        });
+    });
+
+    grunt.registerTask('stop-webhook-service', 'Stop webhook-service', function () {
+        killWebhookService();
+    });
 
     grunt.registerTask('start-saucer-section', 'Start saucer-section', function () {
         process.env.CONNECT_PORT = grunt.config('saucerSection.port');
@@ -116,10 +149,12 @@ module.exports = function (grunt) {
         'dist',
         'env:test',
         'start-saucer-section',
+        'start-webhook-service',
         'liftSails',
         'karma:functional',
         'lowerSails',
-        'stop-saucer-section'
+        'stop-saucer-section',
+        'stop-webhook-service'
     ]);
 
     grunt.registerTask('ci', 'Run all tests', [
