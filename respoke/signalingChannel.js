@@ -180,7 +180,7 @@ module.exports = function (params) {
      */
     that.isConnected = function () {
         return !!(socket && socket.socket.connected);
-    }
+    };
 
     /**
      * Indicate whether the signaling channel is currently waiting on a websocket to connect.

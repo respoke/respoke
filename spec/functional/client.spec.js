@@ -58,24 +58,24 @@ describe("respoke.Client", function () {
             });
         });
 
-        describe("call debugging", function () {
-            it("defaults to true", function () {
-                expect(client.enableCallDebugReport).to.equal(true);
-            });
-            it("can be turned off during createClient", function () {
-                var client1 = respoke.createClient({ enableCallDebugReport: false });
-                expect(client1.enableCallDebugReport).to.equal(false);
-            });
-            it("will not accept falsey values, only boolean", function () {
-                var client1 = respoke.createClient({ enableCallDebugReport: null });
-                var client2 = respoke.createClient({ enableCallDebugReport: undefined });
-                var client3 = respoke.createClient({ enableCallDebugReport: 0 });
+        // describe("call debugging", function () {
+        //     it("defaults to true", function () {
+        //         expect(client.enableCallDebugReport).to.equal(true);
+        //     });
+        //     it("can be turned off during createClient", function () {
+        //         var client1 = respoke.createClient({ enableCallDebugReport: false });
+        //         expect(client1.enableCallDebugReport).to.equal(false);
+        //     });
+        //     it("will not accept falsey values, only boolean", function () {
+        //         var client1 = respoke.createClient({ enableCallDebugReport: null });
+        //         var client2 = respoke.createClient({ enableCallDebugReport: undefined });
+        //         var client3 = respoke.createClient({ enableCallDebugReport: 0 });
 
-                expect(client1.callSettings.enableCallDebugReport).to.equal(true);
-                expect(client2.callSettings.enableCallDebugReport).to.equal(true);
-                expect(client3.callSettings.enableCallDebugReport).to.equal(true);
-            });
-        });
+        //         expect(client1.callSettings.enableCallDebugReport).to.equal(true);
+        //         expect(client2.callSettings.enableCallDebugReport).to.equal(true);
+        //         expect(client3.callSettings.enableCallDebugReport).to.equal(true);
+        //     });
+        // });
     });
 
     after(function (done) {
