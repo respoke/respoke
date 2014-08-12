@@ -42,8 +42,9 @@ var respoke = require('./respoke');
  * @param {respoke.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect.
  * @param {respoke.Client.onCall} [params.onCall] - Callback for when this client's user receives a call.
  * @param {respoke.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this client's user
- * @param {boolean} [params.enableCallDebugReport=true] - Optional indicator used to disable the sending of call debug information to the api. Only applies when media stats plugin is loaded.
  * receives a request for a direct connection.
+ * @param {boolean} [params.enableCallDebugReport=true] - Optional indicator used to disable the sending of call 
+ * debug information to the api. Only applies when media stats plugin is loaded.
  * @returns {respoke.Client}
  */
 module.exports = function (params) {
