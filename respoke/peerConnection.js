@@ -769,7 +769,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        return !!(pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
+        return !!(pc && ['completed', 'connected', 'new', 'checking'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**
