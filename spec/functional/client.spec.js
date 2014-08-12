@@ -71,9 +71,9 @@ describe("respoke.Client", function () {
                 var client2 = respoke.createClient({ enableCallDebugReport: undefined });
                 var client3 = respoke.createClient({ enableCallDebugReport: 0 });
 
-                expect(client1.enableCallDebugReport).to.equal(true);
-                expect(client2.enableCallDebugReport).to.equal(true);
-                expect(client3.enableCallDebugReport).to.equal(true);
+                expect(client1.callSettings.enableCallDebugReport).to.equal(true);
+                expect(client2.callSettings.enableCallDebugReport).to.equal(true);
+                expect(client3.callSettings.enableCallDebugReport).to.equal(true);
             });
         });
     });

@@ -769,6 +769,12 @@ module.exports = function (params) {
             debugData: params
         };
 
+        if (!clientSettings.enableCallDebugReport) {
+            log.debug('not sending call debugs - disabled');
+            deferred.resolve();
+            return deferred.promise;
+        }
+
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;

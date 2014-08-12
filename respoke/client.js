@@ -118,8 +118,9 @@ module.exports = function (params) {
      * @property {respoke.Client.onReconnect} [onReconnect] - Callback for Client reconnect. Not Implemented.
      * @property {respoke.Client.onCall} [onCall] - Callback for when this client receives a call.
      * @property {respoke.Client.onDirectConnection} [onDirectConnection] - Callback for when this client
-     * receives a request
-     * for a direct connection.
+     * receives a request for a direct connection.
+     * @property {boolean} enableCallDebugReport - Upon finishing a call, should the client send debugging 
+     * information to the API? Defaults to `true`.
      */
     var clientSettings = {
         baseURL: params.baseURL,
@@ -136,7 +137,8 @@ module.exports = function (params) {
         onReconnect: params.onReconnect,
         onCall: params.onCall,
         onDirectConnection: params.onDirectConnection,
-        resolveEndpointPresence: params.resolveEndpointPresence
+        resolveEndpointPresence: params.resolveEndpointPresence,
+        enableCallDebugReport: typeof params.enableCallDebugReport === 'boolean' ? params.enableCallDebugReport : true
     };
     delete that.appId;
     delete that.baseURL;
@@ -195,16 +197,6 @@ module.exports = function (params) {
             iceServers: []
         }
     };
-
-    /**
-     * Upon finishing a call, should the client send debugging information to the API?
-     * By default this is set to `true`.
-     * Pass in `{enableCallDebugReport: false}` during `respoke.createClient()` to disable it.
-     * 
-     * @memberof! respoke.Client
-     * @type {boolean}
-     */
-    that.enableCallDebugReport = typeof params.enableCallDebugReport === 'boolean' ? params.enableCallDebugReport : true;
 
     /**
      * @memberof! respoke.Client
