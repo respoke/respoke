@@ -71,6 +71,14 @@ module.exports = function (params) {
     delete that.clientSettings;
     clientSettings.baseURL = clientSettings.baseURL || 'https://api.respoke.io';
     /**
+     * Informational property for confirmation that call debugs are enabled or disabled.
+     * Helps to make call debugs more testable without putting clientSettings into modifiable scope.
+     * @private
+     * @name callDebugReportEnabled
+     * @type {boolean}
+     */
+    that.callDebugReportEnabled = clientSettings.enableCallDebugReport;
+    /**
      * A map to avoid duplicate endpoint presence registrations.
      * @memberof! respoke.SignalingChannel
      * @name presenceRegistered
@@ -781,7 +789,7 @@ module.exports = function (params) {
         }
 
         wsCall({
-            path: '/v1/calldebugs',
+            path: '/v1/call-debugs',
             httpMethod: 'POST',
             parameters: message
         }).done(function () {

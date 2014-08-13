@@ -642,6 +642,7 @@ describe("Respoke calling", function () {
         });
 
         describe("the hangup method", function () {
+
             beforeEach(function () {
                 followee.listen('call', callListener);
                 call = followeeEndpoint.startCall({ constraints: {
@@ -674,6 +675,105 @@ describe("Respoke calling", function () {
                 });
                 call.hangup();
             });
+        });
+
+        describe("call debugs", function () {
+            var original;
+            var iSpy;
+
+            describe('default behavior', function () {
+
+                beforeEach(function () {
+                    original = respoke.Call;
+                    respoke.Call = function (params) {
+                        iSpy = sinon.spy(params, 'signalReport');
+                        return original.call(this, params);
+                    };
+
+                    followee.listen('call', callListener);
+                    call = followeeEndpoint.startCall({ constraints: {
+                        video: true,
+                        audio: true,
+                        optional: [],
+                        mandatory: {}
+                    }});
+                });
+
+                afterEach(function () {
+                    followee.ignore('call', callListener);
+                    respoke.Call = original;
+                });
+
+                it("shows callDebugReportEnabled from signalingChannel as false", function (done) {
+                    call.listen('hangup', function (evt) {
+                        expect(iSpy.calledOnce).to.be.true;
+                        expect(call.callDebugReportEnabled).to.be.true;
+                        
+                        done();
+                    });
+                    call.hangup();
+                });
+
+                // This is really hard to test because of scope. Likely the best way to test this is to 
+                // fire an event after sending the call debug report to the API.
+                it("sends call debugs");
+            });
+
+            describe('when disabling call debugs', function () {
+                var follower_nodebug;
+                var followeeEndpoint_nodebug;
+
+                beforeEach(function (done) {
+                    original = respoke.Call;
+                    respoke.Call = function (params) {
+                        iSpy = sinon.spy(params, 'signalReport');
+                        return original.call(this, params);
+                    };
+
+                    follower_nodebug = respoke.createClient({
+                        enableCallDebugReport: false
+                    });
+
+                    follower_nodebug.connect({
+                        appId: Object.keys(testEnv.allApps)[0],
+                        baseURL: respokeTestConfig.baseURL,
+                        token: followerToken.tokenId,
+                        onConnect: function () {
+                            followeeEndpoint_nodebug = follower_nodebug.getEndpoint({id: followee.endpointId});
+                            followee.listen('call', callListener);
+                            call = followeeEndpoint_nodebug.startCall({ constraints: {
+                                video: true,
+                                audio: true,
+                                optional: [],
+                                mandatory: {}
+                            }});
+                            done();
+                        }
+                    });
+
+                });
+
+                afterEach(function () {
+                    followee.ignore('call', callListener);
+                    respoke.Call = original;
+                });
+
+                it("shows callDebugReportEnabled from signalingChannel as false", function (done) {
+                    call.listen('hangup', function (evt) {
+                        expect(iSpy.called).to.be.true;
+                        expect(call.callDebugReportEnabled).to.be.false;
+                        // TODO
+                        done();
+                    });
+                    call.hangup();
+                });
+
+                // This is really hard to test because of scope. Likely the best way to test this is to 
+                // fire an event after sending the call debug report to the API.
+                it("does not send call debugs");
+            });
+
+            
         });
 
         describe("muting", function () {
