@@ -161,10 +161,12 @@ module.exports = function (grunt) {
         'dist',
         'env:test',
         'start-saucer-section',
+        'start-webhook-service',
         'liftSails',
         'karma:unit',
         'karma:functional',
         'lowerSails',
-        'stop-saucer-section'
+        'stop-saucer-section',
+        'stop-webhook-service'
     ]);
 };
