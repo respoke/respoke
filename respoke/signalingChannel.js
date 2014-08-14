@@ -71,6 +71,14 @@ module.exports = function (params) {
     delete that.clientSettings;
     clientSettings.baseURL = clientSettings.baseURL || 'https://api.respoke.io';
     /**
+     * Informational property for confirmation that call debugs are enabled or disabled.
+     * Helps to make call debugs more testable without putting clientSettings into modifiable scope.
+     * @private
+     * @name callDebugReportEnabled
+     * @type {boolean}
+     */
+    that.callDebugReportEnabled = clientSettings.enableCallDebugReport;
+    /**
      * A map to avoid duplicate endpoint presence registrations.
      * @memberof! respoke.SignalingChannel
      * @name presenceRegistered
@@ -180,7 +188,7 @@ module.exports = function (params) {
      */
     that.isConnected = function () {
         return !!(socket && socket.socket.connected);
-    }
+    };
 
     /**
      * Indicate whether the signaling channel is currently waiting on a websocket to connect.
@@ -769,13 +777,19 @@ module.exports = function (params) {
             debugData: params
         };
 
+        if (!clientSettings.enableCallDebugReport) {
+            log.debug('not sending call debugs - disabled');
+            deferred.resolve();
+            return deferred.promise;
+        }
+
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
 
         wsCall({
-            path: '/v1/calldebugs',
+            path: '/v1/call-debugs',
             httpMethod: 'POST',
             parameters: message
         }).done(function () {

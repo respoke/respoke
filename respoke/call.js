@@ -206,6 +206,13 @@ module.exports = function (params) {
      * @type {respoke.signalingChannel}
      */
     var signalingChannel = params.signalingChannel;
+    /**
+     * Informational property. Whether call debugs were enabled on the client during creation.
+     * Changing this value will do nothing. 
+     * @name callDebugReportEnabled
+     * @type {boolean}
+     */
+    that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
 
     delete params.signalingChannel;
     delete that.signalingChannel;
