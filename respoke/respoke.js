@@ -3,6 +3,11 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
  * @ignore
+ *
+ * Copyright (c) 2014 Digium, Inc.
+ * All Rights Reserved. Licensed Software.
+ * @private
+ * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
 var log = require('loglevel');
@@ -51,11 +56,15 @@ if (!window.skipBugsnag) {
     var first = document.getElementsByTagName('script')[0];
     first.parentNode.insertBefore(airbrake, first);
 
-    airbrake.src = "https://ssljscdn.airbrake.io/airbrake-js-tracekit.min.js";
+    airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
     airbrake.setAttribute('defer', 'defer');
     airbrake.setAttribute('data-airbrake-project-id', '98133');
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
+
+    window.onerror = function(message, file, line) {
+        Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
+    }
 }
 
 /**
