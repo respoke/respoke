@@ -62,7 +62,10 @@ if (!window.skipBugsnag) {
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
     window.onerror = function(message, file, line) {
-        Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
+        //Only send errors from the respoke.js file to Airbrake
+        if (file.match(/respoke/)) {
+            Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
+        }
     }
 }
 
