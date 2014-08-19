@@ -45,7 +45,7 @@ module.exports = function (grunt) {
         stratos: {
             liftSails: true,
             sailsDir: '../../../collective/',
-            sailsPort: 2001
+            sailsPort: 3001
         },
         saucerSection: {
             dir: '../../../saucer-section',

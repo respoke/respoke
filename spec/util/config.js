@@ -1,3 +1,3 @@
 window.respokeTestConfig = {
-    baseURL: 'http://testing.digiumlabs.com:2001'
+    baseURL: 'http://testing.digiumlabs.com:3001'
 };
