@@ -1204,12 +1204,10 @@ module.exports = function (params) {
         } else {
 
             endpoint = client.getEndpoint({
-                id: message.endpoint,
+                id: message.endpointId,
                 instanceId: instanceId,
                 name: message.endpointId
             });
-
-            connection = endpoint.getConnection({connectionId: message.connectionId});
 
 
             // Handle presence not associated with a channel
