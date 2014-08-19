@@ -131,11 +131,11 @@ describe("respoke.Client", function () {
         });
 
         describe("disconnect()", function () {
-            it("doesn't change the client.connected flag", function () {
-                var oldConnected = client.connected;
+            it("doesn't change the client.isConnected() value", function () {
+                var oldConnected = client.isConnected();
                 expect(oldConnected).to.be.false;
                 client.disconnect();
-                expect(oldConnected).to.equal(client.connected);
+                expect(oldConnected).to.equal(client.isConnected());
             });
 
             it("doesn't fire the disconnect event", function (done) {

@@ -1,14 +1,10 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 /**
  * A text message and the information needed to route it.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.TextMessage
  * @constructor
  * @param {object} params

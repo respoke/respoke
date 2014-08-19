@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var Q = require('q');
@@ -11,9 +8,9 @@ var respoke = require('./respoke');
 
 /**
  * A group, representing a collection of endpoints and the method by which to communicate with them.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Group
  * @constructor
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
@@ -80,6 +77,7 @@ module.exports = function (params) {
 
     /**
      * Join this group.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Group
      * @method respoke.Group.join
      * @return {Promise|undefined}
@@ -269,7 +267,7 @@ module.exports = function (params) {
      * @private
      */
     function validateConnection() {
-        if (!signalingChannel || !signalingChannel.connected) {
+        if (!signalingChannel || !signalingChannel.isConnected()) {
             throw new Error("Can't complete request when not connected. Please reconnect!");
         }
     }
@@ -287,7 +285,10 @@ module.exports = function (params) {
     }
 
     /**
+     * Message the group
+     * 
      * Send a message to the entire group.
+     * 
      * @memberof! respoke.Group
      * @method respoke.Group.sendMessage
      * @param {object} params
@@ -314,12 +315,17 @@ module.exports = function (params) {
     };
 
     /**
-     * Get an array containing the members of the group.
+     * Get group members
+     * 
+     * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
+     * or a promise.
+     * 
      * @memberof! respoke.Group
      * @method respoke.Group.getMembers
-     * @returns {Promise<Array>} A promise to an array of Connections.
      * @param {object} params
-     * @fires respoke.Group#join
+     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Success handler for this invocation of this method only.
+     * @returns {Promise<Array>} A promise to an array of Connections.
      */
     that.getMembers = function (params) {
         params = params || {};
@@ -341,8 +347,17 @@ module.exports = function (params) {
             list.forEach(function eachMember(params) {
                 var connection = client.getConnection({
                     endpointId: params.endpointId,
-                    connectionId: params.connectionId
+                    connectionId: params.connectionId,
+                    skipCreate: true
                 });
+
+                if (!connection) {
+                    // Create the connection
+                    connection = client.getConnection({
+                        endpointId: params.endpointId,
+                        connectionId: params.connectionId
+                    });
+                }
 
                 if (endpointList.indexOf(params.endpointId) === -1) {
                     endpointList.push(params.endpointId);

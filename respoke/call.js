@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var Q = require('q');
@@ -12,10 +9,10 @@ var respoke = require('./respoke');
 
 /**
  * WebRTC Call including getUserMedia, path and codec negotation, and call state.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call
@@ -55,6 +52,8 @@ var respoke = require('./respoke');
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
  * @param {object} params.callSettings
+ * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
+ * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.Call}
  */
 module.exports = function (params) {
@@ -207,6 +206,13 @@ module.exports = function (params) {
      * @type {respoke.signalingChannel}
      */
     var signalingChannel = params.signalingChannel;
+    /**
+     * Informational property. Whether call debugs were enabled on the client during creation.
+     * Changing this value will do nothing. 
+     * @name callDebugReportEnabled
+     * @type {boolean}
+     */
+    that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
 
     delete params.signalingChannel;
     delete that.signalingChannel;
@@ -217,14 +223,14 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = null;
+    var videoLocalElement = params.videoLocalElement || null;
     /**
      * @memberof! respoke.Call
      * @name videoRemoteElement
      * @private
      * @type {Video}
      */
-    var videoRemoteElement = null;
+    var videoRemoteElement = params.videoRemoteElement || null;
     /**
      * @memberof! respoke.Call
      * @name videoIsMuted
@@ -350,13 +356,12 @@ module.exports = function (params) {
             } else if (typeof previewLocalMedia !== 'function') {
                 that.approve();
             }
-
         }).done();
 
         if (that.caller !== true) {
             Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
-                if (oOffer && oOffer.sdp) {
-                    pc.processOffer(oOffer.sdp);
+                if (pc && oOffer && oOffer.sessionDescription) {
+                    pc.processOffer(oOffer.sessionDescription);
                 }
             }, function errorHandler(err) {
                 log.warn("Call rejected.");
@@ -380,6 +385,7 @@ module.exports = function (params) {
                     reason: message
                 });
             });
+            that.answer();
         }
 
         if (directConnectionOnly === true) {
@@ -465,6 +471,9 @@ module.exports = function (params) {
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
+        callSettings.videoRemoteElement = params.videoRemoteElement = videoRemoteElement || params.videoRemoteElement;
+        callSettings.videoLocalElement = params.videoLocalElement = videoLocalElement || params.videoLocalElement;
+
         pc.callSettings = callSettings;
         pc.forceTurn = forceTurn;
         pc.receiveOnly = receiveOnly;
@@ -531,7 +540,6 @@ module.exports = function (params) {
     that.answer = function (params) {
         params = params || {};
         log.debug('Call.answer');
-
         if (!defAnswered.promise.isPending()) {
             return;
         }
@@ -614,7 +622,10 @@ module.exports = function (params) {
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
 
-        videoRemoteElement = document.createElement('video');
+        videoRemoteElement = videoRemoteElement
+                           || evt.target.callSettings.videoRemoteElement
+                           || document.createElement('video');
+
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
@@ -623,15 +634,19 @@ module.exports = function (params) {
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
          * @property {Element} element - the HTML5 Video element with the new stream attached.
+         * @property {MediaStream} stream - the media stream
          * @property {string} name - the event name.
          * @property {respoke.Call} target
          */
         that.fire('connect', {
+            stream: evt.stream,
             element: videoRemoteElement
         });
     }
 
     /**
+     * ## The plugin `respoke.MediaStats` must be loaded before using this method.
+     *
      * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
      * Since we have to wait for both the answer and offer to be available before starting
      * statistics, the library returns a promise for the stats object. The statistics object does not contain the
@@ -740,9 +755,8 @@ module.exports = function (params) {
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
-            } else {
-                that.approve();
             }
+
             /**
              * @event respoke.Call#local-stream-received
              * @type {respoke.Event}
@@ -755,6 +769,10 @@ module.exports = function (params) {
                 element: evt.element,
                 stream: stream
             });
+
+            if (typeof previewLocalMedia !== 'function') {
+                that.approve();
+            }
         }, true);
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
@@ -781,6 +799,7 @@ module.exports = function (params) {
      * If audio is not desired, pass {audio: false}.
      * @memberof! respoke.Call
      * @method respoke.Call.addVideo
+     * @private
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=true]
@@ -820,6 +839,7 @@ module.exports = function (params) {
      * Add an audio stream to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addAudio
+     * @private
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=false]
@@ -875,6 +895,8 @@ module.exports = function (params) {
      * Remove a direct connection from the existing call. If there is no other media, this will hang up the call.
      * @memberof! respoke.Call
      * @method respoke.Call.removeDirectConnection
+     * @private
+     * @param {object} params
      */
     that.removeDirectConnection = function (params) {
         params = params || {};
@@ -908,6 +930,7 @@ module.exports = function (params) {
      * Add a direct connection to the existing call.
      * @memberof! respoke.Call
      * @method respoke.Call.addDirectConnection
+     * @private
      * @param {object} params
      * @param {respoke.DirectConnection.onClose} [params.onClose] - Callback for the developer to be notified about
      * closing the connection.
@@ -1138,7 +1161,7 @@ module.exports = function (params) {
      */
     that.isActive = function () {
         // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
-        return (pc.isActive() && (
+        return !!(pc.isActive() && (
             (localStreams.length > 0) ||
             (directConnection && directConnection.isActive())
         ));
@@ -1199,7 +1222,7 @@ module.exports = function (params) {
             log.debug("Ignoring duplicate answer.");
             return;
         }
-        defSDPAnswer.resolve(evt.signal.sdp);
+        defSDPAnswer.resolve(evt.signal.sessionDescription);
     }
 
     /**
@@ -1224,7 +1247,12 @@ module.exports = function (params) {
      */
     function onModifyAccept(evt) {
         that.caller = evt.signal.action === 'initiate' ? false : true;
-        init();
+        try {
+            init();
+        } catch (err) {
+            defModify.reject(err);
+            return;
+        }
 
         if (evt.signal.action !== 'initiate') {
             defModify.resolve(); // resolved later for callee
@@ -1446,12 +1474,22 @@ module.exports = function (params) {
         });
     }, true);
 
-    signalingChannel.getTurnCredentials().done(function (creds) {
-        callSettings.servers = client.callSettings.servers;
-        callSettings.servers.iceServers = creds;
+    signalingChannel.getTurnCredentials().fin(function (result) {
+        if (!result) {
+            log.warn("Relay service not available.");
+            callSettings.servers = {
+                iceServers: []
+            };
+        } else {
+            callSettings.servers = client.callSettings.servers;
+            callSettings.servers.iceServers = result;
+        }
         saveParameters(params);
         init();
+    }).fin(function () {
         defInit.resolve();
+    }).done(null, function (err) {
+        // who cares
     });
 
     return that;

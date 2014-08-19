@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -16,9 +13,10 @@ var respoke = require('./respoke');
  * which is represented by a Connection. The client can interact with endpoints by calling them or
  * sending them messages. An endpoint can be a person using an app from a browser or a script using the APIs on
  * a server.
- * @author Erin Spiceland <espiceland@digium.com>
  * @constructor
+ * @class respoke.Endpoint
  * @augments respoke.Presentable
+ * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
@@ -74,6 +72,7 @@ module.exports = function (params) {
     that.directConnection = null;
 
     /**
+     * Array of connections for this endpoint.
      * @memberof! respoke.Endpoint
      * @name connections
      * @type {Array<respoke.Connection>}
@@ -86,10 +85,11 @@ module.exports = function (params) {
 
     var resolveEndpointPresence = params.resolveEndpointPresence;
     delete that.resolveEndpointPresence;
-    
+
 
     /**
      * Send a message to the endpoint through the infrastructure.
+     * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.sendMessage
      * @param {object} params
@@ -257,6 +257,8 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {
@@ -339,14 +341,7 @@ module.exports = function (params) {
         };
 
         params.signalingChannel = signalingChannel;
-
-        call = respoke.Call(params);
-
-        if (params.caller === true) {
-            call.answer();
-        }
-
-        return call;
+        return respoke.Call(params);
     };
 
     /**

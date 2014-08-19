@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -15,7 +12,6 @@ var respoke = require('./respoke');
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
  * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.SignalingChannel
  * @constructor
  * @augments respoke.EventEmitter
@@ -40,6 +36,7 @@ module.exports = function (params) {
      * @memberof! respoke.SignalingChannel
      * @name className
      * @type {string}
+     * @private
      */
     that.className = 'respoke.SignalingChannel';
 
@@ -50,13 +47,6 @@ module.exports = function (params) {
      * @type {respoke.Client}
      */
     var client = respoke.getClient(instanceId);
-    /**
-     * The state of the signaling channel.
-     * @memberof! respoke.SignalingChannel
-     * @name state
-     * @type {boolean}
-     */
-    that.connected = false;
     /**
      * @memberof! respoke.SignalingChannel
      * @name socket
@@ -80,6 +70,14 @@ module.exports = function (params) {
     var clientSettings = params.clientSettings;
     delete that.clientSettings;
     clientSettings.baseURL = clientSettings.baseURL || 'https://api.respoke.io';
+    /**
+     * Informational property for confirmation that call debugs are enabled or disabled.
+     * Helps to make call debugs more testable without putting clientSettings into modifiable scope.
+     * @private
+     * @name callDebugReportEnabled
+     * @type {boolean}
+     */
+    that.callDebugReportEnabled = clientSettings.enableCallDebugReport;
     /**
      * A map to avoid duplicate endpoint presence registrations.
      * @memberof! respoke.SignalingChannel
@@ -183,9 +181,31 @@ module.exports = function (params) {
     };
 
     /**
+     * Indicate whether the signaling channel has a valid connection to Respoke.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.isConnected
+     * @return {boolean}
+     */
+    that.isConnected = function () {
+        return !!(socket && socket.socket.connected);
+    };
+
+    /**
+     * Indicate whether the signaling channel is currently waiting on a websocket to connect.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.isConnecting
+     * @private
+     * @return {boolean}
+     */
+    function isConnecting() {
+        return !!(socket && socket.socket.connecting);
+    }
+
+    /**
      * Open a connection to the REST API and validate the app, creating an appauthsession.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.open
+     * @private
      * @param {object} params
      * @param {string} [params.token] - The Endpoint's auth token
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
@@ -224,6 +244,7 @@ module.exports = function (params) {
      * Get a developer mode token for an endpoint. App must be in developer mode.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getToken
+     * @private
      * @param {object} params
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
@@ -288,9 +309,7 @@ module.exports = function (params) {
                 appToken = response.result.token;
                 deferred.resolve();
                 log.debug("Signaling connection open to", clientSettings.baseURL);
-                that.connected = true;
             } else {
-                that.connected = false;
                 deferred.reject(new Error("Couldn't authenticate app."));
             }
         }, function (err) {
@@ -305,6 +324,7 @@ module.exports = function (params) {
      * Close a connection to the REST API. Invalidate the appauthsession.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.close
+     * @private
      * @param {object} params
      * @return {Promise}
      */
@@ -327,7 +347,6 @@ module.exports = function (params) {
                 socket.removeAllListeners();
                 socket.disconnect();
             }
-            that.connected = false;
             deferred.resolve();
         }).done();
 
@@ -339,6 +358,7 @@ module.exports = function (params) {
      * the server to send the client's endpoint's presence.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendPresence
+     * @private
      * @param {object} params
      * @param {string|number|object|Array} [params.presence=available]
      * @param {string} [params.status] - Non-enumeration human-readable status.
@@ -350,7 +370,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         log.debug("Signaling sendPresence");
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -377,6 +397,7 @@ module.exports = function (params) {
      * Get or create a group in the infrastructure.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getGroup
+     * @private
      * @returns {Promise<respoke.Group>}
      * @param {object} params
      * @param {string} name
@@ -386,7 +407,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         log.debug('signalingChannel.getGroup');
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -410,6 +431,7 @@ module.exports = function (params) {
     /**
      * Join a group.
      * @memberof! respoke.SignalingChannel
+     * @private
      * @method respoke.SignalingChannel.leaveGroup
      * @returns {Promise}
      * @param {object} params
@@ -419,7 +441,7 @@ module.exports = function (params) {
         params = params || {};
         var deferred = Q.defer();
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -441,6 +463,7 @@ module.exports = function (params) {
      * Join a group.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.joinGroup
+     * @private
      * @returns {Promise}
      * @param {object} params
      * @param {string} params.id
@@ -449,7 +472,7 @@ module.exports = function (params) {
         params = params || {};
         var deferred = Q.defer();
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -470,6 +493,7 @@ module.exports = function (params) {
     /**
      * Publish a message to a group.
      * @memberof! respoke.SignalingChannel
+     * @private
      * @method respoke.SignalingChannel.publish
      * @returns {Promise}
      * @param {object} params
@@ -484,7 +508,7 @@ module.exports = function (params) {
             message: params.message
         });
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -506,11 +530,12 @@ module.exports = function (params) {
      * Register as an observer of presence for the specified endpoint ids.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.registerPresence
+     * @private
      * @param {object} params
      * @param {Array<string>} params.endpointList
      */
     that.registerPresence = function (params) {
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -531,6 +556,7 @@ module.exports = function (params) {
      * Join a group.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getGroupMembers
+     * @private
      * @returns {Promise<Array>}
      * @param {object} params
      * @param {string} params.id
@@ -539,7 +565,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var promise;
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -567,6 +593,7 @@ module.exports = function (params) {
      * Send a chat message.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendMessage
+     * @private
      * @param {object} params
      * @param {respoke.SignalingMessage} params.message - The string text message to send.
      * @param {respoke.Endpoint} params.recipient
@@ -582,7 +609,7 @@ module.exports = function (params) {
             message: params.message
         });
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -603,6 +630,7 @@ module.exports = function (params) {
      * Send an ACK signal to acknowlege reception of a signal.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendACK
+     * @private
      * @param {object} params
      * @param {respoke.SignalingMessage} params.signal
      * @return {Promise}
@@ -611,7 +639,7 @@ module.exports = function (params) {
         var endpoint;
         params = params || {};
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -638,6 +666,7 @@ module.exports = function (params) {
      * Send a signaling message.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendSignal
+     * @private
      * @param {object} params
      * @param {respoke.Call} [params.call] - For getting the sessionId & connectionId. Not required for 'ack'.
      * @return {Promise}
@@ -647,7 +676,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var signal;
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -689,6 +718,7 @@ module.exports = function (params) {
      * Send an ICE candidate.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendCandidate
+     * @private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
@@ -699,7 +729,7 @@ module.exports = function (params) {
         params = params || {};
         params.signalType = 'iceCandidates';
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -710,16 +740,17 @@ module.exports = function (params) {
      * Send an SDP.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendSDP
+     * @private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
-     * @param {RTCSessionDescription} params.sdp - An SDP to JSONify and send.
+     * @param {RTCSessionDescription} params.sessionDescription - An SDP to JSONify and send.
      * @return {Promise}
      */
     that.sendSDP = function (params) {
         params = params || {};
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -734,6 +765,7 @@ module.exports = function (params) {
      * Send a call report to the cloud infrastructure.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendReport
+     * @private
      * @param {object} params
      * @todo TODO document the params.
      * @return {Promise}
@@ -745,13 +777,19 @@ module.exports = function (params) {
             debugData: params
         };
 
-        if (!that.connected) {
+        if (!clientSettings.enableCallDebugReport) {
+            log.debug('not sending call debugs - disabled');
+            deferred.resolve();
+            return deferred.promise;
+        }
+
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
 
         wsCall({
-            path: '/v1/calldebugs',
+            path: '/v1/call-debugs',
             httpMethod: 'POST',
             parameters: message
         }).done(function () {
@@ -767,6 +805,7 @@ module.exports = function (params) {
      * Send a message hanging up the WebRTC session.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendHangup
+     * @private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} [params.connectionId]
@@ -777,7 +816,7 @@ module.exports = function (params) {
         params = params || {};
         params.signalType = 'hangup';
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -788,6 +827,7 @@ module.exports = function (params) {
      * Send a message to all connection ids indicating we have negotiated a call with one connection.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendConnected
+     * @private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @return {Promise}
@@ -796,7 +836,7 @@ module.exports = function (params) {
         params = params || {};
         params.signalType = 'connected';
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -807,6 +847,7 @@ module.exports = function (params) {
      * Send a message to the remote party indicating a desire to renegotiate media.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.sendModify
+     * @private
      * @param {object} params
      * @param {respoke.Endpoint} params.recipient - The recipient.
      * @param {string} params.action - The state of the modify request, one of: 'initiate', 'accept', 'reject'
@@ -820,7 +861,7 @@ module.exports = function (params) {
             return Q.reject("No valid action in modify signal.");
         }
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
@@ -841,6 +882,7 @@ module.exports = function (params) {
      * Route different types of signaling messages via events.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.routeSignal
+     * @private
      * @param {respoke.SignalingMessage} message - A message to route
      * @fires respoke.Call#offer
      * @fires respoke.Call#connected
@@ -1064,6 +1106,7 @@ module.exports = function (params) {
      * Add a handler to the connection for messages of different types.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.addHandler
+     * @private
      * @param {object} params
      * @param {string} params.type - The type of socket message, i. e., 'message', 'presence', 'join'
      * @param {function} params.handler - A function to which to pass the message
@@ -1142,7 +1185,7 @@ module.exports = function (params) {
         var connection;
 
         if (message.connectionId === client.connectionId) {
-            connection = client.getConnection({connectionId: message.connectionId, endpointId: message.endpoint});
+            connection = client.getConnection({connectionId: message.connectionId, endpointId: message.endpointId});
             group = client.getGroup({id: message.header.channel});
             if (!group) {
                 group = respoke.Group({
@@ -1163,10 +1206,11 @@ module.exports = function (params) {
             endpoint = client.getEndpoint({
                 id: message.endpoint,
                 instanceId: instanceId,
-                name: message.endpoint
+                name: message.endpointId
             });
 
             connection = endpoint.getConnection({connectionId: message.connectionId});
+
 
             // Handle presence not associated with a channel
             if (message.header.channel.indexOf('system') > -1 || !connection) {
@@ -1175,7 +1219,7 @@ module.exports = function (params) {
                 });
                 connection = client.getConnection({
                     connectionId: message.connectionId,
-                    endpointId: message.endpoint
+                    endpointId: message.endpointId
                 });
                 if (message.header.channel.indexOf('system') > -1) {
                     log.error("Still getting these weird join presence messages.", message);
@@ -1183,8 +1227,8 @@ module.exports = function (params) {
                 }
             }
 
-            if (!presenceRegistered[message.endpoint]) {
-                that.registerPresence({endpointList: [message.endpoint]});
+            if (!presenceRegistered[message.endpointId]) {
+                that.registerPresence({endpointList: [message.endpointId]});
             }
             group = client.getGroup({id: message.header.channel});
 
@@ -1215,7 +1259,7 @@ module.exports = function (params) {
         } else {
 
             endpoint = client.getEndpoint({
-                id: message.endpoint
+                id: message.endpointId
             });
 
             endpoint.connections.every(function eachConnection(conn, index) {
@@ -1354,16 +1398,16 @@ module.exports = function (params) {
     }
 
     /*
-    * On reconnect, start with a reconnect interval of 500ms. Every time reconnect fails, the interval
-    * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
-    * @memberof! respoke.SignalingChannel
-    * @method respoke.SignalingChannel.reconnect
-    * @private
-    */
+     * On reconnect, start with a reconnect interval of 2000ms. Every time reconnect fails, the interval
+     * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.reconnect
+     * @private
+     */
     function reconnect() {
         appToken = undefined;
         token = undefined;
-        reconnectTimeout = (reconnectTimeout === null) ? 500 : 2 * reconnectTimeout;
+        reconnectTimeout = (reconnectTimeout === null) ? 2500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
             reconnectTimeout = maxReconnectTimeout;
@@ -1399,6 +1443,7 @@ module.exports = function (params) {
      * Authenticate to the cloud and call the handler on state change.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.authenticate
+     * @private
      * @param {object} params
      * @return {Promise}
      */
@@ -1422,11 +1467,10 @@ module.exports = function (params) {
 
         /*
          * Try to connect for 2 seconds before failing.
+         * @private
          */
         var connectParams = {
             'connect timeout': 2000,
-            'reconnection limit': 5 * 60 * 60 * 1000,
-            'max reconnection attempts': Infinity,
             'force new connection': true, // Don't try to reuse old connection.
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: false,
@@ -1437,6 +1481,9 @@ module.exports = function (params) {
             query: 'app-token=' + appToken
         };
 
+        if (that.isConnected() || isConnecting()) {
+            return;
+        }
         socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
@@ -1462,16 +1509,17 @@ module.exports = function (params) {
         socket.on('message', onMessage);
         socket.on('presence', onPresence);
 
+        // connection timeout
         socket.on('connect_failed', function connectFailedHandler(res) {
-            log.error('Socket.io connect failed.', res || "");
+            deferred.reject(new Error("WebSocket connection failed."));
+            log.error('Socket.io connect timeout.', res || "");
             reconnect();
         });
 
+        // handshake error, 403
         socket.on('error', function errorHandler(res) {
-            log.debug('Socket.io error.', res || "");
-            if (!client.connected) {
-                reconnect();
-            }
+            log.debug('Socket.io request failed.', res || "");
+            reconnect();
         });
 
         that.addHandler({
@@ -1519,13 +1567,14 @@ module.exports = function (params) {
      * sent or received, prior to creating a PeerConnection
      *
      * @memberof! respoke.SignalingChannel
+     * @private
      * @method respoke.SignalingChannel.getTurnCredentials
      * @return {Promise<Array>}
      */
     that.getTurnCredentials = function () {
         var deferred = Q.defer();
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -1586,7 +1635,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var requestTimer;
 
-        if (!that.connected) {
+        if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             return deferred.promise;
         }
@@ -1612,13 +1661,8 @@ module.exports = function (params) {
             log.debug('socket request', params.httpMethod, params.path, params.parameters);
         }
 
-        if (!socket) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
-            return deferred.promise;
-        }
-
         requestTimer = setTimeout(function () {
-            log.error('request timeout');
+            log.error('request timeout', params.httpMethod, params.path, params.parameters);
             socket.disconnect();
             deferred.reject(new Error("Request timeout. Disconnecting."));
         }, 5 * 1000);
@@ -1706,18 +1750,12 @@ module.exports = function (params) {
         }
 
         xhr.open(params.httpMethod, uri);
+        if (appToken) {
+            xhr.setRequestHeader("App-Token", appToken);
+        }
         if (['POST', 'PUT'].indexOf(params.httpMethod) > -1) {
             paramString = JSON.stringify(params.parameters);
-            try {
-                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                if (appToken) {
-                    xhr.setRequestHeader("App-Token", appToken);
-                }
-            } catch (e) {
-                deferred.reject(new Error("Can't set content-type header in readyState " +
-                    xhr.readyState + ". " + e.message));
-                return;
-            }
+            xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
             return;

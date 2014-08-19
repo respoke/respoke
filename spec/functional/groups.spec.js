@@ -9,35 +9,21 @@ describe("Respoke groups", function () {
     var follower = {};
     var followee = {};
     var app;
-    var permissions;
-    var groupPermissions = {
-        name: 'fixturepermissions',
-        permList: [
-            {
-                resourceType: "groups:create",
-                actions: "allow",
-                resourceIds: ['*']
-            }, {
-                resourceType: 'groups',
-                actions: 'publish',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'groups',
-                actions: 'subscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'groups',
-                actions: 'unsubscribe',
-                resourceIds: ['*']
-            }, {
-                resourceType: 'groups:subscribers',
-                actions: 'get',
-                resourceIds: ['*']
+    var role;
+    var groupRole = {
+        name: 'fixturerole',
+        groups: {
+            "*": {
+                create: true,
+                publish: true,
+                subscribe: true,
+                unsubscribe: true,
+                getsubscribers: true
             }
-        ]
+        }
     };
     var testFixture = fixture("Groups Functional test", {
-        permissionParams: groupPermissions
+        roleParams: groupRole
     });
 
     before(function (done) {
@@ -45,16 +31,16 @@ describe("Respoke groups", function () {
             testEnv = env;
             testEnv.tokens = [];
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupPermissions);
+            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
         }).then(function (params) {
             app = params.app;
-            permissions = params.permissions;
+            role = params.role;
             // create 2 tokens
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
+                roleId: params.role.id,
                 appId: params.app.id
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: params.permissions.id,
+                roleId: params.role.id,
                 appId: params.app.id
             })];
         }).spread(function (token1, token2) {
@@ -260,7 +246,7 @@ describe("Respoke groups", function () {
             var client;
 
             before(function (done) {
-                var tokenOptions = { permissionsId: permissions.id, appId: app.id };
+                var tokenOptions = { roleId: role.id, appId: app.id };
                 testFixture.createToken(testEnv.httpClient, tokenOptions, function (err, token) {
                     params = {
                         username: testEnv.accountParams.username,

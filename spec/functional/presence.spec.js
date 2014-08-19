@@ -11,37 +11,51 @@ describe("Respoke presence", function () {
     var followee;
     var followerToken;
     var followeeToken;
-    var permissionsId;
+    var roleId;
     var appId;
 
-    function doReconnect(done) {
-        Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-            permissionsId: permissionsId,
-            appId: appId
-        }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-            permissionsId: permissionsId,
-            appId: appId
-        })]).spread(function (token1, token2) {
-            followerToken = token1;
-            followeeToken = token2;
+    function disconnectAll(callback) {
+        async.each([follower, followee], function (client, done) {
+            if (client.isConnected()) {
+                client.disconnect().fin(done);
+            } else {
+                done();
+            }
+        }, callback);
+    }
 
-            return Q.all([follower.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: followerToken.tokenId
-            }), followee.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: followeeToken.tokenId
-            })]);
-        }).done(function () {
-            expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(followerToken.endpointId);
-            expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(followeeToken.endpointId);
-            followerEndpoint = followee.getEndpoint({id: follower.endpointId});
-            followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
-            done();
+    function doReconnect(done) {
+        Q.nfcall(
+            disconnectAll
+        ).done(function () {
+            Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                roleId: roleId,
+                appId: appId
+            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                roleId: roleId,
+                appId: appId
+            })]).spread(function (token1, token2) {
+                followerToken = token1;
+                followeeToken = token2;
+                console.log('followerToken', token1);
+                console.log('followeeToken', token2);
+
+                return Q.all([follower.connect({
+                    appId: Object.keys(testEnv.allApps)[0],
+                    baseURL: respokeTestConfig.baseURL,
+                    token: followerToken.tokenId
+                }), followee.connect({
+                    appId: Object.keys(testEnv.allApps)[0],
+                    baseURL: respokeTestConfig.baseURL,
+                    token: followeeToken.tokenId
+                })]);
+            }).done(function () {
+                expect(follower.endpointId).not.to.be.undefined;
+                expect(follower.endpointId).to.equal(followerToken.endpointId);
+                expect(followee.endpointId).not.to.be.undefined;
+                expect(followee.endpointId).to.equal(followeeToken.endpointId);
+                done();
+            }, done);
         }, done);
     }
 
@@ -52,14 +66,14 @@ describe("Respoke presence", function () {
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
         }).then(function (params) {
             // create 2 tokens
-            permissionsId = params.permissions.id;
+            roleId = params.role.id;
             appId = params.app.id;
 
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                permissionsId: permissionsId,
+                roleId: roleId,
                 appId: appId
             })];
         }).spread(function (token1, token2) {
@@ -216,7 +230,7 @@ describe("Respoke presence", function () {
                 var presence = respoke.makeGUID();
                 var client1 = respoke.createClient();
                 var client2 = respoke.createClient();
-                var endpont2;
+                var endpoint2;
 
                 beforeEach(function (done) {
                     client1.connect({
@@ -313,13 +327,18 @@ describe("Respoke presence", function () {
     });
 
     after(function (done) {
-        follower.disconnect().fin(function () {
-            testFixture.afterTest(function (err) {
-                if (err) {
-                    return done(new Error(JSON.stringify(err)));
-                }
-                done();
-            });
-        }).done();
+        async.series({
+            disconnectClients: function (next) {
+                disconnectAll(next);
+            },
+            fixtureCleanup: function (next) {
+                testFixture.afterTest(function (err) {
+                    if (err) {
+                        next(new Error(JSON.stringify(err)));
+                    }
+                    next();
+                });
+            }
+        }, done);
     });
 });

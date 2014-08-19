@@ -1,14 +1,10 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 /**
  * A signaling message and the information needed to route it.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.SignalingMessage
  * @constructor
  * @param {object} params
@@ -55,7 +51,7 @@ module.exports = function (params) {
      * @type {string}
      */
     var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sdp', 'iceCandidates', 'offering', 'target', 'signalId',
+        'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
         'requesting', 'reason', 'error', 'status'
     ];
 
@@ -68,7 +64,7 @@ module.exports = function (params) {
     function parse() {
         if (params.rawMessage) {
             try {
-                that = JSON.parse(params.rawMessage.signal); // Incoming message
+                that = JSON.parse(params.rawMessage.body); // Incoming message
                 that.endpointId = params.rawMessage.header.from;
                 that.connectionId = params.rawMessage.header.fromConnection;
             } catch (e) {

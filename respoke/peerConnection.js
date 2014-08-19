@@ -1,9 +1,6 @@
-/**************************************************************************************************
- *
- * Copyright (c) 2014 Digium, Inc.
- * All Rights Reserved. Licensed Software.
- *
- * @authors : Erin Spiceland <espiceland@digium.com>
+/**
+ * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -14,7 +11,6 @@ var respoke = require('./respoke');
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
  * This class cannot be used alone, but is instantiated by and must be given media by either Call, DirectConnection,
  * or the not-yet-implemented ScreenShare.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.PeerConnection
  * @constructor
  * @augments respoke.EventEmitter
@@ -305,6 +301,10 @@ module.exports = function (params) {
      * @fires respoke.PeerConnection#initOffer
      */
     that.initOffer = function () {
+        if (!pc) {
+            return;
+        }
+
         log.info('creating offer', offerOptions);
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
@@ -329,6 +329,11 @@ module.exports = function (params) {
             defSDPOffer.reject();
             return;
         }
+
+        if (!pc) {
+            return;
+        }
+
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
         //set flags for audio / video being offered
@@ -338,6 +343,10 @@ module.exports = function (params) {
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
                 function successHandler() {
+                    if (!pc) {
+                        return;
+                    }
+
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
                         saveAnswerAndSend(oSession);
@@ -541,6 +550,7 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: "Got local stream in a precall state."
             });
+            return;
         }
         pc.addStream(stream);
     };
@@ -618,7 +628,7 @@ module.exports = function (params) {
      */
     function saveOfferAndSend(oSession) {
         oSession.type = 'offer';
-        if (!defSDPOffer.promise.isPending()) {
+        if (!pc || !defSDPOffer.promise.isPending()) {
             return;
         }
         log.debug('setting and sending offer', oSession);
@@ -627,7 +637,7 @@ module.exports = function (params) {
             oSession.type = 'offer';
             signalOffer({
                 call: that.call,
-                sdp: oSession
+                sessionDescription: oSession
             });
             defSDPOffer.resolve(oSession);
         }, function errorHandler(p) {
@@ -662,10 +672,13 @@ module.exports = function (params) {
         if (!that.call.initiator) {
             that.report.callerconnection = that.call.connectionId;
         }
+        if (!pc) {
+            return;
+        }
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
             signalAnswer({
-                sdp: oSession,
+                sessionDescription: oSession,
                 call: that.call
             });
             defSDPAnswer.resolve(oSession);
@@ -756,7 +769,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        return (pc && ['completed', 'connected'].indexOf(pc.iceConnectionState) > -1);
+        return !!(pc && ['completed', 'connected', 'new', 'checking'].indexOf(pc.iceConnectionState) > -1);
     };
 
     /**
@@ -793,22 +806,21 @@ module.exports = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        if (!defSDPAnswer.promise.isPending()) {
-            log.debug("Ignoring duplicate answer.");
+        if (!pc || !defSDPAnswer.promise.isPending()) {
             return;
         }
         defSDPAnswer.promise.done(processQueues, function errorHandler() {
-            log.error('set remote desc of answer failed', evt.signal.sdp);
+            log.error('set remote desc of answer failed', evt.signal.sessionDescription);
             that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
             that.close();
         });
         log.debug('got answer', evt.signal);
 
-        that.report.sdpsReceived.push(evt.signal.sdp);
-        that.report.lastSDPString = evt.signal.sdp.sdp;
+        that.report.sdpsReceived.push(evt.signal.sessionDescription);
+        that.report.lastSDPString = evt.signal.sessionDescription.sdp;
         //set flags for audio / video for answer
-        that.call.hasAudio = hasAudio(evt.signal.sdp.sdp);
-        that.call.hasVideo = hasVideo(evt.signal.sdp.sdp);
+        that.call.hasAudio = hasAudio(evt.signal.sessionDescription.sdp);
+        that.call.hasVideo = hasVideo(evt.signal.sessionDescription.sdp);
         if (that.call.initiator) {
             that.report.calleeconnection = evt.signal.connectionId;
         }
@@ -818,9 +830,9 @@ module.exports = function (params) {
         });
 
         pc.setRemoteDescription(
-            new RTCSessionDescription(evt.signal.sdp),
+            new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
-                defSDPAnswer.resolve(evt.signal.sdp);
+                defSDPAnswer.resolve(evt.signal.sessionDescription);
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
@@ -998,11 +1010,12 @@ module.exports = function (params) {
      */
     that.addRemoteCandidate = function (params) {
         params = params || {};
-        if (!params.candidate) {
+        if (!that.isActive()) {
+            log.info("Skipping candidate when call is inactive.");
             return;
         }
 
-        if (!params.candidate.hasOwnProperty('sdpMLineIndex')) {
+        if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
             log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }
