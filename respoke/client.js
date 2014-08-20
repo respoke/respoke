@@ -720,7 +720,7 @@ module.exports = function (params) {
             group = that.getGroup({id: params.id});
             if (!group) {
                 group = respoke.Group(params);
-                addGroup(group);
+                that.addGroup(group);
             }
             group.addMember({
                 connection: that.getConnection({
@@ -752,9 +752,8 @@ module.exports = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.addGroup
      * @param {respoke.Group}
-     * @private
      */
-    function addGroup(newGroup) {
+    that.addGroup = function (newGroup) {
         if (!newGroup || newGroup.className !== 'respoke.Group') {
             throw new Error("Can't add group to internal tracking without a group.");
         }
@@ -763,6 +762,7 @@ module.exports = function (params) {
             newGroup.removeMember({connectionId: evt.connection.id});
             checkEndpointForRemoval(evt.connection.getEndpoint());
         }, true);
+
         groups.push(newGroup);
     }
 

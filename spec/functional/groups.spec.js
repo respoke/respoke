@@ -8,6 +8,8 @@ describe("Respoke groups", function () {
     var testEnv;
     var follower = {};
     var followee = {};
+    var app;
+    var role;
     var groupRole = {
         name: 'fixturerole',
         groups: {
@@ -31,6 +33,8 @@ describe("Respoke groups", function () {
 
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
         }).then(function (params) {
+            app = params.app;
+            role = params.role;
             // create 2 tokens
             return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                 roleId: params.role.id,
@@ -231,6 +235,58 @@ describe("Respoke groups", function () {
                         followerGroup.join().done(function() {
                             done();
                         }, done);
+                    });
+                });
+            });
+        });
+
+        describe("when an admin administers groups for an endpoint", function () {
+            var groupName = respoke.makeGUID();
+            var params;
+            var client;
+
+            before(function (done) {
+                var tokenOptions = { roleId: role.id, appId: app.id };
+                testFixture.createToken(testEnv.httpClient, tokenOptions, function (err, token) {
+                    params = {
+                        username: testEnv.accountParams.username,
+                        password: testEnv.accountParams.password,
+                        endpointId: token.endpointId,
+                        groupName: groupName,
+                        appId: app.id
+                    };
+                    client = respoke.createClient();
+                    client.connect({
+                        appId: app.id,
+                        baseURL: respokeTestConfig.baseURL,
+                        token: token.tokenId
+                    }).then(done);
+                });
+            });
+            describe("and adds an endpoint to a group", function () {
+                it("the endpoint should receive join notification", function (done) {
+                    var onJoin = function (evt) {
+                        expect(evt.group).to.not.be.undefined;
+                        expect(evt.group.id).to.equal(groupName);
+                        done();
+                    };
+                    client.listen('join', onJoin)
+                    testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
+                        expect(err).to.be.undefined;
+                    });
+                });
+            });
+
+            describe("and removes an endpoint from a group", function () {
+                it("endpoint should receive leave notification", function (done) {
+                    var onLeave = function (evt) {
+                        expect(evt.group).to.not.be.undefined;
+                        expect(evt.group.id).to.equal(groupName);
+                        done();
+                    }
+                    client.listen('leave', onLeave);
+                    testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
+                        expect(err).to.be.undefined;
                     });
                 });
             });
