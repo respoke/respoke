@@ -60,6 +60,7 @@ var EventEmitter = module.exports = function (params) {
             return a.toString();
         }).indexOf(listener.toString()) === -1) {
             eventList[eventType].push(listener);
+            //console.log("listening", that.className, eventType);
         } else if (eventList[eventType].indexOf(listener) !== -1) {
             log.warn("not adding duplicate listener.");
         }
@@ -76,6 +77,7 @@ var EventEmitter = module.exports = function (params) {
      * @param {function} [listener] - An optional function to remove from the specified event.
      */
     that.ignore = function (eventType, listener) {
+        //console.log("ignoring", that.className, eventType);
         // Remove all events from this object
         if (eventType === undefined) {
             eventList = {};
@@ -129,6 +131,7 @@ var EventEmitter = module.exports = function (params) {
                 }
             }
         });
+        //console.log("firing", that.className, eventType);
         log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 

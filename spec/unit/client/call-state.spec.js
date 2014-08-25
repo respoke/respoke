@@ -1,7 +1,7 @@
 
 var expect = chai.expect;
 
-respoke.log.setLevel('error');
+respoke.log.setLevel('warn');
 
 describe("respoke.CallState", function () {
     var state;
@@ -32,7 +32,7 @@ describe("respoke.CallState", function () {
         });
 
         it("should not report modifying", function () {
-            expect(state.isModifying()).to.be.false;
+            expect(state.isModifying()).to.equal(false);
         });
     });
 
@@ -50,12 +50,6 @@ describe("respoke.CallState", function () {
                     }
                 };
                 state = respoke.CallState({call: call});
-
-                state.run({
-                    debug: function () {
-                        console.log.apply(console, arguments);
-                    }
-                });
             });
 
             it("reports the correct state name", function () {
@@ -63,7 +57,7 @@ describe("respoke.CallState", function () {
             });
 
             it("should not report modifying", function () {
-                expect(state.isModifying()).to.be.false;
+                expect(state.isModifying()).to.equal(false);
             });
 
             describe("event 'initiate'", function () {
@@ -84,11 +78,11 @@ describe("respoke.CallState", function () {
                 });
 
                 it("should not report modifying", function () {
-                    expect(state.isModifying()).to.be.false;
+                    expect(state.isModifying()).to.equal(false);
                 });
 
                 it("should fire the 'negotiating:entry' event", function () {
-                    expect(negotiatingEntrySpy.called).to.be.true;
+                    expect(negotiatingEntrySpy.called).to.equal(true);
                 });
 
                 describe("when isMediaFlowing is false", function () {
@@ -96,7 +90,7 @@ describe("respoke.CallState", function () {
                         state.isMediaFlowing = false;
                     });
 
-                    describe("event 'finish'", function () {
+                    describe("event 'reject'", function () {
                         var negotiatingExitSpy;
                         var terminatedEntrySpy;
 
@@ -118,15 +112,15 @@ describe("respoke.CallState", function () {
                         });
 
                         it("should not report modifying", function () {
-                            expect(state.isModifying()).to.be.false;
+                            expect(state.isModifying()).to.equal(false);
                         });
 
                         it("should fire the 'negotiating:exit' event", function () {
-                            expect(negotiatingExitSpy.called).to.be.true;
+                            expect(negotiatingExitSpy.called).to.equal(true);
                         });
 
                         it("should fire the 'terminated:entry' event", function () {
-                            expect(terminatedEntrySpy.called).to.be.true;
+                            expect(terminatedEntrySpy.called).to.equal(true);
                         });
                     });
 
@@ -147,7 +141,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("fires 'approving-device-access:entry'", function () {
-                            expect(approvingDeviceAccessEntrySpy.called).to.be.true;
+                            expect(approvingDeviceAccessEntrySpy.called).to.equal(true);
                         });
 
                         describe("event 'approve'", function () {
@@ -168,7 +162,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("fires 'approving-content:entry'", function () {
-                                expect(approvingContentEntrySpy.called).to.be.true;
+                                expect(approvingContentEntrySpy.called).to.equal(true);
                             });
 
                             describe("event 'approve'", function () {
@@ -192,11 +186,51 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("fires 'approving-content:exit'", function () {
-                                    expect(approvingContentExitSpy.called).to.be.true;
+                                    expect(approvingContentExitSpy.called).to.equal(true);
                                 });
 
                                 it("fires 'offering:entry'", function () {
-                                    expect(offeringEntrySpy.called).to.be.true;
+                                    expect(offeringEntrySpy.called).to.equal(true);
+                                });
+
+                                describe("event 'receiveAnswer'", function () {
+                                    var connectingEntrySpy;
+
+                                    beforeEach(function () {
+                                        connectingEntrySpy = sinon.spy();
+                                        state.listen('connecting:entry', connectingEntrySpy);
+                                        state.dispatch('receiveAnswer');
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connecting:entry', connectingEntrySpy);
+                                    });
+
+                                    it("moves to 'connecting'", function () {
+                                        expect(state.currentState().name).to.equal('connecting');
+                                    });
+
+                                    it("fires 'connecting:entry'", function () {
+                                        expect(connectingEntrySpy.called).to.equal(true);
+                                    });
+                                });
+
+                                describe("event 'reject'", function () {
+                                    var terminatedSpy;
+
+                                    beforeEach(function () {
+                                        terminatedSpy = sinon.spy();
+                                        state.listen('terminated:entry', terminatedSpy);
+                                        state.dispatch("reject", call);
+                                    });
+
+                                    it("leads to 'terminated'", function () {
+                                        expect(state.currentState().name).to.equal("terminated");
+                                    });
+
+                                    it("fires the 'terminated:entry' event", function () {
+                                        expect(terminatedSpy.called).to.equal(true);
+                                    })
                                 });
                             });
 
@@ -213,11 +247,11 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("fires 'approving-content:exit'", function () {
-                                    expect(approvingContentExitSpy.called).to.be.true;
+                                    expect(approvingContentExitSpy.called).to.equal(true);
                                 });
 
                                 it("fires 'negotiating:exit'", function () {
-                                    expect(approvingContentExitSpy.called).to.be.true;
+                                    expect(approvingContentExitSpy.called).to.equal(true);
                                 });
 
                                 it("leads to 'terminated'", function () {
@@ -261,16 +295,30 @@ describe("respoke.CallState", function () {
                         });
 
                         it("should not report modifying", function () {
-                            expect(state.isModifying()).to.be.false;
+                            expect(state.isModifying()).to.equal(false);
                         });
 
                         it("should fire the 'connected:entry' event", function () {
-                            expect(connectedEntrySpy.called).to.be.true;
+                            expect(connectedEntrySpy.called).to.equal(true);
                         });
 
                         describe("event 'modify'", function () {
+                            var connectedExitSpy;
+                            var negotiatingEntrySpy;
+
                             beforeEach(function () {
-                                state.dispatch("modify", call);
+                                connectedExitSpy = sinon.spy();
+                                negotiatingEntrySpy = sinon.spy();
+                                state.listen('connected:exit', connectedExitSpy);
+                                state.listen('negotiating:entry', function () {
+                                    negotiatingEntrySpy();
+                                });
+                                state.dispatch("modify");
+                            });
+
+                            afterEach(function () {
+                                state.ignore('connected:exit', connectedExitSpy);
+                                state.ignore('negotiating:entry', negotiatingEntrySpy);
                             });
 
                             it("leads to 'negotiating'", function () {
@@ -278,28 +326,15 @@ describe("respoke.CallState", function () {
                             });
 
                             it("should report modifying", function () {
-                                expect(state.isModifying()).to.be.true;
+                                expect(state.isModifying()).to.equal(true);
                             });
 
-                        });
-
-                        describe("event 'modify'", function () {
-                            describe("the 'connected:exit' event", function () {
-                                it("should fire", function (done) {
-                                    state.listen('connected:exit', function () {
-                                        done();
-                                    });
-                                    state.dispatch("modify", call);
-                                });
+                            it("should fire the 'connected:exit' event", function () {
+                                expect(connectedExitSpy.called).to.equal(true);
                             });
 
-                            describe("the 'negotiating:entry' event", function () {
-                                it("should fire", function (done) {
-                                    state.listen('negotiating:entry', function () {
-                                        done();
-                                    });
-                                    state.dispatch("modify", call);
-                                });
+                            it("should fire the 'negotiating:entry' event", function () {
+                                expect(negotiatingEntrySpy.called).to.equal(true);
                             });
                         });
                     });
@@ -322,12 +357,6 @@ describe("respoke.CallState", function () {
                     }
                 };
                 state = respoke.CallState({call: call});
-
-                state.run({
-                    debug_off: function () {
-                        console.log.apply(console, arguments);
-                    }
-                });
             });
 
             it("reports the correct state name", function () {
@@ -335,7 +364,7 @@ describe("respoke.CallState", function () {
             });
 
             it("should not report modifying", function () {
-                expect(state.isModifying()).to.be.false;
+                expect(state.isModifying()).to.equal(false);
             });
 
             describe("event 'answer'", function () {
@@ -366,11 +395,11 @@ describe("respoke.CallState", function () {
                 });
 
                 it("should not report modifying", function () {
-                    expect(state.isModifying()).to.be.false;
+                    expect(state.isModifying()).to.equal(false);
                 });
 
                 it("should fire the 'negotiating:entry' event", function () {
-                    expect(negotiatingEntrySpy.called).to.be.true;
+                    expect(negotiatingEntrySpy.called).to.equal(true);
                 });
 
                 describe("when isMediaFlowing is false", function () {
@@ -378,7 +407,7 @@ describe("respoke.CallState", function () {
                         state.isMediaFlowing = false;
                     });
 
-                    describe("event 'finish'", function () {
+                    describe("event 'reject'", function () {
                         var negotiatingExitSpy;
                         var terminatedEntrySpy;
 
@@ -400,15 +429,15 @@ describe("respoke.CallState", function () {
                         });
 
                         it("should not report modifying", function () {
-                            expect(state.isModifying()).to.be.false;
+                            expect(state.isModifying()).to.equal(false);
                         });
 
                         it("should fire the 'negotiating:exit' event", function () {
-                            expect(negotiatingExitSpy.called).to.be.true;
+                            expect(negotiatingExitSpy.called).to.equal(true);
                         });
 
                         it("should fire the 'terminated:entry' event", function () {
-                            expect(terminatedEntrySpy.called).to.be.true;
+                            expect(terminatedEntrySpy.called).to.equal(true);
                         });
                     });
 
@@ -429,7 +458,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("fires 'approving-device-access:entry'", function () {
-                            expect(approvingDeviceAccessEntrySpy.called).to.be.true;
+                            expect(approvingDeviceAccessEntrySpy.called).to.equal(true);
                         });
 
                         describe("event 'approve'", function () {
@@ -450,7 +479,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("fires 'approving-content:entry'", function () {
-                                expect(approvingContentEntrySpy.called).to.be.true;
+                                expect(approvingContentEntrySpy.called).to.equal(true);
                             });
 
                             describe("event 'approve'", function () {
@@ -471,7 +500,39 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("fires 'connecting:entry'", function () {
-                                    expect(connectingEntrySpy.called).to.be.true;
+                                    expect(connectingEntrySpy.called).to.equal(true);
+                                });
+
+                                describe("event 'receiveMedia'", function () {
+                                    var connectedEntrySpy;
+
+                                    beforeEach(function () {
+                                        connectedEntrySpy = sinon.spy();
+                                        state.listen('connected:entry', connectedEntrySpy);
+                                        state.dispatch('receiveMedia');
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connected:entry', connectedEntrySpy);
+                                    });
+
+                                    it("moves to 'connected'", function () {
+                                        expect(state.currentState().name).to.equal('connected');
+                                    });
+
+                                    it("fires 'connected:entry'", function () {
+                                        expect(connectedEntrySpy.called).to.equal(true);
+                                    });
+                                });
+
+                                describe("event 'reject'", function () {
+                                    beforeEach(function () {
+                                        state.dispatch("reject", call);
+                                    });
+
+                                    it("leads to 'terminated'", function () {
+                                        expect(state.currentState().name).to.equal("terminated");
+                                    });
                                 });
                             });
 
@@ -521,11 +582,11 @@ describe("respoke.CallState", function () {
                         });
 
                         it("should not report modifying", function () {
-                            expect(state.isModifying()).to.be.false;
+                            expect(state.isModifying()).to.equal(false);
                         });
 
                         it("should fire the 'connected:entry' event", function () {
-                            expect(connectedEntrySpy.called).to.be.true;
+                            expect(connectedEntrySpy.called).to.equal(true);
                         });
 
                         describe("event 'modify'", function () {
@@ -538,28 +599,53 @@ describe("respoke.CallState", function () {
                             });
 
                             it("should report modifying", function () {
-                                expect(state.isModifying()).to.be.true;
+                                expect(state.isModifying()).to.equal(true);
                             });
 
+                            describe("event 'reject'", function () {
+                                beforeEach(function () {
+                                    state.dispatch("reject", call);
+                                });
+
+                                afterEach(function () {
+                                    state.ignore('connected:entry', connectedEntrySpy);
+                                });
+
+                                it("leads to 'connected'", function () {
+                                    expect(state.currentState().name).to.equal("connected");
+                                });
+
+                                it("should not report modifying", function () {
+                                    expect(state.isModifying()).to.equal(false);
+                                });
+                            });
                         });
 
                         describe("event 'modify'", function () {
-                            describe("the 'connected:exit' event", function () {
-                                it("should fire", function (done) {
-                                    state.listen('connected:exit', function () {
-                                        done();
-                                    });
-                                    state.dispatch("modify", call);
+                            var connectedExitSpy;
+                            var negotiatingEntrySpy;
+
+                            beforeEach(function () {
+                                connectedExitSpy = sinon.spy();
+                                negotiatingEntrySpy = sinon.spy();
+                                state.listen('connected:exit', connectedExitSpy);
+                                state.listen('negotiating:entry', function (evt) {
+                                    negotiatingEntrySpy();
                                 });
+                                state.dispatch("modify", call);
                             });
 
-                            describe("the 'negotiating:entry' event", function () {
-                                it("should fire", function (done) {
-                                    state.listen('negotiating:entry', function () {
-                                        done();
-                                    });
-                                    state.dispatch("modify", call);
-                                });
+                            afterEach(function () {
+                                state.ignore('connected:exit', connectedExitSpy);
+                                state.ignore('negotiating:entry', negotiatingEntrySpy);
+                            });
+
+                            it("should fire the 'connected:exit' event", function () {
+                                expect(connectedExitSpy.called).to.equal(true);
+                            });
+
+                            it("should fire the 'negotiating:entry' event", function () {
+                                expect(negotiatingEntrySpy.called).to.equal(true);
                             });
                         });
                     });

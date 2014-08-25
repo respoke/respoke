@@ -23,7 +23,10 @@ var Q = require('q');
 module.exports = function (params) {
     "use strict";
     params = params || {};
-    var that;
+    var fsm;
+    var that = respoke.EventEmitter(params);
+    that.className = 'respoke.CallState';
+
     var answerTimer;
     var answerTimeout = 1000;
     var connectionTimer;
@@ -37,14 +40,27 @@ module.exports = function (params) {
         }
     };
 
+    that.isMediaFlowing = false;
+
     function eventRedirect(evt) {
         that.fire.call(evt.name, evt);
     }
+    // Event
+    var rejectEvent = [setMediaFlowingEvent, {
+        target: 'connected',
+        guard: function () {
+            // we have any media flowing or data channel open
+            return (that.isMediaFlowing === true);
+        }
+    }, {
+        target: 'terminated',
+        guard: function () {
+            // we have no media flowing or data channel open
+            return (that.isMediaFlowing === false);
+        }
+    }];
 
-    params.that = Statechart;
     var stateParams = {
-        that: respoke.Class(params),
-        isMediaFlowing: false,
         initialState: 'idle',
         states: {
             // State
@@ -55,7 +71,7 @@ module.exports = function (params) {
                 },
                 // Event
                 initiate: [{
-                    target: 'negotiating',
+                    target: 'negotiatingContainer',
                     guard: function () {
                         return that.call.hasListeners('call');
                     }
@@ -67,72 +83,66 @@ module.exports = function (params) {
                 }]
             },
             // State
-            negotiating: {
-                // Event
-                entry: [setMediaFlowingEvent, {
-                    action: function () {
-                        that.fire('negotiating:entry');
-                    }
-                }],
-                // Event
-                exit: function () {
-                    that.fire('negotiating:exit');
-                },
-                // Event
-                reject: [setMediaFlowingEvent, {
-                    target: 'connected',
-                    guard: function () {
-                        // we have any media flowing or data channel open
-                        return (that.isMediaFlowing === true);
-                    }
-                }, {
-                    target: 'terminated',
-                    guard: function () {
-                        // we have no media flowing or data channel open
-                        return (that.isMediaFlowing === false);
-                    }
-                }],
-                // Event
-                answer: [{
-                    action: function () {
-                        clearTimeout(answerTimer);
-                    }
-                }, {
-                    target: 'approvingDeviceAccess',
-                    guard: function () {
-                        // TODO
-                        return (that.call.directConnectionOnly !== true);
-                    }
-                }, {
-                    target: 'approvingContent',
-                    guard: function () {
-                        if (that.mediaApproved || !that.call.previewLocalMedia) {
-                            return false;
-                        }
-                        return (that.call.directConnectionOnly === true);
-                    }
-                }],
-                // Event
-                receiveOffer: { // initial offer
-                    target: 'answering',
-                    guard: function () {
-                        return (that.call.caller === false);
-                    },
-                    action: function (signal) {
-                        savedOffer = signal;
-                    }
-                },
-                // Event
+            negotiatingContainer: {
+                init: "negotiating",
                 states: {
-                    // State
-                    answering: { // only callee
-                        entry: function () {
-                            answerTimer = setTimeout(function () {
-                                that.dispatch('reject');
-                            }, answerTimeout);
-                            that.fire('answering:entry');
+                    negotiating: {
+                        // Event
+                        entry: [setMediaFlowingEvent, {
+                            action: function () {
+                                that.fire('negotiating:entry');
+                            }
+                        }],
+                        // Event
+                        exit: function () {
+                            that.fire('negotiating:exit');
                         },
+                        // Event
+                        reject: rejectEvent,
+                        // Event
+                        answer: [{
+                            action: function () {
+                                clearTimeout(answerTimer);
+                            }
+                        }, {
+                            target: 'approvingDeviceAccess',
+                            guard: function () {
+                                // TODO
+                                return (that.call.directConnectionOnly !== true);
+                            }
+                        }, {
+                            target: 'approvingContent',
+                            guard: function () {
+                                if (that.mediaApproved || !that.call.previewLocalMedia) {
+                                    return false;
+                                }
+                                return (that.call.directConnectionOnly === true);
+                            }
+                        }],
+                        // Event
+                        receiveOffer: { // initial offer
+                            target: 'answering',
+                            guard: function () {
+                                return (that.call.caller === false);
+                            },
+                            action: function (signal) {
+                                savedOffer = signal;
+                            }
+                        },
+                    },
+                    // State
+                    answeringContainer: { // only callee
+                        init: 'answering',
+                        reject: rejectEvent,
                         states: {
+                            answering: {
+                                entry: function () {
+                                    answerTimer = setTimeout(function () {
+                                        that.dispatch('reject');
+                                    }, answerTimeout);
+                                    that.fire('answering:entry');
+                                },
+                            },
                             // State
                             approvingDeviceAccess: {
                                 // Event
@@ -160,7 +170,7 @@ module.exports = function (params) {
                                     guard: function () {
                                         // Why doesn't it call offering's entry event when exiting answering?
                                         // see spec/unit/client/call-state.spec.js
-                                        that.fire('offering:entry');
+                                        //that.fire('offering:entry');
                                         return that.call.caller === true;
                                     }
                                 }, {
@@ -168,7 +178,7 @@ module.exports = function (params) {
                                     guard: function () {
                                         // Why doesn't it call connecting's entry event when exiting answering?
                                         // see spec/unit/client/call-state.spec.js
-                                        that.fire('connecting:entry');
+                                        //that.fire('connecting:entry');
                                         return that.call.caller === false;
                                     }
                                 }]
@@ -176,79 +186,105 @@ module.exports = function (params) {
                         }
                     },
                     // State
-                    offering: {
-                        // Event
-                        entry: function () {
-                            // send offer
-                            // side effect: start sending ICE candidates
+                    offeringContainer: {
+                        init: 'offering',
+                        reject: rejectEvent,
+                        states: {
+                            offering: {
+                                // Event
+                                entry: function () {
+                                    that.fire('offering:entry');
 
-                            // start answer timer
-                            answerTimer = setTimeout(function () {
-                                that.dispatch('reject');
-                            }, answerTimeout);
-                        },
-                        // Event
-                        receiveAnswer: {
-                            target: 'connecting'
+                                    // start answer timer
+                                    answerTimer = setTimeout(function () {
+                                        that.dispatch('reject');
+                                    }, answerTimeout);
+                                },
+                                // Event
+                                receiveAnswer: {
+                                    target: 'connecting'
+                                }
+                            }
                         }
                     },
                     // State
-                    connecting: {
-                        // Event
-                        entry: function () {
-                            // set connection timer
-                            connectionTimer = setTimeout(function () {
-                                that.dispatch('reject');
-                            }, connectionTimeout);
-                            that.fire('connecting:entry');
-                        },
-                        // Event
-                        receiveMedia: {
-                            target: 'connected'
+                    connectingContainer: {
+                        init: 'connecting',
+                        reject: rejectEvent,
+                        states: {
+                            connecting: {
+                                // Event
+                                entry: function () {
+                                    that.fire('connecting:entry');
+
+                                    // set connection timer
+                                    connectionTimer = setTimeout(function () {
+                                        that.dispatch('reject');
+                                    }, connectionTimeout);
+                                },
+                                // Event
+                                receiveMedia: {
+                                    target: 'connected'
+                                }
+                            }
                         }
                     }
                 }
             },
             // State
-            connected: {
-                // Event
-                entry: function () {
-                    that.fire('connected:entry');
-                },
-                // Event
-                exit: function () {
-                    that.fire('connected:exit');
-                },
-                // Event
-                modify: { // modifying
-                    target: 'negotiating',
-                    action: function (signal) {
-                        savedOffer = signal;
+            connectedContainer: {
+                init: 'connected',
+                states: {
+                    connected: {
+                        // Event
+                        entry: function () {
+                            that.fire('connected:entry');
+                        },
+                        // Event
+                        exit: function () {
+                            that.fire('connected:exit');
+                        },
+                        // Event
+                        modify: { // modifying
+                            target: 'negotiatingContainer',
+                            action: function (signal) {
+                                savedOffer = signal;
+                            }
+                        }
                     }
                 }
             },
             // State
-            terminated: {
-                // Event
-                entry: [{
-                    action: function () {
-                        that.fire('terminated:entry');
-                        //that.ignore();
+            terminatedContainer: {
+                init: 'terminated',
+                states: {
+                    terminated: {
+                        // Event
+                        entry: [{
+                            action: function () {
+                                that.fire('terminated:entry');
+                                //that.ignore();
+                            }
+                        }, {
+                            guard: function () {
+                                // no signaling has been sent
+                            },
+                            action: function () {
+                                // send bye
+                            }
+                        }]
                     }
-                }, {
-                    guard: function () {
-                        // no signaling has been sent
-                    },
-                    action: function () {
-                        // send bye
-                    }
-                }]
+                }
             }
         }
     };
 
-    that = respoke.EventEmitter(stateParams);
-    that.className = 'respoke.CallState';
+    stateParams.that = Statechart;
+    fsm = respoke.Class(stateParams);
+    fsm.run();
+
+    that.currentState = fsm.currentState.bind(fsm);
+    that.dispatch = fsm.dispatch.bind(fsm);
 
     /**
      * Determine whether or not we are in the middle of a call modification.
@@ -269,7 +305,7 @@ module.exports = function (params) {
      */
     that.isState = function (name) {
         return (that.currentState() && that.currentState().name === name);
-    }
+    };
 
     return that;
 };
