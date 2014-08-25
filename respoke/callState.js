@@ -41,6 +41,16 @@ module.exports = function (params) {
     };
 
     that.isMediaFlowing = false;
+    that.hasMediaApproval = false;
+    that.hasMedia = false;
+
+    /**
+     * @memberof! respoke.Call
+     * @name client
+     * @private
+     * @type {respoke.getClient}
+     */
+    var client = respoke.getClient(params.instanceId);
 
     function eventRedirect(evt) {
         that.fire.call(evt.name, evt);
@@ -60,6 +70,15 @@ module.exports = function (params) {
         }
     }];
 
+    function needToObtainMedia(params) {
+        return (params.directConnectionOnly !== true && params.receiveOnly !== true);
+    }
+
+    function onlyNeedToApproveDirectConnection(params) {
+        return (typeof params.previewLocalMedia === 'function' && params.directConnectionOnly === true &&
+            params.receiveOnly !== true);
+    }
+
     var stateParams = {
         initialState: 'idle',
         states: {
@@ -73,12 +92,14 @@ module.exports = function (params) {
                 initiate: [{
                     target: 'negotiatingContainer',
                     guard: function () {
-                        return that.call.hasListeners('call');
+                        var has = client.hasListeners('call');
+                        console.log('has', has);
+                        return has;
                     }
                 }, {
                     target: 'terminated',
                     guard: function () {
-                        return !that.call.hasListeners('call');
+                        return !client.hasListeners('call');
                     }
                 }]
             },
@@ -91,6 +112,8 @@ module.exports = function (params) {
                         entry: [setMediaFlowingEvent, {
                             action: function () {
                                 that.fire('negotiating:entry');
+                                that.hasMediaApproval = false;
+                                that.hasMedia = false;
                             }
                         }],
                         // Event
@@ -101,22 +124,28 @@ module.exports = function (params) {
                         reject: rejectEvent,
                         // Event
                         answer: [{
-                            action: function () {
+                            action: function (params) {
                                 clearTimeout(answerTimer);
                             }
                         }, {
+                            // we are going to send media
                             target: 'approvingDeviceAccess',
-                            guard: function () {
-                                // TODO
-                                return (that.call.directConnectionOnly !== true);
-                            }
+                            guard: needToObtainMedia
                         }, {
+                            // we are sending a direct connection & developer wants to approve
                             target: 'approvingContent',
-                            guard: function () {
-                                if (that.mediaApproved || !that.call.previewLocalMedia) {
+                            guard: onlyNeedToApproveDirectConnection
+                        }, {
+                            // we are not sending anything or developer does not want to approve media.
+                            target: 'connecting',
+                            guard: function (params) {
+                                if (needToObtainMedia(params) || onlyNeedToApproveDirectConnection(params)) {
                                     return false;
                                 }
-                                return (that.call.directConnectionOnly === true);
+                                if (typeof params.previewLocalMedia !== 'function' || params.receiveOnly === true) {
+                                    that.call.approve();
+                                }
+                                return (params.receiveOnly === true);
                             }
                         }],
                         // Event
@@ -124,9 +153,6 @@ module.exports = function (params) {
                             target: 'answering',
                             guard: function () {
                                 return (that.call.caller === false);
-                            },
-                            action: function (signal) {
-                                savedOffer = signal;
                             }
                         },
                     },
@@ -150,9 +176,17 @@ module.exports = function (params) {
                                     that.fire('approving-device-access:entry');
                                 },
                                 // Event
-                                approve: {
-                                    target: 'approvingContent'
-                                }
+                                approve: [{
+                                    target: 'approvingContent',
+                                    guard: function () {
+                                        return (typeof params.previewLocalMedia === 'function');
+                                    }
+                                }, {
+                                    target: 'connecting',
+                                    guard: function () {
+                                        return (typeof params.previewLocalMedia !== 'function');
+                                    }
+                                }]
                             },
                             // State
                             approvingContent: {
@@ -165,21 +199,22 @@ module.exports = function (params) {
                                     that.fire('approving-content:exit');
                                 },
                                 // Event
+                                receiveMedia: {
+                                    that.hasMedia = true;
+                                },
+                                // Event
                                 approve: [{
+                                    that.hasMediaApproval = true;
+                                }, {
                                     target: 'offering',
                                     guard: function () {
-                                        // Why doesn't it call offering's entry event when exiting answering?
-                                        // see spec/unit/client/call-state.spec.js
-                                        //that.fire('offering:entry');
-                                        return that.call.caller === true;
+                                        return (that.call.caller === true && that.hasMediaApproval === true &&
+                                            that.hasMedia === true);
                                     }
                                 }, {
                                     target: 'connecting',
                                     guard: function () {
-                                        // Why doesn't it call connecting's entry event when exiting answering?
-                                        // see spec/unit/client/call-state.spec.js
-                                        //that.fire('connecting:entry');
-                                        return that.call.caller === false;
+                                        return (that.call.caller === false);
                                     }
                                 }]
                             }
@@ -245,11 +280,8 @@ module.exports = function (params) {
                             that.fire('connected:exit');
                         },
                         // Event
-                        modify: { // modifying
-                            target: 'negotiatingContainer',
-                            action: function (signal) {
-                                savedOffer = signal;
-                            }
+                        receiveOffer: { // modifying
+                            target: 'negotiatingContainer'
                         }
                     }
                 }
@@ -284,7 +316,17 @@ module.exports = function (params) {
     fsm.run();
 
     that.currentState = fsm.currentState.bind(fsm);
-    that.dispatch = fsm.dispatch.bind(fsm);
+    //that.dispatch = fsm.dispatch.bind(fsm);
+    that.dispatch = function (evt, args) {
+        console.log('dispatching', evt, 'from', fsm.currentState().name, args);
+        try {
+            fsm.dispatch(evt, args);
+        } catch (err) {
+            console.log('error dispatching event!', err);
+            throw err;
+        }
+        console.log('new state is', fsm.currentState().name);
+    };
 
     /**
      * Determine whether or not we are in the middle of a call modification.

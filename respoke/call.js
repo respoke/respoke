@@ -100,6 +100,18 @@ module.exports = function (params) {
     }
 
     /**
+     * Call state machine
+     * @memberof! respoke.Call
+     * @name state
+     * @private
+     * @type {respoke.CallState}
+     */
+    var state = window.callState = respoke.CallState({
+        instanceId: instanceId,
+        call: that
+    });
+
+    /**
      * Promise used to trigger actions dependant upon having received an offer.
      * @memberof! respoke.Call
      * @name defSDPOffer
@@ -355,18 +367,15 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('answer');
-
-            /**
-             * There are a few situations in which we need to call approve automatically. Approve is for previewing
-             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-             * previewLocalMedia callback to call, we will not wait for approval.
-             */
-            if (receiveOnly !== true && directConnectionOnly === null) {
+            state.once('approving-device-access:entry', function (evt) {
                 doAddVideo(params);
-            } else if (typeof previewLocalMedia !== 'function') {
-                that.approve();
-            }
+            });
+            state.dispatch('answer', {
+                call: that,
+                previewLocalMedia: previewLocalMedia,
+                directConnectionOnly: directConnectionOnly,
+                receiveOnly: receiveOnly
+            });
         }).done();
 
         if (that.caller !== true) {
@@ -378,6 +387,9 @@ module.exports = function (params) {
                 log.warn("Call rejected.");
             }).done();
         } else {
+            callState.once('offering:entry', function (evt) {
+                pc.initOffer();
+            });
             Q.all([defApproved.promise, defMedia.promise]).spread(function successHandler(approved, media) {
                 if (media) {
                     pc.initOffer();
@@ -604,6 +616,7 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('approve');
+        callState.dispatch('approve');
 
         defApproved.resolve(true);
         if (defModify && defModify.promise.isPending()) {
@@ -763,9 +776,11 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('allow');
+            callState.dispatch('approve');
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
+            callState.dispatch('receiveMedia');
             pc.addStream(evt.stream);
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
@@ -792,6 +807,7 @@ module.exports = function (params) {
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
             that.removeStream({id: stream.id});
+            callState.dispatch('reject');
             pc.report.callStoppedReason = message;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
@@ -1221,6 +1237,7 @@ module.exports = function (params) {
             that.fire('modify', info);
         }
         defSDPOffer.resolve(evt.signal);
+        callState.dispatch('receiveOffer');
     }
 
     /**
@@ -1485,6 +1502,7 @@ module.exports = function (params) {
         saveParameters(params);
         init();
         defInit.resolve();
+        state.dispatch('initiate', that);
     }).done(null, function (err) {
         // who cares
     });

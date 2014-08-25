@@ -15,6 +15,7 @@ describe("A respoke.EventEmitter", function () {
         expect(typeof eventEmitter.listen).to.equal('function');
         expect(typeof eventEmitter.ignore).to.equal('function');
         expect(typeof eventEmitter.fire).to.equal('function');
+        expect(typeof eventEmitter.once).to.equal('function');
     });
 
     it("saves unexpected developer-specified parameters.", function () {
@@ -114,6 +115,35 @@ describe("A respoke.EventEmitter", function () {
             expect(results[4]).to.equal(0);
             expect(results[5]).to.equal(0);
             expect(results[6]).to.equal(0);
+        });
+    });
+
+    describe("the 'once' method", function () {
+        var listener;
+
+        beforeEach(function () {
+            listener = sinon.spy();
+            eventEmitter.once('onceTest', listener);
+            eventEmitter.fire('onceTest');
+            eventEmitter.fire('onceTest');
+            eventEmitter.fire('onceTest');
+        });
+
+        it("fires the method only once", function () {
+            expect(listener.called).to.equal(true);
+            expect(listener.callCount).to.equal(1);
+        });
+
+        it("removes the listener after it fires", function (done) {
+            setTimeout(function () {
+                var has = eventEmitter.hasListeners('onceTest');
+                try {
+                    expect(has).to.equal(false);
+                    done();
+                } catch (err) {
+                    done(err);
+                }
+            }, 2);
         });
     });
 });

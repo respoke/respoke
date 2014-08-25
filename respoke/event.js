@@ -36,6 +36,37 @@ var EventEmitter = module.exports = function (params) {
      */
     var eventList = {};
 
+    function limitOnce(listener) {
+        var onceListener = (function () {
+            var called = false;
+            return function(evt) {
+                if (called === false) {
+                    listener(evt);
+                    called = true;
+                }
+            }
+        }());
+        onceListener.once = true;
+        return onceListener;
+    }
+
+    /**
+     * Add a listener that will only be called once to an object.  This method adds the given listener to the given
+     * event in the case that the same
+     * listener is not already registered to this event and the listener is a function.  The third argument 'isInternal'
+     * is used only internally by the library to indicate that this listener is a library-used listener and should not
+     * count when we are trying to determine if an event has listeners placed by the developer.
+     * @memberof! respoke.EventEmitter
+     * @method respoke.EventEmitter.listen
+     * @param {string} eventType - A developer-specified string identifying the event.
+     * @param {respoke.EventEmitter.eventListener} listener - A function to call when the event is fire.
+     * @param {boolean} [isInternal] - A flag to indicate this listener was added by the library. This parameter should
+     * not be used by developers who are using the library, only by developers who are working on the library itself.
+     */
+    that.once = function (eventType, listener, isInternal) {
+        that.listen(eventType, limitOnce(listener), isInternal);
+    };
+
     /**
      * Add a listener to an object.  This method adds the given listener to the given event in the case that the same
      * listener is not already registered to this even and the listener is a function.  The third argument 'isInternal'
@@ -112,6 +143,7 @@ var EventEmitter = module.exports = function (params) {
     that.fire = function (eventType, evt) {
         var args = null;
         var count = 0;
+        var onces = [];
 
         if (!eventType) {
             return;
@@ -121,16 +153,20 @@ var EventEmitter = module.exports = function (params) {
         evt = evt || {};
         evt.name = eventType;
         evt.target = that;
-        eventList[eventType].forEach(function fireListener(listener) {
+        for (var i = eventList[eventType].length; i > -1; i -= 1) {
+            var listener = eventList[eventType][i];
             if (typeof listener === 'function') {
                 try {
                     listener.call(that, evt);
                     count += 1;
+                    if (listener.once) {
+                        eventList[eventType].splice(i, 1);
+                    }
                 } catch (e) {
                     log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
                 }
             }
-        });
+        };
         //console.log("firing", that.className, eventType);
         log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };

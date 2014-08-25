@@ -14,7 +14,7 @@ module.exports = function(config) {
           'node_modules/sinon/pkg/sinon.js',
           'respoke.min.js',
           'respoke-stats.min.js',
-          'spec/unit/client/call-state.spec.js'
+          'spec/unit/client/call-state.spec.js',
           //'spec/unit/client/*.js'
         ],
 

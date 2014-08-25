@@ -66,7 +66,7 @@ describe("respoke.CallState", function () {
                 beforeEach(function () {
                     negotiatingEntrySpy = sinon.spy();
                     state.listen('negotiating:entry', negotiatingEntrySpy);
-                    state.dispatch("initiate", call);
+                    state.dispatch("initiate");
                 });
 
                 afterEach(function () {
@@ -129,7 +129,12 @@ describe("respoke.CallState", function () {
 
                         beforeEach(function () {
                             state.listen('approving-device-access:entry', approvingDeviceAccessEntrySpy);
-                            state.dispatch('answer');
+                            state.dispatch('answer', {
+                                call: call,
+                                previewLocalMedia: function () {},
+                                directConnectionOnly: false,
+                                receiveOnly: false
+                            });
                         });
 
                         afterEach(function () {
@@ -369,7 +374,12 @@ describe("respoke.CallState", function () {
 
             describe("event 'answer'", function () {
                 beforeEach(function () {
-                    state.dispatch('answer', {something: true});
+                    state.dispatch('answer', {
+                        call: call,
+                        previewLocalMedia: function () {},
+                        directConnectionOnly: false,
+                        receiveOnly: false
+                    });
                 });
 
                 it("doesn't transition", function () {
@@ -446,7 +456,12 @@ describe("respoke.CallState", function () {
 
                         beforeEach(function () {
                             state.listen('approving-device-access:entry', approvingDeviceAccessEntrySpy);
-                            state.dispatch('answer');
+                            state.dispatch('answer', {
+                                call: call,
+                                previewLocalMedia: function () {},
+                                directConnectionOnly: false,
+                                receiveOnly: false
+                            });
                         });
 
                         afterEach(function () {
