@@ -1,5 +1,6 @@
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
+
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
  * @ignore
@@ -55,6 +56,7 @@ if (!window.skipBugsnag) {
     var airbrake = document.createElement('script');
     var first = document.getElementsByTagName('script')[0];
     first.parentNode.insertBefore(airbrake, first);
+<<<<<<< HEAD
 
     airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
     airbrake.setAttribute('defer', 'defer');
@@ -62,6 +64,15 @@ if (!window.skipBugsnag) {
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
+=======
+
+    airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
+    airbrake.setAttribute('defer', 'defer');
+    airbrake.setAttribute('data-airbrake-project-id', '98133');
+    airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
+    airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
+
+>>>>>>> c248e95b257a4cb3be11ea59e4ee6b7e505e6c64
     window.onerror = function(message, file, line) {
         //Only send errors from the respoke.js file to Airbrake
         if (file.match(/respoke/)) {
