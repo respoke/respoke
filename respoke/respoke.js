@@ -1,8 +1,14 @@
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
+
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
  * @ignore
+ *
+ * Copyright (c) 2014 Digium, Inc.
+ * All Rights Reserved. Licensed Software.
+ * @private
+ * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
 var log = require('loglevel');
@@ -46,16 +52,33 @@ respoke.log = log;
 respoke.Q = Q;
 
 if (!window.skipBugsnag) {
-    // Use bugsnag.
-    var bugsnag = document.createElement('script');
+    // Use airbrake.
+    var airbrake = document.createElement('script');
     var first = document.getElementsByTagName('script')[0];
-    first.parentNode.insertBefore(bugsnag, first);
+    first.parentNode.insertBefore(airbrake, first);
+<<<<<<< HEAD
 
-    bugsnag.onload = function () {
-        "use strict";
-        Bugsnag.apiKey = 'dd002244e1682c1c4d8041920207467f';
-    };
-    bugsnag.src = 'https://d2wy8f7a9ursnm.cloudfront.net/bugsnag-2.min.js';
+    airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
+    airbrake.setAttribute('defer', 'defer');
+    airbrake.setAttribute('data-airbrake-project-id', '98133');
+    airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
+    airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
+
+=======
+
+    airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
+    airbrake.setAttribute('defer', 'defer');
+    airbrake.setAttribute('data-airbrake-project-id', '98133');
+    airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
+    airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
+
+>>>>>>> c248e95b257a4cb3be11ea59e4ee6b7e505e6c64
+    window.onerror = function(message, file, line) {
+        //Only send errors from the respoke.js file to Airbrake
+        if (file.match(/respoke/)) {
+            Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
+        }
+    }
 }
 
 /**
