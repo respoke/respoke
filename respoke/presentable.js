@@ -6,11 +6,13 @@
 var respoke = require('./respoke');
 
 /**
- * The purpose of the class is so that Client and Endpoint can share the same presence.
+ * The purpose of the class is to allow multiple types of entities to expose presence functionality.
+ * 
+ * Setting the presence on a client is provided via `respoke.Client.setPresence()`.
+ * 
  * @class respoke.Presentable
  * @constructor
  * @augments respoke.EventEmitter
- * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {string} params.id
@@ -38,9 +40,13 @@ module.exports = function (params) {
     /**
      * Represents the presence status. Typically a string, but other types are supported.
      * Defaults to `'unavailable'`.
+     * 
+     * **Do not modify this directly** - it won't update presence with Respoke. Use `setPresence()`.
+     * 
      * @memberof! respoke.Presentable
      * @name presence
      * @type {string|number|object|Array}
+     * @private
      */
     that.presence = 'unavailable';
 
@@ -53,7 +59,8 @@ module.exports = function (params) {
     var client = respoke.getClient(instanceId);
 
     /**
-     * Set the presence on the object and the session
+     * Set the presence on the object for this session.
+     * 
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.setPresence
      * @param {object} params
@@ -102,7 +109,12 @@ module.exports = function (params) {
     };
 
     /**
-     * Get the presence.
+     * Get the presence of a Presentable instance.
+     * 
+     *      var billy = client.getEndpoint({ id: "billychia" });
+     *      var pres = billy.getPresence();
+     *      console.log('Billy is', pres); // "Billy is available"
+     * 
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.getPresence
      * @returns {string|number|object|Array} the current presence of this endpoint.

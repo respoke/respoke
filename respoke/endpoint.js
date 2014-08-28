@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
 
 var log = require('loglevel');
@@ -8,15 +8,19 @@ var Q = require('q');
 var respoke = require('./respoke');
 
 /**
- * Represents remote Endpoints. Endpoints are users of this application that are not the one logged into this
- * instance of the application. An Endpoint could be logged in from multiple other instances of this app, each of
- * which is represented by a Connection. The client can interact with endpoints by calling them or
- * sending them messages. An endpoint can be a person using an app from a browser or a script using the APIs on
- * a server.
+ * `respoke.Endpoint`s are users of a Respoke app.
+ * 
+ * An Endpoint can be a person in a browser or device, or an app using Respoke APIs from a server.
+ * 
+ * A Client can interact with endpoints through messages, audio or video calls, or direct connections.
+ * 
+ * An Endpoint may be authenticated from multiple devices to the same app (each of
+ * which is represented by a Connection).
+ * 
+ * 
  * @constructor
  * @class respoke.Endpoint
  * @augments respoke.Presentable
- * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
