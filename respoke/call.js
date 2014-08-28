@@ -1474,7 +1474,7 @@ module.exports = function (params) {
         });
     }, true);
 
-    signalingChannel.getTurnCredentials().fin(function (result) {
+    signalingChannel.getTurnCredentials().then(function (result) {
         if (!result) {
             log.warn("Relay service not available.");
             callSettings.servers = {
