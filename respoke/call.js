@@ -315,7 +315,10 @@ module.exports = function (params) {
             ]
         },
         offerOptions: params.offerOptions || null,
-        signalOffer: params.signalOffer,
+        signalOffer: function (args) {
+            params.signalOffer(args);
+            callState.dispatch('sentOffer');
+        },
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
         signalModify: params.signalModify,
@@ -371,42 +374,16 @@ module.exports = function (params) {
                 doAddVideo(params);
             });
             state.dispatch('answer', {
-                call: that,
                 previewLocalMedia: previewLocalMedia,
                 directConnectionOnly: directConnectionOnly,
+                approve: that.approve,
                 receiveOnly: receiveOnly
             });
         }).done();
 
-        if (that.caller !== true) {
-            Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
-                if (pc && oOffer && oOffer.sessionDescription) {
-                    pc.processOffer(oOffer.sessionDescription);
-                }
-            }, function errorHandler(err) {
-                log.warn("Call rejected.");
-            }).done();
-        } else {
+        if (that.caller === true) {
             callState.once('offering:entry', function (evt) {
                 pc.initOffer();
-            });
-            Q.all([defApproved.promise, defMedia.promise]).spread(function successHandler(approved, media) {
-                if (media) {
-                    pc.initOffer();
-                }
-            }, function errorHandler(err) {
-                var message = "Call not approved locally or local media error.";
-                /**
-                 * This event is fired on errors that occur during call setup or media negotiation.
-                 * @event respoke.Call#error
-                 * @type {respoke.Event}
-                 * @property {string} reason - A human readable description about the error.
-                 * @property {respoke.Call} target
-                 * @property {string} name - the event name.
-                 */
-                that.fire('error', {
-                    reason: message
-                });
             });
             that.answer();
         }
@@ -616,7 +593,10 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('approve');
-        callState.dispatch('approve');
+        callState.dispatch('approve', {
+            caller: that.caller,
+            previewLocalMedia: previewLocalMedia
+        });
 
         defApproved.resolve(true);
         if (defModify && defModify.promise.isPending()) {
@@ -666,6 +646,7 @@ module.exports = function (params) {
          * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
+        callState.dispatch('receiveRemoteMedia');
         that.fire('connect', {
             stream: evt.stream,
             element: videoRemoteElement
@@ -776,11 +757,16 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('allow');
-            callState.dispatch('approve');
+            callState.dispatch('approve', {
+                caller: that.caller,
+                previewLocalMedia: previewLocalMedia
+            });
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
-            callState.dispatch('receiveMedia');
+            callState.dispatch('receiveLocalMedia', {
+                caller: that.caller
+            });
             pc.addStream(evt.stream);
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
@@ -799,10 +785,6 @@ module.exports = function (params) {
                 element: evt.element,
                 stream: stream
             });
-
-            if (typeof previewLocalMedia !== 'function') {
-                that.approve();
-            }
         }, true);
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
@@ -1211,6 +1193,11 @@ module.exports = function (params) {
     function listenOffer(evt) {
         log.debug('listenOffer');
         var info = {};
+        if (that.caller !== true) {
+            state.listen('connecting:entry', function () {
+                pc.processOffer(evt.signal.sessionDescription);
+            });
+        }
         if (defModify && defModify.promise.isPending()) {
             if (directConnectionOnly === true) {
                 info.directConnection = directConnection;
@@ -1237,7 +1224,6 @@ module.exports = function (params) {
             that.fire('modify', info);
         }
         defSDPOffer.resolve(evt.signal);
-        callState.dispatch('receiveOffer');
     }
 
     /**
@@ -1479,6 +1465,9 @@ module.exports = function (params) {
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
+    pc.listen('receive-answer', function () {
+        callState.dispatch('receiveAnswer');
+    }, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {
         if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
             return;
@@ -1502,7 +1491,7 @@ module.exports = function (params) {
         saveParameters(params);
         init();
         defInit.resolve();
-        state.dispatch('initiate', that);
+        state.dispatch('initiate', {client: client});
     }).done(null, function (err) {
         // who cares
     });

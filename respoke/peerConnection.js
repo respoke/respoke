@@ -486,7 +486,7 @@ module.exports = function (params) {
         }
 
         that.report.callStarted = new Date().getTime();
-        pc = new RTCPeerConnection(callSettings.servers, pcOptions);
+        window.pc = pc = new RTCPeerConnection(callSettings.servers, pcOptions);
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
@@ -812,6 +812,7 @@ module.exports = function (params) {
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
                 defSDPAnswer.resolve(evt.signal.sessionDescription);
+                that.fire('receive-answer');
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
