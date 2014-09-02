@@ -675,6 +675,9 @@ module.exports = function (params) {
         params = params || {};
         var deferred = Q.defer();
         var signal;
+        var to;
+        var toConnection;
+        var toType;
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -687,6 +690,10 @@ module.exports = function (params) {
                 params.connectionId = params.call.connectionId;
             }
         }
+
+        to = params.recipient.id;
+        toConnection = params.connectionId;
+        toType = params.toType || 'web';
 
         try {
             params.signalId = respoke.makeGUID();
@@ -702,8 +709,9 @@ module.exports = function (params) {
             httpMethod: 'POST',
             parameters: {
                 signal: JSON.stringify(signal),
-                to: signal.to,
-                toConnection: signal.toConnection
+                to: to,
+                toConnection: toConnection,
+                toType: toType
             }
         }).done(function successHandler() {
             deferred.resolve();
