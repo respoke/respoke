@@ -66,11 +66,19 @@ require('./deps/adapter');
  *
  *      // connect to respoke with the token
  *      client.connect({
- *          token: tokenId,
- *          reconnect: false
+ *          reconnect: false,
+ *          token: tokenId
  *      });
  *
- * 
+ *      // fetch a new token from your server if it expires
+ *      client.listen('disconnect', function (evt) {
+ *          // fetch another token from your server.
+ *          var newTokenId = "XXXX-XXXX-brokered-auth-token2-XXXXX";
+ *          client.connect({
+ *              reconnect: false,
+ *              token: newTokenId
+ *          });
+ *      });
  * 
  * ---
  *
