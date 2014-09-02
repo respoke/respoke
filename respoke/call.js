@@ -339,14 +339,14 @@ module.exports = function (params) {
          * @private
          */
         state.listen('preparing:entry', function (evt) {
-            if (that.caller === true) {
-                that.answer();
-            }
-
             client.fire('call', {
                 endpoint: that.remoteEndpoint,
                 call: that
             });
+
+            if (that.caller === true) {
+                that.answer();
+            }
         });
     }
 
@@ -717,10 +717,10 @@ module.exports = function (params) {
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
+            pc.addStream(evt.stream);
             state.dispatch('receiveLocalMedia', {
                 caller: that.caller
             });
-            pc.addStream(evt.stream);
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);

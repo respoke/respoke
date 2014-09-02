@@ -115,6 +115,7 @@ module.exports = function (params) {
                 initiate: [{
                     target: 'negotiatingContainer',
                     guard: function (params) {
+                        assert(params.client !== undefined);
                         return params.client.hasListeners('call');
                     }
                 }, {
