@@ -204,7 +204,7 @@ module.exports = function (params) {
                  * This event is fired when a member leaves a group the client is a member of.
                  * @event respoke.Group#leave
                  * @type {respoke.Event}
-                 * @property {respoke.Connection} connection - The connection which left the group.
+                 * @property {respoke.Connection} connection - The connection that left the group.
                  * @property {string} name - The event name.
                  * @property {respoke.Group} target
                  */

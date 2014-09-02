@@ -32,7 +32,8 @@ require('./deps/adapter');
  * 
  *      var client = respoke.createClient({
  *          appId: "XXXXXXX-my-app-id-XXXXXX",
- *          developmentMode: true
+ *          developmentMode: true,
+ *          endpointId: "billy"
  *      });
  *      
  *      client.listen('connect', function () {
@@ -65,7 +66,8 @@ require('./deps/adapter');
  *
  *      // connect to respoke with the token
  *      client.connect({
- *          token: tokenId
+ *          token: tokenId,
+ *          reconnect: false
  *      });
  *
  * 
@@ -88,7 +90,8 @@ require('./deps/adapter');
  * **Attaching callback handlers**
  *
  *      var client = respoke.createClient({
- *          . . .
+ *          // other options go here
+ *          
  *          onConnect: function () { }
  *      });
  * 

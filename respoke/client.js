@@ -25,7 +25,11 @@ var respoke = require('./respoke');
  * 1. tracks connections and presence
  * 1. provides methods to get and interact with tracked entities (like groups and endpoints)
  * 1. stores default settings for calls and direct connections 
- * 1. automatically reconnects to the API when network activity is lost
+ * 1. automatically reconnects to the API when network activity is lost*
+ *
+ * *If `developmentMode` is set to true. If not using `developmentMode`, disable automatic 
+ * reconnect by sending `reconnect: false` and listening to the Client's disconnect event 
+ * to fetch a new brokered auth token, then call `client.connect()` with the new token.
  * 
  * @class respoke.Client
  * @constructor
@@ -231,22 +235,42 @@ module.exports = function (params) {
      * 
      * This method attaches quite a few event listeners for things like group joining and connection status changes.
      * 
-     * #### Development mode
+     * #### Usage
+     *
+     *      client.connect({
+     *          appId: "XXXX-XXX-XX-XXXX",
+     *          token: "XXXX-XXX-XX-XXXX", // if not developmentMode
+     *          developmentMode: false || true
+     *          // if developmentMode, otherwise your server will set endpointId
+     *          endpointId: "billy"
+     *      });
+     *      client.listen("connect", function () { } );
+     * 
      * 
      * If no `params.token` is given and `developmentMode` is set to true, it will attempt to obtain a token
-     * automatically. 
+     * automatically. You must set an `endpointId`.
      * 
      * 
-     * #### Token expiration
+     * #### App auth session token expiration
      * 
-     * If `params.reconnect` is set to true (which it is by default), the `client` will attempt to 
-     * keep reconnecting each time the app auth session expires.
+     * If `params.reconnect` is set to true (which it is by default for `developmentMode`), the `client`
+     * will attempt to keep reconnecting each time the app auth session expires.
      * 
-     * #### TURN
+     * If not using `developmentMode`, disable automatic reconnect by sending `reconnect: false`. 
+     * Then listen to the Client's disconnect event to fetch a new brokered auth token and call 
+     * `client.connect()` with the new token.
      * 
-     * TURN credentials are automatically retrieved after `"connect"` and stored internally for later use.
+     *      client.listen('disconnect', function () {
+     *
+     *          // example method you implemented to get a new token from your server
+     *          myServer.getNewRespokeAccessToken(function (newToken) {
+     *              // reconnect with respoke.Client
+     *              client.connect({ token: newToken });
+     *          });
+     *
+     *      });
      * 
-     * **Using callbacks** will disable promises.
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.connect
      * @param {object} params
