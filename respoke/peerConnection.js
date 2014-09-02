@@ -554,6 +554,7 @@ module.exports = function (params) {
             });
             return;
         }
+        console.log("***** added local video to the peer connection");
         pc.addStream(stream);
     };
 
@@ -566,11 +567,13 @@ module.exports = function (params) {
      */
     function onIceCandidate(oCan) {
         var candidate = oCan.candidate; // {candidate: ..., sdpMLineIndex: ... }
+        console.log('onIceCandidate', candidate);
         if (!candidate || !candidate.candidate) {
             return;
         }
 
         if (forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
+            log.debug("Dropping candidate because forceTurn is on.");
             return;
         }
 

@@ -489,9 +489,6 @@ module.exports = function (params) {
             }
         }, true);
 
-        if (params.caller === true) {
-            call.answer(params);
-        }
         return retVal;
     };
 

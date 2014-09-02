@@ -7,6 +7,7 @@ describe("respoke.CallState", function () {
     var state;
     var params = {
         caller: true,
+        receiveOnly: false,
         directConnectionOnly: false,
         previewLocalMedia: function () {},
         approve: function () {}
@@ -46,6 +47,7 @@ describe("respoke.CallState", function () {
                     caller: true,
                     directConnectionOnly: false,
                     previewLocalMedia: function () {},
+                    receiveOnly: false,
                     approve: function () {}
                 };
                 state = respoke.CallState();
@@ -57,6 +59,34 @@ describe("respoke.CallState", function () {
 
             it("should not report modifying", function () {
                 expect(state.isModifying()).to.equal(false);
+            });
+
+            describe('invalid event', function () {
+                var invalidEvents = [
+                    'answer',
+                    'receiveLocalMedia',
+                    'approve',
+                    'sentOffer',
+                    'accept',
+                    'receiveRemoteMedia',
+                    'receiveAnswer',
+                    'modify'
+                ];
+
+                invalidEvents.forEach(function (evt) {
+                    describe("event " + evt, function () {
+                        var currentState;
+
+                        beforeEach(function () {
+                            currentState = state.currentState().name;
+                            state.dispatch(evt);
+                        });
+
+                        it("invalid event " + evt + " doesn't move to a new state", function () {
+                            expect(state.currentState().name).to.equal(currentState);
+                        });
+                    });
+                });
             });
 
             describe("event 'initiate'", function () {
@@ -94,6 +124,34 @@ describe("respoke.CallState", function () {
                             state.isMediaFlowing = false;
                         });
 
+                        describe('invalid event', function () {
+                            var invalidEvents = [
+                                'initiate',
+                                'receiveLocalMedia',
+                                'approve',
+                                'sentOffer',
+                                'receiveRemoteMedia',
+                                'accept',
+                                'receiveAnswer',
+                                'modify'
+                            ];
+
+                            invalidEvents.forEach(function (evt) {
+                                describe("event " + evt, function () {
+                                    var currentState;
+
+                                    beforeEach(function () {
+                                        currentState = state.currentState().name;
+                                        state.dispatch(evt);
+                                    });
+
+                                    it("doesn't move to a new state", function () {
+                                        expect(state.currentState().name).to.equal(currentState);
+                                    });
+                                });
+                            });
+                        });
+
                         describe("event 'reject'", function () {
                             var preparingExitSpy;
                             var terminatedEntrySpy;
@@ -126,6 +184,36 @@ describe("respoke.CallState", function () {
                             it("should fire the 'terminated:entry' event", function () {
                                 expect(terminatedEntrySpy.called).to.equal(true);
                             });
+
+                            describe('invalid event', function () {
+                                var invalidEvents = [
+                                    'initiate',
+                                    'reject',
+                                    'answer',
+                                    'receiveLocalMedia',
+                                    'accept',
+                                    'approve',
+                                    'sentOffer',
+                                    'receiveRemoteMedia',
+                                    'receiveAnswer',
+                                    'modify'
+                                ];
+
+                                invalidEvents.forEach(function (evt) {
+                                    describe("event " + evt, function () {
+                                        var currentState;
+
+                                        beforeEach(function () {
+                                            currentState = state.currentState().name;
+                                            state.dispatch(evt);
+                                        });
+
+                                        it("doesn't move to a new state", function () {
+                                            expect(state.currentState().name).to.equal(currentState);
+                                        });
+                                    });
+                                });
+                            });
                         });
 
                         describe("event 'answer'", function () {
@@ -148,6 +236,34 @@ describe("respoke.CallState", function () {
                                 expect(approvingDeviceAccessEntrySpy.called).to.equal(true);
                             });
 
+                            describe('invalid event', function () {
+                                var invalidEvents = [
+                                    'initiate',
+                                    'answer',
+                                    'receiveLocalMedia',
+                                    'sentOffer',
+                                    'accept',
+                                    'receiveRemoteMedia',
+                                    'receiveAnswer',
+                                    'modify'
+                                ];
+
+                                invalidEvents.forEach(function (evt) {
+                                    describe("event " + evt, function () {
+                                        var currentState;
+
+                                        beforeEach(function () {
+                                            currentState = state.currentState().name;
+                                            state.dispatch(evt, params || {});
+                                        });
+
+                                        it("doesn't move to a new state", function () {
+                                            expect(state.currentState().name).to.equal(currentState);
+                                        });
+                                    });
+                                });
+                            });
+
                             describe("event 'approve'", function () {
                                 var approvingContentEntrySpy;
 
@@ -167,6 +283,34 @@ describe("respoke.CallState", function () {
 
                                 it("fires 'approving-content:entry'", function () {
                                     expect(approvingContentEntrySpy.called).to.equal(true);
+                                });
+
+                                describe('invalid event', function () {
+                                    var invalidEvents = [
+                                        'initiate',
+                                        'answer',
+                                        'receiveLocalMedia',
+                                        'sentOffer',
+                                        'receiveRemoteMedia',
+                                        'receiveAnswer',
+                                        'accept',
+                                        'modify'
+                                    ];
+
+                                    invalidEvents.forEach(function (evt) {
+                                        describe("event " + evt, function () {
+                                            var currentState;
+
+                                            beforeEach(function () {
+                                                currentState = state.currentState().name;
+                                                state.dispatch(evt, params || {});
+                                            });
+
+                                            it("doesn't move to a new state", function () {
+                                                expect(state.currentState().name).to.equal(currentState);
+                                            });
+                                        });
+                                    });
                                 });
 
                                 describe("event 'approve'", function () {
@@ -210,6 +354,32 @@ describe("respoke.CallState", function () {
                                             expect(offeringEntrySpy.called).to.equal(true);
                                         });
 
+                                        describe('invalid event', function () {
+                                            var invalidEvents = [
+                                                'initiate',
+                                                'answer',
+                                                'approve',
+                                                'accept',
+                                                'sentOffer',
+                                                'modify'
+                                            ];
+
+                                            invalidEvents.forEach(function (evt) {
+                                                describe("event " + evt, function () {
+                                                    var currentState;
+
+                                                    beforeEach(function () {
+                                                        currentState = state.currentState().name;
+                                                        state.dispatch(evt, params || {});
+                                                    });
+
+                                                    it("doesn't move to a new state", function () {
+                                                        expect(state.currentState().name).to.equal(currentState);
+                                                    });
+                                                });
+                                            });
+                                        });
+
                                         describe("event 'receiveLocalMedia'", function () {
                                             beforeEach(function () {
                                                 state.hasLocalMedia = false;
@@ -247,6 +417,34 @@ describe("respoke.CallState", function () {
                                                 expect(connectingEntrySpy.called).to.equal(true);
                                             });
 
+                                            describe('invalid event', function () {
+                                                var invalidEvents = [
+                                                    'initiate',
+                                                    'answer',
+                                                    'receiveLocalMedia',
+                                                    'approve',
+                                                    'sentOffer',
+                                                    'accept',
+                                                    'receiveAnswer',
+                                                    'modify'
+                                                ];
+
+                                                invalidEvents.forEach(function (evt) {
+                                                    describe("event " + evt, function () {
+                                                        var currentState;
+
+                                                        beforeEach(function () {
+                                                            currentState = state.currentState().name;
+                                                            state.dispatch(evt, params || {});
+                                                        });
+
+                                                        it("doesn't move to a new state", function () {
+                                                            expect(state.currentState().name).to.equal(currentState);
+                                                        });
+                                                    });
+                                                });
+                                            });
+
                                             describe("event 'receiveRemoteMedia'", function () {
                                                 var connectedEntrySpy;
 
@@ -262,6 +460,38 @@ describe("respoke.CallState", function () {
 
                                                 it("fires the 'connected:entry' event", function () {
                                                     expect(connectedEntrySpy.called).to.equal(true);
+                                                });
+
+                                                xdescribe('event modify', function () {
+                                                    it('needs to be tested', function () {});
+                                                });
+
+                                                describe('invalid event', function () {
+                                                    var invalidEvents = [
+                                                        'initiate',
+                                                        'answer',
+                                                        'receiveLocalMedia',
+                                                        'approve',
+                                                        'sentOffer',
+                                                        'accept',
+                                                        'receiveRemoteMedia',
+                                                        'receiveAnswer',
+                                                    ];
+
+                                                    invalidEvents.forEach(function (evt) {
+                                                        describe("event " + evt, function () {
+                                                            var currentState;
+
+                                                            beforeEach(function () {
+                                                                currentState = state.currentState().name;
+                                                                state.dispatch(evt, params || {});
+                                                            });
+
+                                                            it("doesn't move to a new state", function () {
+                                                                expect(state.currentState().name).to.equal(currentState);
+                                                            });
+                                                        });
+                                                    });
                                                 });
                                             });
                                         });
@@ -424,6 +654,34 @@ describe("respoke.CallState", function () {
                                 it("should fire the 'modifying:entry' event", function () {
                                     expect(modifyingEntrySpy.called).to.equal(true);
                                 });
+
+                                describe('invalid event', function () {
+                                    var invalidEvents = [
+                                        'initiate',
+                                        'answer',
+                                        'receiveLocalMedia',
+                                        'approve',
+                                        'sentOffer',
+                                        'receiveRemoteMedia',
+                                        'receiveAnswer',
+                                        'modify'
+                                    ];
+
+                                    invalidEvents.forEach(function (evt) {
+                                        describe("event " + evt, function () {
+                                            var currentState;
+
+                                            beforeEach(function () {
+                                                currentState = state.currentState().name;
+                                                state.dispatch(evt, params || {});
+                                            });
+
+                                            it("doesn't move to a new state", function () {
+                                                expect(state.currentState().name).to.equal(currentState);
+                                            });
+                                        });
+                                    });
+                                });
                             });
                         });
                     });
@@ -469,6 +727,7 @@ describe("respoke.CallState", function () {
             beforeEach(function () {
                 params = {
                     caller: false,
+                    receiveOnly: false,
                     directConnectionOnly: false,
                     previewLocalMedia: function () {},
                     approve: function () {}
@@ -484,13 +743,32 @@ describe("respoke.CallState", function () {
                 expect(state.isModifying()).to.equal(false);
             });
 
-            describe("event 'answer'", function () {
-                beforeEach(function () {
-                    state.dispatch('answer', params);
-                });
+            describe('invalid event', function () {
+                var invalidEvents = [
+                    'reject',
+                    'receiveLocalMedia',
+                    'approve',
+                    'answer',
+                    'accept',
+                    'sentOffer',
+                    'receiveRemoteMedia',
+                    'receiveAnswer',
+                    'modify'
+                ];
 
-                it("doesn't transition", function () {
-                    expect(state.currentState().name).to.equal('idle');
+                invalidEvents.forEach(function (evt) {
+                    describe("event " + evt, function () {
+                        var currentState;
+
+                        beforeEach(function () {
+                            currentState = state.currentState().name;
+                            state.dispatch(evt, params || {});
+                        });
+
+                        it("doesn't move to a new state", function () {
+                            expect(state.currentState().name).to.equal(currentState);
+                        });
+                    });
                 });
             });
 
@@ -528,6 +806,34 @@ describe("respoke.CallState", function () {
                         state.isMediaFlowing = false;
                     });
 
+                    describe('invalid event', function () {
+                        var invalidEvents = [
+                            'initiate',
+                            'receiveLocalMedia',
+                            'approve',
+                            'accept',
+                            'sentOffer',
+                            'receiveRemoteMedia',
+                            'receiveAnswer',
+                            'modify'
+                        ];
+
+                        invalidEvents.forEach(function (evt) {
+                            describe("event " + evt, function () {
+                                var currentState;
+
+                                beforeEach(function () {
+                                    currentState = state.currentState().name;
+                                    state.dispatch(evt, params || {});
+                                });
+
+                                it("doesn't move to a new state", function () {
+                                    expect(state.currentState().name).to.equal(currentState);
+                                });
+                            });
+                        });
+                    });
+
                     describe("event 'reject'", function () {
                         var preparingExitSpy;
                         var terminatedEntrySpy;
@@ -560,6 +866,36 @@ describe("respoke.CallState", function () {
                         it("should fire the 'terminated:entry' event", function () {
                             expect(terminatedEntrySpy.called).to.equal(true);
                         });
+
+                        describe('invalid event', function () {
+                            var invalidEvents = [
+                                'initiate',
+                                'reject',
+                                'answer',
+                                'receiveLocalMedia',
+                                'approve',
+                                'accept',
+                                'sentOffer',
+                                'receiveRemoteMedia',
+                                'receiveAnswer',
+                                'modify'
+                            ];
+
+                            invalidEvents.forEach(function (evt) {
+                                describe("event " + evt, function () {
+                                    var currentState;
+
+                                    beforeEach(function () {
+                                        currentState = state.currentState().name;
+                                        state.dispatch(evt, params || {});
+                                    });
+
+                                    it("doesn't move to a new state", function () {
+                                        expect(state.currentState().name).to.equal(currentState);
+                                    });
+                                });
+                            });
+                        });
                     });
 
                     describe("event 'answer'", function () {
@@ -582,6 +918,44 @@ describe("respoke.CallState", function () {
                             expect(approvingDeviceAccessEntrySpy.called).to.equal(true);
                         });
 
+                        describe('invalid event', function () {
+                            var invalidEvents = [
+                                'initiate',
+                                'answer',
+                                'receiveLocalMedia',
+                                'accept',
+                                'sentOffer',
+                                'receiveRemoteMedia',
+                                'receiveAnswer',
+                                'modify'
+                            ];
+
+                            invalidEvents.forEach(function (evt) {
+                                describe("event " + evt, function () {
+                                    var currentState;
+
+                                    beforeEach(function () {
+                                        currentState = state.currentState().name;
+                                        state.dispatch(evt, params || {});
+                                    });
+
+                                    it("doesn't move to a new state", function () {
+                                        expect(state.currentState().name).to.equal(currentState);
+                                    });
+                                });
+                            });
+                        });
+
+                        describe("event 'reject'", function () {
+                            beforeEach(function () {
+                                state.dispatch("reject");
+                            });
+
+                            it("leads to 'terminated'", function () {
+                                expect(state.currentState().name).to.equal("terminated");
+                            });
+                        });
+
                         describe("event 'approve'", function () {
                             var approvingContentEntrySpy;
 
@@ -601,6 +975,35 @@ describe("respoke.CallState", function () {
 
                             it("fires 'approving-content:entry'", function () {
                                 expect(approvingContentEntrySpy.called).to.equal(true);
+                            });
+
+                            describe('invalid event', function () {
+                                var invalidEvents = [
+                                    'initiate',
+                                    'answer',
+                                    'receiveLocalMedia',
+                                    'approve',
+                                    'accept',
+                                    'sentOffer',
+                                    'receiveRemoteMedia',
+                                    'receiveAnswer',
+                                    'modify'
+                                ];
+
+                                invalidEvents.forEach(function (evt) {
+                                    describe("event " + evt, function () {
+                                        var currentState;
+
+                                        beforeEach(function () {
+                                            currentState = state.currentState().name;
+                                            state.dispatch(evt, params || {});
+                                        });
+
+                                        it("doesn't move to a new state", function () {
+                                            expect(state.currentState().name).to.equal(currentState);
+                                        });
+                                    });
+                                });
                             });
 
                             describe("event 'approve'", function () {
@@ -626,6 +1029,34 @@ describe("respoke.CallState", function () {
                                         expect(connectingEntrySpy.called).to.equal(true);
                                     });
 
+                                    describe('invalid event', function () {
+                                        var invalidEvents = [
+                                            'initiate',
+                                            'answer',
+                                            'receiveLocalMedia',
+                                            'approve',
+                                            'accept',
+                                            'sentOffer',
+                                            'receiveAnswer',
+                                            'modify'
+                                        ];
+
+                                        invalidEvents.forEach(function (evt) {
+                                            describe("event " + evt, function () {
+                                                var currentState;
+
+                                                beforeEach(function () {
+                                                    currentState = state.currentState().name;
+                                                    state.dispatch(evt, params || {});
+                                                });
+
+                                                it("doesn't move to a new state", function () {
+                                                    expect(state.currentState().name).to.equal(currentState);
+                                                });
+                                            });
+                                        });
+                                    });
+
                                     describe("event 'receiveRemoteMedia'", function () {
                                         var connectedEntrySpy;
 
@@ -646,6 +1077,38 @@ describe("respoke.CallState", function () {
                                         it("fires 'connected:entry'", function () {
                                             expect(connectedEntrySpy.called).to.equal(true);
                                         });
+
+                                        describe('invalid event', function () {
+                                            var invalidEvents = [
+                                                'initiate',
+                                                'answer',
+                                                'receiveLocalMedia',
+                                                'approve',
+                                                'accept',
+                                                'sentOffer',
+                                                'receiveRemoteMedia',
+                                                'receiveAnswer'
+                                            ];
+
+                                            invalidEvents.forEach(function (evt) {
+                                                describe("event " + evt, function () {
+                                                    var currentState;
+
+                                                    beforeEach(function () {
+                                                        currentState = state.currentState().name;
+                                                        state.dispatch(evt, params || {});
+                                                    });
+
+                                                    it("doesn't move to a new state", function () {
+                                                        expect(state.currentState().name).to.equal(currentState);
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    });
+
+                                    xdescribe("event 'modify'", function () {
+                                        it("needs to be tested");
                                     });
 
                                     describe("event 'reject'", function () {
@@ -690,6 +1153,34 @@ describe("respoke.CallState", function () {
                                             expect(connectingEntrySpy.called).to.equal(true);
                                         });
 
+                                        describe('invalid event', function () {
+                                            var invalidEvents = [
+                                                'initiate',
+                                                'answer',
+                                                'receiveLocalMedia',
+                                                'approve',
+                                                'accept',
+                                                'sentOffer',
+                                                'receiveAnswer',
+                                                'modify'
+                                            ];
+
+                                            invalidEvents.forEach(function (evt) {
+                                                describe("event " + evt, function () {
+                                                    var currentState;
+
+                                                    beforeEach(function () {
+                                                        currentState = state.currentState().name;
+                                                        state.dispatch(evt, params || {});
+                                                    });
+
+                                                    it("doesn't move to a new state", function () {
+                                                        expect(state.currentState().name).to.equal(currentState);
+                                                    });
+                                                });
+                                            });
+                                        });
+
                                         describe("event 'receiveRemoteMedia'", function () {
                                             var connectedEntrySpy;
 
@@ -709,6 +1200,34 @@ describe("respoke.CallState", function () {
 
                                             it("fires 'connected:entry'", function () {
                                                 expect(connectedEntrySpy.called).to.equal(true);
+                                            });
+
+                                            describe('invalid event', function () {
+                                                var invalidEvents = [
+                                                    'initiate',
+                                                    'answer',
+                                                    'receiveLocalMedia',
+                                                    'approve',
+                                                    'accept',
+                                                    'sentOffer',
+                                                    'receiveRemoteMedia',
+                                                    'receiveAnswer'
+                                                ];
+
+                                                invalidEvents.forEach(function (evt) {
+                                                    describe("event " + evt, function () {
+                                                        var currentState;
+
+                                                        beforeEach(function () {
+                                                            currentState = state.currentState().name;
+                                                            state.dispatch(evt, params || {});
+                                                        });
+
+                                                        it("doesn't move to a new state", function () {
+                                                            expect(state.currentState().name).to.equal(currentState);
+                                                        });
+                                                    });
+                                                });
                                             });
                                         });
                                     });
@@ -779,6 +1298,38 @@ describe("respoke.CallState", function () {
 
                             it("should report modifying", function () {
                                 expect(state.isModifying()).to.equal(true);
+                            });
+
+                            describe("event 'accept'", function () {
+                                xit("needs to be tested");
+                            });
+
+                            describe('invalid event', function () {
+                                var invalidEvents = [
+                                    'initiate',
+                                    'answer',
+                                    'receiveLocalMedia',
+                                    'approve',
+                                    'sentOffer',
+                                    'receiveRemoteMedia',
+                                    'receiveAnswer',
+                                    'modify'
+                                ];
+
+                                invalidEvents.forEach(function (evt) {
+                                    describe("event " + evt, function () {
+                                        var currentState;
+
+                                        beforeEach(function () {
+                                            currentState = state.currentState().name;
+                                            state.dispatch(evt, params || {});
+                                        });
+
+                                        it("doesn't move to a new state", function () {
+                                            expect(state.currentState().name).to.equal(currentState);
+                                        });
+                                    });
+                                });
                             });
 
                             describe("event 'reject'", function () {

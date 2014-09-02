@@ -462,7 +462,7 @@ module.exports = function (params) {
      * @fires respoke.LocalMedia#stop
      */
     that.stop = function () {
-        if (stream === null) {
+        if (!stream) {
             return;
         }
 

@@ -112,30 +112,6 @@ module.exports = function (params) {
     });
 
     /**
-     * Promise used to trigger actions dependant upon having received an offer.
-     * @memberof! respoke.Call
-     * @name defSDPOffer
-     * @private
-     * @type {Promise}
-     */
-    var defSDPOffer = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon the call having been answered.
-     * @memberof! respoke.Call
-     * @name defAnswered
-     * @private
-     * @type {Promise}
-     */
-    var defAnswered = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon having received media or a datachannel.
-     * @memberof! respoke.Call
-     * @name defApproved
-     * @private
-     * @type {Promise}
-     */
-    var defApproved = Q.defer();
-    /**
      * Promise used to trigger actions dependant upon having received media or a datachannel.
      * @memberof! respoke.Call
      * @name defMedia
@@ -143,14 +119,6 @@ module.exports = function (params) {
      * @type {Promise}
      */
     var defMedia = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon having completed deferred initialization
-     * @memberof! respoke.Call
-     * @name defInit
-     * @private
-     * @type {Promise}
-     */
-    var defInit = Q.defer();
     /**
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
@@ -317,7 +285,7 @@ module.exports = function (params) {
         offerOptions: params.offerOptions || null,
         signalOffer: function (args) {
             params.signalOffer(args);
-            callState.dispatch('sentOffer');
+            state.dispatch('sentOffer');
         },
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
@@ -340,9 +308,6 @@ module.exports = function (params) {
         log.debug('Call.init');
 
         if (defModify !== undefined) {
-            defSDPOffer = Q.defer();
-            defApproved = Q.defer();
-            defAnswered = Q.defer();
             defMedia = Q.defer();
         }
 
@@ -351,41 +316,10 @@ module.exports = function (params) {
             actuallyAddDirectConnection(params);
         }
 
-        /* Must make sure that the deferred init and the call has been answered before calling this code */
-        Q.all([defInit.promise, defAnswered.promise]).spread(function initializedAndAnswerCalled(init, params) {
-            /**
-             * saveParameters will only be meaningful for the non-initiate,
-             * since the library calls this method for the initiate. Developers will use this method to pass in
-             * callbacks for the non-initiate.
-             */
-            saveParameters(params);
-
-            pc.listen('connect', onRemoteStreamAdded, true);
-            pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
-
-            /**
-             * The call was answered.
-             * @event respoke.Call#answer
-             * @property {string} name - the event name.
-             * @property {respoke.Call} target
-             */
-            that.fire('answer');
-            state.once('approving-device-access:entry', function (evt) {
-                doAddVideo(params);
-            });
-            state.dispatch('answer', {
-                previewLocalMedia: previewLocalMedia,
-                directConnectionOnly: directConnectionOnly,
-                approve: that.approve,
-                receiveOnly: receiveOnly
-            });
-        }).done();
-
         if (that.caller === true) {
-            callState.once('offering:entry', function (evt) {
+            state.once('offering:entry', function (evt) {
                 pc.initOffer();
             });
-            that.answer();
         }
 
         if (directConnectionOnly === true) {
@@ -404,9 +338,15 @@ module.exports = function (params) {
          * @property {respoke.Client} target
          * @private
          */
-        client.fire('call', {
-            endpoint: that.remoteEndpoint,
-            call: that
+        state.listen('preparing:entry', function (evt) {
+            if (that.caller === true) {
+                that.answer();
+            }
+
+            client.fire('call', {
+                endpoint: that.remoteEndpoint,
+                call: that
+            });
         });
     }
 
@@ -539,10 +479,27 @@ module.exports = function (params) {
         params = params || {};
         log.debug('Call.answer');
 
-        if (!defAnswered.promise.isPending()) {
-            return;
-        }
-        defAnswered.resolve(params);
+        saveParameters(params);
+
+        pc.listen('connect', onRemoteStreamAdded, true);
+        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
+
+        state.once('approving-device-access:entry', function (evt) {
+            doAddVideo(params);
+        });
+        state.dispatch('answer', {
+            previewLocalMedia: previewLocalMedia,
+            directConnectionOnly: directConnectionOnly,
+            approve: that.approve,
+            receiveOnly: receiveOnly
+        });
+        /**
+         * The call was answered.
+         * @event respoke.Call#answer
+         * @property {string} name - the event name.
+         * @property {respoke.Call} target
+         */
+        that.fire('answer');
     };
 
     /**
@@ -580,9 +537,6 @@ module.exports = function (params) {
      * @fires respoke.Call#approve
      */
     that.approve = function () {
-        if (!defApproved.promise.isPending()) {
-            return;
-        }
         log.debug('Call.approve');
         /**
          * Fired when the local media access is approved.
@@ -593,12 +547,11 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('approve');
-        callState.dispatch('approve', {
+        state.dispatch('approve', {
             caller: that.caller,
             previewLocalMedia: previewLocalMedia
         });
 
-        defApproved.resolve(true);
         if (defModify && defModify.promise.isPending()) {
             defModify.resolve(true);
             defModify = undefined;
@@ -646,7 +599,7 @@ module.exports = function (params) {
          * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
-        callState.dispatch('receiveRemoteMedia');
+        state.dispatch('receiveRemoteMedia');
         that.fire('connect', {
             stream: evt.stream,
             element: videoRemoteElement
@@ -757,14 +710,14 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('allow');
-            callState.dispatch('approve', {
+            state.dispatch('approve', {
                 caller: that.caller,
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
-            callState.dispatch('receiveLocalMedia', {
+            state.dispatch('receiveLocalMedia', {
                 caller: that.caller
             });
             pc.addStream(evt.stream);
@@ -789,7 +742,7 @@ module.exports = function (params) {
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
             that.removeStream({id: stream.id});
-            callState.dispatch('reject');
+            state.dispatch('reject');
             pc.report.callStoppedReason = message;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
@@ -1027,9 +980,6 @@ module.exports = function (params) {
                     that.approve();
                 }
             } else {
-                if (defApproved.promise.isPending()) { // This happens on modify
-                    defApproved.resolve(true);
-                }
                 defMedia.resolve(directConnection);
             }
         }, true);
@@ -1115,10 +1065,6 @@ module.exports = function (params) {
             return;
         }
         toSendHangup = false;
-
-        if (!that.caller && defApproved.promise.isPending()) {
-            defApproved.reject(new Error("Call hung up before approval."));
-        }
 
         localStreams.forEach(function eachStream(stream) {
             stream.stop();
@@ -1223,7 +1169,6 @@ module.exports = function (params) {
              */
             that.fire('modify', info);
         }
-        defSDPOffer.resolve(evt.signal);
     }
 
     /**
@@ -1274,7 +1219,6 @@ module.exports = function (params) {
             if (directConnection) {
                 that.removeDirectConnection({skipModify: true});
                 defMedia.resolve(false);
-                defApproved.resolve(false);
             }
         }
         directConnectionOnly = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
@@ -1466,7 +1410,7 @@ module.exports = function (params) {
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
     pc.listen('receive-answer', function () {
-        callState.dispatch('receiveAnswer');
+        state.dispatch('receiveAnswer');
     }, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {
         if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
@@ -1490,7 +1434,6 @@ module.exports = function (params) {
     }).fin(function () {
         saveParameters(params);
         init();
-        defInit.resolve();
         state.dispatch('initiate', {client: client});
     }).done(null, function (err) {
         // who cares

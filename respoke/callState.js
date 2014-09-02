@@ -30,7 +30,7 @@ module.exports = function (params) {
     var answerTimer;
     var answerTimeout = 10000;
     var receiveAnswerTimer;
-    var receiveAnswerTimeout = 10000;
+    var receiveAnswerTimeout = 60000;
     var connectionTimer;
     var connectionTimeout = 10000;
     var savedOffer;
@@ -44,6 +44,12 @@ module.exports = function (params) {
             // re-evaluate whether media is flowing
         }
     };
+
+    function assert(condition) {
+        if (!condition) {
+            throw new Error("Assertion failed.");
+        }
+    }
 
     that.isMediaFlowing = false;
     that.hasLocalMediaApproval = false;
@@ -69,10 +75,14 @@ module.exports = function (params) {
     }];
 
     function needToObtainMedia(params) {
+        assert(params.directConnectionOnly !== undefined);
+        assert(params.receiveOnly !== undefined);
         return (params.directConnectionOnly !== true && params.receiveOnly !== true);
     }
 
     function onlyNeedToApproveDirectConnection(params) {
+        assert(params.directConnectionOnly !== undefined);
+        assert(params.receiveOnly !== undefined);
         return (typeof params.previewLocalMedia === 'function' && params.directConnectionOnly === true &&
             params.receiveOnly !== true);
     }
@@ -122,12 +132,12 @@ module.exports = function (params) {
                         // Event
                         entry: [setMediaFlowingEvent, {
                             action: function () {
-                                that.fire('preparing:entry');
                                 that.hasLocalMediaApproval = false;
                                 that.hasMedia = false;
                                 answerTimer = new Timer(function () {
                                     that.dispatch('reject');
                                 }, 'answer own call', answerTimeout);
+                                that.fire('preparing:entry');
                             }
                         }],
                         // Event
@@ -139,7 +149,10 @@ module.exports = function (params) {
                         // Event
                         answer: [{
                             action: function (params) {
-                                answerTimer.clear();
+                                assert(that.hasLocalMediaApproval !== undefined);
+                                if (answerTimer) {
+                                    answerTimer.clear();
+                                }
                                 if (typeof params.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
                                 }
@@ -196,6 +209,8 @@ module.exports = function (params) {
                                 approve: [{
                                     target: 'approvingContent',
                                     guard: function (params) {
+                                        assert(that.hasLocalMedia !== undefined);
+                                        assert(params.caller !== undefined);
                                         return (typeof params.previewLocalMedia === 'function');
                                     }
                                 }, {
@@ -228,6 +243,8 @@ module.exports = function (params) {
                                 }, {
                                     target: 'offering',
                                     guard: function (params) {
+                                        assert(params.caller !== undefined);
+                                        assert(that.hasLocalMedia !== undefined);
                                         return (params.caller === true && that.hasLocalMedia === true);
                                     }
                                 }, {
@@ -266,7 +283,9 @@ module.exports = function (params) {
                                 }],
                                 // Event
                                 receiveAnswer: [function () {
-                                    receiveAnswerTimer.clear();
+                                    if (receiveAnswerTimer) {
+                                        receiveAnswerTimer.clear();
+                                    }
                                 }, {
                                     target: 'connecting'
                                 }]
@@ -278,7 +297,9 @@ module.exports = function (params) {
                         init: 'connecting',
                         reject: rejectEvent,
                         receiveAnswer: function () {
-                            receiveAnswerTimer.clear();
+                            if (receiveAnswerTimer) {
+                                receiveAnswerTimer.clear();
+                            }
                         },
                         states: {
                             connecting: {
@@ -294,7 +315,9 @@ module.exports = function (params) {
                                 // Event
                                 receiveRemoteMedia: [{
                                     action: function () {
-                                        connectionTimer.clear();
+                                        if (connectionTimer) {
+                                            connectionTimer.clear();
+                                        }
                                     }
                                 }, {
                                     target: 'connected'
@@ -317,9 +340,11 @@ module.exports = function (params) {
                         entry: function () {
                             that.fire('modifying:entry');
                         },
+                        // Event
                         modify: function () {
                             // reject modification
                         },
+                        // Event
                         accept: {
                             target: 'preparing'
                         }
@@ -331,7 +356,9 @@ module.exports = function (params) {
                 init: 'connected',
                 reject: rejectEvent,
                 receiveAnswer: function () {
-                    receiveAnswerTimer.clear();
+                    if (receiveAnswerTimer) {
+                        receiveAnswerTimer.clear();
+                    }
                 },
                 states: {
                     connected: {
@@ -394,7 +421,8 @@ module.exports = function (params) {
         }
         newState = fsm.currentState().name;
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
-            throw new Error("Possible bad event " + evt + ", no transition occured.");
+            respoke.log.debug("Possible bad event " + evt + ", no transition occured.");
+            //throw new Error("Possible bad event " + evt + ", no transition occured.");
         }
         respoke.log.debug('new state is', newState);
     };
