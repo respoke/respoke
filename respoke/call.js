@@ -208,7 +208,7 @@ module.exports = function (params) {
     var signalingChannel = params.signalingChannel;
     /**
      * Informational property. Whether call debugs were enabled on the client during creation.
-     * Changing this value will do nothing. 
+     * Changing this value will do nothing.
      * @name callDebugReportEnabled
      * @type {boolean}
      */
@@ -1484,9 +1484,9 @@ module.exports = function (params) {
             callSettings.servers = client.callSettings.servers;
             callSettings.servers.iceServers = result;
         }
+    }).fin(function () {
         saveParameters(params);
         init();
-    }).fin(function () {
         defInit.resolve();
     }).done(null, function (err) {
         // who cares
