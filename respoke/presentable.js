@@ -8,7 +8,7 @@ var respoke = require('./respoke');
 /**
  * The purpose of the class is to allow multiple types of entities to expose presence functionality.
  * 
- * Setting the presence on a client is provided via `respoke.Client.setPresence()`.
+ * Setting the presence on a client is provided via `client.setPresence({ presence: "At lunch" })`.
  * 
  * @class respoke.Presentable
  * @constructor

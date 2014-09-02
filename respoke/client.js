@@ -792,9 +792,14 @@ module.exports = function (params) {
      * *Joining and leaving a group, using callback handlers:*
      * 
      *      client.join({ 
-     *          id: "book-club", 
+     *          id: "book-club",
+     *          onSuccess: function (evt) {
+     *              console.log('I joined', evt.group.id); // "I joined book-club"
+     *          }, 
      *          onJoin: function (evt) { 
-     *              console.log(evt.group.id); // "book-club"
+     *              console.log(evt.endpoint.id, 'joined', evt.group.id); // "billy joined book-club"
+     *              
+     *              // get out of here when billy arrives
      *              evt.group.leave({
      *                  onSuccess: function (evt) {
      *                      console.log('successfully left the group');
@@ -979,23 +984,23 @@ module.exports = function (params) {
     /**
      * Find an endpoint by id and return the `respoke.Endpoint` object.
      * 
-     * If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`), 
+     * If it is not already cached locally, will be added to the local cache of tracked endpoints, 
+     * its presence will be determined, and will be available in `client.getEndpoints()`.
+     *
+     * @ignore If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`), 
      * it will be created. This is useful, for example, in the case of dynamic endpoints where groups are 
      * not in use. Override dynamic endpoint creation by setting `params.skipCreate = true`.
-     * 
-     * When an endpoint is not found and gets created, it will be added to the local cache of tracked 
-     * endpoints, and its presence will be determined, and will be available in `client.getEndpoints()`.
      * 
      * @memberof! respoke.Client
      * @method respoke.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
-     * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
      * know about this Endpoint.
      * @param {respoke.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
      * from this one Endpoint.
      * @param {respoke.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
      * Endpoint.
+     * @arg {boolean} [params.skipCreate] - Skip the creation step and return undefined if we don't yet
      * @returns {respoke.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -1036,9 +1041,12 @@ module.exports = function (params) {
     };
 
     /**
-     * Find a Connection by id and return it. In most cases, if we don't find it we will create it. This is useful
-     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true to return undefined
-     * if the Connection is not already known.
+     * Find a Connection by id and return it.
+     * 
+     * @ignore In most cases, if we don't find it we will create it. This is useful
+     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true 
+     * to return undefined if the Connection is not already known.
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.getConnection
      * @param {object} params
