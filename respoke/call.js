@@ -216,6 +216,18 @@ module.exports = function (params) {
      * @type {boolean}
      */
     that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
+    /**
+     * A flag indicating whether this call has audio.
+     * @name hasAudio
+     * @type {boolean}
+     */
+    that.hasAudio = undefined;
+    /**
+     * A flag indicating whether this call has video.
+     * @name hasVideo
+     * @type {boolean}
+     */
+    that.hasVideo = undefined;
 
     delete params.signalingChannel;
     delete that.signalingChannel;
