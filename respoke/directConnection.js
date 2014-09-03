@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
 
 var log = require('loglevel');
@@ -12,7 +12,6 @@ var respoke = require('./respoke');
  * @class respoke.DirectConnection
  * @constructor
  * @augments respoke.EventEmitter
- * @link https://cdn.respoke.io/respoke.min.js
  * @param {string} params
  * @param {string} params.instanceId - client id
  * @param {respoke.Call} params.call - The call that is handling state for this direct connection.
@@ -58,6 +57,8 @@ module.exports = function (params) {
      */
     that.className = 'respoke.DirectConnection';
     /**
+     * The unique identifier of the direct connection.
+     * 
      * @memberof! respoke.DirectConnection
      * @name id
      * @type {string}
@@ -133,10 +134,42 @@ module.exports = function (params) {
      * @private
      */
     function saveParameters(params) {
+        /**
+         * The direct connection is open.
+         * @event respoke.DirectConnection#open
+         * @type {respoke.Event}
+         * @property {string} name - the event name.
+         * @property {respoke.DirectConnection} target
+         */
         that.listen('open', params.onOpen);
+        /**
+         * The direct connection is closed.
+         * @event respoke.DirectConnection#close
+         * @type {respoke.Event}
+         * @property {string} name - the event name.
+         * @property {respoke.DirectConnection} target
+         */
         that.listen('close', params.onClose);
+        /**
+         * Incoming message on this direct connection.
+         * @event respoke.DirectConnection#message
+         * @type {respoke.Event}
+         * @property {respoke.TextMessage} message
+         * @property {respoke.Endpoint} endpoint
+         * @property {string} name - the event name.
+         * @property {respoke.DirectConnection} target
+         */
         that.listen('message', params.onMessage);
+        // documented elsewhere
         that.listen('start', params.onStart);
+        /**
+         * An error occurred while setting up the direct connection.
+         * @event respoke.DirectConnection#error
+         * @type {respoke.Event}
+         * @property {string} reason - A human-readable description of the error.
+         * @property {string} name - the event name.
+         * @property {respoke.DirectConnection} target
+         */
         that.listen('error', params.onError);
         pc.listen('direct-connection', listenDataChannel, true);
         pc.listen('stats', function fireStats(evt) {

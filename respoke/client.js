@@ -1,21 +1,38 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
-
 var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
 
 /**
- * This is a top-level interface to the API. It handles authenticating the app to the
- * API server, receiving server-side app-specific information, keeping track of connection status and presence,
- * accepting callbacks and listeners, and interacting with information the library keeps
- * track of, like groups and endpoints. The client also keeps track of default settings for calls and direct
- * connections as well as automatically reconnecting to the service when network activity is lost.
+ * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using 
+ * a `respoke.Client` instance.
+ * 
+ * There are two ways to get one:
+ * 
+ *      var client = respoke.connect(params);
+ *
+ * or
+ *
+ *      var client = respoke.createClient(params);
+ *
+ * A client does the following things:
+ * 
+ * 1. authentication with the Respoke API
+ * 1. receives server-side app-specific information
+ * 1. tracks connections and presence
+ * 1. provides methods to get and interact with tracked entities (like groups and endpoints)
+ * 1. stores default settings for calls and direct connections 
+ * 1. automatically reconnects to the API when network activity is lost*
+ *
+ * *If `developmentMode` is set to true. If not using `developmentMode`, disable automatic 
+ * reconnect by sending `reconnect: false` and listening to the Client's disconnect event 
+ * to fetch a new brokered auth token, then call `client.connect()` with the new token.
+ * 
  * @class respoke.Client
  * @constructor
- * @link https://cdn.respoke.io/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
@@ -117,7 +134,7 @@ module.exports = function (params) {
      * @property {respoke.Client.onCall} [onCall] - Callback for when this client receives a call.
      * @property {respoke.Client.onDirectConnection} [onDirectConnection] - Callback for when this client
      * receives a request for a direct connection.
-     * @property {boolean} enableCallDebugReport - Upon finishing a call, should the client send debugging 
+     * @property {boolean} enableCallDebugReport=true - Upon finishing a call, should the client send debugging 
      * information to the API? Defaults to `true`.
      */
     var clientSettings = {
@@ -145,6 +162,7 @@ module.exports = function (params) {
     delete that.resolveEndpointPresence;
 
     /**
+     * Internal list of known groups.
      * @memberof! respoke.Client
      * @name groups
      * @type {Array<respoke.Group>}
@@ -152,6 +170,7 @@ module.exports = function (params) {
      */
     var groups = [];
     /**
+     * Internal list of known endpoints.
      * @memberof! respoke.Client
      * @name endpoints
      * @type {Array<respoke.Endpoint>}
@@ -159,7 +178,9 @@ module.exports = function (params) {
      */
     var endpoints = [];
     /**
-     * Array of calls in progress. This array should never be modified directly.
+     * Array of calls in progress, made accessible for informational purposes only.
+     * **Never modify this array directly.**
+     * 
      * @memberof! respoke.Client
      * @name calls
      * @type {array}
@@ -168,7 +189,7 @@ module.exports = function (params) {
     log.debug("Client ID is ", instanceId);
 
     /**
-     * Call settings:
+     * Default call settings:
      * 
      *      constraints: {
      *          video : true,
@@ -208,12 +229,48 @@ module.exports = function (params) {
     });
 
     /**
-     * Connect to the Respoke infrastructure and authenticate using `params.token`.  Store a new token to be used in API
-     * requests. If no `params.token` is given and `developmentMode` is set to true, it will attempt to obtain a token
-     * automatically from the Respoke infrastructure.  If `reconnect` is set to true, it will attempt to keep
-     * reconnecting each time this token expires. Accept and attach quite a few event listeners for things like group
-     * joining and connection statuses. Get the first set of TURN credentials and store them internally for later use.
-     * **Using callbacks** will disable promises.
+     * Connect to the Respoke infrastructure and authenticate using `params.token`. 
+     * 
+     * After `"connect"`, the app auth session token is stored so it can be used in API requests.
+     * 
+     * This method attaches quite a few event listeners for things like group joining and connection status changes.
+     * 
+     * #### Usage
+     *
+     *      client.connect({
+     *          appId: "XXXX-XXX-XX-XXXX",
+     *          token: "XXXX-XXX-XX-XXXX", // if not developmentMode
+     *          developmentMode: false || true
+     *          // if developmentMode, otherwise your server will set endpointId
+     *          endpointId: "billy"
+     *      });
+     *      client.listen("connect", function () { } );
+     * 
+     * 
+     * If no `params.token` is given and `developmentMode` is set to true, it will attempt to obtain a token
+     * automatically. You must set an `endpointId`.
+     * 
+     * 
+     * #### App auth session token expiration
+     * 
+     * If `params.reconnect` is set to true (which it is by default for `developmentMode`), the `client`
+     * will attempt to keep reconnecting each time the app auth session expires.
+     * 
+     * If not using `developmentMode`, disable automatic reconnect by sending `reconnect: false`. 
+     * Then listen to the Client's disconnect event to fetch a new brokered auth token and call 
+     * `client.connect()` with the new token.
+     * 
+     *      client.listen('disconnect', function () {
+     *
+     *          // example method you implemented to get a new token from your server
+     *          myServer.getNewRespokeAccessToken(function (newToken) {
+     *              // reconnect with respoke.Client
+     *              client.connect({ token: newToken });
+     *          });
+     *
+     *      });
+     * 
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.connect
      * @param {object} params
@@ -277,6 +334,18 @@ module.exports = function (params) {
              * @property {respoke.Client} target
              */
             that.fire('connect');
+
+            /**
+             * This event fires only when the initial `connect` fails.
+             * 
+             * @ignore **This comment is for documentation purposes**, since #error bubbles
+             * up from other classes, but it should show on `respoke.Client` docs.
+             * 
+             * @event respoke.Client#error
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.Client} target
+             */
         });
         return retVal;
     };
@@ -323,15 +392,73 @@ module.exports = function (params) {
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */
+            
+            /**
+             * This event provides notification for when an incoming call is being received.  If the user wishes
+             * to allow the call, `evt.call.answer()`.
+             * @event respoke.Client#call
+             * @type {respoke.Event}
+             * @property {respoke.Call} call
+             * @property {respoke.Endpoint} endpoint
+             * @property {string} name - The event name.
+             * @property {respoke.Client} target
+             */
             that.listen('call', clientSettings.onCall);
             that.listen('call', removeCallOnHangup, true);
+            /**
+             * This event is fired when the local end of the directConnection is available. It still will not be
+             * ready to send and receive messages until the 'open' event fires.
+             * @event respoke.Client#direct-connection
+             * @type {respoke.Event}
+             * @property {respoke.DirectConnection} directConnection
+             * @property {respoke.Endpoint} endpoint
+             * @property {string} name - the event name.
+             * @property {respoke.Call} target
+             */
             that.listen('direct-connection', clientSettings.onDirectConnection);
             that.listen('direct-connection', removeDCCallOnHangup, true);
             that.listen('join', clientSettings.onJoin);
+            /**
+             * This event is fired every time the client leaves a group.
+             * @event respoke.Client#leave
+             * @type {respoke.Event}
+             * @property {respoke.Group} group
+             * @property {string} name - the event name.
+             */
             that.listen('leave', clientSettings.onLeave);
+            /**
+             * A generic message handler when a message was received by the client.
+             * 
+             * @event respoke.Client#message
+             * @type {respoke.Event}
+             * @property {string} name - The event name.
+             * @property {respoke.Endpoint} endpoint - If the message was private, this is the Endpoint who sent it.
+             * @property {respoke.Group} group - If the message was to a group, this is the group.
+             * @property {respoke.TextMessage} message - The generic message object.
+             * @property {string} message.connectionId
+             * @property {string} message.endpointId
+             * @property {string} message.message - Message body text.
+             * @property {respoke.Client} target
+             */
             that.listen('message', clientSettings.onMessage);
             that.listen('connect', clientSettings.onConnect);
+            /**
+             * Client has disconnected from Respoke.
+             * 
+             * @event respoke.Client#disconnect
+             * @type {respoke.Event}
+             * @property {string} name - The event name.
+             * @property {respoke.Client} target
+             */
             that.listen('disconnect', clientSettings.onDisconnect);
+            /**
+             * Client has reconnected to Respoke.
+             * 
+             * @event respoke.Client#reconnect
+             * @type {respoke.Event}
+             * @property {string} name - The event name.
+             * @property {respoke.Client} target
+             */
             that.listen('reconnect', clientSettings.onReconnect);
 
             log.info('logged in as ' + that.endpointId, that);
@@ -400,16 +527,35 @@ module.exports = function (params) {
     };
 
     /**
-     * Overrides Presentable.setPresence to send presence to the server before updating the object.
+     * Set the presence for this client. 
+     * 
+     * The value of presence can be a string, number, object, or array - in any format -
+     * depending on the needs of your application. The only requirement is that 
+     * `JSON.stringify()` must work (no circular references).
+     * 
+     *      var myPresence = 'At lunch' 
+     *                      || 4
+     *                      || { status: 'Away', message: 'At lunch' } 
+     *                      || ['Away', 'At lunch'];
+     *
+     *      client.setPresence({
+     *          presence: myPresence, 
+     *          onSuccess: function () {
+     *              // successfully updated my presence
+     *          }
+     *      });
+     * 
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.setPresence
      * @param {object} params
-     * @param {string|number|object|Array} params.presence
+     * @param {string|number|object|array} params.presence
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
+     * @overrides Presentable.setPresence
      * @return {Promise|undefined}
      */
     that.setPresence = function (params) {
@@ -535,8 +681,10 @@ module.exports = function (params) {
     }
 
     /**
-     * Set presence to available.
+     * Convenience method for setting presence to `"available"`.
+     * 
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.setOnline
      * @param {object} params
@@ -546,6 +694,7 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @returns {Promise|undefined}
+     * @private
      */
     that.setOnline = function (params) {
         var promise;
@@ -661,6 +810,7 @@ module.exports = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.verifyConnected
      * @throws {Error}
+     * @private
      */
     that.verifyConnected = function () {
         if (!signalingChannel.isConnected()) {
@@ -669,17 +819,42 @@ module.exports = function (params) {
     };
 
     /**
-     * Check whether we are connected to the backend infrastructure.
+     * Check whether this client is connected to the Respoke API.
      * @memberof! respoke.Client
      * @method respoke.Client.isConnected
+     * @returns boolean
      */
     that.isConnected = function () {
         return signalingChannel.isConnected();
     };
 
     /**
-     * Join a Group and begin keeping track of it. Attach some event listeners.
-     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
+     * Join a group and begin keeping track of it.
+     * 
+     * Leave the group by calling `group.leave()`;
+     *
+     * *Joining and leaving a group, using callback handlers:*
+     * 
+     *      client.join({ 
+     *          id: "book-club",
+     *          onSuccess: function (evt) {
+     *              console.log('I joined', evt.group.id); 
+     *              // "I joined book-club"
+     *          }, 
+     *          onJoin: function (evt) { 
+     *              console.log(evt.endpoint.id, 'joined', evt.group.id); 
+     *              // "billy joined book-club"
+     *              
+     *              // get out of here when billy arrives
+     *              evt.group.leave({
+     *                  onSuccess: function (evt) {
+     *                      console.log('successfully left the group');
+     *                  }
+     *              });
+     *          } 
+     *      });
+     * 
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.join
      * @param {object} params
@@ -752,6 +927,7 @@ module.exports = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.addGroup
      * @param {respoke.Group}
+     * @private
      */
     that.addGroup = function (newGroup) {
         if (!newGroup || newGroup.className !== 'respoke.Group') {
@@ -764,10 +940,10 @@ module.exports = function (params) {
         }, true);
 
         groups.push(newGroup);
-    }
+    };
 
     /**
-     * Get a list of all the groups we're currently a member of.
+     * Get a list of all the groups the client is currently a member of.
      * @memberof! respoke.Client
      * @method respoke.Client.getGroups
      * @returns {Array<respoke.Group>} All of the groups the library is aware of.
@@ -786,7 +962,7 @@ module.exports = function (params) {
      * @param {respoke.Group.onLeave} [params.onLeave] - Receive notification that an endpoint has left this group.
      * @param {respoke.Group.onMessage} [params.onMessage] - Receive notification that a message has been
      * received to a group.
-     * @returns {respoke.Group} The group whose ID was specified.
+     * @returns {respoke.Group|undefined} The group whose ID was specified.
      */
     that.getGroup = function (params) {
         var group;
@@ -852,19 +1028,24 @@ module.exports = function (params) {
     }
 
     /**
-     * Find an endpoint by id and return it. In most cases, if we don't find it we will create it. This is useful
-     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true to return undefined
-     * if the Endpoint is not already known.
+     * Find an endpoint by id and return the `respoke.Endpoint` object.
+     * 
+     * If it is not already cached locally, will be added to the local cache of tracked endpoints, 
+     * its presence will be determined, and will be available in `client.getEndpoints()`.
+     *
+     * @ignore If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`), 
+     * it will be created. This is useful, for example, in the case of dynamic endpoints where groups are 
+     * not in use. Override dynamic endpoint creation by setting `params.skipCreate = true`.
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
-     * @param {boolean} params.skipCreate - Skip the creation step and return undefined if we don't yet
-     * know about this Endpoint.
      * @param {respoke.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
      * from this one Endpoint.
      * @param {respoke.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
      * Endpoint.
+     * @arg {boolean} [params.skipCreate] - Skip the creation step and return undefined if we don't yet
      * @returns {respoke.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -905,9 +1086,12 @@ module.exports = function (params) {
     };
 
     /**
-     * Find a Connection by id and return it. In most cases, if we don't find it we will create it. This is useful
-     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true to return undefined
-     * if the Connection is not already known.
+     * Find a Connection by id and return it.
+     * 
+     * @ignore In most cases, if we don't find it we will create it. This is useful
+     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true 
+     * to return undefined if the Connection is not already known.
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.getConnection
      * @param {object} params
@@ -970,12 +1154,25 @@ module.exports = function (params) {
     };
 
     /**
-     * Get the list of all endpoints that the library has knowledge of. The library gains knowledge of an endpoint
-     * either when an endpoint joins a group that the currently logged-in endpoint is a member of (if group presence is
-     * enabled); when an endpoint that the currently logged-in endpoint is watching (if enabled). If an endpoint that
-     * the library does not know about sends a message to the client, there is a special case in
-     * which the developer can immediately call the getEndpoint() method on the sender of the message. This tells
-     * the library to keep track of the endpoint, even though it had previously not had reason to do so.
+     * Get the list of **all endpoints** that the library has knowledge of. 
+     * These are `respoke.Endpoint` objects, not just the endpointIds.
+     * 
+     * The library gains knowledge of an endpoint in two ways:
+     * 1. when an endpoint joins a group that the user (currently logged-in endpoint) is a member of (if group presence is enabled)
+     * 2. when an endpoint that the user (currently logged-in endpoint) is watching*
+     * 
+     * *If an endpoint that the library does not know about sends a message to the client, you
+     * can immediately call the `client.getEndpoint()` method on the sender of the message to enable
+     * watching of the sender's endpoint.
+     *
+     *      client.on('message', function (data) {
+     *          if (data.endpoint) {
+     *              // start tracking this endpoint.
+     *              client.getEndpoint({ id: data.endpoint.id });
+     *          } 
+     *      });
+     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.getEndpoints
      * @returns {Array<respoke.Endpoint>}

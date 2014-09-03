@@ -1,17 +1,19 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
 
 var respoke = require('./respoke');
 
 /**
- * Represents remote Connections which belong to an Endpoint. An Endpoint can be authenticated from multiple devices,
- * browsers, or tabs. Each of these separate authentications is a Connection. The client can interact
- * with connections by calling them or sending them messages.
+ * A `respoke.Connection` always belongs to an Endpoint.
+ * 
+ * There is a distinction between Endpoint and Connection because an Endpoint can be authenticated 
+ * from multiple devices, browsers, or browser tabs. Each of these separate authentications is a Connection. 
+ * A Client can choose to interact with connections of the same endpoint in different ways.
+ * 
  * @constructor
  * @class respoke.Connection
- * @link https://cdn.respoke.io/respoke.min.js
  * @augments respoke.Presentable
  * @param {object} params
  * @param {string} params.id
@@ -58,7 +60,9 @@ module.exports = function (params) {
     that.className = 'respoke.Connection';
 
     /**
-     * Send a message to this connection of an endpoint only through the infrastructure.
+     * Send a message to this connection of an endpoint. If the endpoint has mutliple connections, 
+     * it will only receive the message at this connection.
+     * 
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Connection
      * @method respoke.Connection.sendMessage
