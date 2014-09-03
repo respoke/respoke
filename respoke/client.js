@@ -529,12 +529,28 @@ module.exports = function (params) {
     /**
      * Set the presence for this client. 
      * 
+     * The value of presence can be a string, number, object, or array - in any format -
+     * depending on the needs of your application. The only requirement is that 
+     * `JSON.stringify()` must work (no circular references).
+     * 
+     *      var myPresence = 'At lunch' 
+     *                      || 4
+     *                      || { status: 'Away', message: 'At lunch' } 
+     *                      || ['Away', 'At lunch'];
+     *
+     *      client.setPresence({
+     *          presence: myPresence, 
+     *          onSuccess: function () {
+     *              // successfully updated my presence
+     *          }
+     *      });
+     * 
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * 
      * @memberof! respoke.Client
      * @method respoke.Client.setPresence
      * @param {object} params
-     * @param {string|number|object|Array} params.presence
+     * @param {string|number|object|array} params.presence
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
@@ -1025,7 +1041,6 @@ module.exports = function (params) {
      * @method respoke.Client.getEndpoint
      * @param {object} params
      * @param {string} params.id
-     * know about this Endpoint.
      * @param {respoke.Endpoint.onMessage} [params.onMessage] - Handle messages sent to the logged-in user
      * from this one Endpoint.
      * @param {respoke.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
@@ -1139,16 +1154,25 @@ module.exports = function (params) {
     };
 
     /**
-     * Get the list of **all endpoints** that the library has knowledge of. These are `respoke.Endpoint` objects, not just the endpointIds.
+     * Get the list of **all endpoints** that the library has knowledge of. 
+     * These are `respoke.Endpoint` objects, not just the endpointIds.
      * 
-     * The library gains knowledge of an endpoint:
+     * The library gains knowledge of an endpoint in two ways:
      * 1. when an endpoint joins a group that the user (currently logged-in endpoint) is a member of (if group presence is enabled)
-     * 2. when an endpoint that the user (currently logged-in endpoint) is watching (if enabled)
-     *
-     * If an endpoint that the library does not know about sends a message to the client, there is a special case in
-     * which the developer can immediately call the getEndpoint() method on the sender of the message. This tells
-     * the library to keep track of the endpoint.
+     * 2. when an endpoint that the user (currently logged-in endpoint) is watching*
      * 
+     * *If an endpoint that the library does not know about sends a message to the client, you
+     * can immediately call the `client.getEndpoint()` method on the sender of the message to enable
+     * watching of the sender's endpoint.
+     *
+     *      client.on('message', function (data) {
+     *          if (data.endpoint) {
+     *              // start tracking this endpoint.
+     *              client.getEndpoint({ id: data.endpoint.id });
+     *          } 
+     *      });
+     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.getEndpoints
      * @returns {Array<respoke.Endpoint>}

@@ -117,7 +117,7 @@ module.exports = function (params) {
      * 
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.getPresence
-     * @returns {string|number|object|Array} the current presence of this endpoint.
+     * @returns {string|number|object|array} the current presence of this endpoint.
      */
     that.getPresence = function () {
         return that.presence;
