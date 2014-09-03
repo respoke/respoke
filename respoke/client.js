@@ -337,6 +337,10 @@ module.exports = function (params) {
 
             /**
              * This event fires only when the initial `connect` fails.
+             * 
+             * @ignore **This comment is for documentation purposes**, since #error bubbles
+             * up from other classes, but it should show on `respoke.Client` docs.
+             * 
              * @event respoke.Client#error
              * @type {respoke.Event}
              * @property {string} name - the event name.

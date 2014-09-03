@@ -69,7 +69,7 @@ module.exports = function (params) {
     that.className = 'respoke.Group';
     that.listen('join', params.onJoin);
     /**
-     * Indicates that message has been sent to this group.
+     * Indicates that a message has been sent to this group.
      * 
      * @event respoke.Group#message
      * @type {respoke.Event}
