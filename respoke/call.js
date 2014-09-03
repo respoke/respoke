@@ -218,12 +218,18 @@ module.exports = function (params) {
     that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
     /**
      * A flag indicating whether this call has audio.
+     * 
+     * This becomes available after the call is accepted, for the client being called only.
+     *
      * @name hasAudio
      * @type {boolean}
      */
     that.hasAudio = undefined;
     /**
      * A flag indicating whether this call has video.
+     * 
+     * This becomes available after the call is accepted, for the client being called only.
+     *
      * @name hasVideo
      * @type {boolean}
      */
