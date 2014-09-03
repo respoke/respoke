@@ -3,12 +3,10 @@
 
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
  *
  * Copyright (c) 2014 Digium, Inc.
  * All Rights Reserved. Licensed Software.
  * @private
- * @authors : Erin Spiceland <espiceland@digium.com>
  */
 
 var log = require('loglevel');
@@ -23,7 +21,89 @@ Q.stopUnhandledRejectionTracking();
 require('./deps/adapter');
 
 /**
- * A global static class which provides access to the Respoke functionality.
+ * `respoke` is a global static class.
+ * 
+ * 
+ * Include the [latest version](https://cdn.respoke.io/respoke.min.js) or 
+ * [choose a previous release](http://cdn.respoke.io/list.html).
+ * 
+ * 
+ * **Development mode without brokered auth**
+ * 
+ *      var client = respoke.createClient({
+ *          appId: "XXXXXXX-my-app-id-XXXXXX",
+ *          developmentMode: true,
+ *          endpointId: "billy"
+ *      });
+ *      
+ *      client.listen('connect', function () {
+ *          console.log('connected to respoke!');
+ *      });
+ *      
+ *      client.listen('error', function (err) {
+ *          console.error('Connection to Respoke failed.', err);
+ *      });
+ *
+ *      client.connect();
+ *
+ * 
+ * **Production mode with brokered auth**
+ * 
+ *      var client = respoke.createClient();
+ *      
+ *      client.listen('connect', function () {
+ *          console.log('connected to respoke!');
+ *      });
+ *
+ *      client.listen('error', function (err) {
+ *          console.error('Connection to Respoke failed.', err);
+ *      });
+ *
+ *      // Respoke auth token obtained by your server. 
+ *      // This is how you control who can connect to Respoke app.
+ *      // See API docs for POST [base]/tokens
+ *      var tokenId = "XXXX-XXXX-brokered-auth-token-XXXXX";
+ *
+ *      // connect to respoke with the token
+ *      client.connect({
+ *          reconnect: false,
+ *          token: tokenId
+ *      });
+ *
+ *      // fetch a new token from your server if it expires
+ *      client.listen('disconnect', function (evt) {
+ *          // fetch another token from your server.
+ *          var newTokenId = "XXXX-XXXX-brokered-auth-token2-XXXXX";
+ *          client.connect({
+ *              reconnect: false,
+ *              token: newTokenId
+ *          });
+ *      });
+ * 
+ * ---
+ *
+ * 
+ * ### Event listeners vs callback handlers
+ *
+ * There are two ways to attach listeners. It is highly recommended that you choose one pattern 
+ * and stick to it throughout your app.
+ * 
+ * For every `event-name`, there is a corresponding callback `onEventName`.
+ *
+ * **Attaching listeners**
+ *
+ *      var client = respoke.createClient();
+ *      client.listen('connect', function () { });
+ * 
+ * **Attaching callback handlers**
+ *
+ *      var client = respoke.createClient({
+ *          // other options go here
+ *          
+ *          onConnect: function () { }
+ *      });
+ * 
+ * 
  * @namespace respoke
  * @class respoke
  * @global
@@ -34,6 +114,16 @@ var respoke = module.exports = {
     streams: {},
     instances: {}
 };
+
+/**
+ * `"v0.0.0"`
+ * 
+ * The respoke.min.js version.
+ * 
+ * Past versions can be found at [cdn.respoke.io/list.html](http://cdn.respoke.io/list.html)
+ * @type {string}
+ */
+respoke.version = respoke.buildNumber + "";
 
 respoke.EventEmitter = require('./event');
 respoke.Client = require('./client');
@@ -72,9 +162,13 @@ if (!window.skipBugsnag) {
 }
 
 /**
- * This is one of two possible entry points for interating with the library. This method creates a new Client object
- * which represence your app's connection to the cloud infrastructure.  This method automatically calls the
- * client.connect() method after the client is created.
+ * This is one of two possible entry points for interating with the library. 
+ * 
+ * This method creates a new Client object
+ * which represents your user's connection to your Respoke app. 
+ * 
+ * This method **automatically calls client.connect(params)** after the client is created.
+ * 
  * @static
  * @memberof respoke
  * @param {object} params Parameters to the respoke.Client constructor.
@@ -101,6 +195,8 @@ if (!window.skipBugsnag) {
  * @param {function} [params.onCall] - Callback for when this client's user receives a call.
  * @param {function} [params.onDirectConnection] - Callback for when this client's user receives a request for a
  * direct connection.
+ * @param {boolean} [params.enableCallDebugReport=true] - Optional flag defaulting to true which allows sending
+ * debugging information.
  * @returns {respoke.Client}
  */
 respoke.connect = function (params) {
@@ -112,6 +208,9 @@ respoke.connect = function (params) {
 
 /**
  * Getter for the respoke client.
+ *
+ * You can have more than one active client, so this method provides a way to retrieve a specific instance. 
+ *
  * @static
  * @memberof respoke
  * @param {number} id The Client ID.
@@ -129,18 +228,17 @@ respoke.getClient = function (id) {
 };
 
 /**
- * This is one of two possible entry points for interating with the library. This method creates a new Client object
- * which represence your app's connection to the cloud infrastructure.  This method does NOT automatically call the
- * client.connect() method after the client is created, so your app will need to call it when it is ready to
- * connect.
+ * This is one of two possible entry points for interating with the library. 
+ * 
+ * This method creates a new Client object which represents your user's connection to your Respoke app.
+ * 
+ * It **does NOT automatically call the client.connect() method** after the client is created. 
+ * 
+ * The `params` argument is the same as `respoke.connect(params)`.
+ * 
  * @static
  * @memberof respoke
- * @param {object} params Parameters to the respoke.Client constructor.
- * @param {string} [params.appId]
- * @param {string} [params.baseURL]
- * @param {string} [params.authToken]
- * @param {RTCConstraints} [params.constraints]
- * @param {RTCICEServers} [params.servers]
+ * @param {object} params Parameters to respoke.Client - same as respoke.connect()
  * @returns {respoke.Client}
  */
 respoke.createClient = function (params) {

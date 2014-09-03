@@ -1,23 +1,20 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
+var respoke = require('./respoke');
+var log = require('loglevel');
 
 /**
- * Create a generic EventEmitter class for objects with events to extend. Most classes in this library
- * extend this class with the exception of classes which are simple POJOs like {respoke.TextMessage},
- * {respoke.SignalingMessage}, and {respoke.Event}.
+ * A generic class for emitting and listening to events.
+ * 
  * @class respoke.EventEmitter
- * @augments respoke.Class
+ * @inherits respoke.Class
  * @constructor
  * @param {object} params
  * @param {string} params.instanceId
  * @returns {respoke.EventEmitter}
  */
-
-var respoke = require('./respoke');
-var log = require('loglevel');
-
 var EventEmitter = module.exports = function (params) {
     "use strict";
     params = params || {};
@@ -27,6 +24,7 @@ var EventEmitter = module.exports = function (params) {
      * @memberof! respoke.EventEmitter
      * @name className
      * @type {string}
+     * @private
      */
     that.className = 'respoke.EventEmitter';
 

@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
 
 var Q = require('q');
@@ -8,11 +8,14 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * WebRTC Call including getUserMedia, path and codec negotation, and call state.
+ * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation, 
+ * and call state.
+ * 
+ * There are several methods on an instance of `respoke.Client` which return a `respoke.Call`.
+ * 
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
- * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {boolean} params.caller - whether or not we initiated the call
@@ -208,7 +211,7 @@ module.exports = function (params) {
     var signalingChannel = params.signalingChannel;
     /**
      * Informational property. Whether call debugs were enabled on the client during creation.
-     * Changing this value will do nothing. 
+     * Changing this value will do nothing.
      * @name callDebugReportEnabled
      * @type {boolean}
      */
@@ -402,6 +405,7 @@ module.exports = function (params) {
          * @property {respoke.Endpoint} endpoint
          * @property {string} name - the event name.
          * @property {respoke.Client} target
+         * @private
          */
         client.fire('call', {
             endpoint: that.remoteEndpoint,
@@ -586,6 +590,8 @@ module.exports = function (params) {
         }
         log.debug('Call.approve');
         /**
+         * Fired when the local media access is approved.
+         * 
          * @event respoke.Call#approve
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -631,11 +637,14 @@ module.exports = function (params) {
         videoRemoteElement.used = true;
         videoRemoteElement.play();
         /**
+         * Indicates that a remote media stream has been added to the call.
+         * 
+         * @event respoke.Call#connect
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
-         * @property {Element} element - the HTML5 Video element with the new stream attached.
-         * @property {MediaStream} stream - the media stream
-         * @property {string} name - the event name.
+         * @property {Element} element - The HTML5 Video element with the new stream attached.
+         * @property {MediaStream} stream - The media stream.
+         * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
         that.fire('connect', {
@@ -882,7 +891,6 @@ module.exports = function (params) {
     };
 
     /**
-     *
      * Get the direct connection on this call, if it exists.
      * @memberof! respoke.Call
      * @method respoke.Call.startDirectConnection
@@ -1056,6 +1064,7 @@ module.exports = function (params) {
          * @property {respoke.Endpoint} endpoint
          * @property {string} name - the event name.
          * @property {respoke.Call} target
+         * @private
          */
         client.fire('direct-connection', {
             directConnection: directConnection,
@@ -1484,9 +1493,9 @@ module.exports = function (params) {
             callSettings.servers = client.callSettings.servers;
             callSettings.servers.iceServers = result;
         }
+    }).fin(function () {
         saveParameters(params);
         init();
-    }).fin(function () {
         defInit.resolve();
     }).done(null, function (err) {
         // who cares

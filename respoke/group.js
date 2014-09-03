@@ -1,16 +1,20 @@
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+ * @private
  */
 
 var Q = require('q');
 var respoke = require('./respoke');
 
 /**
- * A group, representing a collection of endpoints and the method by which to communicate with them.
+ * A `respoke.Group` represents a collection of endpoints.
+ * 
+ * There are methods to communicate with the endpoints at the group level and track 
+ * their presence in the group.
+ * 
  * @class respoke.Group
+ * @augments respoke.EventEmitter
  * @constructor
- * @link https://cdn.respoke.io/respoke.min.js
  * @param {object} params
  * @param {string} params.instanceId
  * @param {respoke.Group.onJoin} params.onJoin - A callback to receive notifications every time a new
@@ -40,6 +44,7 @@ module.exports = function (params) {
     }
 
     /**
+     * Internal reference to the api signaling channel.
      * @memberof! respoke.Group
      * @name signalingChannel
      * @type respoke.SignalingChannel
@@ -49,10 +54,10 @@ module.exports = function (params) {
     delete params.signalingChannel;
 
     /**
+     * The connections to members of this group.
      * @memberof! respoke.Group
      * @name endpoints
-     * @type {array<respoke.Endpoint>}
-     * @desc A list of the members of this group.
+     * @type {array<respoke.Connection>}
      */
     that.connections = [];
     /**
@@ -63,6 +68,15 @@ module.exports = function (params) {
      */
     that.className = 'respoke.Group';
     that.listen('join', params.onJoin);
+    /**
+     * Indicates that a message has been sent to this group.
+     * 
+     * @event respoke.Group#message
+     * @type {respoke.Event}
+     * @property {respoke.TextMessage} message
+     * @property {string} name - The event name.
+     * @property {respoke.Group} target
+     */
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
     client.listen('disconnect', function disconnectHandler() {
@@ -145,6 +159,7 @@ module.exports = function (params) {
              * @property {respoke.Group} group
              * @property {string} name - the event name.
              * @property {respoke.Client} target
+             * @private
              */
             client.fire('leave', {
                 group: that
@@ -189,8 +204,8 @@ module.exports = function (params) {
                  * This event is fired when a member leaves a group the client is a member of.
                  * @event respoke.Group#leave
                  * @type {respoke.Event}
-                 * @property {respoke.Connection} connection
-                 * @property {string} name - the event name.
+                 * @property {respoke.Connection} connection - The connection that left the group.
+                 * @property {string} name - The event name.
                  * @property {respoke.Group} target
                  */
                 that.fire('leave', {
@@ -250,8 +265,8 @@ module.exports = function (params) {
              * of.
              * @event respoke.Group#join
              * @type {respoke.Event}
-             * @property {respoke.Connection} connection
-             * @property {string} name - the event name.
+             * @property {respoke.Connection} connection - The connection that joined the group.
+             * @property {string} name - The event name.
              * @property {respoke.Group} target
              */
             that.fire('join', {
@@ -285,14 +300,24 @@ module.exports = function (params) {
     }
 
     /**
-     * Message the group
      * 
-     * Send a message to the entire group.
+     * Send a message to all of the endpoints in the group.
+     * 
+     *      var group = client.getGroup({ id: 'js-enthusiasts'});
+     *      
+     *      group.sendMessage({
+     *          message: "Cat on keyboard",
+     *          onSuccess: function (evt) {
+     *              console.log('Message was sent');
+     *          }
+     *      });
      * 
      * @memberof! respoke.Group
      * @method respoke.Group.sendMessage
      * @param {object} params
      * @param {string} params.message - The message.
+     * @param {function} params.onSuccess - Success handler indicating that the message was delivered.
+     * @param {function} params.onError - Error handler indicating that the message was not delivered.
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
