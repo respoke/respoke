@@ -1496,7 +1496,7 @@ module.exports = function (params) {
                         socket.disconnect();
                     }
                 });
-            }, 5000);
+            }, 6000);
         }, function onError(err) {
             deferred.reject(err);
         }));
