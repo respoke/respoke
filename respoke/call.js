@@ -360,6 +360,7 @@ module.exports = function (params) {
             pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
             /**
+             * The call was answered.
              * @event respoke.Call#answer
              * @property {string} name - the event name.
              * @property {respoke.Call} target
