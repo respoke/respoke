@@ -840,18 +840,12 @@ module.exports = function (params) {
      *          onSuccess: function (evt) {
      *              console.log('I joined', evt.group.id); 
      *              // "I joined book-club"
-     *          }, 
-     *          onJoin: function (evt) { 
-     *              console.log(evt.endpoint.id, 'joined', evt.group.id); 
-     *              // "billy joined book-club"
-     *              
-     *              // get out of here when billy arrives
      *              evt.group.leave({
      *                  onSuccess: function (evt) {
-     *                      console.log('successfully left the group');
+     *                      console.log('successfully left');
      *                  }
      *              });
-     *          } 
+     *          }
      *      });
      * 
      * 
