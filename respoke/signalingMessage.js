@@ -55,6 +55,8 @@ module.exports = function (params) {
         'requesting', 'reason', 'error', 'status'
     ];
 
+    params.version = '1.0';
+
     /**
      * Parse rawMessage and set attributes required for message delivery.
      * @memberof! respoke.SignalingMessage
@@ -63,13 +65,9 @@ module.exports = function (params) {
      */
     function parse() {
         if (params.rawMessage) {
-            try {
-                that = JSON.parse(params.rawMessage.body); // Incoming message
-                that.endpointId = params.rawMessage.header.from;
-                that.connectionId = params.rawMessage.header.fromConnection;
-            } catch (e) {
-                throw new Error(e);
-            }
+            that = JSON.parse(params.rawMessage.body); // Incoming message
+            that.endpointId = params.rawMessage.header.from;
+            that.connectionId = params.rawMessage.header.fromConnection;
         } else {
             required.forEach(function eachAttr(attr) {
                 if (params[attr] === 0 || !params[attr]) {
@@ -82,9 +80,6 @@ module.exports = function (params) {
                     that[attr] = params[attr];
                 }
             });
-
-            that.to = params.recipient.id;
-            that.toConnection = params.connectionId;
         }
     }
 
