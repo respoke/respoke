@@ -33,6 +33,8 @@ module.exports = function (params) {
     var receiveAnswerTimeout = 60000;
     var connectionTimer;
     var connectionTimeout = 10000;
+    var modifyTimer;
+    var modifyTimeout = 60000;
     var savedOffer;
     var savedAnswer;
 
@@ -123,18 +125,26 @@ module.exports = function (params) {
                     guard: function (params) {
                         return !params.client.hasListeners('call');
                     }
-                }]
+                }],
+                // Event
+                hangup: {
+                    target: 'terminated'
+                }
             },
             // State
             negotiatingContainer: {
                 init: "preparing",
+                // Event
+                hangup: {
+                    target: 'terminated'
+                },
                 states: {
                     preparing: {
                         // Event
                         entry: [setMediaFlowingEvent, {
                             action: function () {
                                 that.hasLocalMediaApproval = false;
-                                that.hasMedia = false;
+                                that.hasLocalMedia = false;
                                 answerTimer = new Timer(function () {
                                     that.dispatch('reject');
                                 }, 'answer own call', answerTimeout);
@@ -335,10 +345,17 @@ module.exports = function (params) {
             modifyingContainer: {
                 init: 'modifying',
                 reject: rejectEvent,
+                // Event
+                hangup: {
+                    target: 'terminated'
+                },
                 states: {
                     modifying: {
                         // Event
                         entry: function () {
+                            modifyTimer = new Timer(function () {
+                                that.dispatch('reject');
+                            }, 'modify', modifyTimeout);
                             that.fire('modifying:entry');
                         },
                         // Event
@@ -346,8 +363,17 @@ module.exports = function (params) {
                             // reject modification
                         },
                         // Event
-                        accept: {
-                            target: 'preparing'
+                        accept: [function () {
+                            // set caller to true
+                        }, {
+                            target: 'preparing',
+                        }],
+                        // Event
+                        exit: function () {
+                            if (modifyTimer) {
+                                modifyTimer.clear();
+                            }
+                            that.fire('modifying:exit');
                         }
                     }
                 }
@@ -360,6 +386,10 @@ module.exports = function (params) {
                     if (receiveAnswerTimer) {
                         receiveAnswerTimer.clear();
                     }
+                },
+                // Event
+                hangup: {
+                    target: 'terminated'
                 },
                 states: {
                     connected: {

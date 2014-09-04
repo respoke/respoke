@@ -89,6 +89,32 @@ describe("respoke.CallState", function () {
                 });
             });
 
+            describe("event 'hangup'", function () {
+                var terminatedEntrySpy;
+
+                beforeEach(function () {
+                    terminatedEntrySpy = sinon.spy();
+                    state.listen('terminated:entry', terminatedEntrySpy);
+                    state.dispatch("hangup");
+                });
+
+                afterEach(function () {
+                    state.ignore('terminated:entry', terminatedEntrySpy);
+                });
+
+                it("leads to 'terminated'", function () {
+                    expect(state.currentState().name).to.equal("terminated");
+                });
+
+                it("should not report modifying", function () {
+                    expect(state.isModifying()).to.equal(false);
+                });
+
+                it("should fire the 'terminated:entry' event", function () {
+                    expect(terminatedEntrySpy.called).to.equal(true);
+                });
+            });
+
             describe("event 'initiate'", function () {
                 describe("when a call listener is attached", function () {
                     var preparingEntrySpy;
@@ -122,6 +148,32 @@ describe("respoke.CallState", function () {
                     describe("when isMediaFlowing is false", function () {
                         beforeEach(function () {
                             state.isMediaFlowing = false;
+                        });
+
+                        describe("event 'hangup'", function () {
+                            var terminatedEntrySpy;
+
+                            beforeEach(function () {
+                                terminatedEntrySpy = sinon.spy();
+                                state.listen('terminated:entry', terminatedEntrySpy);
+                                state.dispatch("hangup");
+                            });
+
+                            afterEach(function () {
+                                state.ignore('terminated:entry', terminatedEntrySpy);
+                            });
+
+                            it("leads to 'terminated'", function () {
+                                expect(state.currentState().name).to.equal("terminated");
+                            });
+
+                            it("should not report modifying", function () {
+                                expect(state.isModifying()).to.equal(false);
+                            });
+
+                            it("should fire the 'terminated:entry' event", function () {
+                                expect(terminatedEntrySpy.called).to.equal(true);
+                            });
                         });
 
                         describe('invalid event', function () {
@@ -595,6 +647,32 @@ describe("respoke.CallState", function () {
                             state.isMediaFlowing = true;
                         });
 
+                        describe("event 'hangup'", function () {
+                            var terminatedEntrySpy;
+
+                            beforeEach(function () {
+                                terminatedEntrySpy = sinon.spy();
+                                state.listen('terminated:entry', terminatedEntrySpy);
+                                state.dispatch("hangup");
+                            });
+
+                            afterEach(function () {
+                                state.ignore('terminated:entry', terminatedEntrySpy);
+                            });
+
+                            it("leads to 'terminated'", function () {
+                                expect(state.currentState().name).to.equal("terminated");
+                            });
+
+                            it("should not report modifying", function () {
+                                expect(state.isModifying()).to.equal(false);
+                            });
+
+                            it("should fire the 'terminated:entry' event", function () {
+                                expect(terminatedEntrySpy.called).to.equal(true);
+                            });
+                        });
+
                         describe("event 'reject'", function () {
                             var connectedEntrySpy;
 
@@ -654,6 +732,95 @@ describe("respoke.CallState", function () {
                                 it("should fire the 'modifying:entry' event", function () {
                                     expect(modifyingEntrySpy.called).to.equal(true);
                                 });
+
+                                describe("event 'accept'", function () {
+                                    var preparingEntrySpy;
+                                    var modifyingExitSpy;
+
+                                    beforeEach(function () {
+                                        preparingEntrySpy = sinon.spy();
+                                        modifyingExitSpy = sinon.spy();
+                                        state.listen('preparing:entry', function () {
+                                            preparingEntrySpy();
+                                        });
+                                        state.listen('modifying:exit', function () {
+                                            modifyingExitSpy();
+                                        });
+                                        state.dispatch("accept");
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('preparing:entry', preparingEntrySpy);
+                                        state.ignore('modifying:exit', modifyingExitSpy);
+                                    });
+
+                                    it("leads to 'preparing'", function () {
+                                        expect(state.currentState().name).to.equal("preparing");
+                                    });
+
+                                    it("should report modifying", function () {
+                                        expect(state.isModifying()).to.equal(true);
+                                    });
+
+                                    it("should fire the 'preparing:entry' event", function () {
+                                        expect(preparingEntrySpy.called).to.equal(true);
+                                    });
+
+                                    it("should fire the 'modifying:exit' event", function () {
+                                        expect(modifyingExitSpy.called).to.equal(true);
+                                    });
+
+                                    it("should set hasLocalMediaApproval to false", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(false);
+                                    });
+
+                                    it("should set hasLocalMedia to false", function () {
+                                        expect(state.hasLocalMedia).to.equal(false);
+                                    });
+
+                                    xit("should set caller to true", function () {
+                                        //expect(call.caller).to.equal(true);
+                                    });
+                                });
+
+                                describe("event 'reject'", function () {
+                                    var connectedEntrySpy;
+                                    var modifyingExitSpy;
+
+                                    beforeEach(function () {
+                                        connectedEntrySpy = sinon.spy();
+                                        modifyingExitSpy = sinon.spy();
+                                        state.listen('connected:entry', function () {
+                                            connectedEntrySpy();
+                                        });
+                                        state.listen('modifying:exit', function () {
+                                            modifyingExitSpy();
+                                        });
+                                        state.dispatch("reject");
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connected:entry', connectedEntrySpy);
+                                        state.ignore('modifying:exit', modifyingExitSpy);
+                                    });
+
+                                    it("leads to 'connected'", function () {
+                                        expect(state.currentState().name).to.equal("connected");
+                                    });
+
+                                    it("should not report modifying", function () {
+                                        expect(state.isModifying()).to.equal(false);
+                                    });
+
+                                    it("should fire the 'connected:entry' event", function () {
+                                        expect(connectedEntrySpy.called).to.equal(true);
+                                    });
+
+                                    it("should fire the 'modifying:exit' event", function () {
+                                        expect(modifyingExitSpy.called).to.equal(true);
+                                    });
+                                });
+
 
                                 describe('invalid event', function () {
                                     var invalidEvents = [
@@ -743,6 +910,32 @@ describe("respoke.CallState", function () {
                 expect(state.isModifying()).to.equal(false);
             });
 
+            describe("event 'hangup'", function () {
+                var terminatedEntrySpy;
+
+                beforeEach(function () {
+                    terminatedEntrySpy = sinon.spy();
+                    state.listen('terminated:entry', terminatedEntrySpy);
+                    state.dispatch("hangup");
+                });
+
+                afterEach(function () {
+                    state.ignore('terminated:entry', terminatedEntrySpy);
+                });
+
+                it("leads to 'terminated'", function () {
+                    expect(state.currentState().name).to.equal("terminated");
+                });
+
+                it("should not report modifying", function () {
+                    expect(state.isModifying()).to.equal(false);
+                });
+
+                it("should fire the 'terminated:entry' event", function () {
+                    expect(terminatedEntrySpy.called).to.equal(true);
+                });
+            });
+
             describe('invalid event', function () {
                 var invalidEvents = [
                     'reject',
@@ -804,6 +997,32 @@ describe("respoke.CallState", function () {
                 describe("when isMediaFlowing is false", function () {
                     beforeEach(function () {
                         state.isMediaFlowing = false;
+                    });
+
+                    describe("event 'hangup'", function () {
+                        var terminatedEntrySpy;
+
+                        beforeEach(function () {
+                            terminatedEntrySpy = sinon.spy();
+                            state.listen('terminated:entry', terminatedEntrySpy);
+                            state.dispatch("hangup");
+                        });
+
+                        afterEach(function () {
+                            state.ignore('terminated:entry', terminatedEntrySpy);
+                        });
+
+                        it("leads to 'terminated'", function () {
+                            expect(state.currentState().name).to.equal("terminated");
+                        });
+
+                        it("should not report modifying", function () {
+                            expect(state.isModifying()).to.equal(false);
+                        });
+
+                        it("should fire the 'terminated:entry' event", function () {
+                            expect(terminatedEntrySpy.called).to.equal(true);
+                        });
                     });
 
                     describe('invalid event', function () {
@@ -1260,6 +1479,32 @@ describe("respoke.CallState", function () {
                 describe("when isMediaFlowing is true", function () {
                     beforeEach(function () {
                         state.isMediaFlowing = true;
+                    });
+
+                    describe("event 'hangup'", function () {
+                        var terminatedEntrySpy;
+
+                        beforeEach(function () {
+                            terminatedEntrySpy = sinon.spy();
+                            state.listen('terminated:entry', terminatedEntrySpy);
+                            state.dispatch("hangup");
+                        });
+
+                        afterEach(function () {
+                            state.ignore('terminated:entry', terminatedEntrySpy);
+                        });
+
+                        it("leads to 'terminated'", function () {
+                            expect(state.currentState().name).to.equal("terminated");
+                        });
+
+                        it("should not report modifying", function () {
+                            expect(state.isModifying()).to.equal(false);
+                        });
+
+                        it("should fire the 'terminated:entry' event", function () {
+                            expect(terminatedEntrySpy.called).to.equal(true);
+                        });
                     });
 
                     describe("event 'reject'", function () {
