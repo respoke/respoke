@@ -6,7 +6,6 @@ respoke.log.setLevel('warn');
 describe("respoke.CallState", function () {
     var state;
     var params = {
-        caller: true,
         receiveOnly: false,
         directConnectionOnly: false,
         previewLocalMedia: function () {},
@@ -15,7 +14,7 @@ describe("respoke.CallState", function () {
 
     describe("it's object structure", function () {
         beforeEach(function () {
-            state = respoke.CallState();
+            state = respoke.CallState({gloveColor: 'white'});
         });
 
         it("has the correct class name.", function () {
@@ -27,6 +26,10 @@ describe("respoke.CallState", function () {
             expect(typeof state.isModifying).to.equal('function');
             expect(typeof state.isState).to.equal('function');
             expect(typeof state.currentState).to.equal('function');
+        });
+
+        it("saves unexpected attributes", function () {
+            expect(state.gloveColor).to.equal('white');
         });
 
         it("has not been run", function () {
@@ -50,7 +53,7 @@ describe("respoke.CallState", function () {
                     receiveOnly: false,
                     approve: function () {}
                 };
-                state = respoke.CallState();
+                state = respoke.CallState({caller: true});
             });
 
             it("reports the correct state name", function () {
@@ -514,10 +517,6 @@ describe("respoke.CallState", function () {
                                                     expect(connectedEntrySpy.called).to.equal(true);
                                                 });
 
-                                                xdescribe('event modify', function () {
-                                                    it('needs to be tested', function () {});
-                                                });
-
                                                 describe('invalid event', function () {
                                                     var invalidEvents = [
                                                         'initiate',
@@ -699,59 +698,179 @@ describe("respoke.CallState", function () {
                             });
 
                             describe("event 'modify'", function () {
-                                var connectedExitSpy;
-                                var modifyingEntrySpy;
-
-                                beforeEach(function () {
-                                    connectedExitSpy = sinon.spy();
-                                    modifyingEntrySpy = sinon.spy();
-                                    state.listen('connected:exit', connectedExitSpy);
-                                    state.listen('modifying:entry', function () {
-                                        modifyingEntrySpy();
-                                    });
-                                    state.dispatch("modify");
-                                });
-
-                                afterEach(function () {
-                                    state.ignore('connected:exit', connectedExitSpy);
-                                    state.ignore('modifying:entry', modifyingEntrySpy);
-                                });
-
-                                it("leads to 'modifying'", function () {
-                                    expect(state.currentState().name).to.equal("modifying");
-                                });
-
-                                it("should report modifying", function () {
-                                    expect(state.isModifying()).to.equal(true);
-                                });
-
-                                it("should fire the 'connected:exit' event", function () {
-                                    expect(connectedExitSpy.called).to.equal(true);
-                                });
-
-                                it("should fire the 'modifying:entry' event", function () {
-                                    expect(modifyingEntrySpy.called).to.equal(true);
-                                });
-
-                                describe("event 'accept'", function () {
-                                    var preparingEntrySpy;
-                                    var modifyingExitSpy;
+                                describe("as modify initiator", function () {
+                                    var connectedExitSpy;
+                                    var modifyingEntrySpy;
 
                                     beforeEach(function () {
-                                        preparingEntrySpy = sinon.spy();
-                                        modifyingExitSpy = sinon.spy();
-                                        state.listen('preparing:entry', function () {
-                                            preparingEntrySpy();
+                                        connectedExitSpy = sinon.spy();
+                                        modifyingEntrySpy = sinon.spy();
+                                        state.listen('connected:exit', connectedExitSpy);
+                                        state.listen('modifying:entry', function () {
+                                            modifyingEntrySpy();
                                         });
-                                        state.listen('modifying:exit', function () {
-                                            modifyingExitSpy();
-                                        });
-                                        state.dispatch("accept");
+                                        state.dispatch("modify");
                                     });
 
                                     afterEach(function () {
+                                        state.ignore('connected:exit', connectedExitSpy);
+                                        state.ignore('modifying:entry', modifyingEntrySpy);
+                                    });
+
+                                    it("leads to 'modifying'", function () {
+                                        expect(state.currentState().name).to.equal("modifying");
+                                    });
+
+                                    it("should report modifying", function () {
+                                        expect(state.isModifying()).to.equal(true);
+                                    });
+
+                                    it("should fire the 'connected:exit' event", function () {
+                                        expect(connectedExitSpy.called).to.equal(true);
+                                    });
+
+                                    it("should fire the 'modifying:entry' event", function () {
+                                        expect(modifyingEntrySpy.called).to.equal(true);
+                                    });
+
+                                    describe("event 'accept'", function () {
+                                        var preparingEntrySpy;
+                                        var modifyingExitSpy;
+
+                                        beforeEach(function () {
+                                            preparingEntrySpy = sinon.spy();
+                                            modifyingExitSpy = sinon.spy();
+                                            state.listen('preparing:entry', function () {
+                                                preparingEntrySpy();
+                                            });
+                                            state.listen('modifying:exit', function () {
+                                                modifyingExitSpy();
+                                            });
+                                            state.dispatch("accept");
+                                        });
+
+                                        afterEach(function () {
+                                            state.ignore('preparing:entry', preparingEntrySpy);
+                                            state.ignore('modifying:exit', modifyingExitSpy);
+                                        });
+
+                                        it("leads to 'preparing'", function () {
+                                            expect(state.currentState().name).to.equal("preparing");
+                                        });
+
+                                        it("should report modifying", function () {
+                                            expect(state.isModifying()).to.equal(true);
+                                        });
+
+                                        it("should fire the 'preparing:entry' event", function () {
+                                            expect(preparingEntrySpy.called).to.equal(true);
+                                        });
+
+                                        it("should fire the 'modifying:exit' event", function () {
+                                            expect(modifyingExitSpy.called).to.equal(true);
+                                        });
+
+                                        it("should set hasLocalMediaApproval to false", function () {
+                                            expect(state.hasLocalMediaApproval).to.equal(false);
+                                        });
+
+                                        it("should set hasLocalMedia to false", function () {
+                                            expect(state.hasLocalMedia).to.equal(false);
+                                        });
+
+                                        it("should set caller to true", function () {
+                                            expect(state.caller).to.equal(true);
+                                        });
+                                    });
+
+                                    describe("event 'reject'", function () {
+                                        var connectedEntrySpy;
+                                        var modifyingExitSpy;
+
+                                        beforeEach(function () {
+                                            connectedEntrySpy = sinon.spy();
+                                            modifyingExitSpy = sinon.spy();
+                                            state.listen('connected:entry', function () {
+                                                connectedEntrySpy();
+                                            });
+                                            state.listen('modifying:exit', function () {
+                                                modifyingExitSpy();
+                                            });
+                                            state.dispatch("reject");
+                                        });
+
+                                        afterEach(function () {
+                                            state.ignore('connected:entry', connectedEntrySpy);
+                                            state.ignore('modifying:exit', modifyingExitSpy);
+                                        });
+
+                                        it("leads to 'connected'", function () {
+                                            expect(state.currentState().name).to.equal("connected");
+                                        });
+
+                                        it("should not report modifying", function () {
+                                            expect(state.isModifying()).to.equal(false);
+                                        });
+
+                                        it("should fire the 'connected:entry' event", function () {
+                                            expect(connectedEntrySpy.called).to.equal(true);
+                                        });
+
+                                        it("should fire the 'modifying:exit' event", function () {
+                                            expect(modifyingExitSpy.called).to.equal(true);
+                                        });
+                                    });
+
+                                    describe('invalid event', function () {
+                                        var invalidEvents = [
+                                            'initiate',
+                                            'answer',
+                                            'receiveLocalMedia',
+                                            'approve',
+                                            'sentOffer',
+                                            'receiveRemoteMedia',
+                                            'receiveAnswer',
+                                            'modify'
+                                        ];
+
+                                        invalidEvents.forEach(function (evt) {
+                                            describe("event " + evt, function () {
+                                                var currentState;
+
+                                                beforeEach(function () {
+                                                    currentState = state.currentState().name;
+                                                    state.dispatch(evt, params || {});
+                                                });
+
+                                                it("doesn't move to a new state", function () {
+                                                    expect(state.currentState().name).to.equal(currentState);
+                                                });
+
+                                                it("should report modifying", function () {
+                                                    expect(state.isModifying()).to.equal(true);
+                                                });
+                                            });
+                                        });
+                                    });
+                                });
+
+                                describe("as modify receiver", function () {
+                                    var connectedExitSpy;
+                                    var preparingEntrySpy;
+
+                                    beforeEach(function () {
+                                        connectedExitSpy = sinon.spy();
+                                        preparingEntrySpy = sinon.spy();
+                                        state.listen('connected:exit', connectedExitSpy);
+                                        state.listen('preparing:entry', function () {
+                                            preparingEntrySpy();
+                                        });
+                                        state.dispatch("modify", {receive: true});
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connected:exit', connectedExitSpy);
                                         state.ignore('preparing:entry', preparingEntrySpy);
-                                        state.ignore('modifying:exit', modifyingExitSpy);
                                     });
 
                                     it("leads to 'preparing'", function () {
@@ -762,89 +881,84 @@ describe("respoke.CallState", function () {
                                         expect(state.isModifying()).to.equal(true);
                                     });
 
+                                    it("should fire the 'connected:exit' event", function () {
+                                        expect(connectedExitSpy.called).to.equal(true);
+                                    });
+
                                     it("should fire the 'preparing:entry' event", function () {
                                         expect(preparingEntrySpy.called).to.equal(true);
                                     });
 
-                                    it("should fire the 'modifying:exit' event", function () {
-                                        expect(modifyingExitSpy.called).to.equal(true);
+                                    it("should set the caller to false", function () {
+                                        expect(state.caller).to.equal(false);
                                     });
 
-                                    it("should set hasLocalMediaApproval to false", function () {
-                                        expect(state.hasLocalMediaApproval).to.equal(false);
-                                    });
+                                    describe("event 'reject'", function () {
+                                        var connectedEntrySpy;
+                                        var preparingExitSpy;
 
-                                    it("should set hasLocalMedia to false", function () {
-                                        expect(state.hasLocalMedia).to.equal(false);
-                                    });
-
-                                    xit("should set caller to true", function () {
-                                        //expect(call.caller).to.equal(true);
-                                    });
-                                });
-
-                                describe("event 'reject'", function () {
-                                    var connectedEntrySpy;
-                                    var modifyingExitSpy;
-
-                                    beforeEach(function () {
-                                        connectedEntrySpy = sinon.spy();
-                                        modifyingExitSpy = sinon.spy();
-                                        state.listen('connected:entry', function () {
-                                            connectedEntrySpy();
-                                        });
-                                        state.listen('modifying:exit', function () {
-                                            modifyingExitSpy();
-                                        });
-                                        state.dispatch("reject");
-                                    });
-
-                                    afterEach(function () {
-                                        state.ignore('connected:entry', connectedEntrySpy);
-                                        state.ignore('modifying:exit', modifyingExitSpy);
-                                    });
-
-                                    it("leads to 'connected'", function () {
-                                        expect(state.currentState().name).to.equal("connected");
-                                    });
-
-                                    it("should not report modifying", function () {
-                                        expect(state.isModifying()).to.equal(false);
-                                    });
-
-                                    it("should fire the 'connected:entry' event", function () {
-                                        expect(connectedEntrySpy.called).to.equal(true);
-                                    });
-
-                                    it("should fire the 'modifying:exit' event", function () {
-                                        expect(modifyingExitSpy.called).to.equal(true);
-                                    });
-                                });
-
-
-                                describe('invalid event', function () {
-                                    var invalidEvents = [
-                                        'initiate',
-                                        'answer',
-                                        'receiveLocalMedia',
-                                        'approve',
-                                        'sentOffer',
-                                        'receiveRemoteMedia',
-                                        'receiveAnswer',
-                                        'modify'
-                                    ];
-
-                                    invalidEvents.forEach(function (evt) {
-                                        describe("event " + evt, function () {
-                                            var currentState;
-
-                                            beforeEach(function () {
-                                                currentState = state.currentState().name;
-                                                state.dispatch(evt, params || {});
+                                        beforeEach(function () {
+                                            connectedEntrySpy = sinon.spy();
+                                            preparingExitSpy = sinon.spy();
+                                            state.listen('connected:entry', function () {
+                                                connectedEntrySpy();
                                             });
+                                            state.listen('preparing:exit', function () {
+                                                preparingExitSpy();
+                                            });
+                                            state.dispatch("reject");
+                                        });
 
-                                            it("doesn't move to a new state", function () {
-                                                expect(state.currentState().name).to.equal(currentState);
+                                        afterEach(function () {
+                                            state.ignore('connected:entry', connectedEntrySpy);
+                                            state.ignore('preparing:exit', preparingExitSpy);
+                                        });
+
+                                        it("leads to 'connected'", function () {
+                                            expect(state.currentState().name).to.equal("connected");
+                                        });
+
+                                        it("should not report modifying", function () {
+                                            expect(state.isModifying()).to.equal(false);
+                                        });
+
+                                        it("should fire the 'connected:entry' event", function () {
+                                            expect(connectedEntrySpy.called).to.equal(true);
+                                        });
+
+                                        it("should fire the 'preparing:exit' event", function () {
+                                            expect(preparingExitSpy.called).to.equal(true);
+                                        });
+                                    });
+
+                                    describe('invalid event', function () {
+                                        var invalidEvents = [
+                                            'initiate',
+                                            'receiveLocalMedia',
+                                            'approve',
+                                            'sentOffer',
+                                            'receiveRemoteMedia',
+                                            'receiveAnswer',
+                                            'modify',
+                                            'accept'
+                                        ];
+
+                                        invalidEvents.forEach(function (evt) {
+                                            describe("event " + evt, function () {
+                                                var currentState;
+
+                                                beforeEach(function () {
+                                                    currentState = state.currentState().name;
+                                                    state.dispatch(evt, params || {});
+                                                });
+
+                                                it("doesn't move to a new state", function () {
+                                                    expect(state.currentState().name).to.equal(currentState);
+                                                });
+
+                                                it("should report modifying", function () {
+                                                    expect(state.isModifying()).to.equal(true);
+                                                });
                                             });
                                         });
                                     });
@@ -899,7 +1013,7 @@ describe("respoke.CallState", function () {
                     previewLocalMedia: function () {},
                     approve: function () {}
                 };
-                state = respoke.CallState();
+                state = respoke.CallState({caller: false});
             });
 
             it("reports the correct state name", function () {
@@ -1326,10 +1440,6 @@ describe("respoke.CallState", function () {
                                         });
                                     });
 
-                                    xdescribe("event 'modify'", function () {
-                                        it("needs to be tested");
-                                    });
-
                                     describe("event 'reject'", function () {
                                         beforeEach(function () {
                                             state.dispatch("reject");
@@ -1533,65 +1643,268 @@ describe("respoke.CallState", function () {
                         });
 
                         describe("event 'modify'", function () {
-                            beforeEach(function () {
-                                state.dispatch("modify");
-                            });
+                            describe("as modify sender", function () {
+                                var connectedExitSpy;
+                                var modifyingEntrySpy;
 
-                            it("leads to 'modifying'", function () {
-                                expect(state.currentState().name).to.equal("modifying");
-                            });
+                                beforeEach(function () {
+                                    connectedExitSpy = sinon.spy();
+                                    modifyingEntrySpy = sinon.spy();
+                                    state.listen('connected:exit', connectedExitSpy);
+                                    state.listen('modifying:entry', function () {
+                                        modifyingEntrySpy();
+                                    });
+                                    state.dispatch("modify");
+                                });
 
-                            it("should report modifying", function () {
-                                expect(state.isModifying()).to.equal(true);
-                            });
+                                afterEach(function () {
+                                    state.ignore('connected:exit', connectedExitSpy);
+                                    state.ignore('modifying:entry', modifyingEntrySpy);
+                                });
 
-                            describe("event 'accept'", function () {
-                                xit("needs to be tested");
-                            });
+                                it("leads to 'modifying'", function () {
+                                    expect(state.currentState().name).to.equal("modifying");
+                                });
 
-                            describe('invalid event', function () {
-                                var invalidEvents = [
-                                    'initiate',
-                                    'answer',
-                                    'receiveLocalMedia',
-                                    'approve',
-                                    'sentOffer',
-                                    'receiveRemoteMedia',
-                                    'receiveAnswer',
-                                    'modify'
-                                ];
+                                it("should report modifying", function () {
+                                    expect(state.isModifying()).to.equal(true);
+                                });
 
-                                invalidEvents.forEach(function (evt) {
-                                    describe("event " + evt, function () {
-                                        var currentState;
+                                it("should fire the 'connected:exit' event", function () {
+                                    expect(connectedExitSpy.called).to.equal(true);
+                                });
 
-                                        beforeEach(function () {
-                                            currentState = state.currentState().name;
-                                            state.dispatch(evt, params || {});
+                                it("should fire the 'modifying:entry' event", function () {
+                                    expect(modifyingEntrySpy.called).to.equal(true);
+                                });
+
+                                describe("event 'accept'", function () {
+                                    var preparingEntrySpy;
+                                    var modifyingExitSpy;
+
+                                    beforeEach(function () {
+                                        preparingEntrySpy = sinon.spy();
+                                        modifyingExitSpy = sinon.spy();
+                                        state.listen('preparing:entry', function () {
+                                            preparingEntrySpy();
                                         });
+                                        state.listen('modifying:exit', function () {
+                                            modifyingExitSpy();
+                                        });
+                                        state.dispatch("accept");
+                                    });
 
-                                        it("doesn't move to a new state", function () {
-                                            expect(state.currentState().name).to.equal(currentState);
+                                    afterEach(function () {
+                                        state.ignore('preparing:entry', preparingEntrySpy);
+                                        state.ignore('modifying:exit', modifyingExitSpy);
+                                    });
+
+                                    it("leads to 'preparing'", function () {
+                                        expect(state.currentState().name).to.equal("preparing");
+                                    });
+
+                                    it("should report modifying", function () {
+                                        expect(state.isModifying()).to.equal(true);
+                                    });
+
+                                    it("should fire the 'preparing:entry' event", function () {
+                                        expect(preparingEntrySpy.called).to.equal(true);
+                                    });
+
+                                    it("should fire the 'modifying:exit' event", function () {
+                                        expect(modifyingExitSpy.called).to.equal(true);
+                                    });
+
+                                    it("should set hasLocalMediaApproval to false", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(false);
+                                    });
+
+                                    it("should set hasLocalMedia to false", function () {
+                                        expect(state.hasLocalMedia).to.equal(false);
+                                    });
+
+                                    it("should set caller to true", function () {
+                                        expect(state.caller).to.equal(true);
+                                    });
+                                });
+
+                                describe("event 'reject'", function () {
+                                    var connectedEntrySpy;
+                                    var modifyingExitSpy;
+
+                                    beforeEach(function () {
+                                        connectedEntrySpy = sinon.spy();
+                                        modifyingExitSpy = sinon.spy();
+                                        state.listen('connected:entry', function () {
+                                            connectedEntrySpy();
+                                        });
+                                        state.listen('modifying:exit', function () {
+                                            modifyingExitSpy();
+                                        });
+                                        state.dispatch("reject");
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connected:entry', connectedEntrySpy);
+                                        state.ignore('modifying:exit', modifyingExitSpy);
+                                    });
+
+                                    it("leads to 'connected'", function () {
+                                        expect(state.currentState().name).to.equal("connected");
+                                    });
+
+                                    it("should not report modifying", function () {
+                                        expect(state.isModifying()).to.equal(false);
+                                    });
+
+                                    it("should fire the 'connected:entry' event", function () {
+                                        expect(connectedEntrySpy.called).to.equal(true);
+                                    });
+
+                                    it("should fire the 'modifying:exit' event", function () {
+                                        expect(modifyingExitSpy.called).to.equal(true);
+                                    });
+                                });
+
+                                describe('invalid event', function () {
+                                    var invalidEvents = [
+                                        'initiate',
+                                        'answer',
+                                        'receiveLocalMedia',
+                                        'approve',
+                                        'sentOffer',
+                                        'receiveRemoteMedia',
+                                        'receiveAnswer',
+                                        'modify'
+                                    ];
+
+                                    invalidEvents.forEach(function (evt) {
+                                        describe("event " + evt, function () {
+                                            var currentState;
+
+                                            beforeEach(function () {
+                                                currentState = state.currentState().name;
+                                                state.dispatch(evt, params || {});
+                                            });
+
+                                            it("doesn't move to a new state", function () {
+                                                expect(state.currentState().name).to.equal(currentState);
+                                            });
+
+                                            it("should report modifying", function () {
+                                                expect(state.isModifying()).to.equal(true);
+                                            });
                                         });
                                     });
                                 });
                             });
 
-                            describe("event 'reject'", function () {
+                            describe("as modify receiver", function () {
+                                var connectedExitSpy;
+                                var preparingEntrySpy;
+
                                 beforeEach(function () {
-                                    state.dispatch("reject");
+                                    connectedExitSpy = sinon.spy();
+                                    preparingEntrySpy = sinon.spy();
+                                    state.listen('connected:exit', connectedExitSpy);
+                                    state.listen('preparing:entry', function () {
+                                        preparingEntrySpy();
+                                    });
+                                    state.dispatch("modify", {receive: true});
                                 });
 
                                 afterEach(function () {
-                                    state.ignore('connected:entry', connectedEntrySpy);
+                                    state.ignore('connected:exit', connectedExitSpy);
+                                    state.ignore('preparing:entry', preparingEntrySpy);
                                 });
 
-                                it("leads to 'connected'", function () {
-                                    expect(state.currentState().name).to.equal("connected");
+                                it("leads to 'preparing'", function () {
+                                    expect(state.currentState().name).to.equal("preparing");
                                 });
 
-                                it("should not report modifying", function () {
-                                    expect(state.isModifying()).to.equal(false);
+                                it("should report modifying", function () {
+                                    expect(state.isModifying()).to.equal(true);
+                                });
+
+                                it("should fire the 'connected:exit' event", function () {
+                                    expect(connectedExitSpy.called).to.equal(true);
+                                });
+
+                                it("should fire the 'preparing:entry' event", function () {
+                                    expect(preparingEntrySpy.called).to.equal(true);
+                                });
+
+                                it("should set the caller to false", function () {
+                                    expect(state.caller).to.equal(false);
+                                });
+
+                                describe("event 'reject'", function () {
+                                    var connectedEntrySpy;
+                                    var preparingExitSpy;
+
+                                    beforeEach(function () {
+                                        connectedEntrySpy = sinon.spy();
+                                        preparingExitSpy = sinon.spy();
+                                        state.listen('connected:entry', function () {
+                                            connectedEntrySpy();
+                                        });
+                                        state.listen('preparing:exit', function () {
+                                            preparingExitSpy();
+                                        });
+                                        state.dispatch("reject");
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connected:entry', connectedEntrySpy);
+                                        state.ignore('preparing:exit', preparingExitSpy);
+                                    });
+
+                                    it("leads to 'connected'", function () {
+                                        expect(state.currentState().name).to.equal("connected");
+                                    });
+
+                                    it("should not report modifying", function () {
+                                        expect(state.isModifying()).to.equal(false);
+                                    });
+
+                                    it("should fire the 'connected:entry' event", function () {
+                                        expect(connectedEntrySpy.called).to.equal(true);
+                                    });
+
+                                    it("should fire the 'preparing:exit' event", function () {
+                                        expect(preparingExitSpy.called).to.equal(true);
+                                    });
+                                });
+
+                                describe('invalid event', function () {
+                                    var invalidEvents = [
+                                        'initiate',
+                                        'receiveLocalMedia',
+                                        'approve',
+                                        'sentOffer',
+                                        'receiveRemoteMedia',
+                                        'receiveAnswer',
+                                        'accept'
+                                    ];
+
+                                    invalidEvents.forEach(function (evt) {
+                                        describe("event " + evt, function () {
+                                            var currentState;
+
+                                            beforeEach(function () {
+                                                currentState = state.currentState().name;
+                                                state.dispatch(evt, params || {});
+                                            });
+
+                                            it("doesn't move to a new state", function () {
+                                                expect(state.currentState().name).to.equal(currentState);
+                                            });
+
+                                            it("should report modifying", function () {
+                                                expect(state.isModifying()).to.equal(true);
+                                            });
+                                        });
+                                    });
                                 });
                             });
                         });

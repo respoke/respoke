@@ -900,6 +900,10 @@ module.exports = function (params) {
             params.instanceId = instanceId;
 
             group = that.getGroup({id: params.id});
+            group.listen('message', params.onMessage);
+            group.listen('join', params.onJoin);
+            group.listen('leave', params.onLeave);
+
             if (!group) {
                 group = respoke.Group(params);
                 that.addGroup(group);

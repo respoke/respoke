@@ -35,9 +35,8 @@ module.exports = function (params) {
     var connectionTimeout = 10000;
     var modifyTimer;
     var modifyTimeout = 60000;
-    var savedOffer;
-    var savedAnswer;
 
+    var oldRole;
     var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'approve', 'answer', 'sentOffer',
         'receiveAnswer'];
 
@@ -66,6 +65,10 @@ module.exports = function (params) {
         target: 'connected',
         guard: function () {
             // we have any media flowing or data channel open
+            if (typeof oldRole === 'boolean') {
+                // Reset the role if we have aborted a modify.
+                that.caller = oldRole;
+            }
             return (that.isMediaFlowing === true);
         }
     }, {
@@ -75,6 +78,11 @@ module.exports = function (params) {
             return (that.isMediaFlowing === false);
         }
     }];
+
+    // Event
+    function rejectModify() {
+        // reject modification
+    }
 
     function needToObtainMedia(params) {
         assert(params.directConnectionOnly !== undefined);
@@ -138,6 +146,8 @@ module.exports = function (params) {
                 hangup: {
                     target: 'terminated'
                 },
+                // Event
+                modify: rejectModify,
                 states: {
                     preparing: {
                         // Event
@@ -199,13 +209,13 @@ module.exports = function (params) {
                         }, {
                             target: 'offering',
                             guard: function (params) {
-                                return (params.caller === true && that.hasLocalMediaApproval === true &&
+                                return (that.caller === true && that.hasLocalMediaApproval === true &&
                                     that.hasLocalMedia === true);
                             }
                         }, {
                             target: 'connecting',
                             guard: function (params) {
-                                return (params.caller === false && that.hasLocalMediaApproval === true &&
+                                return (that.caller === false && that.hasLocalMediaApproval === true &&
                                     that.hasLocalMedia === true);
                             }
                         }],
@@ -221,19 +231,19 @@ module.exports = function (params) {
                                     target: 'approvingContent',
                                     guard: function (params) {
                                         assert(that.hasLocalMedia !== undefined);
-                                        assert(params.caller !== undefined);
+                                        assert(that.caller !== undefined);
                                         return (typeof params.previewLocalMedia === 'function');
                                     }
                                 }, {
                                     target: 'connecting',
                                     guard: function (params) {
-                                        return (params.caller === false && that.hasLocalMedia === true &&
+                                        return (that.caller === false && that.hasLocalMedia === true &&
                                             typeof params.previewLocalMedia !== 'function');
                                     }
                                 }, {
                                     target: 'offering',
                                     guard: function (params) {
-                                        return (params.caller === true && that.hasLocalMedia === true &&
+                                        return (that.caller === true && that.hasLocalMedia === true &&
                                             typeof params.previewLocalMedia !== 'function');
                                     }
                                 }]
@@ -254,14 +264,14 @@ module.exports = function (params) {
                                 }, {
                                     target: 'offering',
                                     guard: function (params) {
-                                        assert(params.caller !== undefined);
+                                        assert(that.caller !== undefined);
                                         assert(that.hasLocalMedia !== undefined);
-                                        return (params.caller === true && that.hasLocalMedia === true);
+                                        return (that.caller === true && that.hasLocalMedia === true);
                                     }
                                 }, {
                                     target: 'connecting',
                                     guard: function (params) {
-                                        return (params.caller === false && that.hasLocalMedia === true);
+                                        return (that.caller === false && that.hasLocalMedia === true);
                                     }
                                 }]
                             }
@@ -346,8 +356,13 @@ module.exports = function (params) {
                 init: 'modifying',
                 reject: rejectEvent,
                 // Event
+                modify: rejectModify,
+                // Event
                 hangup: {
-                    target: 'terminated'
+                    target: 'terminated',
+                    action: function (params) {
+                        state.signalBye = params.signal;
+                    }
                 },
                 states: {
                     modifying: {
@@ -355,24 +370,17 @@ module.exports = function (params) {
                         entry: function () {
                             modifyTimer = new Timer(function () {
                                 that.dispatch('reject');
-                            }, 'modify', modifyTimeout);
+                            }, 'modify for caller', modifyTimeout);
                             that.fire('modifying:entry');
                         },
                         // Event
-                        modify: function () {
-                            // reject modification
-                        },
-                        // Event
                         accept: [function () {
-                            // set caller to true
+                            that.caller = true;
                         }, {
                             target: 'preparing',
                         }],
                         // Event
                         exit: function () {
-                            if (modifyTimer) {
-                                modifyTimer.clear();
-                            }
                             that.fire('modifying:exit');
                         }
                     }
@@ -381,7 +389,9 @@ module.exports = function (params) {
             // State
             connectedContainer: {
                 init: 'connected',
-                reject: rejectEvent,
+                reject: {
+                    target: 'terminated'
+                },
                 receiveAnswer: function () {
                     if (receiveAnswerTimer) {
                         receiveAnswerTimer.clear();
@@ -395,6 +405,10 @@ module.exports = function (params) {
                     connected: {
                         // Event
                         entry: function () {
+                            if (modifyTimer) {
+                                modifyTimer.clear();
+                            }
+                            oldRole = that.caller;
                             that.fire('connected:entry');
                         },
                         // Event
@@ -402,10 +416,28 @@ module.exports = function (params) {
                             that.fire('connected:exit');
                         },
                         // Event
-                        modify: {
-                            // begin modification
-                            target: 'modifying'
-                        }
+                        modify: [{
+                            // be notified the other side would like modification
+                            target: 'preparing',
+                            guard: function (params) {
+                                params = params || {};
+                                if (params.receive === true) {
+                                    that.caller = false;
+                                    modifyTimer = new Timer(function () {
+                                        // If modify gets interrupted, go back to previous roles.
+                                        that.dispatch('reject');
+                                    }, 'modify', modifyTimeout);
+                                    return true;
+                                }
+                            }
+                        }, {
+                            // request to begin modification
+                            target: 'modifying',
+                            guard: function (params) {
+                                params = params || {};
+                                return (params.receive !== true);
+                            }
+                        }]
                     }
                 }
             },
@@ -419,6 +451,9 @@ module.exports = function (params) {
                             action: function () {
                                 that.fire('terminated:entry');
                                 //that.ignore();
+                                setTimeout(function () {
+                                    fsm = null;
+                                });
                             }
                         }, {
                             guard: function () {
@@ -441,8 +476,14 @@ module.exports = function (params) {
     that.currentState = fsm.currentState.bind(fsm);
     //that.dispatch = fsm.dispatch.bind(fsm);
     that.dispatch = function (evt, args) {
-        var oldState = fsm.currentState().name;
+        var oldState;
         var newState;
+
+        if (!fsm) {
+            return;
+        }
+
+        oldState = fsm.currentState().name;
         respoke.log.debug('dispatching', evt, 'from', oldState, args);
         try {
             fsm.dispatch(evt, args);

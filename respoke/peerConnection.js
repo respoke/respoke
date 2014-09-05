@@ -220,7 +220,16 @@ module.exports = function (params) {
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalHangup = params.signalHangup;
+    var signalHangup = (function () {
+        var called = false;
+        var sendSignal = params.signalHangup;
+        return function (params) {
+            if (called === false) {
+                sendSignal(params);
+                called = true;
+            }
+        };
+    })();
     /**
      * @memberof! respoke.PeerConnection
      * @name signalReport
@@ -716,56 +725,64 @@ module.exports = function (params) {
      * hangup signal.
      * @fires respoke.PeerConnection#close
      */
-    that.close = function (params) {
-        params = params || {};
-        if (toSendHangup !== undefined) {
-            log.debug("PeerConnection.close got called twice.");
-            return;
-        }
-        toSendHangup = true;
+    that.close = (function () {
+        var called = false;
+            return function (params) {
+                if (called !== false) {
+                    return;
+                }
+                called = true;
 
-        if (that.call.caller === true) {
-            if (defSDPOffer.promise.isPending()) {
-                // Never send hangup if we are the caller but we haven't sent any other signal yet.
-                toSendHangup = false;
+            params = params || {};
+            if (toSendHangup !== undefined) {
+                log.debug("PeerConnection.close got called twice.");
+                return;
             }
-        } else {
-            if (defApproved.promise.isPending()) {
-                defApproved.reject(new Error("Call hung up before approval."));
-            }
-        }
+            toSendHangup = true;
 
-        toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
-        if (toSendHangup) {
-            log.info('sending hangup');
-            signalHangup({
-                call: that.call
+            if (that.call.caller === true) {
+                if (defSDPOffer.promise.isPending()) {
+                    // Never send hangup if we are the caller but we haven't sent any other signal yet.
+                    toSendHangup = false;
+                }
+            } else {
+                if (defApproved.promise.isPending()) {
+                    defApproved.reject(new Error("Call hung up before approval."));
+                }
+            }
+
+            toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
+            if (toSendHangup) {
+                log.info('sending hangup');
+                signalHangup({
+                    call: that.call
+                });
+            }
+
+            that.report.callStopped = new Date().getTime();
+            signalReport({
+                report: that.report
             });
-        }
 
-        that.report.callStopped = new Date().getTime();
-        signalReport({
-            report: that.report
-        });
+            /**
+             * @event respoke.PeerConnection#close
+             * @type {respoke.Event}
+             * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
+             * @property {string} name - the event name.
+             * @property {respoke.PeerConnection}
+             */
+            that.fire('close', {
+                sentSignal: toSendHangup
+            });
+            that.ignore();
 
-        /**
-         * @event respoke.PeerConnection#close
-         * @type {respoke.Event}
-         * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
-         * @property {string} name - the event name.
-         * @property {respoke.PeerConnection}
-         */
-        that.fire('close', {
-            sentSignal: toSendHangup
-        });
-        that.ignore();
+            if (pc) {
+                pc.close();
+            }
 
-        if (pc) {
-            pc.close();
-        }
-
-        pc = null;
-    };
+            pc = null;
+        };
+    })();
 
     /**
      * Indicate whether a call is being setup or is in progress.

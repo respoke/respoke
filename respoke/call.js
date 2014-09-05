@@ -77,23 +77,21 @@ module.exports = function (params) {
      */
     that.className = 'respoke.Call';
 
-    if (!that.caller) {
-        /**
-         * Whether or not the client is the caller of the call.
-         * @memberof! respoke.Call
-         * @name caller
-         * @type {boolean}
-         */
-        that.caller = false;
-    } else {
-        /**
-         * The call ID.
-         * @memberof! respoke.Call
-         * @name id
-         * @type {string}
-         */
-        that.id = respoke.makeGUID();
-    }
+    /**
+     * Whether or not the client is the caller of the call.
+     * @memberof! respoke.Call
+     * @name caller
+     * @type {boolean}
+     */
+    that.caller = !!that.caller;
+
+    /**
+     * The call ID.
+     * @memberof! respoke.Call
+     * @name id
+     * @type {string}
+     */
+    that.id = that.caller ? respoke.makeGUID() : that.id;
 
     if (!that.id) {
         throw new Error("Can't start a new call without a call id.");
@@ -107,8 +105,7 @@ module.exports = function (params) {
      * @type {respoke.CallState}
      */
     var state = window.callState = respoke.CallState({
-        instanceId: instanceId,
-        call: that
+        caller: that.caller
     });
 
     /**
@@ -316,38 +313,11 @@ module.exports = function (params) {
             actuallyAddDirectConnection(params);
         }
 
-        if (that.caller === true) {
+        if (state.caller === true) {
             state.once('offering:entry', function (evt) {
                 pc.initOffer();
             });
         }
-
-        if (directConnectionOnly === true) {
-            // create the call in stealth mode.
-            return;
-        }
-
-        /**
-         * This event provides notification for when an incoming call is being received.  If the user wishes
-         * to allow the call, the app should call evt.call.answer() to answer the call.
-         * @event respoke.Client#call
-         * @type {respoke.Event}
-         * @property {respoke.Call} call
-         * @property {respoke.Endpoint} endpoint
-         * @property {string} name - the event name.
-         * @property {respoke.Client} target
-         * @private
-         */
-        state.listen('preparing:entry', function (evt) {
-            client.fire('call', {
-                endpoint: that.remoteEndpoint,
-                call: that
-            });
-
-            if (that.caller === true) {
-                that.answer();
-            }
-        });
     }
 
     /**
@@ -548,7 +518,6 @@ module.exports = function (params) {
          */
         that.fire('approve');
         state.dispatch('approve', {
-            caller: that.caller,
             previewLocalMedia: previewLocalMedia
         });
 
@@ -711,16 +680,13 @@ module.exports = function (params) {
              */
             that.fire('allow');
             state.dispatch('approve', {
-                caller: that.caller,
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
-            state.dispatch('receiveLocalMedia', {
-                caller: that.caller
-            });
+            state.dispatch('receiveLocalMedia');
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
@@ -973,7 +939,7 @@ module.exports = function (params) {
         }, true);
 
         directConnection.listen('accept', function acceptHandler() {
-            if (that.caller === false) {
+            if (state.caller === false) {
                 log.debug('Answering as a result of approval.');
                 that.answer();
                 if (defMedia && defMedia.promise.isPending()) {
@@ -1026,7 +992,7 @@ module.exports = function (params) {
             endpoint: that.remoteEndpoint
         });
 
-        if (that.caller === true) {
+        if (state.caller === true) {
             directConnection.accept();
         }
 
@@ -1053,18 +1019,36 @@ module.exports = function (params) {
      * @method respoke.Call.hangup
      * @fires respoke.Call#hangup
      * @param {object} params
-     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
+     * @arg {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    that.hangup = function (params) {
-        params = params || {};
-        log.debug('hangup', directConnection);
+    that.hangup = (function () {
+        var called = false;
+        return function (params) {
+            if (called === false) {
+                state.dispatch('hangup', params);
+                called = true;
+            }
+        };
+    })();
 
-        if (toSendHangup !== null) {
-            log.info("call.hangup() called when call is already hung up.");
+    /**
+     * Tear down the call, release user media.  Send a hangup signal to the remote party if
+     * signal is not false and we have not received a hangup signal from the remote party. This is an event
+     * handler added to the state machine via `once`.
+     * @memberof! respoke.Call
+     * @method respoke.Call.hangup
+     * @fires respoke.Call#hangup
+     * @private
+     */
+    var doHangup = (function () {
+        var called = false;
+    return function () {
+        if (called === true) {
             return;
         }
-        toSendHangup = false;
+        called = true;
+        log.debug('hangup', directConnection);
 
         localStreams.forEach(function eachStream(stream) {
             stream.stop();
@@ -1076,7 +1060,7 @@ module.exports = function (params) {
         }
 
         if (pc) {
-            toSendHangup = pc.close(params);
+            toSendHangup = pc.close({signal: state.signalBye});
         }
 
         /**
@@ -1091,10 +1075,13 @@ module.exports = function (params) {
             sentSignal: toSendHangup
         });
 
+        state.ignore();
         that.ignore();
+        state = null;
         directConnection = null;
         pc = null;
     };
+    })();
 
     /**
      * Expose hangup as reject for approve/reject workflow.
@@ -1105,12 +1092,7 @@ module.exports = function (params) {
      * a hangup signal to the remote side.
      */
     that.reject = function (params) {
-        if (defModify && defModify.promise.isPending()) {
-            defModify.reject(new Error("Modify rejected."));
-            defModify = undefined;
-        } else {
-            that.hangup(params);
-        }
+        state.dispatch('reject');
     };
 
     /**
@@ -1137,14 +1119,14 @@ module.exports = function (params) {
      * @fires respoke.Call#modify
      */
     function listenOffer(evt) {
-        log.debug('listenOffer');
+        log.debug('listenOffer', evt.signal);
         var info = {};
-        if (that.caller !== true) {
-            state.listen('connecting:entry', function () {
-                pc.processOffer(evt.signal.sessionDescription);
-            });
-        }
-        if (defModify && defModify.promise.isPending()) {
+
+        state.listen('connecting:entry', function () {
+            pc.processOffer(evt.signal.sessionDescription);
+        });
+
+        if (state.isModifying()) {
             if (directConnectionOnly === true) {
                 info.directConnection = directConnection;
             } else if (directConnectionOnly === false) {
@@ -1181,6 +1163,7 @@ module.exports = function (params) {
         log.debug('Call.listenModify', evt);
         if (evt.signal.action === 'initiate') {
             defModify = Q.defer();
+            state.dispatch('modify', {receive: true});
         }
     }
 
@@ -1192,13 +1175,7 @@ module.exports = function (params) {
      * @private
      */
     function onModifyAccept(evt) {
-        that.caller = evt.signal.action === 'initiate' ? false : true;
-        try {
-            init();
-        } catch (err) {
-            defModify.reject(err);
-            return;
-        }
+        state.dispatch('accept');
 
         if (evt.signal.action !== 'initiate') {
             defModify.resolve(); // resolved later for callee
@@ -1401,8 +1378,25 @@ module.exports = function (params) {
      */
     function listenHangup(evt) {
         pc.report.callStoppedReason = evt.signal.reason || "Remote side hung up";
-        that.hangup({signal: false});
+        state.dispatch('hangup', {signal: false});
     }
+
+    signalingChannel.getTurnCredentials().then(function (result) {
+        if (!result) {
+            log.warn("Relay service not available.");
+            callSettings.servers = {
+                iceServers: []
+            };
+        } else {
+            callSettings.servers = client.callSettings.servers;
+            callSettings.servers.iceServers = result;
+        }
+    }).fin(function () {
+        saveParameters(params);
+        state.dispatch('initiate', {client: client});
+    }).done(null, function (err) {
+        // who cares
+    });
 
     that.listen('signal-offer', listenOffer, true);
     that.listen('signal-hangup', listenHangup, true);
@@ -1421,22 +1415,35 @@ module.exports = function (params) {
         });
     }, true);
 
-    signalingChannel.getTurnCredentials().then(function (result) {
-        if (!result) {
-            log.warn("Relay service not available.");
-            callSettings.servers = {
-                iceServers: []
-            };
-        } else {
-            callSettings.servers = client.callSettings.servers;
-            callSettings.servers.iceServers = result;
-        }
-    }).fin(function () {
-        saveParameters(params);
+    state.once('terminated:entry', function() {
+        doHangup();
+    }, true);
+
+    if (directConnectionOnly !== true) {
+        state.once('preparing:entry', function () {
+            /**
+             * This event provides notification for when an incoming call is being received.  If the user wishes
+             * to allow the call, the app should call evt.call.answer() to answer the call.
+             * @event respoke.Client#call
+             * @type {respoke.Event}
+             * @property {respoke.Call} call
+             * @property {respoke.Endpoint} endpoint
+             * @property {string} name - the event name.
+             * @property {respoke.Client} target
+             */
+            client.fire('call', {
+                endpoint: that.remoteEndpoint,
+                call: that
+            });
+        });
+    }
+
+    state.listen('preparing:entry', function (evt) {
         init();
-        state.dispatch('initiate', {client: client});
-    }).done(null, function (err) {
-        // who cares
+
+        if (state.caller === true) {
+            that.answer();
+        }
     });
 
     return that;

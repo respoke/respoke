@@ -159,7 +159,7 @@ var EventEmitter = module.exports = function (params) {
                 try {
                     listener.call(that, evt);
                     count += 1;
-                    if (listener.once) {
+                    if (listener.once && eventList[eventType]) {
                         eventList[eventType].splice(i, 1);
                     }
                 } catch (e) {
