@@ -27,6 +27,10 @@ require('./deps/adapter');
  * Include the [latest version](https://cdn.respoke.io/respoke.min.js) or 
  * [choose a previous release](http://cdn.respoke.io/list.html).
  * 
+ * Interact with Respoke primarily via [`respoke.Client`](respoke.Client.html):
+ * 
+ *      var client = respoke.createClient();
+ *
  * 
  * **Development mode without brokered auth**
  * 
@@ -80,7 +84,6 @@ require('./deps/adapter');
  *          });
  *      });
  * 
- * ---
  *
  * 
  * ### Event listeners vs callback handlers
@@ -90,12 +93,12 @@ require('./deps/adapter');
  * 
  * For every `event-name`, there is a corresponding callback `onEventName`.
  *
- * **Attaching listeners**
+ * **With a listener**
  *
  *      var client = respoke.createClient();
  *      client.listen('connect', function () { });
  * 
- * **Attaching callback handlers**
+ * **or with a callback**
  *
  *      var client = respoke.createClient({
  *          // other options go here
