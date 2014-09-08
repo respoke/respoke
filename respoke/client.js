@@ -10,13 +10,16 @@ var respoke = require('./respoke');
  * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using 
  * a `respoke.Client` instance.
  * 
- * There are two ways to get one:
+ * There are two ways to get a client:
  * 
- *      var client = respoke.connect(params);
+ *      var client = respoke.createClient(clientParams);
+ *      // . . . set stuff up, then . . .
+ *      client.connect(connectParams);
  *
  * or
  *
- *      var client = respoke.createClient(params);
+ *      // creates client and connects to Respoke all at once
+ *      var client = respoke.connect(allParams);
  *
  * A client does the following things:
  * 
@@ -540,7 +543,7 @@ module.exports = function (params) {
      *
      *      client.setPresence({
      *          presence: myPresence, 
-     *          onSuccess: function () {
+     *          onSuccess: function (evt) {
      *              // successfully updated my presence
      *          }
      *      });
@@ -831,29 +834,33 @@ module.exports = function (params) {
     /**
      * Join a group and begin keeping track of it.
      * 
-     * Leave the group by calling `group.leave()`;
-     *
-     * *Joining and leaving a group, using callback handlers:*
+     * You can leave the group by calling `group.leave()`;
+     * 
+     * ##### Joining and leaving a group
+     * 
+     *      var group;
      * 
      *      client.join({ 
      *          id: "book-club",
      *          onSuccess: function (evt) {
      *              console.log('I joined', evt.group.id); 
      *              // "I joined book-club"
-     *          }, 
-     *          onJoin: function (evt) { 
-     *              console.log(evt.endpoint.id, 'joined', evt.group.id); 
-     *              // "billy joined book-club"
-     *              
-     *              // get out of here when billy arrives
-     *              evt.group.leave({
-     *                  onSuccess: function (evt) {
-     *                      console.log('successfully left the group');
-     *                  }
+     *              group = evt.group;
+     *              group.sendMessage({
+     *                  message: 'sup'
      *              });
-     *          } 
+     *          }
      *      });
      * 
+     *      // . . .
+     *      // Some time later, leave the group.
+     *      // . . .
+     *      group.leave({
+     *          onSuccess: function (evt) {
+     *              console.log('I left', evt.group.id);
+     *              // "I left book-club"
+     *          }
+     *      });
      * 
      * @memberof! respoke.Client
      * @method respoke.Client.join
