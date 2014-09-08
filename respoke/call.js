@@ -1022,15 +1022,10 @@ module.exports = function (params) {
      * @arg {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
-    that.hangup = (function () {
-        var called = false;
-        return function (params) {
-            if (called === false) {
-                state.dispatch('hangup', params);
-                called = true;
-            }
-        };
-    })();
+    that.hangup = function (params) {
+        state.dispatch('hangup', params);
+    };
+    that.hangup = respoke.once(that.hangup);
 
     /**
      * Tear down the call, release user media.  Send a hangup signal to the remote party if
@@ -1041,13 +1036,7 @@ module.exports = function (params) {
      * @fires respoke.Call#hangup
      * @private
      */
-    var doHangup = (function () {
-        var called = false;
-    return function () {
-        if (called === true) {
-            return;
-        }
-        called = true;
+    var doHangup = function () {
         log.debug('hangup', directConnection);
 
         localStreams.forEach(function eachStream(stream) {
@@ -1081,7 +1070,7 @@ module.exports = function (params) {
         directConnection = null;
         pc = null;
     };
-    })();
+    doHangup = respoke.once(doHangup);
 
     /**
      * Expose hangup as reject for approve/reject workflow.

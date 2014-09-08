@@ -262,6 +262,25 @@ respoke.createClient = function (params) {
  * @static
  * @private
  * @memberof respoke
+ * @param {function} func
+ * @returns {number}
+ */
+respoke.once = function (func) {
+    return (function () {
+        var called = false;
+        return function () {
+            if (called === false) {
+                func.apply(null, arguments);
+                called = true;
+            }
+        };
+    })();
+};
+
+/**
+ * @static
+ * @private
+ * @memberof respoke
  * @returns {number}
  */
 respoke.makeGUID = function () {

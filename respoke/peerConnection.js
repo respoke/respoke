@@ -725,64 +725,53 @@ module.exports = function (params) {
      * hangup signal.
      * @fires respoke.PeerConnection#close
      */
-    that.close = (function () {
-        var called = false;
-            return function (params) {
-                if (called !== false) {
-                    return;
-                }
-                called = true;
+    that.close = function (params) {
+        params = params || {};
+        toSendHangup = true;
 
-            params = params || {};
-            if (toSendHangup !== undefined) {
-                log.debug("PeerConnection.close got called twice.");
-                return;
+        if (that.call.caller === true) {
+            if (defSDPOffer.promise.isPending()) {
+                // Never send hangup if we are the caller but we haven't sent any other signal yet.
+                toSendHangup = false;
             }
-            toSendHangup = true;
-
-            if (that.call.caller === true) {
-                if (defSDPOffer.promise.isPending()) {
-                    // Never send hangup if we are the caller but we haven't sent any other signal yet.
-                    toSendHangup = false;
-                }
-            } else {
-                if (defApproved.promise.isPending()) {
-                    defApproved.reject(new Error("Call hung up before approval."));
-                }
+        } else {
+            if (defApproved.promise.isPending()) {
+                defApproved.reject(new Error("Call hung up before approval."));
             }
+        }
 
-            toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
-            if (toSendHangup) {
-                log.info('sending hangup');
-                signalHangup({
-                    call: that.call
-                });
-            }
-
-            that.report.callStopped = new Date().getTime();
-            signalReport({
-                report: that.report
+        toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
+        if (toSendHangup) {
+            log.info('sending hangup');
+            signalHangup({
+                call: that.call
             });
+        }
 
-            /**
-             * @event respoke.PeerConnection#close
-             * @type {respoke.Event}
-             * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
-             * @property {string} name - the event name.
-             * @property {respoke.PeerConnection}
-             */
-            that.fire('close', {
-                sentSignal: toSendHangup
-            });
-            that.ignore();
+        that.report.callStopped = new Date().getTime();
+        signalReport({
+            report: that.report
+        });
 
-            if (pc) {
-                pc.close();
-            }
+        /**
+         * @event respoke.PeerConnection#close
+         * @type {respoke.Event}
+         * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
+         * @property {string} name - the event name.
+         * @property {respoke.PeerConnection}
+         */
+        that.fire('close', {
+            sentSignal: toSendHangup
+        });
+        that.ignore();
 
-            pc = null;
-        };
-    })();
+        if (pc) {
+            pc.close();
+        }
+
+        pc = null;
+    };
+    that.close = respoke.once(that.close);
 
     /**
      * Indicate whether a call is being setup or is in progress.

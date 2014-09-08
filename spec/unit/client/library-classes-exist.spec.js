@@ -26,4 +26,33 @@ describe("The respoke namespace", function() {
         expect(typeof respoke.hasRTCPeerConnection).to.equal('function');
         expect(typeof respoke.hasWebsocket).to.equal('function');
     });
+
+    describe("contains the 'once' method", function () {
+        var initialFunction;
+        var onceFunction;
+
+        beforeEach(function () {
+            initialFunction = sinon.spy();
+            onceFunction = respoke.once(initialFunction);
+        });
+
+        it("returns function", function () {
+            expect(typeof onceFunction).to.equal('function');
+        });
+
+        describe("which", function () {
+            it("is only executed once", function () {
+                onceFunction();
+                onceFunction();
+                onceFunction();
+                onceFunction();
+                expect(initialFunction.callCount).to.equal(1);
+            });
+
+            it("calls its input function with the right arguments", function () {
+                onceFunction('test');
+                expect(initialFunction.calledWith('test')).to.equal(true);
+            });
+        });
+    });
 });
