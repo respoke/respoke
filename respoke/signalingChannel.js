@@ -1671,7 +1671,7 @@ module.exports = function (params) {
             log.error('request timeout', params.httpMethod, params.path, params.parameters);
             socket.disconnect();
             deferred.reject(new Error("Request timeout. Disconnecting."));
-        }, 5 * 1000);
+        }, 10 * 1000);
 
         socket.emit(params.httpMethod, JSON.stringify({
             url: params.path,

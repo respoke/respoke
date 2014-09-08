@@ -640,19 +640,12 @@ module.exports = function (params) {
      * @private
      */
     function addCall(evt) {
+        log.debug('addCall');
         if (!evt.call) {
             throw new Error("Can't add call without a call parameter.");
         }
         if (that.calls.indexOf(evt.call) === -1) {
             that.calls.push(evt.call);
-
-            if (evt.call.className === 'respoke.Call') {
-                if (!evt.call.caller && !that.hasListeners('call')) {
-                    log.warn("Got a incoming call with no handlers to accept it!");
-                    evt.call.reject();
-                    return;
-                }
-            }
         }
     }
 

@@ -281,8 +281,10 @@ module.exports = function (params) {
         },
         offerOptions: params.offerOptions || null,
         signalOffer: function (args) {
-            params.signalOffer(args);
-            state.dispatch('sentOffer');
+            if (state) {
+                params.signalOffer(args);
+                state.dispatch('sentOffer');
+            }
         },
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
@@ -359,6 +361,7 @@ module.exports = function (params) {
         if (!pc) {
             return;
         }
+        console.log("****************************** SAVING PARAMS caller:", that.caller);
 
         that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
@@ -409,6 +412,7 @@ module.exports = function (params) {
         delete that.onLocalMedia;
         delete that.callSettings;
         delete that.directConnectionOnly;
+        console.log("caller:", call.caller, "hangup listeners:", client.hasListeners('call'));
     }
 
     /**
@@ -708,7 +712,7 @@ module.exports = function (params) {
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
             that.removeStream({id: stream.id});
-            state.dispatch('reject');
+            state.dispatch('reject', {reason: 'media stream error'});
             pc.report.callStoppedReason = message;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
@@ -1023,7 +1027,11 @@ module.exports = function (params) {
      * a hangup signal to the remote side.
      */
     that.hangup = function (params) {
-        state.dispatch('hangup', params);
+        params = params || {};
+        if (state) {
+            params.reason = params.reason || "hangup method called.";
+            state.dispatch('hangup', params);
+        }
     };
     that.hangup = respoke.once(that.hangup);
 
@@ -1049,7 +1057,7 @@ module.exports = function (params) {
         }
 
         if (pc) {
-            toSendHangup = pc.close({signal: state.signalBye});
+            toSendHangup = pc.close({signal: (state.receivedBye ? false : state.signalBye)});
         }
 
         /**
@@ -1061,7 +1069,8 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('hangup', {
-            sentSignal: toSendHangup
+            sentSignal: toSendHangup,
+            reason: state.hangupReason || "No reason specified."
         });
 
         state.ignore();
@@ -1077,11 +1086,9 @@ module.exports = function (params) {
      * @memberof! respoke.Call
      * @method respoke.Call.reject
      * @param {object} params
-     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
-     * a hangup signal to the remote side.
      */
-    that.reject = function (params) {
-        state.dispatch('reject');
+    that.reject = function () {
+        state.dispatch('reject', {reason: 'call.reject() called'});
     };
 
     /**
@@ -1367,8 +1374,13 @@ module.exports = function (params) {
      */
     function listenHangup(evt) {
         pc.report.callStoppedReason = evt.signal.reason || "Remote side hung up";
-        state.dispatch('hangup', {signal: false});
+        state.receivedBye = true;
+        state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});
     }
+
+    state.once('terminated:entry', function() {
+        doHangup();
+    }, true);
 
     signalingChannel.getTurnCredentials().then(function (result) {
         if (!result) {
@@ -1382,7 +1394,10 @@ module.exports = function (params) {
         }
     }).fin(function () {
         saveParameters(params);
-        state.dispatch('initiate', {client: client});
+        state.dispatch('initiate', {
+            client: client,
+            caller: that.caller
+        });
     }).done(null, function (err) {
         // who cares
     });
@@ -1402,10 +1417,6 @@ module.exports = function (params) {
         evt.signal.iceCandidates.forEach(function processCandidate(candidate) {
             pc.addRemoteCandidate({candidate: candidate});
         });
-    }, true);
-
-    state.once('terminated:entry', function() {
-        doHangup();
     }, true);
 
     if (directConnectionOnly !== true) {

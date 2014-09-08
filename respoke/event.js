@@ -145,14 +145,20 @@ var EventEmitter = module.exports = function (params) {
         var count = 0;
         var onces = [];
 
+        evt = evt || {};
+        evt.name = eventType;
+        evt.target = that;
+
         if (!eventType) {
             return;
         }
 
+        if (!eventList[eventType]) {
+            log.debug("fired " + that.className + "#" + eventType + " 0 listeners called with params", evt);
+            return;
+        }
+
         eventList[eventType] = eventList[eventType] || [];
-        evt = evt || {};
-        evt.name = eventType;
-        evt.target = that;
         for (var i = eventList[eventType].length; i > -1; i -= 1) {
             var listener = eventList[eventType][i];
             if (typeof listener === 'function') {

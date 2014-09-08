@@ -10,7 +10,7 @@
  */
 
 var log = require('loglevel');
-log.setLevel('warn');
+log.setLevel('debug');
 
 var Q = require('q');
 Q.longStackSupport = true;
