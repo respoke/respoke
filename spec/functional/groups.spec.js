@@ -240,6 +240,58 @@ describe("Respoke groups", function () {
             });
         });
 
+        describe("onJoin, onLeave, and onMessage fire when another group member joins, sends message, and leaves", function () {
+            var onJoinSpy;
+            var onMessageSpy;
+            var onLeaveSpy;
+            var gId = respoke.makeGUID();
+            var aGroup;
+
+            before(function (done) {
+                onJoinSpy = sinon.spy();
+                onMessageSpy = sinon.spy();
+                onLeaveSpy = sinon.spy();
+                //join the group with onJoin and onLeave handlers
+                follower.join({id: gId, onJoin: onJoinSpy, onMessage: onMessageSpy, onLeave: onLeaveSpy}).then(function (theGroup) {
+                    aGroup1 = theGroup;
+                    done();
+                });
+            });
+
+            after(function (done) {
+                aGroup1.leave().done(function () {
+                    setTimeout(done, 50);
+                });
+            });
+
+            it("should call the onJoin handler", function (done) {
+                followee.join({id: gId}).done(function(theGroup) {
+                    aGroup2 = theGroup;
+                    expect(onJoinSpy.called).to.be.ok;
+                    done();
+                }, done);
+            });
+
+            it("should call the onMessage handler", function (done) {
+                aGroup2.sendMessage({message: "test message"}).done(function () {
+                    setTimeout(function () {
+                        expect(onMessageSpy.called).to.be.ok;
+                        done();
+                    }, 50); //network traversal
+                }, done)
+            });
+
+            it("should call the onLeave handler", function (done) {
+                //cllient 2 leaves the group
+                aGroup2.leave().done(function () {
+                    setTimeout(function () {
+                        expect(onLeaveSpy.called).to.be.ok;
+                        done();
+                    }, 50); // network traversal
+                }, done);
+            });
+        });
+
         describe("when an admin administers groups for an endpoint", function () {
             var groupName = respoke.makeGUID();
             var params;
