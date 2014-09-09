@@ -245,7 +245,8 @@ describe("Respoke groups", function () {
             var onMessageSpy;
             var onLeaveSpy;
             var gId = respoke.makeGUID();
-            var aGroup;
+            var aGroup1;
+            var aGroup2;
 
             before(function (done) {
                 onJoinSpy = sinon.spy();
