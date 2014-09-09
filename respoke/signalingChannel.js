@@ -924,6 +924,7 @@ module.exports = function (params) {
             target = client.getCall({
                 id: signal.sessionId,
                 endpointId: signal.endpointId,
+                fromType: signal.fromType,
                 create: (toCreate && signal.target === 'call')
             });
             return target;

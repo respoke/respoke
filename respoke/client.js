@@ -617,14 +617,28 @@ module.exports = function (params) {
         });
 
         if (call === null && params.create === true) {
-            endpoint = that.getEndpoint({id: params.endpointId});
-            try {
-                call = endpoint.startCall({
-                    id: params.id,
-                    caller: false
-                });
-            } catch (e) {
-                log.error("Couldn't create Call.", e.message, e.stack);
+            if (params.fromType === 'did') {
+                try {
+                    call = that.startPhoneCall({
+                        id: params.id,
+                        number: params.endpointId, //phone number
+                        caller: false,
+                        fromType: 'did',
+                        toType: 'web'
+                    });
+                } catch (e) {
+                    log.error("Couldn't create Call.", e.message, e.stack);
+                }
+            } else {
+                endpoint = that.getEndpoint({id: params.endpointId});
+                try {
+                    call = endpoint.startCall({
+                        id: params.id,
+                        caller: false
+                    });
+                } catch (e) {
+                    log.error("Couldn't create Call.", e.message, e.stack);
+                }
             }
         }
         return call;
@@ -867,7 +881,7 @@ module.exports = function (params) {
 
         if (!params.number) {
             log.error("Can't start a phone call without a number.");
-            promise = Q.reject(e);
+            promise = Q.reject(new Error("Can't start a phone call without a number."));
             retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
             return retVal;
         }
@@ -885,12 +899,16 @@ module.exports = function (params) {
         params.callSettings = combinedCallSettings;
         params.instanceId = that.id;
         params.remoteEndpoint = recipient;
+        
+        params.toType = params.toType || 'did';
+        params.fromType = params.fromType || 'web';
 
         params.signalOffer = function (signalParams) {
             signalParams.signalType = 'offer';
             signalParams.target = 'call';
             signalParams.recipient = recipient;
-            signalParams.toType = 'did';
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
             signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't place a call.", err.message, err.stack);
                 signalParams.call.hangup();
@@ -900,7 +918,8 @@ module.exports = function (params) {
             signalParams.signalType = 'answer';
             signalParams.target = 'call';
             signalParams.recipient = recipient;
-            signalParams.toType = 'did';
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
             signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
@@ -910,7 +929,8 @@ module.exports = function (params) {
             signalParams.target = 'call';
             signalParams.connectionId = signalParams.connectionId;
             signalParams.recipient = recipient;
-            signalParams.toType = 'did';
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
@@ -919,7 +939,8 @@ module.exports = function (params) {
         params.signalModify = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = recipient;
-            signalParams.toType = 'did';
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
             signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send modify.", err.message, err.stack);
             });
@@ -927,7 +948,8 @@ module.exports = function (params) {
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = recipient;
-            signalParams.toType = 'did';
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send candidate.", err.message, err.stack);
             });
@@ -935,7 +957,8 @@ module.exports = function (params) {
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = recipient;
-            signalParams.toType = 'did';
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
             signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send hangup.", err.message, err.stack);
             });
