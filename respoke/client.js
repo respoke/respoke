@@ -896,11 +896,11 @@ module.exports = function (params) {
             if (!group) {
                 group = respoke.Group(params);
                 that.addGroup(group);
-            } else {
-                group.listen('join', params.onJoin);
-                group.listen('leave', params.onLeave);
-                group.listen('message', params.onMessage);
             }
+            
+            group.listen('join', params.onJoin);
+            group.listen('leave', params.onLeave);
+            group.listen('message', params.onMessage);            
             
             group.addMember({
                 connection: that.getConnection({
