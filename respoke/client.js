@@ -864,7 +864,9 @@ module.exports = function (params) {
 
         if (!params.number) {
             log.error("Can't start a phone call without a number.");
-            return;
+            promise = Q.reject(e);
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
         }
 
         recipient.id = params.number;
