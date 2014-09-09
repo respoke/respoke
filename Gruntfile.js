@@ -70,7 +70,7 @@ module.exports = function (grunt) {
                 configFile: './karma-unit.conf.js'
             },
             functional: {
-                singleRun: false,
+                singleRun: true,
                 configFile: './karma-functional.conf.js'
             }
         },

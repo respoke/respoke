@@ -1,5 +1,76 @@
 var expect = chai.expect;
-respoke.log.setLevel('debug');
+
+// Call a function only if there's a error or on the $num attempt
+function doneCountBuilder(num, done) {
+   return (function () {
+        var called = false;
+        var count = 0;
+        if (!num || num < 0) {
+            throw new Error('First argument must be a positive integer.');
+        }
+
+        return function (err) {
+            if (called === true) {
+                return;
+            }
+
+            count += 1;
+            if (count === num || err) {
+                called = true;
+                done(err);
+            }
+        };
+    })();
+};
+
+describe("doneCountBuilder", function () {
+    var builderSpy;
+    var doneOnce;
+
+    beforeEach(function () {
+        builderSpy = sinon.spy();
+        doneOnce = doneCountBuilder(4, builderSpy);
+    });
+
+    describe("when it's called a fewer number of times as $num", function () {
+        beforeEach(function () {
+            for (var i = 0; i <= 2; i += 1) {
+                doneOnce();
+            }
+        });
+
+        it("doesn't call the function", function () {
+            expect(builderSpy.called).to.equal(false);
+            expect(builderSpy.callCount).to.equal(0);
+        });
+    });
+
+    describe("when it's called the same number of times as $num", function () {
+        beforeEach(function () {
+            for (var i = 0; i <= 4; i += 1) {
+                doneOnce();
+            }
+        });
+
+        it("calls the function only once", function () {
+            expect(builderSpy.called).to.equal(true);
+            expect(builderSpy.callCount).to.equal(1);
+        });
+    });
+
+    describe("when it's called a greater number of times than $num", function () {
+        beforeEach(function () {
+            for (var i = 0; i <= 12; i += 1) {
+                doneOnce();
+            }
+        });
+
+        it("calls the function only once", function () {
+            expect(builderSpy.called).to.equal(true);
+            expect(builderSpy.callCount).to.equal(1);
+        });
+    });
+});
 
 describe("Respoke calling", function () {
     this.timeout(30000);
@@ -33,16 +104,6 @@ describe("Respoke calling", function () {
     var followeeToken;
     var appId;
     var roleId;
-
-    function doneOnceBuilder(done) {
-        var called = false;
-        return function (err) {
-            if (!called) {
-                called = true;
-                done(err);
-            }
-        };
-    };
 
     beforeEach(function (done) {
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
@@ -94,7 +155,7 @@ describe("Respoke calling", function () {
 
     describe("when placing a call", function () {
         function callListener(evt) {
-            if (evt.call.initiator !== true) {
+            if (evt.call.caller !== true) {
                 evt.call.answer();
             }
         }
@@ -105,21 +166,19 @@ describe("Respoke calling", function () {
             var localElement;
             var stream;
 
-            beforeEach(function () {
-                followee.listen('call', callListener);
-            });
-
             afterEach(function () {
                 followee.ignore('call', callListener);
             });
 
             beforeEach(function (done) {
-                var doneOnce = doneOnceBuilder(done);
+                done = doneCountBuilder(2, done);
+                followee.listen('call', callListener);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
                         stream = evt.stream;
                         localElement = evt.element;
+                        done();
                     },
                     onConnect: function (evt) {
                         remoteElement = evt.element;
@@ -127,38 +186,50 @@ describe("Respoke calling", function () {
                     },
                     onHangup: function (evt) {
                         hangupReason = evt.reason;
+                        done();
                     }
                 });
             });
 
-            it("gets a media stream", function () {
+            it("succeeds", function () {
                 expect(stream).to.be.ok;
-            });
-
-            it("gets a local element", function () {
                 expect(localElement).to.be.ok;
-            });
-
-            it("gets a remote element", function () {
                 expect(remoteElement).to.be.ok;
-            });
-
-            it("doesn't hang up automatically", function () {
                 expect(hangupReason).to.equal(undefined);
             });
         });
 
         describe("without a call listener specified for callee", function () {
-            it("fails", function (done) {
-                call = followeeEndpoint.startCall({
+            var hangupReason;
+            var remoteStream;
+            var error;
+
+            beforeEach(function (done) {
+                var done = doneCountBuilder(1, done);
+
+                window.thisCall = call = followeeEndpoint.startCall({
                     onHangup: function (evt) {
+                        hangupReason = evt.reason;
+                        done();
+                    },
+                    onConnect: function (evt) {
+                        remoteStream = evt.stream;
+                        done();
+                    },
+                    onError: function (evt) {
+                        error = evt.reason;
                         done();
                     }
                 });
             });
+
+            it("fails", function () {
+                expect(remoteStream).not.to.be.ok;
+                expect(hangupReason).to.be.ok;
+            });
         });
 
-        xdescribe("with only audio", function () {
+        describe("with only audio", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -170,7 +241,7 @@ describe("Respoke calling", function () {
 
             describe("by constraints", function () {
                 it("only sends audio and not video", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -204,7 +275,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only receives audio and not video", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -233,7 +304,7 @@ describe("Respoke calling", function () {
 
             describe("by the Endpoint.startAudioCall method", function () {
                 it("only sends audio and not video", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startAudioCall({
                         onLocalMedia: function (evt) {
@@ -261,7 +332,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only receives audio and not video", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startAudioCall({
                         onConnect: function (evt) {
@@ -289,7 +360,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("with only video", function () {
+        describe("with only video", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -300,7 +371,7 @@ describe("Respoke calling", function () {
 
             describe("by constraints", function () {
                 it("only sends video and not audio", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -334,7 +405,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only receives video and not audio", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -362,7 +433,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("with video and audio", function () {
+        describe("with video and audio", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -373,7 +444,7 @@ describe("Respoke calling", function () {
 
             describe("by constraints", function () {
                 it("sends both video and audio", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -407,7 +478,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("receives both video and audio", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -436,7 +507,7 @@ describe("Respoke calling", function () {
 
             describe("by the Endpoint.startVideoCall method", function () {
                 it("sends both video and audio", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startVideoCall({
                         onLocalMedia: function (evt) {
@@ -464,7 +535,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("receives both video and audio", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startVideoCall({
                         onConnect: function (evt) {
@@ -492,7 +563,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("when previewLocalMedia is specified", function () {
+        describe("when previewLocalMedia is specified", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -504,7 +575,7 @@ describe("Respoke calling", function () {
             });
 
             it("Call.approve is not called automatically", function (done) {
-                var doneOnce = doneOnceBuilder(done);
+                var doneOnce = doneCountBuilder(1, done);
 
                 call = followeeEndpoint.startCall({
                     onApprove: function (evt) {
@@ -522,7 +593,7 @@ describe("Respoke calling", function () {
 
             describe("when Call.approve is called", function () {
                 beforeEach(function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         previewLocalMedia: function (element, call) {
@@ -550,7 +621,7 @@ describe("Respoke calling", function () {
             // additional permissions are needed. Maybe we can test this another way in the future.
             xdescribe("the onRequestingMedia callback", function () {
                 it("gets called before onLocalMedia", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         onRequestingMedia: function (evt) {
@@ -566,7 +637,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("gets called before onAllow", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
+                    var doneOnce = doneCountBuilder(1, done);
 
                     call = followeeEndpoint.startCall({
                         onRequestingMedia: function (evt) {
@@ -596,7 +667,7 @@ describe("Respoke calling", function () {
             });
 
             it("fails because the test suite can't get TURN credentials", function (done) {
-                var doneOnce = doneOnceBuilder(done);
+                var doneOnce = doneCountBuilder(1, done);
 
                 call = followeeEndpoint.startCall({
                     forceTurn: true,
@@ -610,7 +681,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("the onLocalMedia callback", function () {
+        describe("the onLocalMedia callback", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -622,7 +693,7 @@ describe("Respoke calling", function () {
             });
 
             it("gets called before onApprove", function (done) {
-                var doneOnce = doneOnceBuilder(done);
+                var doneOnce = doneCountBuilder(1, done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
@@ -638,7 +709,7 @@ describe("Respoke calling", function () {
             });
 
             it("gets called before onConnect", function (done) {
-                var doneOnce = doneOnceBuilder(done);
+                var doneOnce = doneCountBuilder(1, done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
@@ -654,7 +725,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("the hangup method", function () {
+        describe("the hangup method", function () {
 
             beforeEach(function () {
                 followee.listen('call', callListener);
@@ -690,7 +761,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("call debugs", function () {
+        describe("call debugs", function () {
             var original;
             var iSpy;
 
@@ -786,7 +857,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        xdescribe("muting", function () {
+        describe("muting", function () {
             var localMedia;
             var muteSpy = sinon.spy();
 
@@ -846,7 +917,7 @@ describe("Respoke calling", function () {
         });
     });
 
-    xdescribe("when receiving a call", function () {
+    describe("when receiving a call", function () {
         describe("with call listener specified", function () {
             afterEach(function (done) {
                 followee.ignore('call');
@@ -1074,6 +1145,10 @@ describe("Respoke calling", function () {
     });
 
     afterEach(function (done) {
+        if (call) {
+            call.hangup();
+        }
+
         respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {

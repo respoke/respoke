@@ -10,7 +10,7 @@
  */
 
 var log = require('loglevel');
-log.setLevel('debug');
+log.setLevel('warn');
 
 var Q = require('q');
 Q.longStackSupport = true;
@@ -157,12 +157,12 @@ if (!window.skipBugsnag) {
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
-    window.onerror = function(message, file, line) {
+    window.onerror = function (message, file, line) {
         //Only send errors from the respoke.js file to Airbrake
         if (file.match(/respoke/)) {
             Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
         }
-    }
+    };
 }
 
 /**
@@ -259,11 +259,12 @@ respoke.createClient = function (params) {
 };
 
 /**
+ * Build a closure from a listener that will ensure the listener can only be called once.
  * @static
  * @private
  * @memberof respoke
  * @param {function} func
- * @returns {number}
+ * @return {function}
  */
 respoke.once = function (func) {
     return (function () {
@@ -319,13 +320,15 @@ respoke.makeGUID = function () {
  */
 respoke.handlePromise = function (promise, onSuccess, onError) {
     "use strict";
+    var returnUndef = false;
     if (onSuccess || onError) {
-        onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
-        onError = typeof onError === 'function' ? onError : function () {};
-        promise.done(onSuccess, onError);
-        return;
+        returnUndef = true;
     }
-    return promise;
+
+    onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
+    onError = typeof onError === 'function' ? onError : function () {};
+    promise.done(onSuccess, onError);
+    return (returnUndef ? undefined : promise);
 };
 
 /**

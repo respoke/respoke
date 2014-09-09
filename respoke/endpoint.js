@@ -304,6 +304,7 @@ module.exports = function (params) {
             signalParams.signalType = 'answer';
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
@@ -311,7 +312,8 @@ module.exports = function (params) {
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'call';
-            signalParams.connectionId = signalParams.connectionId;
+            signalParams.connectionId = signalParams.call.connectionId;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalParams.recipient = that;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send connected.", err.message, err.stack);
@@ -321,6 +323,7 @@ module.exports = function (params) {
         params.signalModify = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send modify.", err.message, err.stack);
             });
@@ -328,6 +331,7 @@ module.exports = function (params) {
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send candidate.", err.message, err.stack);
             });
@@ -335,6 +339,7 @@ module.exports = function (params) {
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send hangup.", err.message, err.stack);
             });

@@ -8,11 +8,11 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation, 
+ * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation,
  * and call state.
- * 
+ *
  * There are several methods on an instance of `respoke.Client` which return a `respoke.Call`.
- * 
+ *
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
@@ -185,7 +185,7 @@ module.exports = function (params) {
     that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
     /**
      * A flag indicating whether this call has audio.
-     * 
+     *
      * This becomes available after the call is accepted, for the client being called only.
      *
      * @name hasAudio
@@ -194,7 +194,7 @@ module.exports = function (params) {
     that.hasAudio = undefined;
     /**
      * A flag indicating whether this call has video.
-     * 
+     *
      * This becomes available after the call is accepted, for the client being called only.
      *
      * @name hasVideo
@@ -281,10 +281,8 @@ module.exports = function (params) {
         },
         offerOptions: params.offerOptions || null,
         signalOffer: function (args) {
-            if (state) {
-                params.signalOffer(args);
-                state.dispatch('sentOffer');
-            }
+            params.signalOffer(args);
+            state.dispatch('sentOffer');
         },
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
@@ -361,7 +359,6 @@ module.exports = function (params) {
         if (!pc) {
             return;
         }
-        console.log("****************************** SAVING PARAMS caller:", that.caller);
 
         that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
@@ -412,7 +409,6 @@ module.exports = function (params) {
         delete that.onLocalMedia;
         delete that.callSettings;
         delete that.directConnectionOnly;
-        console.log("caller:", call.caller, "hangup listeners:", client.hasListeners('call'));
     }
 
     /**
@@ -514,7 +510,7 @@ module.exports = function (params) {
         log.debug('Call.approve');
         /**
          * Fired when the local media access is approved.
-         * 
+         *
          * @event respoke.Call#approve
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -553,9 +549,9 @@ module.exports = function (params) {
     function onRemoteStreamAdded(evt) {
         log.debug('received remote media', evt);
 
-        videoRemoteElement = videoRemoteElement
-                           || evt.target.callSettings.videoRemoteElement
-                           || document.createElement('video');
+        videoRemoteElement = videoRemoteElement ||
+                           evt.target.callSettings.videoRemoteElement ||
+                           document.createElement('video');
 
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
@@ -563,7 +559,7 @@ module.exports = function (params) {
         videoRemoteElement.play();
         /**
          * Indicates that a remote media stream has been added to the call.
-         * 
+         *
          * @event respoke.Call#connect
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
@@ -1028,10 +1024,8 @@ module.exports = function (params) {
      */
     that.hangup = function (params) {
         params = params || {};
-        if (state) {
-            params.reason = params.reason || "hangup method called.";
-            state.dispatch('hangup', params);
-        }
+        params.reason = params.reason || "hangup method called.";
+        state.dispatch('hangup', params);
     };
     that.hangup = respoke.once(that.hangup);
 
@@ -1045,7 +1039,7 @@ module.exports = function (params) {
      * @private
      */
     var doHangup = function () {
-        log.debug('hangup', directConnection);
+        log.debug('hangup', that.caller);
 
         localStreams.forEach(function eachStream(stream) {
             stream.stop();
@@ -1057,7 +1051,8 @@ module.exports = function (params) {
         }
 
         if (pc) {
-            toSendHangup = pc.close({signal: (state.receivedBye ? false : state.signalBye)});
+            var signal = (state.receivedBye ? false : state.signalBye);
+            pc.close({signal: (state.receivedBye ? false : state.signalBye)});
         }
 
         /**
@@ -1069,13 +1064,11 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('hangup', {
-            sentSignal: toSendHangup,
             reason: state.hangupReason || "No reason specified."
         });
 
         state.ignore();
         that.ignore();
-        state = null;
         directConnection = null;
         pc = null;
     };
@@ -1099,7 +1092,7 @@ module.exports = function (params) {
      */
     that.isActive = function () {
         // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
-        return !!(pc.isActive() && (
+        return !!(pc && pc.isActive() && (
             (localStreams.length > 0) ||
             (directConnection && directConnection.isActive())
         ));
@@ -1118,6 +1111,7 @@ module.exports = function (params) {
         log.debug('listenOffer', evt.signal);
         var info = {};
 
+        that.sessionId = evt.signal.sessionId;
         state.listen('connecting:entry', function () {
             pc.processOffer(evt.signal.sessionDescription);
         });
@@ -1378,29 +1372,9 @@ module.exports = function (params) {
         state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});
     }
 
-    state.once('terminated:entry', function() {
+    state.once('terminated:entry', function (evt) {
         doHangup();
     }, true);
-
-    signalingChannel.getTurnCredentials().then(function (result) {
-        if (!result) {
-            log.warn("Relay service not available.");
-            callSettings.servers = {
-                iceServers: []
-            };
-        } else {
-            callSettings.servers = client.callSettings.servers;
-            callSettings.servers.iceServers = result;
-        }
-    }).fin(function () {
-        saveParameters(params);
-        state.dispatch('initiate', {
-            client: client,
-            caller: that.caller
-        });
-    }).done(null, function (err) {
-        // who cares
-    });
 
     that.listen('signal-offer', listenOffer, true);
     that.listen('signal-hangup', listenHangup, true);
@@ -1415,6 +1389,9 @@ module.exports = function (params) {
             return;
         }
         evt.signal.iceCandidates.forEach(function processCandidate(candidate) {
+            if (!pc) {
+                return;
+            }
             pc.addRemoteCandidate({candidate: candidate});
         });
     }, true);
@@ -1435,7 +1412,7 @@ module.exports = function (params) {
                 endpoint: that.remoteEndpoint,
                 call: that
             });
-        });
+        }, true);
     }
 
     state.listen('preparing:entry', function (evt) {
@@ -1444,6 +1421,26 @@ module.exports = function (params) {
         if (state.caller === true) {
             that.answer();
         }
+    }, true);
+
+    signalingChannel.getTurnCredentials().then(function (result) {
+        if (!result) {
+            log.warn("Relay service not available.");
+            callSettings.servers = {
+                iceServers: []
+            };
+        } else {
+            callSettings.servers = client.callSettings.servers;
+            callSettings.servers.iceServers = result;
+        }
+    }).fin(function () {
+        saveParameters(params);
+        state.dispatch('initiate', {
+            client: client,
+            caller: that.caller
+        });
+    }).done(null, function (err) {
+        // who cares
     });
 
     return that;

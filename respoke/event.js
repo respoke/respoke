@@ -36,20 +36,6 @@ var EventEmitter = module.exports = function (params) {
      */
     var eventList = {};
 
-    function limitOnce(listener) {
-        var onceListener = (function () {
-            var called = false;
-            return function(evt) {
-                if (called === false) {
-                    listener(evt);
-                    called = true;
-                }
-            }
-        }());
-        onceListener.once = true;
-        return onceListener;
-    }
-
     /**
      * Add a listener that will only be called once to an object.  This method adds the given listener to the given
      * event in the case that the same
@@ -64,7 +50,9 @@ var EventEmitter = module.exports = function (params) {
      * not be used by developers who are using the library, only by developers who are working on the library itself.
      */
     that.once = function (eventType, listener, isInternal) {
-        that.listen(eventType, limitOnce(listener), isInternal);
+        listener = respoke.once(listener);
+        listener.once = true;
+        that.listen(eventType, listener, isInternal);
     };
 
     /**
@@ -91,7 +79,6 @@ var EventEmitter = module.exports = function (params) {
             return a.toString();
         }).indexOf(listener.toString()) === -1) {
             eventList[eventType].push(listener);
-            //console.log("listening", that.className, eventType);
         } else if (eventList[eventType].indexOf(listener) !== -1) {
             log.warn("not adding duplicate listener.");
         }
@@ -108,7 +95,6 @@ var EventEmitter = module.exports = function (params) {
      * @param {function} [listener] - An optional function to remove from the specified event.
      */
     that.ignore = function (eventType, listener) {
-        //console.log("ignoring", that.className, eventType);
         // Remove all events from this object
         if (eventType === undefined) {
             eventList = {};
@@ -162,20 +148,26 @@ var EventEmitter = module.exports = function (params) {
         for (var i = eventList[eventType].length; i > -1; i -= 1) {
             var listener = eventList[eventType][i];
             if (typeof listener === 'function') {
-                try {
-                    listener.call(that, evt);
-                    count += 1;
-                    if (listener.once && eventList[eventType]) {
-                        eventList[eventType].splice(i, 1);
-                    }
-                } catch (e) {
-                    log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
+                setTimeout(listenerBuilder(listener, evt, eventType));
+
+                count += 1;
+                if (listener.once && eventList[eventType]) {
+                    eventList[eventType].splice(i, 1);
                 }
             }
-        };
-        //console.log("firing", that.className, eventType);
+        }
         log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
+
+    function listenerBuilder(listener, evt, eventType) {
+        return function () {
+            try {
+                listener.call(that, evt);
+            } catch (e) {
+                log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
+            }
+        };
+    }
 
     /**
      * Determine if an object has had any listeners registered for a given event outside the library. This method

@@ -506,6 +506,13 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            deferred.reject(e);
+            return retVal;
+        }
+
         var leaveGroups = groups.map(function eachGroup(group) {
             group.leave();
         });
@@ -893,14 +900,16 @@ module.exports = function (params) {
             params.instanceId = instanceId;
 
             group = that.getGroup({id: params.id});
-            group.listen('message', params.onMessage);
-            group.listen('join', params.onJoin);
-            group.listen('leave', params.onLeave);
 
             if (!group) {
                 group = respoke.Group(params);
                 that.addGroup(group);
             }
+
+            group.listen('message', params.onMessage);
+            group.listen('join', params.onJoin);
+            group.listen('leave', params.onLeave);
+
             group.addMember({
                 connection: that.getConnection({
                     endpointId: that.endpointId,

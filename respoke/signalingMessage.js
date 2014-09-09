@@ -8,14 +8,14 @@
  * @class respoke.SignalingMessage
  * @constructor
  * @param {object} params
- * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
- * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
+ * @param {string} [params.fromEndpoint] - If sending, the endpoint ID of the recipient
+ * @param {string} [params.fromConnection] - If sending, the connection ID of the recipient
+ * @param {string} [params.connectionId] - The connectionId of the endpoint whose answer signal has been accepted.
  * @param {string} [params.signal] - If sending, a message to send
  * @param {respoke.Endpoint} [params.recipient]
  * @param {string} [params.signalType]
  * @param {string} [params.sessionId] - A globally unique ID to identify this call.
  * @param {string} [params.target] - Either 'call' or 'directConnection', TODO remove the need for this.
- * @param {string} [params.signalId] - A globally unique ID to identify this signal and it's ACK.
  * @param {string} [params.callerId] - Human readable caller ID. Not implemented.
  * @param {RTCSessionDescription} [params.sdp]
  * @param {Array<RTCIceCandidate>} [params.iceCandidates]
@@ -52,7 +52,7 @@ module.exports = function (params) {
      */
     var allowed = [
         'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
-        'requesting', 'reason', 'error', 'status'
+        'requesting', 'reason', 'error', 'status', 'connectionId'
     ];
 
     params.version = '1.0';
@@ -66,8 +66,8 @@ module.exports = function (params) {
     function parse() {
         if (params.rawMessage) {
             that = JSON.parse(params.rawMessage.body); // Incoming message
-            that.endpointId = params.rawMessage.header.from;
-            that.connectionId = params.rawMessage.header.fromConnection;
+            that.fromEndpoint = params.rawMessage.header.from;
+            that.fromConnection = params.rawMessage.header.fromConnection;
         } else {
             required.forEach(function eachAttr(attr) {
                 if (params[attr] === 0 || !params[attr]) {

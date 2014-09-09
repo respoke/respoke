@@ -27,16 +27,22 @@ module.exports = function (params) {
     var that = respoke.EventEmitter(params);
     that.className = 'respoke.CallState';
 
+    var allTimers = [];
     var answerTimer;
-    var answerTimeout = 10000;
+    var answerTimeout = params.answerTimeout || 10000;
     var receiveAnswerTimer;
-    var receiveAnswerTimeout = 60000;
+    var receiveAnswerTimeout = params.receiveAnswerTimeout || 60000;
     var connectionTimer;
-    var connectionTimeout = 10000;
+    var connectionTimeout = params.connectionTimeout || 10000;
     var modifyTimer;
-    var modifyTimeout = 60000;
-
+    var modifyTimeout = params.modifyTimeout || 60000;
     var oldRole;
+
+    /*
+     * These can quite often result in a condition in which they do not cause a transition to occur.
+     * There is at least one "universal" (air quotes) event which probably? shouldn't? but may
+     * result in a non-transition error when it's OK, and that is the 'reject' event.
+     */
     var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'approve', 'answer', 'sentOffer',
         'receiveAnswer'];
 
@@ -61,10 +67,11 @@ module.exports = function (params) {
     function eventRedirect(evt) {
         that.fire.call(evt.name, evt);
     }
+
     // Event
     var rejectEvent = [setMediaFlowingEvent, {
         target: 'connected',
-        guard: function () {
+        guard: function (params) {
             // we have any media flowing or data channel open
             if (typeof oldRole === 'boolean') {
                 // Reset the role if we have aborted a modify.
@@ -74,9 +81,10 @@ module.exports = function (params) {
         }
     }, {
         target: 'terminated',
-        guard: function () {
+        guard: function (params) {
+            params = params || {};
             // we have no media flowing or data channel open
-            that.hangupReason = "no media";
+            that.hangupReason = params.reason || "no media";
             return (that.isMediaFlowing === false);
         }
     }];
@@ -87,10 +95,10 @@ module.exports = function (params) {
     }
 
     // Event
-
     var hangupEvent = {
         target: 'terminated',
         action: function (params) {
+            params = params || {};
             that.signalBye = params.signal;
             that.hangupReason = that.hangupReason || params.reason || "none";
         }
@@ -111,17 +119,19 @@ module.exports = function (params) {
 
     function Timer(func, name, time) {
         var id = setTimeout(function () {
-            respoke.log.debug(name, "timer expired.");
+            respoke.log.error(name, "timer expired.");
             func();
         }, time);
-        respoke.log.debug('setting timer', name, 'for', time/1000, 'secs');
-        return {
+        respoke.log.debug('setting timer', name, 'for', time / 1000, 'secs');
+        var timer  = {
             name: name,
             clear: function () {
                 respoke.log.debug('clearing timer', name);
                 clearTimeout(id);
             }
         };
+        allTimers.push(timer);
+        return timer;
     }
 
     var stateParams = {
@@ -149,6 +159,7 @@ module.exports = function (params) {
                             that.signalBye = true;
                             return true;
                         }
+                        return false;
                     }
                 }],
                 // Event
@@ -169,7 +180,7 @@ module.exports = function (params) {
                                 that.hasLocalMediaApproval = false;
                                 that.hasLocalMedia = false;
                                 answerTimer = new Timer(function () {
-                                    that.dispatch('reject', {reason: "answer own call timer"});
+                                    that.dispatch('reject', {reason: "answer own call timer " + that.caller});
                                 }, 'answer own call', answerTimeout);
                                 that.fire('preparing:entry');
                             }
@@ -310,6 +321,10 @@ module.exports = function (params) {
                                     that.fire('offering:entry');
                                 },
                                 // Event
+                                exit: function () {
+                                    that.fire('offering:exit');
+                                },
+                                // Event
                                 receiveRemoteMedia: [function () {
                                     that.hasRemoteMedia = true;
                                 }, {
@@ -354,6 +369,7 @@ module.exports = function (params) {
                                     if (modifyTimer) {
                                         modifyTimer.clear();
                                     }
+                                    that.fire('connecting:exit');
                                 },
                                 // Event
                                 receiveRemoteMedia: {
@@ -388,7 +404,7 @@ module.exports = function (params) {
                         accept: [function () {
                             that.caller = true;
                         }, {
-                            target: 'preparing',
+                            target: 'preparing'
                         }],
                         // Event
                         exit: function () {
@@ -459,10 +475,12 @@ module.exports = function (params) {
                         entry: {
                             action: function () {
                                 that.fire('terminated:entry');
-                                // is this necessary?
-                                // that.ignore();
+                                allTimers.forEach(function (timer) {
+                                    timer.clear();
+                                });
                                 setTimeout(function () {
                                     fsm = null;
+                                    that.ignore();
                                 });
                             }
                         }
@@ -472,11 +490,25 @@ module.exports = function (params) {
         }
     };
 
-    stateParams.that = Statechart;
+    stateParams.that = Object.create(Statechart);
     fsm = respoke.Class(stateParams);
-    fsm.run();
+    fsm.run({
+        // rename to 'debug' to enable
+        debugOff: function () {
+            // So we can print the caller. Debug most often used when testing & tests run in the same tab.
+            var args = Array.prototype.slice.call(arguments);
+            args.splice(0, 0, that.caller);
+            respoke.log.debug.apply(respoke.log, args);
+        }
+    });
 
-    that.currentState = fsm.currentState.bind(fsm);
+    that.currentState = function () {
+        if (!fsm) {
+            return 'terminated';
+        }
+        return fsm.currentState().name;
+    };
+
     //that.dispatch = fsm.dispatch.bind(fsm);
     that.dispatch = function (evt, args) {
         var oldState;
@@ -486,20 +518,19 @@ module.exports = function (params) {
             return;
         }
 
-        oldState = fsm.currentState().name;
-        respoke.log.debug('dispatching', evt, 'from', oldState, args);
+        oldState = fsm.currentState();
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
             respoke.log.debug('error dispatching event!', err);
             throw err;
         }
-        newState = fsm.currentState().name;
+        newState = fsm.currentState();
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
-            respoke.log.debug("Possible bad event " + evt + ", no transition occured.");
+            respoke.log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
             //throw new Error("Possible bad event " + evt + ", no transition occured.");
         }
-        respoke.log.debug('new state is', newState);
+        respoke.log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, params, 'stack', new Error().stack);
     };
 
     /**
@@ -509,7 +540,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isModifying = function () {
-        return (['preparing', 'modifying'].indexOf(that.currentState().name) > -1 &&
+        return (['preparing', 'modifying'].indexOf(that.currentState()) > -1 &&
             that.isMediaFlowing && that.currentState() !== undefined);
     };
 
@@ -521,7 +552,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isState = function (name) {
-        return (that.currentState() && that.currentState().name === name);
+        return (that.currentState() === name);
     };
 
     return that;

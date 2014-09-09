@@ -288,10 +288,10 @@ module.exports = function (params) {
     that.report = {
         callStarted: 0,
         callStopped: 0,
-        callerendpoint: that.call.initiator ? client.name : that.call.remoteEndpoint.id,
-        callerconnection: that.call.initiator ? client.id : that.call.connectionId,
-        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : client.id,
-        calleeconnection: that.call.initiator ? that.call.connectionId : client.connectionId,
+        callerendpoint: that.call.caller ? client.name : that.call.remoteEndpoint.id,
+        callerconnection: that.call.caller ? client.id : that.call.connectionId,
+        calleeendpoint: that.call.caller ? that.call.remoteEndpoint.id : client.id,
+        calleeconnection: that.call.caller ? that.call.connectionId : client.connectionId,
         sessionId: that.call.id,
         lastSDPString: '',
         sdpsSent: [],
@@ -563,7 +563,6 @@ module.exports = function (params) {
             });
             return;
         }
-        console.log("***** added local video to the peer connection");
         pc.addStream(stream);
     };
 
@@ -576,7 +575,6 @@ module.exports = function (params) {
      */
     function onIceCandidate(oCan) {
         var candidate = oCan.candidate; // {candidate: ..., sdpMLineIndex: ... }
-        console.log('onIceCandidate', candidate);
         if (!candidate || !candidate.candidate) {
             return;
         }
@@ -683,7 +681,7 @@ module.exports = function (params) {
         oSession.type = 'answer';
         log.debug('setting and sending answer', oSession);
         that.report.sdpsSent.push(oSession);
-        if (!that.call.initiator) {
+        if (!that.call.caller) {
             that.report.callerconnection = that.call.connectionId;
         }
         if (!pc) {
@@ -809,10 +807,10 @@ module.exports = function (params) {
         that.call.hasAudio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
         that.call.hasVideo = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
         that.call.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
-        if (that.call.initiator) {
-            that.report.calleeconnection = evt.signal.connectionId;
+        if (that.call.caller) {
+            that.report.calleeconnection = evt.signal.fromConnection;
         }
-        that.call.connectionId = evt.signal.connectionId;
+        that.call.connectionId = evt.signal.fromConnection;
         signalConnected({
             call: that.call
         });
@@ -849,7 +847,7 @@ module.exports = function (params) {
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.toConnection !== client.connectionId) {
+        if (evt.signal.connectionId !== client.connectionId) {
             log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
