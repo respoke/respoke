@@ -98,17 +98,6 @@ module.exports = function (params) {
     }
 
     /**
-     * Call state machine
-     * @memberof! respoke.Call
-     * @name state
-     * @private
-     * @type {respoke.CallState}
-     */
-    var state = window.callState = respoke.CallState({
-        caller: that.caller
-    });
-
-    /**
      * Promise used to trigger actions dependant upon having received media or a datachannel.
      * @memberof! respoke.Call
      * @name defMedia
@@ -270,6 +259,9 @@ module.exports = function (params) {
      */
     var pc = respoke.PeerConnection({
         instanceId: instanceId,
+        state: respoke.CallState({
+            caller: that.caller
+        }),
         forceTurn: forceTurn,
         call: that,
         callSettings: callSettings,
@@ -282,7 +274,7 @@ module.exports = function (params) {
         offerOptions: params.offerOptions || null,
         signalOffer: function (args) {
             params.signalOffer(args);
-            state.dispatch('sentOffer');
+            pc.state.dispatch('sentOffer');
         },
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
@@ -313,8 +305,8 @@ module.exports = function (params) {
             actuallyAddDirectConnection(params);
         }
 
-        if (state.caller === true) {
-            state.once('offering:entry', function (evt) {
+        if (pc.state.caller === true) {
+            pc.state.once('offering:entry', function (evt) {
                 pc.initOffer();
             });
         }
@@ -454,10 +446,10 @@ module.exports = function (params) {
         pc.listen('connect', onRemoteStreamAdded, true);
         pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
-        state.once('approving-device-access:entry', function (evt) {
+        pc.state.once('approving-device-access:entry', function (evt) {
             doAddVideo(params);
         });
-        state.dispatch('answer', {
+        pc.state.dispatch('answer', {
             previewLocalMedia: previewLocalMedia,
             directConnectionOnly: directConnectionOnly,
             approve: that.approve,
@@ -517,7 +509,7 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('approve');
-        state.dispatch('approve', {
+        pc.state.dispatch('approve', {
             previewLocalMedia: previewLocalMedia
         });
 
@@ -568,7 +560,7 @@ module.exports = function (params) {
          * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
-        state.dispatch('receiveRemoteMedia');
+        pc.state.dispatch('receiveRemoteMedia');
         that.fire('connect', {
             stream: evt.stream,
             element: videoRemoteElement
@@ -679,14 +671,14 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('allow');
-            state.dispatch('approve', {
+            pc.state.dispatch('approve', {
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
-            state.dispatch('receiveLocalMedia');
+            pc.state.dispatch('receiveLocalMedia');
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
@@ -708,7 +700,7 @@ module.exports = function (params) {
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
             that.removeStream({id: stream.id});
-            state.dispatch('reject', {reason: 'media stream error'});
+            pc.state.dispatch('reject', {reason: 'media stream error'});
             pc.report.callStoppedReason = message;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
@@ -816,9 +808,9 @@ module.exports = function (params) {
     /**
      * Get the direct connection on this call, if it exists.
      * @memberof! respoke.Call
-     * @method respoke.Call.startDirectConnection
+     * @method respoke.Call.getDirectConnection
      */
-    that.startDirectConnection = function () {
+    that.getDirectConnection = function () {
         return directConnection || null;
     };
 
@@ -939,7 +931,7 @@ module.exports = function (params) {
         }, true);
 
         directConnection.listen('accept', function acceptHandler() {
-            if (state.caller === false) {
+            if (pc.state.caller === false) {
                 log.debug('Answering as a result of approval.');
                 that.answer();
                 if (defMedia && defMedia.promise.isPending()) {
@@ -992,7 +984,7 @@ module.exports = function (params) {
             endpoint: that.remoteEndpoint
         });
 
-        if (state.caller === true) {
+        if (pc.state.caller === true) {
             directConnection.accept();
         }
 
@@ -1023,9 +1015,12 @@ module.exports = function (params) {
      * a hangup signal to the remote side.
      */
     that.hangup = function (params) {
+        if (!pc) {
+            return;
+        }
         params = params || {};
         params.reason = params.reason || "hangup method called.";
-        state.dispatch('hangup', params);
+        pc.state.dispatch('hangup', params);
     };
     that.hangup = respoke.once(that.hangup);
 
@@ -1051,8 +1046,8 @@ module.exports = function (params) {
         }
 
         if (pc) {
-            var signal = (state.receivedBye ? false : state.signalBye);
-            pc.close({signal: (state.receivedBye ? false : state.signalBye)});
+            var signal = (pc.state.receivedBye ? false : pc.state.signalBye);
+            pc.close({signal: (pc.state.receivedBye ? false : pc.state.signalBye)});
         }
 
         /**
@@ -1064,10 +1059,10 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('hangup', {
-            reason: state.hangupReason || "No reason specified."
+            reason: pc.state.hangupReason || "No reason specified."
         });
 
-        state.ignore();
+        pc.state.ignore();
         that.ignore();
         directConnection = null;
         pc = null;
@@ -1081,7 +1076,7 @@ module.exports = function (params) {
      * @param {object} params
      */
     that.reject = function () {
-        state.dispatch('reject', {reason: 'call.reject() called'});
+        pc.state.dispatch('reject', {reason: 'call.reject() called'});
     };
 
     /**
@@ -1112,11 +1107,11 @@ module.exports = function (params) {
         var info = {};
 
         that.sessionId = evt.signal.sessionId;
-        state.listen('connecting:entry', function () {
+        pc.state.listen('connecting:entry', function () {
             pc.processOffer(evt.signal.sessionDescription);
         });
 
-        if (state.isModifying()) {
+        if (pc.state.isModifying()) {
             if (directConnectionOnly === true) {
                 info.directConnection = directConnection;
             } else if (directConnectionOnly === false) {
@@ -1153,7 +1148,7 @@ module.exports = function (params) {
         log.debug('Call.listenModify', evt);
         if (evt.signal.action === 'initiate') {
             defModify = Q.defer();
-            state.dispatch('modify', {receive: true});
+            pc.state.dispatch('modify', {receive: true});
         }
     }
 
@@ -1165,7 +1160,7 @@ module.exports = function (params) {
      * @private
      */
     function onModifyAccept(evt) {
-        state.dispatch('accept');
+        pc.state.dispatch('accept');
 
         if (evt.signal.action !== 'initiate') {
             defModify.resolve(); // resolved later for callee
@@ -1368,11 +1363,11 @@ module.exports = function (params) {
      */
     function listenHangup(evt) {
         pc.report.callStoppedReason = evt.signal.reason || "Remote side hung up";
-        state.receivedBye = true;
-        state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});
+        pc.state.receivedBye = true;
+        pc.state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});
     }
 
-    state.once('terminated:entry', function (evt) {
+    pc.state.once('terminated:entry', function (evt) {
         doHangup();
     }, true);
 
@@ -1382,7 +1377,7 @@ module.exports = function (params) {
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
     pc.listen('receive-answer', function () {
-        state.dispatch('receiveAnswer');
+        pc.state.dispatch('receiveAnswer');
     }, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {
         if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
@@ -1397,7 +1392,7 @@ module.exports = function (params) {
     }, true);
 
     if (directConnectionOnly !== true) {
-        state.once('preparing:entry', function () {
+        pc.state.once('preparing:entry', function () {
             /**
              * This event provides notification for when an incoming call is being received.  If the user wishes
              * to allow the call, the app should call evt.call.answer() to answer the call.
@@ -1415,10 +1410,10 @@ module.exports = function (params) {
         }, true);
     }
 
-    state.listen('preparing:entry', function (evt) {
+    pc.state.listen('preparing:entry', function (evt) {
         init();
 
-        if (state.caller === true) {
+        if (pc.state.caller === true) {
             that.answer();
         }
     }, true);
@@ -1435,7 +1430,7 @@ module.exports = function (params) {
         }
     }).fin(function () {
         saveParameters(params);
-        state.dispatch('initiate', {
+        pc.state.dispatch('initiate', {
             client: client,
             caller: that.caller
         });

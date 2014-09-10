@@ -64,12 +64,6 @@ module.exports = function (params) {
      * @type {respoke.Endpoint}
      */
     var toSendHangup;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name state
-     * @type {number}
-     */
-    that.state = -1;
 
     /**
      * @memberof! respoke.PeerConnection
