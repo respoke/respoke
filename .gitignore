@@ -1,5 +1,6 @@
 .idea
 *.iml
+atlassian-ide-plugin.xml
 *.sublime-*
 .dir-locals.el
 
