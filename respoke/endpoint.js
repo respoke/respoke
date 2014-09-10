@@ -311,7 +311,7 @@ module.exports = function (params) {
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'call';
-            signalParams.connectionId = signalParams.connectionId;
+            signalParams.connectionId = signalParams.call.connectionId;
             signalParams.recipient = that;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send connected.", err.message, err.stack);

@@ -8,8 +8,8 @@
  * @class respoke.SignalingMessage
  * @constructor
  * @param {object} params
- * @param {string} [params.endpointId] - If sending, the endpoint ID of the recipient
- * @param {string} [params.connectionId] - If sending, the connection ID of the recipient
+ * @param {string} [params.fromEndpoint] - If sending, the endpoint ID of the recipient
+ * @param {string} [params.fromConnection] - If sending, the connection ID of the recipient
  * @param {string} [params.signal] - If sending, a message to send
  * @param {respoke.Endpoint} [params.recipient]
  * @param {string} [params.signalType]
@@ -52,7 +52,7 @@ module.exports = function (params) {
      */
     var allowed = [
         'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
-        'requesting', 'reason', 'error', 'status'
+        'requesting', 'reason', 'error', 'status', 'connectionId'
     ];
 
     params.version = '1.0';
@@ -65,10 +65,10 @@ module.exports = function (params) {
      */
     function parse() {
         if (params.rawMessage) {
-            that = JSON.parse(params.rawMessage.body); // Incoming message
+            that = JSON.parse(params.rawMessage.body); // Incoming message            
             that.fromType = params.rawMessage.header.fromType;
-            that.endpointId = params.rawMessage.header.from;
-            that.connectionId = params.rawMessage.header.fromConnection;
+            that.fromEndpoint = params.rawMessage.header.from;
+            that.fromConnection = params.rawMessage.header.fromConnection;
         } else {
             required.forEach(function eachAttr(attr) {
                 if (params[attr] === 0 || !params[attr]) {
@@ -80,7 +80,7 @@ module.exports = function (params) {
                 if (params[attr] === 0 || params[attr]) {
                     that[attr] = params[attr];
                 }
-            });
+            });     
         }
     }
 
