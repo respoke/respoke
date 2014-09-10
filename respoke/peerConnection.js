@@ -860,7 +860,7 @@ module.exports = function (params) {
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.toConnection !== client.connectionId) {
+        if (evt.signal.connectionId === client.connectionId) {
             log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
