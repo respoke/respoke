@@ -8,11 +8,11 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation, 
+ * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation,
  * and call state.
- * 
+ *
  * There are several methods on an instance of `respoke.Client` which return a `respoke.Call`.
- * 
+ *
  * @class respoke.Call
  * @constructor
  * @augments respoke.EventEmitter
@@ -610,7 +610,7 @@ module.exports = function (params) {
         log.debug('Call.approve');
         /**
          * Fired when the local media access is approved.
-         * 
+         *
          * @event respoke.Call#approve
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -654,10 +654,11 @@ module.exports = function (params) {
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
-        videoRemoteElement.play();
+        setTimeout(function () {videoRemoteElement.play()});
+
         /**
          * Indicates that a remote media stream has been added to the call.
-         * 
+         *
          * @event respoke.Call#connect
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
