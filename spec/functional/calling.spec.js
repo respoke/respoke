@@ -799,7 +799,7 @@ describe("Respoke calling", function () {
 
                 // This is really hard to test because of scope. Likely the best way to test this is to
                 // fire an event after sending the call debug report to the API.
-                it("sends call debugs");
+                xit("sends call debugs");
             });
 
             describe('when disabling call debugs', function () {

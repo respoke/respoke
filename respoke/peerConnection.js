@@ -527,13 +527,42 @@ module.exports = function (params) {
                 channel: evt.channel
             });
         };
+    };
 
-        /*
-         * Expose some methods on the PeerConnection.
-         */
-        that.getRemoteStreams = pc.getRemoteStreams.bind(pc);
-        that.getLocalStreams = pc.getLocalStreams.bind(pc);
-        that.createDataChannel = pc.createDataChannel.bind(pc);
+    /**
+     * Return an array of remote media streams.
+     * @muremberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.getRemoteStreams
+     */
+    that.getRemoteStreams = function () {
+        if (!pc) {
+            return [];
+        }
+        return pc.getRemoteStreams.apply(pc, Array.prototype.slice.call(arguments));
+    };
+
+    /**
+     * Return an array of local media streams.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.getLocalStreams
+     */
+    that.getLocalStreams = function () {
+        if (!pc) {
+            return [];
+        }
+        return pc.getLocalStreams.apply(pc, Array.prototype.slice.call(arguments));
+    };
+
+    /**
+     * Create a data channel.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.createDataChannel
+     */
+    that.createDataChannel = function () {
+        if (!pc) {
+            return;
+        }
+        return pc.createDataChannel.apply(pc, Array.prototype.slice.call(arguments));
     };
 
     /**

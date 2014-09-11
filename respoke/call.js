@@ -260,7 +260,10 @@ module.exports = function (params) {
     var pc = respoke.PeerConnection({
         instanceId: instanceId,
         state: respoke.CallState({
-            caller: that.caller
+            caller: that.caller,
+            hasMedia: function () {
+                return that.hasMedia();
+            }
         }),
         forceTurn: forceTurn,
         call: that,
@@ -539,6 +542,9 @@ module.exports = function (params) {
      * @fires respoke.Call#connect
      */
     function onRemoteStreamAdded(evt) {
+        if (!pc) {
+            return;
+        }
         log.debug('received remote media', evt);
 
         videoRemoteElement = videoRemoteElement ||
@@ -1063,6 +1069,7 @@ module.exports = function (params) {
         });
 
         pc.state.ignore();
+        pc.ignore();
         that.ignore();
         directConnection = null;
         pc = null;
@@ -1236,6 +1243,31 @@ module.exports = function (params) {
     };
 
     /**
+     * Indicate whether the call has media flowing.
+     * @memberof! respoke.Call
+     * @method respoke.Call.hasMedia
+     * @returns {boolean}
+     */
+    that.hasMedia = function () {
+        var local;
+        var remote;
+
+        if (!pc || !pc.getLocalStreams) {
+            // PeerConnection.init() has not been called yet
+            return false;
+        }
+
+        local = pc.getLocalStreams();
+        remote = pc.getRemoteStreams();
+
+        if (directConnection && directConnection.isActive()) {
+            return true;
+        }
+
+        return (local.length > 0 || remote.length > 0);
+    };
+
+    /**
      * Mute all local video streams.
      * @memberof! respoke.Call
      * @method respoke.Call.muteVideo
@@ -1362,6 +1394,9 @@ module.exports = function (params) {
      * @private
      */
     function listenHangup(evt) {
+        if (!pc) {
+            return;
+        }
         pc.report.callStoppedReason = evt.signal.reason || "Remote side hung up";
         pc.state.receivedBye = true;
         pc.state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});
@@ -1377,6 +1412,9 @@ module.exports = function (params) {
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
     pc.listen('receive-answer', function () {
+        if (!pc) {
+            return;
+        }
         pc.state.dispatch('receiveAnswer');
     }, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {

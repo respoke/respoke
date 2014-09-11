@@ -46,30 +46,19 @@ module.exports = function (params) {
     var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'approve', 'answer', 'sentOffer',
         'receiveAnswer'];
 
-    var setMediaFlowingEvent = {
-        action: function () {
-            // re-evaluate whether media is flowing
-        }
-    };
-
     function assert(condition) {
         if (!condition) {
             throw new Error("Assertion failed.");
         }
     }
 
-    that.isMediaFlowing = false;
     that.hasLocalMediaApproval = false;
     that.hasLocalMedia = false;
     that.hasRemoteMedia = false; // TODO turn into ice connection
     that.receivedBye = false;
 
-    function eventRedirect(evt) {
-        that.fire.call(evt.name, evt);
-    }
-
     // Event
-    var rejectEvent = [setMediaFlowingEvent, {
+    var rejectEvent = [{
         target: 'connected',
         guard: function (params) {
             // we have any media flowing or data channel open
@@ -77,7 +66,7 @@ module.exports = function (params) {
                 // Reset the role if we have aborted a modify.
                 that.caller = oldRole;
             }
-            return (that.isMediaFlowing === true);
+            return that.hasMedia();
         }
     }, {
         target: 'terminated',
@@ -85,7 +74,7 @@ module.exports = function (params) {
             params = params || {};
             // we have no media flowing or data channel open
             that.hangupReason = params.reason || "no media";
-            return (that.isMediaFlowing === false);
+            return !that.hasMedia();
         }
     }];
 
@@ -175,7 +164,7 @@ module.exports = function (params) {
                 states: {
                     preparing: {
                         // Event
-                        entry: [setMediaFlowingEvent, {
+                        entry: {
                             action: function () {
                                 that.hasLocalMediaApproval = false;
                                 that.hasLocalMedia = false;
@@ -184,7 +173,7 @@ module.exports = function (params) {
                                 }, 'answer own call', answerTimeout);
                                 that.fire('preparing:entry');
                             }
-                        }],
+                        },
                         // Event
                         exit: function () {
                             that.fire('preparing:exit');
@@ -518,19 +507,18 @@ module.exports = function (params) {
             return;
         }
 
-        oldState = fsm.currentState();
+        oldState = that.currentState();
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
-            respoke.log.debug('error dispatching event!', err);
+            respoke.log.debug('error dispatching', evt, 'from', oldState, err);
             throw err;
         }
-        newState = fsm.currentState();
+        newState = that.currentState();
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
             respoke.log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
-            //throw new Error("Possible bad event " + evt + ", no transition occured.");
         }
-        respoke.log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, params, 'stack', new Error().stack);
+        respoke.log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, params);
     };
 
     /**
@@ -540,8 +528,8 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isModifying = function () {
-        return (['preparing', 'modifying'].indexOf(that.currentState()) > -1 &&
-            that.isMediaFlowing && that.currentState() !== undefined);
+        var modifyingStates = ['preparing', 'modifying', 'approvingDeviceAccess', 'approvingMedia', 'offering'];
+        return (modifyingStates.indexOf(that.currentState()) > -1 && that.hasMedia());
     };
 
     /**
@@ -555,5 +543,7 @@ module.exports = function (params) {
         return (that.currentState() === name);
     };
 
+    assert(typeof that.hasMedia === 'function');
+    assert(typeof that.caller === 'boolean');
     return that;
 };

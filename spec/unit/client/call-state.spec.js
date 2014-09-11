@@ -5,6 +5,7 @@ respoke.log.setLevel('warn');
 
 describe("respoke.CallState", function () {
     var state;
+    var fake = {hasMedia: false};
     var params = {
         receiveOnly: false,
         directConnectionOnly: false,
@@ -16,7 +17,13 @@ describe("respoke.CallState", function () {
 
     describe("it's object structure", function () {
         beforeEach(function () {
-            state = respoke.CallState({gloveColor: 'white'});
+            state = respoke.CallState({
+                gloveColor: 'white',
+                caller: true,
+                hasMedia: function () {
+                    return fake.hasMedia;
+                }
+            });
         });
 
         it("has the correct class name.", function () {
@@ -60,6 +67,9 @@ describe("respoke.CallState", function () {
                     approve: function () {}
                 };
                 state = respoke.CallState({
+                    hasMedia: function () {
+                        return fake.hasMedia;
+                    },
                     caller: true,
                     answerTimeout: 200,
                     receiveAnswerTimeout: 200,
@@ -136,6 +146,7 @@ describe("respoke.CallState", function () {
                     var preparingEntrySpy;
 
                     beforeEach(function (done) {
+                        fake.hasMedia = false;
                         preparingEntrySpy = sinon.spy();
                         state.listen('preparing:entry', preparingEntrySpy);
                         state.dispatch("initiate", {
@@ -163,11 +174,7 @@ describe("respoke.CallState", function () {
                         expect(preparingEntrySpy.called).to.equal(true);
                     });
 
-                    describe("when isMediaFlowing is false", function () {
-                        beforeEach(function () {
-                            state.isMediaFlowing = false;
-                        });
-
+                    describe("when media is not flowing", function () {
                         describe("event 'hangup'", function () {
                             var terminatedEntrySpy;
 
@@ -609,6 +616,7 @@ describe("respoke.CallState", function () {
                                                     connectedEntrySpy = sinon.spy();
                                                     state.listen('connected:entry', connectedEntrySpy);
                                                     state.dispatch('receiveRemoteMedia');
+                                                    fake.hasMedia = true;
                                                     setTimeout(done);
                                                 });
 
@@ -747,9 +755,13 @@ describe("respoke.CallState", function () {
                         });
                     });
 
-                    describe("when isMediaFlowing is true", function () {
+                    describe("when media is flowing", function () {
                         beforeEach(function () {
-                            state.isMediaFlowing = true;
+                            fake.hasMedia = true;
+                        });
+
+                        afterEach(function () {
+                            fake.hasMedia = false;
                         });
 
                         describe("event 'hangup'", function () {
@@ -1133,6 +1145,9 @@ describe("respoke.CallState", function () {
                     approve: function () {}
                 };
                 state = respoke.CallState({
+                    hasMedia: function () {
+                        return fake.hasMedia;
+                    },
                     caller: false,
                     answerTimeout: 200,
                     receiveAnswerTimeout: 200,
@@ -1236,11 +1251,7 @@ describe("respoke.CallState", function () {
                     expect(preparingEntrySpy.called).to.equal(true);
                 });
 
-                describe("when isMediaFlowing is false", function () {
-                    beforeEach(function () {
-                        state.isMediaFlowing = false;
-                    });
-
+                describe("when media is not flowing", function () {
                     describe("event 'hangup'", function () {
                         var terminatedEntrySpy;
 
@@ -1762,9 +1773,13 @@ describe("respoke.CallState", function () {
                     });
                 });
 
-                describe("when isMediaFlowing is true", function () {
+                describe("when media is flowing", function () {
                     beforeEach(function () {
-                        state.isMediaFlowing = true;
+                        fake.hasMedia = true;
+                    });
+
+                    afterEach(function () {
+                        fake.hasMedia = false;
                     });
 
                     describe("event 'hangup'", function () {
