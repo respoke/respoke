@@ -635,7 +635,7 @@ module.exports = function (params) {
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
-        setTimeout(function () {videoRemoteElement.play()}, 0);
+        setTimeout(function () {videoRemoteElement.play()});
 
         /**
          * Indicates that a remote media stream has been added to the call.
