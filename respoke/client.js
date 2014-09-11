@@ -897,7 +897,7 @@ module.exports = function (params) {
         log.debug('Final callSettings is', combinedCallSettings);
 
         params.callSettings = combinedCallSettings;
-        params.instanceId = that.id;
+        params.instanceId = instanceId;
         params.remoteEndpoint = recipient;
         
         params.toType = params.toType || 'did';
