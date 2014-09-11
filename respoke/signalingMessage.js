@@ -52,7 +52,7 @@ module.exports = function (params) {
      */
     var allowed = [
         'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
-        'requesting', 'reason', 'error', 'status', 'connectionId'
+        'requesting', 'reason', 'error', 'status', 'connectionId', 'version'
     ];
 
     params.version = '1.0';
