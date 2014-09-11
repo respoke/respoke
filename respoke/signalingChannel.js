@@ -647,7 +647,7 @@ module.exports = function (params) {
             return Q.reject(new Error("Can't send ACK, no signal was given."));
         }
 
-        endpoint = client.getEndpoint({id: params.signal.endpointId});
+        endpoint = client.getEndpoint({id: params.signal.fromEndpoint});
         if (!endpoint) {
             return Q.reject(new Error("Can't send ACK, can't get endpoint."));
         }
@@ -923,7 +923,8 @@ module.exports = function (params) {
              */
             target = client.getCall({
                 id: signal.sessionId,
-                endpointId: signal.endpointId,
+                endpointId: signal.fromEndpoint,
+                fromType: signal.fromType,
                 create: (toCreate && signal.target === 'call')
             });
             return target;
@@ -931,7 +932,7 @@ module.exports = function (params) {
             if (!target && signal.target === 'directConnection') {
                 // return a promise
                 return client.getEndpoint({
-                    id: signal.endpointId
+                    id: signal.fromEndpoint
                 }).startDirectConnection({
                     id: signal.sessionId,
                     create: (signal.signalType === 'offer'),
@@ -972,7 +973,7 @@ module.exports = function (params) {
      * @fires respoke.Call#signal-offer
      */
     routingMethods.doOffer = function (params) {
-        params.call.connectionId = params.signal.connectionId;
+        params.call.connectionId = params.signal.fromConnection;
         /**
          * @event respoke.Call#signal-offer
          * @type {respoke.Event}
@@ -1036,7 +1037,7 @@ module.exports = function (params) {
      * @fires respoke.Call#signal-answer
      */
     routingMethods.doAnswer = function (params) {
-        params.call.connectionId = params.signal.connectionId;
+        params.call.connectionId = params.signal.fromConnection;
         /**
          * @event respoke.Call#signal-answer
          * @type {respoke.Event}
@@ -1084,7 +1085,7 @@ module.exports = function (params) {
          *  by a connection that didn't win the call. In this case, we have to ignore the signal since
          *  we are already on a call. TODO: this should really be inside PeerConnection.
          */
-        if (params.call.connectionId && params.call.connectionId !== params.signal.connectionId) {
+        if (params.call.connectionId && params.call.connectionId !== params.signal.fromConnection) {
             return;
         }
         /**

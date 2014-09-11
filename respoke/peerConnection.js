@@ -821,10 +821,10 @@ module.exports = function (params) {
         //set flags for audio / video for answer
         that.call.hasAudio = hasAudio(evt.signal.sessionDescription.sdp);
         that.call.hasVideo = hasVideo(evt.signal.sessionDescription.sdp);
-        if (that.call.initiator) {
-            that.report.calleeconnection = evt.signal.connectionId;
+        if (that.call.caller) {
+            that.report.calleeconnection = evt.signal.fromConnection;
         }
-        that.call.connectionId = evt.signal.connectionId;
+        that.call.connectionId = evt.signal.fromConnection;
         signalConnected({
             call: that.call
         });
@@ -860,7 +860,7 @@ module.exports = function (params) {
      * @private
      */
     function listenConnected(evt) {
-        if (evt.signal.toConnection !== client.connectionId) {
+        if (evt.signal.connectionId !== client.connectionId) {
             log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
