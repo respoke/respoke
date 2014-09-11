@@ -54,7 +54,6 @@ module.exports = function (params) {
 
     that.hasLocalMediaApproval = false;
     that.hasLocalMedia = false;
-    that.hasRemoteMedia = false; // TODO turn into ice connection
     that.receivedBye = false;
 
     // Event
@@ -186,7 +185,6 @@ module.exports = function (params) {
                         // Event
                         answer: [{
                             action: function (params) {
-                                assert(that.hasLocalMediaApproval !== undefined);
                                 if (typeof params.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
                                 }
@@ -243,8 +241,6 @@ module.exports = function (params) {
                                 approve: [{
                                     target: 'approvingContent',
                                     guard: function (params) {
-                                        assert(that.hasLocalMedia !== undefined);
-                                        assert(that.caller !== undefined);
                                         return (typeof params.previewLocalMedia === 'function');
                                     }
                                 }, {
@@ -277,8 +273,6 @@ module.exports = function (params) {
                                 }, {
                                     target: 'offering',
                                     guard: function (params) {
-                                        assert(that.caller !== undefined);
-                                        assert(that.hasLocalMedia !== undefined);
                                         return (that.caller === true && that.hasLocalMedia === true);
                                     }
                                 }, {
@@ -314,11 +308,9 @@ module.exports = function (params) {
                                     that.fire('offering:exit');
                                 },
                                 // Event
-                                receiveRemoteMedia: [function () {
-                                    that.hasRemoteMedia = true;
-                                }, {
+                                receiveRemoteMedia: {
                                     target: 'connected'
-                                }],
+                                },
                                 // Event
                                 receiveAnswer: [function () {
                                     if (receiveAnswerTimer) {

@@ -1049,6 +1049,8 @@ module.exports = function (params) {
         if (directConnection && directConnection.isActive()) {
             directConnection.close();
             that.remoteEndpoint.directConnection = null;
+            directConnection.ignore();
+            directConnection = null;
         }
 
         if (pc) {
@@ -1071,7 +1073,6 @@ module.exports = function (params) {
         pc.state.ignore();
         pc.ignore();
         that.ignore();
-        directConnection = null;
         pc = null;
     };
     doHangup = respoke.once(doHangup);
@@ -1083,6 +1084,9 @@ module.exports = function (params) {
      * @param {object} params
      */
     that.reject = function () {
+        if (!pc) {
+            return;
+        }
         pc.state.dispatch('reject', {reason: 'call.reject() called'});
     };
 
