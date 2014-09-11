@@ -572,14 +572,10 @@ module.exports = function (params) {
             return;
         }
 
-        if (that.call.caller && defSDPAnswer.promise.isPending()) {
-            candidateSendingQueue.push(candidate);
-        } else {
-            signalCandidate({
-                candidate: candidate,
-                call: that.call
-            });
-        }
+        signalCandidate({
+            candidate: candidate,
+            call: that.call
+        });
     }
 
     /**
@@ -1024,10 +1020,16 @@ module.exports = function (params) {
             log.debug('Queueing a candidate.');
             return;
         }
-        try {
-            pc.addIceCandidate(new RTCIceCandidate(params.candidate));
-        } catch (e) {
-            log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
+        if(defSDPOffer.promise.isFulfilled()) {
+            try {
+                pc.addIceCandidate(new RTCIceCandidate(params.candidate));
+            } catch (e) {
+                log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
+                return;
+            }
+        } else {
+            candidateReceivingQueue.push(params.candidate);
+            log.debug('Queueing a candidate.');
             return;
         }
         log.debug('Got a remote candidate.', params.candidate);
