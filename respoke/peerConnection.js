@@ -427,17 +427,12 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
-        if (!pc) {
-            deferred.reject(new Error("Can't get stats, pc is null."));
-            return retVal;
-        }
-
         if (!respoke.MediaStats) {
             deferred.reject(new Error("Statistics module is not loaded."));
             return retVal;
         }
 
-        Q.all([defSDPOffer.promise, defSDPAnswer.promise]).then(function onSuccess() {
+        function onConnect() {
             var stats = respoke.MediaStatsParser({
                 peerConnection: pc,
                 interval: params.interval,
@@ -459,7 +454,13 @@ module.exports = function (params) {
                 stats.stopStats();
             }, true);
             deferred.resolve();
-        });
+        }
+
+        if (!pc) {
+            that.once('stream-received', onConnect);
+        } else {
+            onConnect();
+        }
 
         return retVal;
     }

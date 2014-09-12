@@ -597,7 +597,6 @@ module.exports = function (params) {
     function getStats(params) {
         if (pc && pc.getStats) {
             that.listen('stats', params.onStats);
-            delete params.onStats;
             return pc.getStats(params);
         }
         return null;
