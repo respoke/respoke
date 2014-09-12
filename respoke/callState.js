@@ -55,6 +55,7 @@ module.exports = function (params) {
     that.hasLocalMediaApproval = false;
     that.hasLocalMedia = false;
     that.receivedBye = false;
+    that.receivedAnswer = false;
 
     // Event
     var rejectEvent = [{
@@ -80,6 +81,14 @@ module.exports = function (params) {
     // Event
     function rejectModify() {
         // reject modification
+    }
+
+    // Event
+    function clearReceiveAnswerTimer() {
+        that.receivedAnswer = true;
+        if (receiveAnswerTimer) {
+            receiveAnswerTimer.clear();
+        }
     }
 
     // Event
@@ -312,11 +321,7 @@ module.exports = function (params) {
                                     target: 'connected'
                                 },
                                 // Event
-                                receiveAnswer: [function () {
-                                    if (receiveAnswerTimer) {
-                                        receiveAnswerTimer.clear();
-                                    }
-                                }, {
+                                receiveAnswer: [clearReceiveAnswerTimer, {
                                     target: 'connecting'
                                 }]
                             }
@@ -326,11 +331,7 @@ module.exports = function (params) {
                     connectingContainer: {
                         init: 'connecting',
                         reject: rejectEvent,
-                        receiveAnswer: function () {
-                            if (receiveAnswerTimer) {
-                                receiveAnswerTimer.clear();
-                            }
-                        },
+                        receiveAnswer: clearReceiveAnswerTimer,
                         states: {
                             connecting: {
                                 // Event
@@ -403,11 +404,7 @@ module.exports = function (params) {
                         that.hangupReason = params.reason || "got reject while connected";
                     }
                 },
-                receiveAnswer: function () {
-                    if (receiveAnswerTimer) {
-                        receiveAnswerTimer.clear();
-                    }
-                },
+                receiveAnswer: clearReceiveAnswerTimer,
                 // Event
                 hangup: hangupEvent,
                 states: {

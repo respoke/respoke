@@ -58,6 +58,14 @@ module.exports = function (params) {
     that.className = 'respoke.PeerConnection';
 
     /**
+     * Whether or not we have sent a signal yet. If we have, this call can't be canceled without sending a signal.
+     * @memberof! respoke.PeerConnection
+     * @name haveSentOffer
+     * @type {respoke.Endpoint}
+     */
+    var haveSentOffer = false;
+
+    /**
      * Whether or not we will send a 'hangup' signal to the other side during hangup.
      * @memberof! respoke.PeerConnection
      * @name toSendHangup
@@ -74,33 +82,6 @@ module.exports = function (params) {
      * raw data transfer occurs within the PeerConnection.
      */
     var pc = null;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name defSDPOffer
-     * @private
-     * @type {Promise}
-     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
-     * handling, or sending of some information.
-     */
-    var defSDPOffer = Q.defer();
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name defSDPAnswer
-     * @private
-     * @type {Promise}
-     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
-     * handling, or sending of some information.
-     */
-    var defSDPAnswer = Q.defer();
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name defApproved
-     * @private
-     * @type {Promise}
-     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
-     * handling, or sending of some information.
-     */
-    var defApproved = Q.defer();
     /**
      * @memberof! respoke.PeerConnection
      * @name defModify
@@ -323,13 +304,12 @@ module.exports = function (params) {
      */
     that.processOffer = function (oOffer) {
         log.debug('processOffer', oOffer);
-        if (that.call.caller) {
+        if (that.state.caller) {
             log.warn('Got offer in precall state.');
             that.report.callStoppedReason = 'Got offer in precall state';
             signalHangup({
                 call: that.call
             });
-            defSDPOffer.reject();
             return;
         }
 
@@ -355,8 +335,6 @@ module.exports = function (params) {
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
                         saveAnswerAndSend(oSession);
-                        defSDPOffer.resolve();
-                        processQueues(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
                         that.report.callStoppedReason = err.message;
@@ -371,7 +349,9 @@ module.exports = function (params) {
                         that.call.fire('error', {
                             message: err.message
                         });
-                        defSDPOffer.reject(err);
+                        log.error('set remote desc of answer failed', evt.signal.sessionDescription);
+                        that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                        that.close();
                     });
                 }, function errorHandler(err) {
                     err = new Error('Error calling setRemoteDescription on offer I received.' + err.message);
@@ -387,7 +367,6 @@ module.exports = function (params) {
                     that.call.fire('error', {
                         message: err.message
                     });
-                    defSDPOffer.reject(err);
                 }
             );
         } catch (err) {
@@ -404,9 +383,7 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: newErr.message
             });
-            defSDPOffer.reject(newErr);
         }
-        return defSDPOffer.promise;
     };
 
     /**
@@ -608,7 +585,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (that.call.caller && defSDPAnswer.promise.isPending()) {
+        if (that.state.caller && !that.state.receivedAnswer) {
             candidateSendingQueue.push(candidate);
         } else {
             signalCandidate({
@@ -664,7 +641,7 @@ module.exports = function (params) {
      */
     function saveOfferAndSend(oSession) {
         oSession.type = 'offer';
-        if (!pc || !defSDPOffer.promise.isPending()) {
+        if (!pc) {
             return;
         }
         log.debug('setting and sending offer', oSession);
@@ -675,7 +652,7 @@ module.exports = function (params) {
                 call: that.call,
                 sessionDescription: oSession
             });
-            defSDPOffer.resolve(oSession);
+            haveSentOffer = true;
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on offer I created.');
             /**
@@ -689,7 +666,6 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: err.message
             });
-            defSDPOffer.reject(err);
         });
     }
 
@@ -705,7 +681,7 @@ module.exports = function (params) {
         oSession.type = 'answer';
         log.debug('setting and sending answer', oSession);
         that.report.sdpsSent.push(oSession);
-        if (!that.call.caller) {
+        if (!that.state.caller) {
             that.report.callerconnection = that.call.connectionId;
         }
         if (!pc) {
@@ -717,7 +693,6 @@ module.exports = function (params) {
                 sessionDescription: oSession,
                 call: that.call
             });
-            defSDPAnswer.resolve(oSession);
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on answer I created.');
             /**
@@ -731,7 +706,6 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: err.message
             });
-            defSDPAnswer.reject();
         });
     }
 
@@ -751,14 +725,10 @@ module.exports = function (params) {
         params = params || {};
         toSendHangup = true;
 
-        if (that.call.caller === true) {
-            if (defSDPOffer.promise.isPending()) {
+        if (that.state.caller === true) {
+            if (!haveSentOffer) {
                 // Never send hangup if we are the caller but we haven't sent any other signal yet.
                 toSendHangup = false;
-            }
-        } else {
-            if (defApproved.promise.isPending()) {
-                defApproved.reject(new Error("Call hung up before approval."));
             }
         }
 
@@ -815,14 +785,9 @@ module.exports = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        if (!pc || !defSDPAnswer.promise.isPending()) {
+        if (!pc) {
             return;
         }
-        defSDPAnswer.promise.done(processQueues, function errorHandler() {
-            log.error('set remote desc of answer failed', evt.signal.sessionDescription);
-            that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
-            that.close();
-        });
         log.debug('got answer', evt.signal);
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
@@ -831,7 +796,7 @@ module.exports = function (params) {
         that.call.hasAudio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
         that.call.hasVideo = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
         that.call.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
-        if (that.call.caller) {
+        if (that.state.caller) {
             that.report.calleeconnection = evt.signal.fromConnection;
         }
         that.call.connectionId = evt.signal.fromConnection;
@@ -842,8 +807,8 @@ module.exports = function (params) {
         pc.setRemoteDescription(
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
-                defSDPAnswer.resolve(evt.signal.sessionDescription);
-                that.fire('receive-answer');
+                that.state.dispatch('receiveAnswer');
+                processQueues();
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
@@ -858,7 +823,9 @@ module.exports = function (params) {
                 that.call.fire('error', {
                     message: newErr.message
                 });
-                defSDPAnswer.reject();
+                log.error('set remote desc of answer failed', evt.signal.sessionDescription);
+                that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                that.close();
             }
         );
     }
@@ -888,14 +855,6 @@ module.exports = function (params) {
      */
     that.startModify = function (params) {
         defModify = Q.defer();
-        defModify.promise.then(function successHandler() {
-            // No offer/answer when tearing down direct connection.
-            if (params.directConnection !== false) {
-                defSDPOffer = Q.defer();
-                defApproved = Q.defer();
-                defSDPAnswer = Q.defer();
-            }
-        });
         signalModify({
             action: 'initiate',
             call: that.call,
@@ -917,7 +876,6 @@ module.exports = function (params) {
         log.debug('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
-            that.call.caller = true;
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
@@ -970,7 +928,7 @@ module.exports = function (params) {
 
         defModify = Q.defer();
 
-        if (defSDPOffer.promise.isPending() || defSDPAnswer.promise.isPending()) {
+        if (!haveSentOffer || that.state.isState('idle')) {
             err = new Error("Got modify in a precall state.");
             /**
              * @event respoke.PeerConnection#modify-reject
@@ -988,13 +946,6 @@ module.exports = function (params) {
             return;
         }
 
-        // No offer/answer when tearing down a direct connection.
-        if (evt.signal.directConnection !== false) {
-            defSDPOffer = Q.defer();
-            defApproved = Q.defer();
-            defSDPAnswer = Q.defer();
-        }
-
        /**
          * @event respoke.PeerConnection#modify-accept
          * @type {respoke.Event}
@@ -1007,7 +958,6 @@ module.exports = function (params) {
             action: 'accept',
             call: that.call
         });
-        that.call.caller = false;
         defModify.resolve();
     }
 
@@ -1030,7 +980,7 @@ module.exports = function (params) {
             log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }
-        if (!pc || that.call.caller && defSDPAnswer.promise.isPending()) {
+        if (!pc || that.state.caller && !that.state.receivedAnswer) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;

@@ -750,9 +750,9 @@ module.exports = function (params) {
         params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
         params.instanceId = instanceId;
 
-        if (!defMedia.promise.isFulfilled()) {
+        if (!defMedia.promise.isFulfilled()) { // we're the callee & have just accepted to modify
             doAddVideo(params);
-        } else {
+        } else { // we're the caller and need to see if we can modify
             pc.startModify({
                 constraints: params.constraints
             });
@@ -1414,12 +1414,6 @@ module.exports = function (params) {
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
-    pc.listen('receive-answer', function () {
-        if (!pc) {
-            return;
-        }
-        pc.state.dispatch('receiveAnswer');
-    }, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {
         if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
             return;
