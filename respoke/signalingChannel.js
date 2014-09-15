@@ -905,7 +905,6 @@ module.exports = function (params) {
      */
     that.routeSignal = function (signal) {
         var target = null;
-        var toCreate;
         var method = 'do';
 
         if (signal.signalType !== 'iceCandidates') { // Too many of these!
@@ -914,7 +913,6 @@ module.exports = function (params) {
 
         // Only create if this signal is an offer.
         Q.fcall(function makePromise() {
-            toCreate = (signal.signalType === 'offer');
             /*
              * This will return calls regardless of whether they are associated
              * with a direct connection or not, and it will create a call if no
@@ -925,15 +923,22 @@ module.exports = function (params) {
                 id: signal.sessionId,
                 endpointId: signal.fromEndpoint,
                 fromType: signal.fromType,
-                create: (toCreate && signal.target === 'call')
+                create: (signal.target === 'call' && signal.signalType === 'offer')
             });
             return target;
         }).then(function successHandler(target) {
+            var endpoint;
             if (!target && signal.target === 'directConnection') {
                 // return a promise
-                return client.getEndpoint({
+                endpoint = client.getEndpoint({
                     id: signal.fromEndpoint
-                }).startDirectConnection({
+                });
+
+                if (endpoint.directConnection && endpoint.directConnection.call.id === signal.sessionId) {
+                    return endpoint.directConnection;
+                }
+
+                return endpoint.startDirectConnection({
                     id: signal.sessionId,
                     create: (signal.signalType === 'offer'),
                     caller: (signal.signalType !== 'offer')

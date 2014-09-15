@@ -394,7 +394,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (that.directConnection) {
+        if (that.directConnection || params.create === false) {
             deferred.resolve(that.directConnection);
             return retVal;
         }
@@ -470,6 +470,7 @@ module.exports = function (params) {
             }
         };
 
+        params.signalingChannel = signalingChannel;
         call = respoke.Call(params);
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
