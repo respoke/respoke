@@ -1006,20 +1006,18 @@ module.exports = function (params) {
      */
     that.addRemoteCandidate = function (params) {
         params = params || {};
-        if (!that.isActive()) {
-            log.info("Skipping candidate when call is inactive.");
-            return;
-        }
 
         if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
             log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
             return;
         }
+
         if (!pc || that.call.caller && defSDPAnswer.promise.isPending()) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;
         }
+
         if(defSDPOffer.promise.isFulfilled()) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
@@ -1032,6 +1030,7 @@ module.exports = function (params) {
             log.debug('Queueing a candidate.');
             return;
         }
+
         log.debug('Got a remote candidate.', params.candidate);
         that.report.candidatesReceived.push(params.candidate);
     };
