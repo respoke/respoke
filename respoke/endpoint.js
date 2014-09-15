@@ -57,9 +57,12 @@ module.exports = function (params) {
         return JSON.parse(JSON.stringify(source));
     };
 
+    var addCall = params.addCall;
+
     delete that.signalingChannel;
     delete that.instanceId;
     delete that.connectionId;
+    delete that.addCall;
     /**
      * A name to identify the type of this object.
      * @memberof! respoke.Endpoint
@@ -345,7 +348,9 @@ module.exports = function (params) {
         };
 
         params.signalingChannel = signalingChannel;
-        return respoke.Call(params);
+        call = respoke.Call(params);
+        addCall({call: call});
+        return call;
     };
 
     /**
@@ -472,6 +477,7 @@ module.exports = function (params) {
 
         params.signalingChannel = signalingChannel;
         call = respoke.Call(params);
+        addCall({call: call});
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
             if (params.caller !== true) {

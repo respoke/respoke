@@ -572,12 +572,10 @@ module.exports = function (params) {
             return;
         }
 
-        setTimeout(function () {
         signalCandidate({
             candidate: candidate,
             call: that.call
         });
-        }, 50);
     }
 
     /**
