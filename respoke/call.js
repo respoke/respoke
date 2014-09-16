@@ -1113,7 +1113,9 @@ module.exports = function (params) {
 
         that.sessionId = evt.signal.sessionId;
         pc.state.listen('connecting:entry', function () {
-            pc.processOffer(evt.signal.sessionDescription);
+            if (!pc.state.caller) {
+                pc.processOffer(evt.signal.sessionDescription);
+            }
         });
 
         if (pc.state.isModifying()) {

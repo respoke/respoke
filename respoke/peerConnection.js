@@ -293,26 +293,18 @@ module.exports = function (params) {
     }
 
     /**
-     * Process a remote offer if we are not the caller.
+     * Process a remote offer if we are not the caller. This is necessary because we don't process the offer until
+     * the callee has answered the call.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
      * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
-        log.debug('processOffer', oOffer);
-        if (that.state.caller) {
-            log.warn('Got offer in precall state.');
-            that.report.callStoppedReason = 'Got offer in precall state';
-            signalHangup({
-                call: that.call
-            });
-            return;
-        }
-
         if (!pc) {
             return;
         }
+        log.debug('processOffer', oOffer);
 
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
@@ -331,6 +323,7 @@ module.exports = function (params) {
 
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
+                        processQueues();
                         that.state.receivedSDP = true;
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
