@@ -323,8 +323,8 @@ module.exports = function (params) {
 
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
-                        processQueues();
                         that.state.receivedSDP = true;
+                        processQueues();
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
@@ -799,6 +799,7 @@ module.exports = function (params) {
             that.report.calleeconnection = evt.signal.fromConnection;
         }
         that.call.connectionId = evt.signal.fromConnection;
+        // TODO don't signal connected more than once.
         signalConnected({
             call: that.call
         });
@@ -981,7 +982,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (that.state.sentSDP || (!that.state.caller && ['connected', 'connecting'].indexOf(that.state.currentState()) > -1)) {
+        if (that.state.sentSDP || that.state.receivedSDP) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
                 log.debug('Got a remote candidate.', params.candidate);
@@ -990,12 +991,12 @@ module.exports = function (params) {
                 log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
                 return;
             }
-        } else {
-            if (!params.processingQueue) {
-                candidateReceivingQueue.push(params.candidate);
-                log.debug('Queueing a candidate.');
-            }
+        } else if (!params.processingQueue) {
+            candidateReceivingQueue.push(params.candidate);
+            log.debug('Queueing a candidate.');
             return;
+        } else {
+            console.log("processing queue error", that.state.sentSDP, that.state.receivedSDP, params);
         }
     };
 
