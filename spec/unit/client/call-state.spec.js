@@ -86,6 +86,14 @@ describe("respoke.CallState", function () {
                 expect(state.isModifying()).to.equal(false);
             });
 
+            it("sets all the right flags", function () {
+                expect(state.hasLocalMediaApproval).to.equal(false);
+                expect(state.hasLocalMedia).to.equal(false);
+                expect(state.receivedBye).to.equal(false);
+                expect(state.sentSDP).to.equal(false);
+                expect(state.receivedSDP).to.equal(false);
+            });
+
             describe('invalid event', function () {
                 var invalidEvents = [
                     'answer',
@@ -139,6 +147,14 @@ describe("respoke.CallState", function () {
                 it("should fire the 'terminated:entry' event", function () {
                     expect(terminatedEntrySpy.called).to.equal(true);
                 });
+
+                it("sets all the right flags", function () {
+                    expect(state.hasLocalMediaApproval).to.equal(false);
+                    expect(state.hasLocalMedia).to.equal(false);
+                    expect(state.receivedBye).to.equal(false);
+                    expect(state.sentSDP).to.equal(false);
+                    expect(state.receivedSDP).to.equal(false);
+                });
             });
 
             describe("event 'initiate'", function () {
@@ -174,6 +190,14 @@ describe("respoke.CallState", function () {
                         expect(preparingEntrySpy.called).to.equal(true);
                     });
 
+                    it("sets all the right flags", function () {
+                        expect(state.hasLocalMediaApproval).to.equal(false);
+                        expect(state.hasLocalMedia).to.equal(false);
+                        expect(state.receivedBye).to.equal(false);
+                        expect(state.sentSDP).to.equal(false);
+                        expect(state.receivedSDP).to.equal(false);
+                    });
+
                     describe("when media is not flowing", function () {
                         describe("event 'hangup'", function () {
                             var terminatedEntrySpy;
@@ -199,6 +223,14 @@ describe("respoke.CallState", function () {
 
                             it("should fire the 'terminated:entry' event", function () {
                                 expect(terminatedEntrySpy.called).to.equal(true);
+                            });
+
+                            it("sets all the right flags", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(false);
+                                expect(state.hasLocalMedia).to.equal(false);
+                                expect(state.receivedBye).to.equal(false);
+                                expect(state.sentSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(false);
                             });
                         });
 
@@ -264,6 +296,14 @@ describe("respoke.CallState", function () {
                                 expect(terminatedEntrySpy.called).to.equal(true);
                             });
 
+                            it("sets all the right flags", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(false);
+                                expect(state.hasLocalMedia).to.equal(false);
+                                expect(state.receivedBye).to.equal(false);
+                                expect(state.sentSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(false);
+                            });
+
                             describe('invalid event', function () {
                                 var invalidEvents = [
                                     'initiate',
@@ -316,6 +356,14 @@ describe("respoke.CallState", function () {
                                 expect(approvingDeviceAccessEntrySpy.called).to.equal(true);
                             });
 
+                            it("sets all the right flags", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                expect(state.hasLocalMedia).to.equal(false);
+                                expect(state.receivedBye).to.equal(false);
+                                expect(state.sentSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(false);
+                            });
+
                             describe('invalid event', function () {
                                 var invalidEvents = [
                                     'initiate',
@@ -364,6 +412,14 @@ describe("respoke.CallState", function () {
 
                                 it("fires 'approving-content:entry'", function () {
                                     expect(approvingContentEntrySpy.called).to.equal(true);
+                                });
+
+                                it("sets all the right flags", function () {
+                                    expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                    expect(state.hasLocalMedia).to.equal(false);
+                                    expect(state.receivedBye).to.equal(false);
+                                    expect(state.sentSDP).to.equal(false);
+                                    expect(state.receivedSDP).to.equal(false);
                                 });
 
                                 describe('invalid event', function () {
@@ -420,8 +476,12 @@ describe("respoke.CallState", function () {
                                             state.hasLocalMedia = false;
                                         });
 
-                                        it("sets the hasLocalMediaApproval flag", function () {
+                                        it("sets all the right flags", function () {
                                             expect(state.hasLocalMediaApproval).to.equal(true);
+                                            expect(state.hasLocalMedia).to.equal(true);
+                                            expect(state.receivedBye).to.equal(false);
+                                            expect(state.sentSDP).to.equal(false);
+                                            expect(state.receivedSDP).to.equal(false);
                                         });
 
                                         it("moves to 'offering'", function () {
@@ -509,8 +569,12 @@ describe("respoke.CallState", function () {
                                                 state.dispatch('receiveLocalMedia');
                                             });
 
-                                            it("sets the 'receiveLocalMedia' flag", function () {
+                                            it("sets all the right flags", function () {
+                                                expect(state.hasLocalMediaApproval).to.equal(true);
                                                 expect(state.hasLocalMedia).to.equal(true);
+                                                expect(state.receivedBye).to.equal(false);
+                                                expect(state.sentSDP).to.equal(false);
+                                                expect(state.receivedSDP).to.equal(false);
                                             });
 
                                             it("does not move to another state", function () {
@@ -539,6 +603,14 @@ describe("respoke.CallState", function () {
 
                                             it("fires 'connecting:entry'", function () {
                                                 expect(connectingEntrySpy.called).to.equal(true);
+                                            });
+
+                                            it("sets all the right flags", function () {
+                                                expect(state.hasLocalMediaApproval).to.equal(true);
+                                                expect(state.hasLocalMedia).to.equal(true);
+                                                expect(state.receivedBye).to.equal(false);
+                                                expect(state.sentSDP).to.equal(false);
+                                                expect(state.receivedSDP).to.equal(true);
                                             });
 
                                             describe("not receiving ICE connected", function () {
@@ -678,8 +750,12 @@ describe("respoke.CallState", function () {
                                                 setTimeout(done);
                                             });
 
-                                            it("sets the 'hasLocalMedia' flag", function () {
+                                            it("sets all the right flags", function () {
+                                                expect(state.hasLocalMediaApproval).to.equal(true);
                                                 expect(state.hasLocalMedia).to.equal(true);
+                                                expect(state.receivedBye).to.equal(false);
+                                                expect(state.sentSDP).to.equal(false);
+                                                expect(state.receivedSDP).to.equal(false);
                                             });
 
                                             it("moves to 'offering'", function () {
@@ -854,6 +930,14 @@ describe("respoke.CallState", function () {
                                         expect(modifyingEntrySpy.called).to.equal(true);
                                     });
 
+                                    it("sets all the right flags", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(false);
+                                        expect(state.hasLocalMedia).to.equal(false);
+                                        expect(state.receivedBye).to.equal(false);
+                                        expect(state.sentSDP).to.equal(false);
+                                        expect(state.receivedSDP).to.equal(false);
+                                    });
+
                                     describe("event 'accept'", function () {
                                         var preparingEntrySpy;
                                         var modifyingExitSpy;
@@ -1017,6 +1101,14 @@ describe("respoke.CallState", function () {
                                         expect(state.caller).to.equal(false);
                                     });
 
+                                    it("sets all the right flags", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(false);
+                                        expect(state.hasLocalMedia).to.equal(false);
+                                        expect(state.receivedBye).to.equal(false);
+                                        expect(state.sentSDP).to.equal(false);
+                                        expect(state.receivedSDP).to.equal(false);
+                                    });
+
                                     describe("event 'reject'", function () {
                                         var connectedEntrySpy;
                                         var preparingExitSpy;
@@ -1162,6 +1254,18 @@ describe("respoke.CallState", function () {
 
             it("should not report modifying", function () {
                 expect(state.isModifying()).to.equal(false);
+            });
+
+            it("sets the caller to false", function () {
+                expect(state.caller).to.equal(false);
+            });
+
+            it("sets all the right flags", function () {
+                expect(state.hasLocalMediaApproval).to.equal(false);
+                expect(state.hasLocalMedia).to.equal(false);
+                expect(state.receivedBye).to.equal(false);
+                expect(state.sentSDP).to.equal(false);
+                expect(state.receivedSDP).to.equal(false);
             });
 
             describe("event 'hangup'", function () {
@@ -1546,6 +1650,14 @@ describe("respoke.CallState", function () {
                                         expect(connectingEntrySpy.called).to.equal(true);
                                     });
 
+                                    it("sets all the right flags", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(true);
+                                        expect(state.hasLocalMedia).to.equal(true);
+                                        expect(state.receivedBye).to.equal(false);
+                                        expect(state.sentSDP).to.equal(false);
+                                        expect(state.receivedSDP).to.equal(false);
+                                    });
+
                                     describe('invalid event', function () {
                                         var invalidEvents = [
                                             'initiate',
@@ -1666,6 +1778,14 @@ describe("respoke.CallState", function () {
 
                                         it("fires 'connecting:entry'", function () {
                                             expect(connectingEntrySpy.called).to.equal(true);
+                                        });
+
+                                        it("sets all the right flags", function () {
+                                            expect(state.hasLocalMediaApproval).to.equal(true);
+                                            expect(state.hasLocalMedia).to.equal(true);
+                                            expect(state.receivedBye).to.equal(false);
+                                            expect(state.sentSDP).to.equal(false);
+                                            expect(state.receivedSDP).to.equal(false);
                                         });
 
                                         describe('invalid event', function () {
@@ -1910,15 +2030,12 @@ describe("respoke.CallState", function () {
                                         expect(modifyingExitSpy.called).to.equal(true);
                                     });
 
-                                    it("should set hasLocalMediaApproval to false", function () {
+                                    it("sets all the right flags", function () {
                                         expect(state.hasLocalMediaApproval).to.equal(false);
-                                    });
-
-                                    it("should set hasLocalMedia to false", function () {
                                         expect(state.hasLocalMedia).to.equal(false);
-                                    });
-
-                                    it("should set caller to true", function () {
+                                        expect(state.receivedBye).to.equal(false);
+                                        expect(state.sentSDP).to.equal(false);
+                                        expect(state.receivedSDP).to.equal(false);
                                         expect(state.caller).to.equal(true);
                                     });
                                 });
@@ -2031,7 +2148,12 @@ describe("respoke.CallState", function () {
                                     expect(preparingEntrySpy.called).to.equal(true);
                                 });
 
-                                it("should set the caller to false", function () {
+                                it("sets all the right flags", function () {
+                                    expect(state.hasLocalMediaApproval).to.equal(false);
+                                    expect(state.hasLocalMedia).to.equal(false);
+                                    expect(state.receivedBye).to.equal(false);
+                                    expect(state.sentSDP).to.equal(false);
+                                    expect(state.receivedSDP).to.equal(false);
                                     expect(state.caller).to.equal(false);
                                 });
 
