@@ -712,7 +712,7 @@ module.exports = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        if (toSendHangup !== undefined) {
+        if (!pc || toSendHangup !== undefined) {
             log.debug("PeerConnection.close got called twice.");
             return;
         }
@@ -738,9 +738,6 @@ module.exports = function (params) {
         }
 
         that.report.callStopped = new Date().getTime();
-        signalReport({
-            report: that.report
-        });
 
         /**
          * @event respoke.PeerConnection#close
@@ -754,11 +751,15 @@ module.exports = function (params) {
         });
         that.ignore();
 
-        if (pc) {
+        if (pc && that.report) {
             pc.close();
+            pc = null;
+            signalReport({
+                report: that.report
+            });
+            that.report = null;
         }
 
-        pc = null;
     };
 
     /**
