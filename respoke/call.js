@@ -307,12 +307,6 @@ module.exports = function (params) {
         if (defModify === undefined && directConnectionOnly === true) {
             actuallyAddDirectConnection(params);
         }
-
-        if (pc.state.caller === true) {
-            pc.state.once('offering:entry', function (evt) {
-                pc.initOffer();
-            });
-        }
     }
 
     /**

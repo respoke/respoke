@@ -279,8 +279,9 @@ module.exports = function (params) {
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.initOffer
      * @fires respoke.PeerConnection#initOffer
+     * @private
      */
-    that.initOffer = function () {
+    function initOffer() {
         if (!pc) {
             return;
         }
@@ -289,7 +290,7 @@ module.exports = function (params) {
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
         }, offerOptions);
-    };
+    }
 
     /**
      * Process a remote offer if we are not the caller.
@@ -502,6 +503,11 @@ module.exports = function (params) {
                 channel: evt.channel
             });
         };
+        that.state.listen('offering:entry', function (evt) {
+            if (that.state.caller) {
+                initOffer();
+            }
+        });
     };
 
     /**
