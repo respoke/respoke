@@ -609,7 +609,10 @@ module.exports = function (params) {
         }
         candidateSendingQueue = [];
         for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            that.addRemoteCandidate({candidate: candidateReceivingQueue[i]});
+            that.addRemoteCandidate({
+                candidate: candidateReceivingQueue[i],
+                processingQueue: true
+            });
         }
         candidateReceivingQueue = [];
     }
@@ -1008,31 +1011,32 @@ module.exports = function (params) {
         params = params || {};
 
         if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
-            log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
+            log.warn("addRemoteCandidate got wrong format!", params);
             return;
         }
 
-        if (!pc || that.call.caller && defSDPAnswer.promise.isPending()) {
+        if ((!pc || that.call.caller && defSDPAnswer.promise.isPending()) && !params.processingQueue) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;
         }
 
-        if(defSDPOffer.promise.isFulfilled()) {
+        if (defSDPOffer.promise.isFulfilled()) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
+                log.debug('Got a remote candidate.', params.candidate);
+                that.report.candidatesReceived.push(params.candidate);
             } catch (e) {
                 log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
                 return;
             }
         } else {
-            candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate.');
+            if (!params.processingQueue) {
+                candidateReceivingQueue.push(params.candidate);
+                log.debug('Queueing a candidate.');
+            }
             return;
         }
-
-        log.debug('Got a remote candidate.', params.candidate);
-        that.report.candidatesReceived.push(params.candidate);
     };
 
     that.call.listen('signal-answer', listenAnswer, true);
