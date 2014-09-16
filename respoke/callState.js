@@ -55,7 +55,8 @@ module.exports = function (params) {
     that.hasLocalMediaApproval = false;
     that.hasLocalMedia = false;
     that.receivedBye = false;
-    that.receivedAnswer = false;
+    that.sentSDP = false;
+    that.receivedSDP = false;
 
     // Event
     var rejectEvent = [{
@@ -85,7 +86,7 @@ module.exports = function (params) {
 
     // Event
     function clearReceiveAnswerTimer() {
-        that.receivedAnswer = true;
+        that.receivedSDP = true;
         if (receiveAnswerTimer) {
             receiveAnswerTimer.clear();
         }
@@ -176,6 +177,8 @@ module.exports = function (params) {
                             action: function () {
                                 that.hasLocalMediaApproval = false;
                                 that.hasLocalMedia = false;
+                                that.sentSDP = false;
+                                that.receivedSDP = false;
                                 answerTimer = new Timer(function () {
                                     that.dispatch('reject', {reason: "answer own call timer " + that.caller});
                                 }, 'answer own call', answerTimeout);

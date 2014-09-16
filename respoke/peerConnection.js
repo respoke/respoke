@@ -58,14 +58,6 @@ module.exports = function (params) {
     that.className = 'respoke.PeerConnection';
 
     /**
-     * Whether or not we have sent a signal yet. If we have, this call can't be canceled without sending a signal.
-     * @memberof! respoke.PeerConnection
-     * @name haveSentOffer
-     * @type {respoke.Endpoint}
-     */
-    var haveSentOffer = false;
-
-    /**
      * Whether or not we will send a 'hangup' signal to the other side during hangup.
      * @memberof! respoke.PeerConnection
      * @name toSendHangup
@@ -338,6 +330,7 @@ module.exports = function (params) {
 
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
+                        that.state.receivedSDP = true;
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
@@ -655,7 +648,7 @@ module.exports = function (params) {
                 call: that.call,
                 sessionDescription: oSession
             });
-            haveSentOffer = true;
+            that.state.sentSDP = true;
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on offer I created.');
             /**
@@ -696,6 +689,7 @@ module.exports = function (params) {
                 sessionDescription: oSession,
                 call: that.call
             });
+            that.state.sentSDP = true;
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on answer I created.');
             /**
@@ -729,7 +723,7 @@ module.exports = function (params) {
         toSendHangup = true;
 
         if (that.state.caller === true) {
-            if (!haveSentOffer) {
+            if (!that.state.sentSDP) {
                 // Never send hangup if we are the caller but we haven't sent any other signal yet.
                 toSendHangup = false;
             }
@@ -934,7 +928,7 @@ module.exports = function (params) {
 
         defModify = Q.defer();
 
-        if (!haveSentOffer || that.state.isState('idle')) {
+        if (!that.state.sentSDP || that.state.isState('idle')) {
             err = new Error("Got modify in a precall state.");
             /**
              * @event respoke.PeerConnection#modify-reject
@@ -982,13 +976,13 @@ module.exports = function (params) {
             log.warn("addRemoteCandidate got wrong format!", params);
             return;
         }
-        if ((!pc || that.state.caller && !that.state.receivedAnswer) && !params.processingQueue) {
+        if ((!pc || that.state.caller && !that.state.receivedSDP) && !params.processingQueue) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;
         }
 
-        if (haveSentOffer || (!that.state.caller && ['connected', 'connecting'].indexOf(that.state.currentState()) > -1)) {
+        if (that.state.sentSDP || (!that.state.caller && ['connected', 'connecting'].indexOf(that.state.currentState()) > -1)) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
                 log.debug('Got a remote candidate.', params.candidate);
