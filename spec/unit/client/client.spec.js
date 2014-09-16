@@ -43,6 +43,7 @@ describe("respoke.Client", function () {
             expect(typeof client.setOnline).to.equal('function');
             expect(typeof client.setPresence).to.equal('function');
             expect(typeof client.startCall).to.equal('function');
+            expect(typeof client.startPhoneCall).to.equal('function');
         });
 
         it("saves unexpected developer-specified parameters.", function () {
@@ -202,6 +203,19 @@ describe("respoke.Client", function () {
                     endpointId: respoke.makeGUID()
                 }).done(function () {
                     done(new Error("Shouldn't be able to start a call when not connected!"));
+                }, function (err) {
+                    expect(err.message).to.contain("not connected");
+                    done();
+                });
+            });
+        });
+
+        describe("startPhoneCall()", function () {
+            it("throws an error", function (done) {
+                client.startPhoneCall({
+                    number: '5555555555'
+                }).done(function () {
+                    done(new Error("Shouldn't be able to start a phone call when not connected!"));
                 }, function (err) {
                     expect(err.message).to.contain("not connected");
                     done();

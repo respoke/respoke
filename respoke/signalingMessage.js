@@ -52,7 +52,7 @@ module.exports = function (params) {
      */
     var allowed = [
         'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
-        'requesting', 'reason', 'error', 'status', 'connectionId'
+        'requesting', 'reason', 'error', 'status', 'connectionId', 'version'
     ];
 
     params.version = '1.0';
@@ -66,6 +66,7 @@ module.exports = function (params) {
     function parse() {
         if (params.rawMessage) {
             that = JSON.parse(params.rawMessage.body); // Incoming message
+            that.fromType = params.rawMessage.header.fromType;
             that.fromEndpoint = params.rawMessage.header.from;
             that.fromConnection = params.rawMessage.header.fromConnection;
         } else {
@@ -79,7 +80,7 @@ module.exports = function (params) {
                 if (params[attr] === 0 || params[attr]) {
                     that[attr] = params[attr];
                 }
-            });
+            });     
         }
     }
 

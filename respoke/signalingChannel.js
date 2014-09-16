@@ -647,7 +647,7 @@ module.exports = function (params) {
             return Q.reject(new Error("Can't send ACK, no signal was given."));
         }
 
-        endpoint = client.getEndpoint({id: params.signal.endpointId});
+        endpoint = client.getEndpoint({id: params.signal.fromEndpoint});
         if (!endpoint) {
             return Q.reject(new Error("Can't send ACK, can't get endpoint."));
         }
@@ -822,7 +822,7 @@ module.exports = function (params) {
      */
     that.sendHangup = function (params) {
         params = params || {};
-        params.signalType = 'hangup';
+        params.signalType = 'bye';
 
         if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -924,6 +924,7 @@ module.exports = function (params) {
             target = client.getCall({
                 id: signal.sessionId,
                 endpointId: signal.fromEndpoint,
+                fromType: signal.fromType,
                 create: (toCreate && signal.target === 'call')
             });
             return target;
@@ -1036,7 +1037,7 @@ module.exports = function (params) {
      * @fires respoke.Call#signal-answer
      */
     routingMethods.doAnswer = function (params) {
-        params.call.connectionId = params.call.connectionId || params.signal.fromConnection;
+        params.call.connectionId = params.signal.fromConnection;
         /**
          * @event respoke.Call#signal-answer
          * @type {respoke.Event}
@@ -1072,13 +1073,13 @@ module.exports = function (params) {
 
     /**
      * @memberof! respoke.SignalingChannel
-     * @method respoke.SignalingChannel.routingMethods.doHangup
+     * @method respoke.SignalingChannel.routingMethods.doBye
      * @private
      * @params {object} params
      * @params {object} params.signal
      * @fires respoke.Call#signal-hangup
      */
-    routingMethods.doHangup = function (params) {
+    routingMethods.doBye = function (params) {
         /**
          *  We may receive hangup from one or more parties after connectionId is set if the call is rejected
          *  by a connection that didn't win the call. In this case, we have to ignore the signal since
@@ -1531,7 +1532,7 @@ module.exports = function (params) {
         that.addHandler({
             type: 'signal',
             handler: function signalHandler(message) {
-                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'hangup'];
+                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'bye'];
                 var signal = respoke.SignalingMessage({
                     rawMessage: message
                 });

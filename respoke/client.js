@@ -7,7 +7,7 @@ var Q = require('q');
 var respoke = require('./respoke');
 
 /**
- * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using 
+ * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using
  * a `respoke.Client` instance.
  * 
  * There are two ways to get a client:
@@ -22,18 +22,18 @@ var respoke = require('./respoke');
  *      var client = respoke.connect(allParams);
  *
  * A client does the following things:
- * 
+ *
  * 1. authentication with the Respoke API
  * 1. receives server-side app-specific information
  * 1. tracks connections and presence
  * 1. provides methods to get and interact with tracked entities (like groups and endpoints)
- * 1. stores default settings for calls and direct connections 
+ * 1. stores default settings for calls and direct connections
  * 1. automatically reconnects to the API when network activity is lost*
  *
- * *If `developmentMode` is set to true. If not using `developmentMode`, disable automatic 
- * reconnect by sending `reconnect: false` and listening to the Client's disconnect event 
+ * *If `developmentMode` is set to true. If not using `developmentMode`, disable automatic
+ * reconnect by sending `reconnect: false` and listening to the Client's disconnect event
  * to fetch a new brokered auth token, then call `client.connect()` with the new token.
- * 
+ *
  * @class respoke.Client
  * @constructor
  * @augments respoke.Presentable
@@ -137,7 +137,7 @@ module.exports = function (params) {
      * @property {respoke.Client.onCall} [onCall] - Callback for when this client receives a call.
      * @property {respoke.Client.onDirectConnection} [onDirectConnection] - Callback for when this client
      * receives a request for a direct connection.
-     * @property {boolean} enableCallDebugReport=true - Upon finishing a call, should the client send debugging 
+     * @property {boolean} enableCallDebugReport=true - Upon finishing a call, should the client send debugging
      * information to the API? Defaults to `true`.
      */
     var clientSettings = {
@@ -183,7 +183,7 @@ module.exports = function (params) {
     /**
      * Array of calls in progress, made accessible for informational purposes only.
      * **Never modify this array directly.**
-     * 
+     *
      * @memberof! respoke.Client
      * @name calls
      * @type {array}
@@ -193,7 +193,7 @@ module.exports = function (params) {
 
     /**
      * Default call settings:
-     * 
+     *
      *      constraints: {
      *          video : true,
      *          audio : true,
@@ -203,7 +203,7 @@ module.exports = function (params) {
      *      servers: {
      *          iceServers: []
      *      }
-     * 
+     *
      * @memberof! respoke.Client
      * @name callSettings
      * @type {object}
@@ -232,12 +232,12 @@ module.exports = function (params) {
     });
 
     /**
-     * Connect to the Respoke infrastructure and authenticate using `params.token`. 
-     * 
+     * Connect to the Respoke infrastructure and authenticate using `params.token`.
+     *
      * After `"connect"`, the app auth session token is stored so it can be used in API requests.
-     * 
+     *
      * This method attaches quite a few event listeners for things like group joining and connection status changes.
-     * 
+     *
      * #### Usage
      *
      *      client.connect({
@@ -248,21 +248,21 @@ module.exports = function (params) {
      *          endpointId: "billy"
      *      });
      *      client.listen("connect", function () { } );
-     * 
-     * 
+     *
+     *
      * If no `params.token` is given and `developmentMode` is set to true, it will attempt to obtain a token
      * automatically. You must set an `endpointId`.
-     * 
-     * 
+     *
+     *
      * #### App auth session token expiration
-     * 
+     *
      * If `params.reconnect` is set to true (which it is by default for `developmentMode`), the `client`
      * will attempt to keep reconnecting each time the app auth session expires.
-     * 
-     * If not using `developmentMode`, disable automatic reconnect by sending `reconnect: false`. 
-     * Then listen to the Client's disconnect event to fetch a new brokered auth token and call 
+     *
+     * If not using `developmentMode`, disable automatic reconnect by sending `reconnect: false`.
+     * Then listen to the Client's disconnect event to fetch a new brokered auth token and call
      * `client.connect()` with the new token.
-     * 
+     *
      *      client.listen('disconnect', function () {
      *
      *          // example method you implemented to get a new token from your server
@@ -272,8 +272,8 @@ module.exports = function (params) {
      *          });
      *
      *      });
-     * 
-     * 
+     *
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.connect
      * @param {object} params
@@ -340,10 +340,10 @@ module.exports = function (params) {
 
             /**
              * This event fires only when the initial `connect` fails.
-             * 
+             *
              * @ignore **This comment is for documentation purposes**, since #error bubbles
              * up from other classes, but it should show on `respoke.Client` docs.
-             * 
+             *
              * @event respoke.Client#error
              * @type {respoke.Event}
              * @property {string} name - the event name.
@@ -355,9 +355,9 @@ module.exports = function (params) {
 
     /**
      * This function contains the meat of the connection, the portions which can be repeated again on reconnect.
-     * 
+     *
      * When `reconnect` is true, this function will be added in an event listener to the Client#disconnect event.
-     * 
+     *
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.actuallyConnect
@@ -395,7 +395,7 @@ module.exports = function (params) {
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */
-            
+
             /**
              * This event provides notification for when an incoming call is being received.  If the user wishes
              * to allow the call, `evt.call.answer()`.
@@ -431,7 +431,7 @@ module.exports = function (params) {
             that.listen('leave', clientSettings.onLeave);
             /**
              * A generic message handler when a message was received by the client.
-             * 
+             *
              * @event respoke.Client#message
              * @type {respoke.Event}
              * @property {string} name - The event name.
@@ -447,7 +447,7 @@ module.exports = function (params) {
             that.listen('connect', clientSettings.onConnect);
             /**
              * Client has disconnected from Respoke.
-             * 
+             *
              * @event respoke.Client#disconnect
              * @type {respoke.Event}
              * @property {string} name - The event name.
@@ -456,7 +456,7 @@ module.exports = function (params) {
             that.listen('disconnect', clientSettings.onDisconnect);
             /**
              * Client has reconnected to Respoke.
-             * 
+             *
              * @event respoke.Client#reconnect
              * @type {respoke.Event}
              * @property {string} name - The event name.
@@ -537,15 +537,15 @@ module.exports = function (params) {
     };
 
     /**
-     * Set the presence for this client. 
-     * 
+     * Set the presence for this client.
+     *
      * The value of presence can be a string, number, object, or array - in any format -
-     * depending on the needs of your application. The only requirement is that 
+     * depending on the needs of your application. The only requirement is that
      * `JSON.stringify()` must work (no circular references).
-     * 
-     *      var myPresence = 'At lunch' 
+     *
+     *      var myPresence = 'At lunch'
      *                      || 4
-     *                      || { status: 'Away', message: 'At lunch' } 
+     *                      || { status: 'Away', message: 'At lunch' }
      *                      || ['Away', 'At lunch'];
      *
      *      client.setPresence({
@@ -554,9 +554,9 @@ module.exports = function (params) {
      *              // successfully updated my presence
      *          }
      *      });
-     * 
+     *
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
-     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.setPresence
      * @param {object} params
@@ -624,14 +624,28 @@ module.exports = function (params) {
         });
 
         if (call === null && params.create === true) {
-            endpoint = that.getEndpoint({id: params.endpointId});
-            try {
-                call = endpoint.startCall({
-                    id: params.id,
-                    caller: false
-                });
-            } catch (e) {
-                log.error("Couldn't create Call.", e.message, e.stack);
+            if (params.fromType === 'did') {
+                try {
+                    call = that.startPhoneCall({
+                        id: params.id,
+                        number: params.endpointId, //phone number
+                        caller: false,
+                        fromType: 'did',
+                        toType: 'web'
+                    });
+                } catch (e) {
+                    log.error("Couldn't create Call.", e.message, e.stack);
+                }
+            } else {
+                endpoint = that.getEndpoint({id: params.endpointId});
+                try {
+                    call = endpoint.startCall({
+                        id: params.id,
+                        caller: false
+                    });
+                } catch (e) {
+                    log.error("Couldn't create Call.", e.message, e.stack);
+                }
             }
         }
         return call;
@@ -685,9 +699,9 @@ module.exports = function (params) {
 
     /**
      * Convenience method for setting presence to `"available"`.
-     * 
+     *
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
-     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.setOnline
      * @param {object} params
@@ -809,6 +823,156 @@ module.exports = function (params) {
     };
 
     /**
+     * Place an audio call with a phone number.
+     * @memberof! respoke.Client
+     * @method respoke.Client.startPhoneCall
+     * @param {object} params
+     * @param {string} params.number - The phone number that should be called.
+     * @param {RTCServers} [params.servers]
+     * @param {RTCConstraints} [params.constraints]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
+     * with the local audio and/or video attached.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
+     * with the remote audio and/or video attached.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
+     * up.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @return {respoke.Call}
+     * @private
+     */
+    that.startPhoneCall = function (params) {
+        var promise;
+        var retVal;
+        var call = null;
+        var recipient = {};
+        var combinedCallSettings = JSON.parse(JSON.stringify(that.callSettings)); //clone
+        params = params || {};
+
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        if (params.caller === undefined) {
+            params.caller = true;
+        }
+
+        if (!params.number) {
+            log.error("Can't start a phone call without a number.");
+            promise = Q.reject(new Error("Can't start a phone call without a number."));
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        recipient.id = params.number;
+
+        // Apply call-specific callSettings to the app's defaults
+        combinedCallSettings.constraints = params.constraints || combinedCallSettings.constraints;
+        combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
+        // Audio only phone calls allowed
+        combinedCallSettings.constraints.audio = true;
+        combinedCallSettings.constraints.video = false;
+        log.debug('Final callSettings is', combinedCallSettings);
+
+        params.callSettings = combinedCallSettings;
+        params.instanceId = instanceId;
+        params.remoteEndpoint = recipient;
+        
+        params.toType = params.toType || 'did';
+        params.fromType = params.fromType || 'web';
+
+        params.signalOffer = function (signalParams) {
+            signalParams.signalType = 'offer';
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't place a call.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
+        };
+        params.signalAnswer = function (signalParams) {
+            signalParams.signalType = 'answer';
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't answer the call.", err.message, err.stack);
+                signalParams.call.hangup({signal: false});
+            });
+        };
+        params.signalConnected = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.connectionId = signalParams.connectionId;
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send connected.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
+        };
+        params.signalModify = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send modify.", err.message, err.stack);
+            });
+        };
+        params.signalCandidate = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send candidate.", err.message, err.stack);
+            });
+        };
+        params.signalHangup = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send hangup.", err.message, err.stack);
+            });
+        };
+        params.signalReport = function (signalParams) {
+            log.debug("Sending debug report", signalParams.report);
+            signalingChannel.sendReport(signalParams);
+        };
+
+        params.signalingChannel = signalingChannel;
+        return respoke.Call(params);
+    };
+
+    /**
      * Assert that we are connected to the backend infrastructure.
      * @memberof! respoke.Client
      * @method respoke.Client.verifyConnected
@@ -843,7 +1007,7 @@ module.exports = function (params) {
      *      client.join({ 
      *          id: "book-club",
      *          onSuccess: function (evt) {
-     *              console.log('I joined', evt.group.id); 
+     *              console.log('I joined', evt.group.id);
      *              // "I joined book-club"
      *              group = evt.group;
      *              group.sendMessage({
@@ -906,9 +1070,9 @@ module.exports = function (params) {
                 that.addGroup(group);
             }
 
-            group.listen('message', params.onMessage);
             group.listen('join', params.onJoin);
             group.listen('leave', params.onLeave);
+            group.listen('message', params.onMessage);
 
             group.addMember({
                 connection: that.getConnection({
@@ -1042,14 +1206,14 @@ module.exports = function (params) {
 
     /**
      * Find an endpoint by id and return the `respoke.Endpoint` object.
-     * 
-     * If it is not already cached locally, will be added to the local cache of tracked endpoints, 
+     *
+     * If it is not already cached locally, will be added to the local cache of tracked endpoints,
      * its presence will be determined, and will be available in `client.getEndpoints()`.
      *
-     * @ignore If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`), 
-     * it will be created. This is useful, for example, in the case of dynamic endpoints where groups are 
+     * @ignore If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`),
+     * it will be created. This is useful, for example, in the case of dynamic endpoints where groups are
      * not in use. Override dynamic endpoint creation by setting `params.skipCreate = true`.
-     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.getEndpoint
      * @param {object} params
@@ -1100,11 +1264,11 @@ module.exports = function (params) {
 
     /**
      * Find a Connection by id and return it.
-     * 
+     *
      * @ignore In most cases, if we don't find it we will create it. This is useful
-     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true 
+     * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true
      * to return undefined if the Connection is not already known.
-     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.getConnection
      * @param {object} params
@@ -1167,13 +1331,13 @@ module.exports = function (params) {
     };
 
     /**
-     * Get the list of **all endpoints** that the library has knowledge of. 
+     * Get the list of **all endpoints** that the library has knowledge of.
      * These are `respoke.Endpoint` objects, not just the endpointIds.
-     * 
+     *
      * The library gains knowledge of an endpoint in two ways:
      * 1. when an endpoint joins a group that the user (currently logged-in endpoint) is a member of (if group presence is enabled)
      * 2. when an endpoint that the user (currently logged-in endpoint) is watching*
-     * 
+     *
      * *If an endpoint that the library does not know about sends a message to the client, you
      * can immediately call the `client.getEndpoint()` method on the sender of the message to enable
      * watching of the sender's endpoint.
@@ -1182,9 +1346,9 @@ module.exports = function (params) {
      *          if (data.endpoint) {
      *              // start tracking this endpoint.
      *              client.getEndpoint({ id: data.endpoint.id });
-     *          } 
+     *          }
      *      });
-     * 
+     *
      *
      * @memberof! respoke.Client
      * @method respoke.Client.getEndpoints
