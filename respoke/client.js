@@ -478,7 +478,6 @@ module.exports = function (params) {
         evt.call.listen('hangup', function (evt) {
             removeCall({call: evt.target});
         }, true);
-        addCall(evt);
     }
 
     function removeDCCallOnHangup(evt) {
@@ -1244,6 +1243,7 @@ module.exports = function (params) {
             params.instanceId = instanceId;
             params.signalingChannel = signalingChannel;
             params.resolveEndpointPresence = clientSettings.resolveEndpointPresence;
+            params.addCall = addCall;
 
             endpoint = respoke.Endpoint(params);
             signalingChannel.registerPresence({
