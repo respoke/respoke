@@ -246,6 +246,10 @@ module.exports = function (params) {
      * to facilitate candidate logging.
      */
     function signalCandidate(params) {
+        if (!pc) {
+            return;
+        }
+
         params.iceCandidates = [params.candidate];
         signalCandidateOrig(params);
         that.report.candidatesSent.push({candidate: params.candidate});
@@ -753,13 +757,15 @@ module.exports = function (params) {
 
         if (pc && that.report) {
             pc.close();
-            pc = null;
+        }
+        pc = null;
+
+        if (that.call.callDebugReportEnabled) {
             signalReport({
                 report: that.report
             });
-            that.report = null;
         }
-
+        that.report = null;
     };
 
     /**
@@ -1022,7 +1028,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (defSDPOffer.promise.isFulfilled()) {
+        if (haveSentOffer || (!that.state.caller && ['connected', 'connecting'].indexOf(that.state.currentState()) > -1)) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
                 log.debug('Got a remote candidate.', params.candidate);
