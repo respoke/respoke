@@ -34,7 +34,7 @@ describe("respoke.CallState", function () {
             expect(typeof state.dispatch).to.equal('function');
             expect(typeof state.isModifying).to.equal('function');
             expect(typeof state.isState).to.equal('function');
-            expect(typeof state.currentState).to.equal('function');
+            expect(typeof state.getState).to.equal('function');
         });
 
         it("saves unexpected attributes", function () {
@@ -42,7 +42,7 @@ describe("respoke.CallState", function () {
         });
 
         it("has not been run", function () {
-            expect(state.currentState()).to.equal.undefined;
+            expect(state.getState()).to.equal.undefined;
         });
 
         it("should not report modifying", function () {
@@ -79,7 +79,7 @@ describe("respoke.CallState", function () {
             });
 
             it("reports the correct state name", function () {
-                expect(state.currentState()).to.equal("idle");
+                expect(state.getState()).to.equal("idle");
             });
 
             it("should not report modifying", function () {
@@ -111,12 +111,12 @@ describe("respoke.CallState", function () {
                         var currentState;
 
                         beforeEach(function () {
-                            currentState = state.currentState();
+                            currentState = state.getState();
                             state.dispatch(evt);
                         });
 
                         it("invalid event " + evt + " doesn't move to a new state", function () {
-                            expect(state.currentState()).to.equal(currentState);
+                            expect(state.getState()).to.equal(currentState);
                         });
                     });
                 });
@@ -137,7 +137,7 @@ describe("respoke.CallState", function () {
                 });
 
                 it("leads to 'terminated'", function () {
-                    expect(state.currentState()).to.equal("terminated");
+                    expect(state.getState()).to.equal("terminated");
                 });
 
                 it("should not report modifying", function () {
@@ -179,7 +179,7 @@ describe("respoke.CallState", function () {
                     });
 
                     it("leads to 'preparing'", function () {
-                        expect(state.currentState()).to.equal("preparing");
+                        expect(state.getState()).to.equal("preparing");
                     });
 
                     it("should not report modifying", function () {
@@ -214,7 +214,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("leads to 'terminated'", function () {
-                                expect(state.currentState()).to.equal("terminated");
+                                expect(state.getState()).to.equal("terminated");
                             });
 
                             it("should not report modifying", function () {
@@ -251,12 +251,12 @@ describe("respoke.CallState", function () {
                                     var currentState;
 
                                     beforeEach(function () {
-                                        currentState = state.currentState();
+                                        currentState = state.getState();
                                         state.dispatch(evt);
                                     });
 
                                     it("doesn't move to a new state", function () {
-                                        expect(state.currentState()).to.equal(currentState);
+                                        expect(state.getState()).to.equal(currentState);
                                     });
                                 });
                             });
@@ -281,7 +281,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("leads to 'terminated'", function () {
-                                expect(state.currentState()).to.equal("terminated");
+                                expect(state.getState()).to.equal("terminated");
                             });
 
                             it("should not report modifying", function () {
@@ -323,12 +323,12 @@ describe("respoke.CallState", function () {
                                         var currentState;
 
                                         beforeEach(function () {
-                                            currentState = state.currentState();
+                                            currentState = state.getState();
                                             state.dispatch(evt);
                                         });
 
                                         it("doesn't move to a new state", function () {
-                                            expect(state.currentState()).to.equal(currentState);
+                                            expect(state.getState()).to.equal(currentState);
                                         });
                                     });
                                 });
@@ -349,7 +349,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("moves to 'approvingDeviceAccess'", function () {
-                                expect(state.currentState()).to.equal('approvingDeviceAccess');
+                                expect(state.getState()).to.equal('approvingDeviceAccess');
                             });
 
                             it("fires 'approving-device-access:entry'", function () {
@@ -381,12 +381,12 @@ describe("respoke.CallState", function () {
                                         var currentState;
 
                                         beforeEach(function () {
-                                            currentState = state.currentState();
+                                            currentState = state.getState();
                                             state.dispatch(evt, params || {});
                                         });
 
                                         it("doesn't move to a new state", function () {
-                                            expect(state.currentState()).to.equal(currentState);
+                                            expect(state.getState()).to.equal(currentState);
                                         });
                                     });
                                 });
@@ -407,7 +407,7 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("moves to 'approvingContent'", function () {
-                                    expect(state.currentState()).to.equal('approvingContent');
+                                    expect(state.getState()).to.equal('approvingContent');
                                 });
 
                                 it("fires 'approving-content:entry'", function () {
@@ -439,12 +439,12 @@ describe("respoke.CallState", function () {
                                             var currentState;
 
                                             beforeEach(function () {
-                                                currentState = state.currentState();
+                                                currentState = state.getState();
                                                 state.dispatch(evt, params || {});
                                             });
 
                                             it("doesn't move to a new state", function () {
-                                                expect(state.currentState()).to.equal(currentState);
+                                                expect(state.getState()).to.equal(currentState);
                                             });
                                         });
                                     });
@@ -485,7 +485,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("moves to 'offering'", function () {
-                                            expect(state.currentState()).to.equal('offering');
+                                            expect(state.getState()).to.equal('offering');
                                         });
 
                                         it("fires 'approving-content:exit'", function () {
@@ -517,7 +517,7 @@ describe("respoke.CallState", function () {
                                             });
 
                                             it("leads to 'terminated'", function () {
-                                                expect(state.currentState()).to.equal("terminated");
+                                                expect(state.getState()).to.equal("terminated");
                                             });
 
                                             it("should not report modifying", function () {
@@ -552,12 +552,12 @@ describe("respoke.CallState", function () {
                                                     var currentState;
 
                                                     beforeEach(function () {
-                                                        currentState = state.currentState();
+                                                        currentState = state.getState();
                                                         state.dispatch(evt, params || {});
                                                     });
 
                                                     it("doesn't move to a new state", function () {
-                                                        expect(state.currentState()).to.equal(currentState);
+                                                        expect(state.getState()).to.equal(currentState);
                                                     });
                                                 });
                                             });
@@ -578,7 +578,7 @@ describe("respoke.CallState", function () {
                                             });
 
                                             it("does not move to another state", function () {
-                                                expect(state.currentState()).to.equal('offering');
+                                                expect(state.getState()).to.equal('offering');
                                             });
                                         });
 
@@ -598,7 +598,7 @@ describe("respoke.CallState", function () {
                                             });
 
                                             it("moves to 'connecting'", function () {
-                                                expect(state.currentState()).to.equal('connecting');
+                                                expect(state.getState()).to.equal('connecting');
                                             });
 
                                             it("fires 'connecting:entry'", function () {
@@ -633,7 +633,7 @@ describe("respoke.CallState", function () {
                                                 });
 
                                                 it("leads to 'terminated'", function () {
-                                                    expect(state.currentState()).to.equal("terminated");
+                                                    expect(state.getState()).to.equal("terminated");
                                                 });
 
                                                 it("should not report modifying", function () {
@@ -670,12 +670,12 @@ describe("respoke.CallState", function () {
                                                         var currentState;
 
                                                         beforeEach(function () {
-                                                            currentState = state.currentState();
+                                                            currentState = state.getState();
                                                             state.dispatch(evt, params || {});
                                                         });
 
                                                         it("doesn't move to a new state", function () {
-                                                            expect(state.currentState()).to.equal(currentState);
+                                                            expect(state.getState()).to.equal(currentState);
                                                         });
                                                     });
                                                 });
@@ -693,7 +693,7 @@ describe("respoke.CallState", function () {
                                                 });
 
                                                 it("moves to the 'connected' state", function () {
-                                                    expect(state.currentState()).to.equal('connected');
+                                                    expect(state.getState()).to.equal('connected');
                                                 });
 
                                                 it("fires the 'connected:entry' event", function () {
@@ -717,12 +717,12 @@ describe("respoke.CallState", function () {
                                                             var currentState;
 
                                                             beforeEach(function () {
-                                                                currentState = state.currentState();
+                                                                currentState = state.getState();
                                                                 state.dispatch(evt, params || {});
                                                             });
 
                                                             it("doesn't move to a new state", function () {
-                                                                expect(state.currentState()).to.equal(currentState);
+                                                                expect(state.getState()).to.equal(currentState);
                                                             });
                                                         });
                                                     });
@@ -741,7 +741,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("stays in 'approvingContent'", function () {
-                                            expect(state.currentState()).to.equal('approvingContent');
+                                            expect(state.getState()).to.equal('approvingContent');
                                         });
 
                                         describe("event 'receiveLocalMedia'", function () {
@@ -759,7 +759,7 @@ describe("respoke.CallState", function () {
                                             });
 
                                             it("moves to 'offering'", function () {
-                                                expect(state.currentState()).to.equal('offering');
+                                                expect(state.getState()).to.equal('offering');
                                             });
 
                                             it("fires 'approving-content:exit'", function () {
@@ -783,7 +783,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("leads to 'terminated'", function () {
-                                            expect(state.currentState()).to.equal("terminated");
+                                            expect(state.getState()).to.equal("terminated");
                                         });
 
                                         it("fires the 'terminated:entry' event", function () {
@@ -814,7 +814,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("leads to 'terminated'", function () {
-                                        expect(state.currentState()).to.equal("terminated");
+                                        expect(state.getState()).to.equal("terminated");
                                     });
                                 });
                             });
@@ -825,7 +825,7 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("leads to 'terminated'", function () {
-                                    expect(state.currentState()).to.equal("terminated");
+                                    expect(state.getState()).to.equal("terminated");
                                 });
                             });
                         });
@@ -855,7 +855,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("leads to 'terminated'", function () {
-                                expect(state.currentState()).to.equal("terminated");
+                                expect(state.getState()).to.equal("terminated");
                             });
 
                             it("should not report modifying", function () {
@@ -882,7 +882,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("leads to 'connected'", function () {
-                                expect(state.currentState()).to.equal("connected");
+                                expect(state.getState()).to.equal("connected");
                             });
 
                             it("should not report modifying", function () {
@@ -915,7 +915,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("leads to 'modifying'", function () {
-                                        expect(state.currentState()).to.equal("modifying");
+                                        expect(state.getState()).to.equal("modifying");
                                     });
 
                                     it("should report modifying", function () {
@@ -961,7 +961,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("leads to 'preparing'", function () {
-                                            expect(state.currentState()).to.equal("preparing");
+                                            expect(state.getState()).to.equal("preparing");
                                         });
 
                                         it("should report modifying", function () {
@@ -1012,7 +1012,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("leads to 'connected'", function () {
-                                            expect(state.currentState()).to.equal("connected");
+                                            expect(state.getState()).to.equal("connected");
                                         });
 
                                         it("should not report modifying", function () {
@@ -1045,12 +1045,12 @@ describe("respoke.CallState", function () {
                                                 var currentState;
 
                                                 beforeEach(function () {
-                                                    currentState = state.currentState();
+                                                    currentState = state.getState();
                                                     state.dispatch(evt, params || {});
                                                 });
 
                                                 it("doesn't move to a new state", function () {
-                                                    expect(state.currentState()).to.equal(currentState);
+                                                    expect(state.getState()).to.equal(currentState);
                                                 });
 
                                                 it("should report modifying", function () {
@@ -1082,7 +1082,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("leads to 'preparing'", function () {
-                                        expect(state.currentState()).to.equal("preparing");
+                                        expect(state.getState()).to.equal("preparing");
                                     });
 
                                     it("should report modifying", function () {
@@ -1132,7 +1132,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("leads to 'connected'", function () {
-                                            expect(state.currentState()).to.equal("connected");
+                                            expect(state.getState()).to.equal("connected");
                                         });
 
                                         it("should not report modifying", function () {
@@ -1165,12 +1165,12 @@ describe("respoke.CallState", function () {
                                                 var currentState;
 
                                                 beforeEach(function () {
-                                                    currentState = state.currentState();
+                                                    currentState = state.getState();
                                                     state.dispatch(evt, params || {});
                                                 });
 
                                                 it("doesn't move to a new state", function () {
-                                                    expect(state.currentState()).to.equal(currentState);
+                                                    expect(state.getState()).to.equal(currentState);
                                                 });
 
                                                 it("should report modifying", function () {
@@ -1205,7 +1205,7 @@ describe("respoke.CallState", function () {
                     });
 
                     it("leads to 'preparing'", function () {
-                        expect(state.currentState()).to.equal("preparing");
+                        expect(state.getState()).to.equal("preparing");
                     });
 
                     it("should not report modifying", function () {
@@ -1249,7 +1249,7 @@ describe("respoke.CallState", function () {
             });
 
             it("reports the correct state name", function () {
-                expect(state.currentState()).to.equal("idle");
+                expect(state.getState()).to.equal("idle");
             });
 
             it("should not report modifying", function () {
@@ -1283,7 +1283,7 @@ describe("respoke.CallState", function () {
                 });
 
                 it("leads to 'terminated'", function () {
-                    expect(state.currentState()).to.equal("terminated");
+                    expect(state.getState()).to.equal("terminated");
                 });
 
                 it("should not report modifying", function () {
@@ -1313,12 +1313,12 @@ describe("respoke.CallState", function () {
                         var currentState;
 
                         beforeEach(function () {
-                            currentState = state.currentState();
+                            currentState = state.getState();
                             state.dispatch(evt, params || {});
                         });
 
                         it("doesn't move to a new state", function () {
-                            expect(state.currentState()).to.equal(currentState);
+                            expect(state.getState()).to.equal(currentState);
                         });
                     });
                 });
@@ -1344,7 +1344,7 @@ describe("respoke.CallState", function () {
                 });
 
                 it("leads to 'preparing'", function () {
-                    expect(state.currentState()).to.equal("preparing");
+                    expect(state.getState()).to.equal("preparing");
                 });
 
                 it("should not report modifying", function () {
@@ -1371,7 +1371,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("leads to 'terminated'", function () {
-                            expect(state.currentState()).to.equal("terminated");
+                            expect(state.getState()).to.equal("terminated");
                         });
 
                         it("should not report modifying", function () {
@@ -1400,12 +1400,12 @@ describe("respoke.CallState", function () {
                                 var currentState;
 
                                 beforeEach(function () {
-                                    currentState = state.currentState();
+                                    currentState = state.getState();
                                     state.dispatch(evt, params || {});
                                 });
 
                                 it("doesn't move to a new state", function () {
-                                    expect(state.currentState()).to.equal(currentState);
+                                    expect(state.getState()).to.equal(currentState);
                                 });
                             });
                         });
@@ -1430,7 +1430,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("leads to 'terminated'", function () {
-                            expect(state.currentState()).to.equal("terminated");
+                            expect(state.getState()).to.equal("terminated");
                         });
 
                         it("should not report modifying", function () {
@@ -1464,12 +1464,12 @@ describe("respoke.CallState", function () {
                                     var currentState;
 
                                     beforeEach(function () {
-                                        currentState = state.currentState();
+                                        currentState = state.getState();
                                         state.dispatch(evt, params || {});
                                     });
 
                                     it("doesn't move to a new state", function () {
-                                        expect(state.currentState()).to.equal(currentState);
+                                        expect(state.getState()).to.equal(currentState);
                                     });
                                 });
                             });
@@ -1496,7 +1496,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("leads to 'terminated'", function () {
-                            expect(state.currentState()).to.equal("terminated");
+                            expect(state.getState()).to.equal("terminated");
                         });
 
                         it("should not report modifying", function () {
@@ -1530,7 +1530,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("moves to 'approvingDeviceAccess'", function () {
-                            expect(state.currentState()).to.equal('approvingDeviceAccess');
+                            expect(state.getState()).to.equal('approvingDeviceAccess');
                         });
 
                         it("fires 'approving-device-access:entry'", function () {
@@ -1554,12 +1554,12 @@ describe("respoke.CallState", function () {
                                     var currentState;
 
                                     beforeEach(function () {
-                                        currentState = state.currentState();
+                                        currentState = state.getState();
                                         state.dispatch(evt, params || {});
                                     });
 
                                     it("doesn't move to a new state", function () {
-                                        expect(state.currentState()).to.equal(currentState);
+                                        expect(state.getState()).to.equal(currentState);
                                     });
                                 });
                             });
@@ -1571,7 +1571,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("leads to 'terminated'", function () {
-                                expect(state.currentState()).to.equal("terminated");
+                                expect(state.getState()).to.equal("terminated");
                             });
                         });
 
@@ -1590,7 +1590,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("moves to 'approvingContent'", function () {
-                                expect(state.currentState()).to.equal('approvingContent');
+                                expect(state.getState()).to.equal('approvingContent');
                             });
 
                             it("fires 'approving-content:entry'", function () {
@@ -1615,12 +1615,12 @@ describe("respoke.CallState", function () {
                                         var currentState;
 
                                         beforeEach(function () {
-                                            currentState = state.currentState();
+                                            currentState = state.getState();
                                             state.dispatch(evt, params || {});
                                         });
 
                                         it("doesn't move to a new state", function () {
-                                            expect(state.currentState()).to.equal(currentState);
+                                            expect(state.getState()).to.equal(currentState);
                                         });
                                     });
                                 });
@@ -1643,7 +1643,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("moves to 'connecting'", function () {
-                                        expect(state.currentState()).to.equal('connecting');
+                                        expect(state.getState()).to.equal('connecting');
                                     });
 
                                     it("fires 'connecting:entry'", function () {
@@ -1675,12 +1675,12 @@ describe("respoke.CallState", function () {
                                                 var currentState;
 
                                                 beforeEach(function () {
-                                                    currentState = state.currentState();
+                                                    currentState = state.getState();
                                                     state.dispatch(evt, params || {});
                                                 });
 
                                                 it("doesn't move to a new state", function () {
-                                                    expect(state.currentState()).to.equal(currentState);
+                                                    expect(state.getState()).to.equal(currentState);
                                                 });
                                             });
                                         });
@@ -1701,7 +1701,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("moves to 'connected'", function () {
-                                            expect(state.currentState()).to.equal('connected');
+                                            expect(state.getState()).to.equal('connected');
                                         });
 
                                         it("fires 'connected:entry'", function () {
@@ -1725,12 +1725,12 @@ describe("respoke.CallState", function () {
                                                     var currentState;
 
                                                     beforeEach(function () {
-                                                        currentState = state.currentState();
+                                                        currentState = state.getState();
                                                         state.dispatch(evt, params || {});
                                                     });
 
                                                     it("doesn't move to a new state", function () {
-                                                        expect(state.currentState()).to.equal(currentState);
+                                                        expect(state.getState()).to.equal(currentState);
                                                     });
                                                 });
                                             });
@@ -1743,7 +1743,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("leads to 'terminated'", function () {
-                                            expect(state.currentState()).to.equal("terminated");
+                                            expect(state.getState()).to.equal("terminated");
                                         });
                                     });
                                 });
@@ -1755,7 +1755,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("does not change state", function () {
-                                        expect(state.currentState()).to.equal('approvingContent');
+                                        expect(state.getState()).to.equal('approvingContent');
                                     });
 
                                     describe("event 'receiveLocalMedia'", function () {
@@ -1773,7 +1773,7 @@ describe("respoke.CallState", function () {
                                         });
 
                                         it("moves to 'connecting'", function () {
-                                            expect(state.currentState()).to.equal('connecting');
+                                            expect(state.getState()).to.equal('connecting');
                                         });
 
                                         it("fires 'connecting:entry'", function () {
@@ -1805,12 +1805,12 @@ describe("respoke.CallState", function () {
                                                     var currentState;
 
                                                     beforeEach(function () {
-                                                        currentState = state.currentState();
+                                                        currentState = state.getState();
                                                         state.dispatch(evt, params || {});
                                                     });
 
                                                     it("doesn't move to a new state", function () {
-                                                        expect(state.currentState()).to.equal(currentState);
+                                                        expect(state.getState()).to.equal(currentState);
                                                     });
                                                 });
                                             });
@@ -1831,7 +1831,7 @@ describe("respoke.CallState", function () {
                                             });
 
                                             it("moves to 'connected'", function () {
-                                                expect(state.currentState()).to.equal('connected');
+                                                expect(state.getState()).to.equal('connected');
                                             });
 
                                             it("fires 'connected:entry'", function () {
@@ -1855,12 +1855,12 @@ describe("respoke.CallState", function () {
                                                         var currentState;
 
                                                         beforeEach(function () {
-                                                            currentState = state.currentState();
+                                                            currentState = state.getState();
                                                             state.dispatch(evt, params || {});
                                                         });
 
                                                         it("doesn't move to a new state", function () {
-                                                            expect(state.currentState()).to.equal(currentState);
+                                                            expect(state.getState()).to.equal(currentState);
                                                         });
                                                     });
                                                 });
@@ -1876,7 +1876,7 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("leads to 'terminated'", function () {
-                                    expect(state.currentState()).to.equal("terminated");
+                                    expect(state.getState()).to.equal("terminated");
                                 });
                             });
                         });
@@ -1887,7 +1887,7 @@ describe("respoke.CallState", function () {
                             });
 
                             it("leads to 'terminated'", function () {
-                                expect(state.currentState()).to.equal("terminated");
+                                expect(state.getState()).to.equal("terminated");
                             });
                         });
                     });
@@ -1917,7 +1917,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("leads to 'terminated'", function () {
-                            expect(state.currentState()).to.equal("terminated");
+                            expect(state.getState()).to.equal("terminated");
                         });
 
                         it("should not report modifying", function () {
@@ -1944,7 +1944,7 @@ describe("respoke.CallState", function () {
                         });
 
                         it("leads to 'connected'", function () {
-                            expect(state.currentState()).to.equal("connected");
+                            expect(state.getState()).to.equal("connected");
                         });
 
                         it("should not report modifying", function () {
@@ -1977,7 +1977,7 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("leads to 'modifying'", function () {
-                                    expect(state.currentState()).to.equal("modifying");
+                                    expect(state.getState()).to.equal("modifying");
                                 });
 
                                 it("should report modifying", function () {
@@ -2015,7 +2015,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("leads to 'preparing'", function () {
-                                        expect(state.currentState()).to.equal("preparing");
+                                        expect(state.getState()).to.equal("preparing");
                                     });
 
                                     it("should report modifying", function () {
@@ -2063,7 +2063,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("leads to 'connected'", function () {
-                                        expect(state.currentState()).to.equal("connected");
+                                        expect(state.getState()).to.equal("connected");
                                     });
 
                                     it("should not report modifying", function () {
@@ -2096,12 +2096,12 @@ describe("respoke.CallState", function () {
                                             var currentState;
 
                                             beforeEach(function () {
-                                                currentState = state.currentState();
+                                                currentState = state.getState();
                                                 state.dispatch(evt, params || {});
                                             });
 
                                             it("doesn't move to a new state", function () {
-                                                expect(state.currentState()).to.equal(currentState);
+                                                expect(state.getState()).to.equal(currentState);
                                             });
 
                                             it("should report modifying", function () {
@@ -2133,7 +2133,7 @@ describe("respoke.CallState", function () {
                                 });
 
                                 it("leads to 'preparing'", function () {
-                                    expect(state.currentState()).to.equal("preparing");
+                                    expect(state.getState()).to.equal("preparing");
                                 });
 
                                 it("should report modifying", function () {
@@ -2180,7 +2180,7 @@ describe("respoke.CallState", function () {
                                     });
 
                                     it("leads to 'connected'", function () {
-                                        expect(state.currentState()).to.equal("connected");
+                                        expect(state.getState()).to.equal("connected");
                                     });
 
                                     it("should not report modifying", function () {
@@ -2212,12 +2212,12 @@ describe("respoke.CallState", function () {
                                             var currentState;
 
                                             beforeEach(function () {
-                                                currentState = state.currentState();
+                                                currentState = state.getState();
                                                 state.dispatch(evt, params || {});
                                             });
 
                                             it("doesn't move to a new state", function () {
-                                                expect(state.currentState()).to.equal(currentState);
+                                                expect(state.getState()).to.equal(currentState);
                                             });
 
                                             it("should report modifying", function () {

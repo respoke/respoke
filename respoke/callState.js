@@ -483,7 +483,7 @@ module.exports = function (params) {
         }
     });
 
-    that.currentState = function () {
+    that.getState = function () {
         if (!fsm) {
             return 'terminated';
         }
@@ -499,14 +499,14 @@ module.exports = function (params) {
             return;
         }
 
-        oldState = that.currentState();
+        oldState = that.getState();
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
             respoke.log.debug('error dispatching', evt, 'from', oldState, err);
             throw err;
         }
-        newState = that.currentState();
+        newState = that.getState();
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
             respoke.log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
         }
@@ -521,7 +521,7 @@ module.exports = function (params) {
      */
     that.isModifying = function () {
         var modifyingStates = ['preparing', 'modifying', 'approvingDeviceAccess', 'approvingMedia', 'offering'];
-        return (modifyingStates.indexOf(that.currentState()) > -1 && that.hasMedia());
+        return (modifyingStates.indexOf(that.getState()) > -1 && that.hasMedia());
     };
 
     /**
@@ -532,7 +532,7 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isState = function (name) {
-        return (that.currentState() === name);
+        return (that.getState() === name);
     };
 
     assert(typeof that.hasMedia === 'function');
