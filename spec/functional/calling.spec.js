@@ -775,12 +775,7 @@ describe("Respoke calling", function () {
                     };
 
                     followee.listen('call', callListener);
-                    call = followeeEndpoint.startCall({ constraints: {
-                        video: true,
-                        audio: true,
-                        optional: [],
-                        mandatory: {}
-                    }});
+                    call = followeeEndpoint.startCall();
                 });
 
                 afterEach(function () {
@@ -788,11 +783,15 @@ describe("Respoke calling", function () {
                     respoke.Call = original;
                 });
 
-                it("shows callDebugReportEnabled from signalingChannel as false", function (done) {
+                it("is call debugs enabled and signalReport gets called", function (done) {
                     call.listen('hangup', function (evt) {
-                        expect(iSpy.calledOnce).to.be.true;
-                        expect(call.callDebugReportEnabled).to.be.true;
-                        done();
+                        try {
+                            expect(iSpy.calledOnce).to.equal(true);
+                            expect(call.callDebugReportEnabled).to.equal(true);
+                            done();
+                        } catch (err) {
+                            done(err);
+                        }
                     });
                     call.hangup();
                 });
@@ -824,12 +823,7 @@ describe("Respoke calling", function () {
                         onConnect: function () {
                             followeeEndpoint_nodebug = follower_nodebug.getEndpoint({id: followee.endpointId});
                             followee.listen('call', callListener);
-                            call = followeeEndpoint_nodebug.startCall({ constraints: {
-                                video: true,
-                                audio: true,
-                                optional: [],
-                                mandatory: {}
-                            }});
+                            call = followeeEndpoint_nodebug.startCall();
                             done();
                         }
                     });
@@ -841,12 +835,15 @@ describe("Respoke calling", function () {
                     respoke.Call = original;
                 });
 
-                it("shows callDebugReportEnabled from signalingChannel as false", function (done) {
+                it("the flag is set to false and signalReport does not get called", function (done) {
                     call.listen('hangup', function (evt) {
-                        expect(iSpy.called).to.be.true;
-                        expect(call.callDebugReportEnabled).to.be.false;
-                        // TODO
-                        done();
+                        try {
+                            expect(iSpy.called).to.equal(false);
+                            expect(call.callDebugReportEnabled).to.equal(false);
+                            done();
+                        } catch (err) {
+                            done(err);
+                        }
                     });
                     call.hangup();
                 });
