@@ -355,7 +355,6 @@ module.exports = function (params) {
                     pc.createAnswer(function successHandler(oSession) {
                         saveAnswerAndSend(oSession);
                         defSDPOffer.resolve();
-                        processQueues(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
                         that.report.callStoppedReason = err.message;
@@ -489,6 +488,11 @@ module.exports = function (params) {
 
         that.report.callStarted = new Date().getTime();
         pc = new RTCPeerConnection(callSettings.servers, pcOptions);
+
+        defSDPOffer.promise.done(function () {
+            processQueues();
+        }, null);
+
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
@@ -576,10 +580,14 @@ module.exports = function (params) {
             return;
         }
 
-        signalCandidate({
-            candidate: candidate,
-            call: that.call
-        });
+        if (that.call.caller && defSDPOffer.promise.isPending()) {
+            candidateSendingQueue.push(candidate);
+        } else {
+            signalCandidate({
+                candidate: candidate,
+                call: that.call
+            });
+        }
     }
 
     /**
@@ -640,9 +648,16 @@ module.exports = function (params) {
             oSession.type = 'offer';
             signalOffer({
                 call: that.call,
-                sessionDescription: oSession
+                sessionDescription: oSession,
+                onSuccess: function () {
+                    setTimeout(function () {
+                    defSDPOffer.resolve(oSession);
+                    });
+                },
+                onError: function (err) {
+                    defSDPOffer.reject(err);
+                }
             });
-            defSDPOffer.resolve(oSession);
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on offer I created.');
             /**
@@ -815,7 +830,7 @@ module.exports = function (params) {
         if (!pc || !defSDPAnswer.promise.isPending()) {
             return;
         }
-        defSDPAnswer.promise.done(processQueues, function errorHandler() {
+        defSDPAnswer.promise.done(null, function errorHandler() {
             log.error('set remote desc of answer failed', evt.signal.sessionDescription);
             that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
             that.close();
@@ -1026,9 +1041,9 @@ module.exports = function (params) {
             return;
         }
 
-        if ((!pc || that.call.caller && defSDPAnswer.promise.isPending()) && !params.processingQueue) {
+        if (!pc) {
             candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate.');
+            log.debug('Queueing a candidate because pc is null.');
             return;
         }
 
@@ -1044,9 +1059,8 @@ module.exports = function (params) {
         } else {
             if (!params.processingQueue) {
                 candidateReceivingQueue.push(params.candidate);
-                log.debug('Queueing a candidate.');
+                log.debug('Queueing a candidate because no offer yet.');
             }
-            return;
         }
     };
 

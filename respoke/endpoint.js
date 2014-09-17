@@ -295,13 +295,16 @@ module.exports = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'offer';
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't place a call.", err.message, err.stack);
-                signalParams.call.hangup();
-            });
+
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             signalParams.signalType = 'answer';
@@ -423,13 +426,16 @@ module.exports = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'offer';
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't place a call.", err.message, err.stack);
-                signalParams.call.hangup();
-            });
+
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'directConnection';
