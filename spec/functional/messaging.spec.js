@@ -39,11 +39,11 @@ describe("Respoke messaging", function () {
     var roleId;
 
     function followerListener(evt) {
-        messagesFolloweeReceived.push(evt.message.message);
+        messagesFolloweeReceived.push(evt.message);
     }
 
     function followeeListener(evt) {
-        messagesFollowerReceived.push(evt.message.message);
+        messagesFollowerReceived.push(evt.message);
     }
 
     function sendFiveGroupMessagesEach() {
@@ -64,22 +64,35 @@ describe("Respoke messaging", function () {
         return Q.all(promises);
     }
 
-    function sendFiveMessagesEach() {
-        var message;
+    function sendMessage() {
+        var message = {
+            message: respoke.makeGUID()
+        };
         var promises = [];
+
+        promises.push(followerEndpoint.sendMessage(message));
+        messagesFolloweeSent.push(message.message);
+
+        promises.push(followeeEndpoint.sendMessage(message));
+        messagesFollowerSent.push(message.message);
+
+        return promises;
+    }
+
+    function sendFiveMessagesEach() {
+        var flatPromises = [];
+        var promises = [];
+
         for (var i = 1; i <= 5; i += 1) {
-            message = {
-                message: respoke.makeGUID()
-            };
-
-            promises.push(followerEndpoint.sendMessage(message));
-            messagesFolloweeSent.push(message.message);
-
-            promises.push(followeeEndpoint.sendMessage(message));
-            messagesFollowerSent.push(message.message);
+            promises.push(sendMessage());
         }
+        flatPromises = flatPromises.concat.apply(flatPromises, promises);
 
-        return Q.all(promises);
+        return Q.all(flatPromises);
+    }
+
+    function sendOneMessage() {
+        return Q.all(sendMessage());
     }
 
     function checkMessages() {
@@ -90,7 +103,7 @@ describe("Respoke messaging", function () {
         setTimeout(function check() {
             for (i = messagesFollowerReceived.length - 1; i >= 0; i -= 1) {
                 messagesFolloweeSent.every(function (item, index) {
-                    if (messagesFollowerReceived[i] === item) {
+                    if (messagesFollowerReceived[i].message === item) {
                         messagesFollowerReceived.splice(i, 1);
                         messagesFolloweeSent.splice(index, 1);
                         return false;
@@ -101,7 +114,7 @@ describe("Respoke messaging", function () {
 
             for (i = messagesFolloweeReceived.length - 1; i >= 0; i -= 1) {
                 messagesFollowerSent.every(function (item, index) {
-                    if (messagesFolloweeReceived[i] === item) {
+                    if (messagesFolloweeReceived[i].message === item) {
                         messagesFolloweeReceived.splice(i, 1);
                         messagesFollowerSent.splice(index, 1);
                         return false;
@@ -211,6 +224,29 @@ describe("Respoke messaging", function () {
                     .done(function successHandler() {
                         done();
                     }, done);
+            });
+
+            describe('the message metadata is correct', function () {
+                var message;
+
+                beforeEach(function () {
+                    return sendOneMessage()
+                        .then(function () {
+                            message = messagesFolloweeReceived[0];
+                        });
+                });
+
+                it('has endpointId', function () {
+                    expect(message.endpointId).to.exist;
+                });
+
+                it('has message body', function () {
+                    expect(message.message).to.exist;
+                });
+
+                it('has timestamp', function() {
+                    expect(message.timestamp).to.exist;
+                });
             });
 
             afterEach(function () {

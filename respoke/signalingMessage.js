@@ -73,6 +73,8 @@ module.exports = function (params) {
             that.fromType = params.rawMessage.header.fromType;
             that.fromEndpoint = params.rawMessage.header.from;
             that.fromConnection = params.rawMessage.header.fromConnection;
+            that.timestamp = params.rawMessage.header.timestamp;
+
             if (!that.target) {
                 that.target = 'call';
             }
@@ -87,7 +89,7 @@ module.exports = function (params) {
                 if (params[attr] === 0 || params[attr]) {
                     that[attr] = params[attr];
                 }
-            });     
+            });
         }
     }
 

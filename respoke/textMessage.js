@@ -31,6 +31,7 @@ module.exports = function (params) {
             try {
                 that.endpointId = params.rawMessage.header.from;
                 that.connectionId = params.rawMessage.header.fromConnection;
+                that.timestamp = params.rawMessage.header.timestamp;
             } catch (e) {
                 throw new Error(e);
             }
