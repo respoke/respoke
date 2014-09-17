@@ -1017,6 +1017,10 @@ module.exports = function (params) {
     that.addRemoteCandidate = function (params) {
         params = params || {};
 
+        if (!pc && params.processingQueue) { // we hung up.
+            return;
+        }
+
         if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
             log.warn("addRemoteCandidate got wrong format!", params);
             return;
@@ -1028,7 +1032,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (haveSentOffer || (!that.state.caller && ['connected', 'connecting'].indexOf(that.state.currentState()) > -1)) {
+        if (defSDPOffer.promise.isFulfilled()) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
                 log.debug('Got a remote candidate.', params.candidate);
