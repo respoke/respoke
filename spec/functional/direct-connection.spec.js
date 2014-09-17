@@ -159,7 +159,7 @@ describe("A Direct Connection", function () {
     describe("when starting a direct connection", function () {
         function callListener(evt) {
             if (!evt.directConnection.call.caller) {
-                evt.directConnection.accept();
+                setTimeout(evt.directConnection.accept);
             }
         }
 
