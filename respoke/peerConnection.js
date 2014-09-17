@@ -246,6 +246,10 @@ module.exports = function (params) {
      * to facilitate candidate logging.
      */
     function signalCandidate(params) {
+        if (!pc) {
+            return;
+        }
+
         params.iceCandidates = [params.candidate];
         signalCandidateOrig(params);
         that.report.candidatesSent.push({candidate: params.candidate});
@@ -609,7 +613,10 @@ module.exports = function (params) {
         }
         candidateSendingQueue = [];
         for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            that.addRemoteCandidate({candidate: candidateReceivingQueue[i]});
+            that.addRemoteCandidate({
+                candidate: candidateReceivingQueue[i],
+                processingQueue: true
+            });
         }
         candidateReceivingQueue = [];
     }
@@ -709,7 +716,7 @@ module.exports = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        if (toSendHangup !== undefined) {
+        if (!pc || toSendHangup !== undefined) {
             log.debug("PeerConnection.close got called twice.");
             return;
         }
@@ -735,9 +742,6 @@ module.exports = function (params) {
         }
 
         that.report.callStopped = new Date().getTime();
-        signalReport({
-            report: that.report
-        });
 
         /**
          * @event respoke.PeerConnection#close
@@ -751,11 +755,17 @@ module.exports = function (params) {
         });
         that.ignore();
 
-        if (pc) {
+        if (pc && that.report) {
             pc.close();
         }
-
         pc = null;
+
+        if (that.call.callDebugReportEnabled) {
+            signalReport({
+                report: that.report
+            });
+        }
+        that.report = null;
     };
 
     /**
@@ -1006,34 +1016,38 @@ module.exports = function (params) {
      */
     that.addRemoteCandidate = function (params) {
         params = params || {};
-        if (!that.isActive()) {
-            log.info("Skipping candidate when call is inactive.");
+
+        if (!pc && params.processingQueue) { // we hung up.
             return;
         }
 
         if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
-            log.warn("addRemoteCandidate got wrong format!", params, new Error().stack);
+            log.warn("addRemoteCandidate got wrong format!", params);
             return;
         }
-        if (!pc || that.call.caller && defSDPAnswer.promise.isPending()) {
+
+        if ((!pc || that.call.caller && defSDPAnswer.promise.isPending()) && !params.processingQueue) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate.');
             return;
         }
-        if(defSDPOffer.promise.isFulfilled()) {
+
+        if (defSDPOffer.promise.isFulfilled()) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
+                log.debug('Got a remote candidate.', params.candidate);
+                that.report.candidatesReceived.push(params.candidate);
             } catch (e) {
                 log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
                 return;
             }
         } else {
-            candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate.');
+            if (!params.processingQueue) {
+                candidateReceivingQueue.push(params.candidate);
+                log.debug('Queueing a candidate.');
+            }
             return;
         }
-        log.debug('Got a remote candidate.', params.candidate);
-        that.report.candidatesReceived.push(params.candidate);
     };
 
     that.call.listen('signal-answer', listenAnswer, true);

@@ -478,7 +478,6 @@ module.exports = function (params) {
         evt.call.listen('hangup', function (evt) {
             removeCall({call: evt.target});
         }, true);
-        addCall(evt);
     }
 
     function removeDCCallOnHangup(evt) {
@@ -659,14 +658,6 @@ module.exports = function (params) {
         }
         if (that.calls.indexOf(evt.call) === -1) {
             that.calls.push(evt.call);
-
-            if (evt.call.className === 'respoke.Call') {
-                if (!evt.call.caller && !that.hasListeners('call')) {
-                    log.warn("Got a incoming call with no handlers to accept it!");
-                    evt.call.reject();
-                    return;
-                }
-            }
         }
     }
 
@@ -1243,6 +1234,7 @@ module.exports = function (params) {
             params.instanceId = instanceId;
             params.signalingChannel = signalingChannel;
             params.resolveEndpointPresence = clientSettings.resolveEndpointPresence;
+            params.addCall = addCall;
 
             endpoint = respoke.Endpoint(params);
             signalingChannel.registerPresence({
