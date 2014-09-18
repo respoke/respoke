@@ -57,9 +57,12 @@ module.exports = function (params) {
         return JSON.parse(JSON.stringify(source));
     };
 
+    var addCall = params.addCall;
+
     delete that.signalingChannel;
     delete that.instanceId;
     delete that.connectionId;
+    delete that.addCall;
     /**
      * A name to identify the type of this object.
      * @memberof! respoke.Endpoint
@@ -292,13 +295,16 @@ module.exports = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'offer';
             signalParams.target = 'call';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't place a call.", err.message, err.stack);
-                signalParams.call.hangup();
-            });
+
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             signalParams.signalType = 'answer';
@@ -345,7 +351,9 @@ module.exports = function (params) {
         };
 
         params.signalingChannel = signalingChannel;
-        return respoke.Call(params);
+        call = respoke.Call(params);
+        addCall({call: call});
+        return call;
     };
 
     /**
@@ -394,7 +402,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (that.directConnection) {
+        if (that.directConnection || params.create === false) {
             deferred.resolve(that.directConnection);
             return retVal;
         }
@@ -418,13 +426,16 @@ module.exports = function (params) {
         params.remoteEndpoint = that;
 
         params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'offer';
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't place a call.", err.message, err.stack);
-                signalParams.call.hangup();
-            });
+
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'directConnection';
@@ -470,7 +481,9 @@ module.exports = function (params) {
             }
         };
 
+        params.signalingChannel = signalingChannel;
         call = respoke.Call(params);
+        addCall({call: call});
         call.listen('direct-connection', function directConnectionHandler(evt) {
             that.directConnection = evt.directConnection;
             if (params.caller !== true) {
