@@ -108,11 +108,15 @@ module.exports = function (params) {
         return (params.directConnectionOnly !== true && params.receiveOnly !== true);
     }
 
-    function onlyNeedToApproveDirectConnection(params) {
+    function needToApproveDirectConnection(params) {
         assert(params.directConnectionOnly !== undefined);
-        assert(params.receiveOnly !== undefined);
-        return (typeof params.previewLocalMedia === 'function' && params.directConnectionOnly === true &&
-            params.receiveOnly !== true);
+        assert(params.previewLocalMedia !== undefined);
+        return (params.directConnectionOnly === true && typeof params.previewLocalMedia === 'function');
+    }
+
+    function automaticDirectConnection(params) {
+        return (params.directConnectionOnly === true && typeof params.previewLocalMedia !== 'function' &&
+            that.caller === true);
     }
 
     function Timer(func, name, time) {
@@ -208,16 +212,22 @@ module.exports = function (params) {
                         }, {
                             // we are sending a direct connection & developer wants to approve
                             target: 'approvingContent',
-                            guard: onlyNeedToApproveDirectConnection
+                            guard: needToApproveDirectConnection
+                        }, {
+                            target: 'offering',
+                            guard: automaticDirectConnection
                         }, {
                             // we are not sending anything or developer does not want to approve media.
                             target: 'connecting',
                             guard: function (params) {
-                                if (needToObtainMedia(params) || onlyNeedToApproveDirectConnection(params)) {
+                                if (needToObtainMedia(params) || needToApproveDirectConnection(params) ||
+                                        automaticDirectConnection(params)) {
                                     return false;
                                 }
                                 if (typeof params.previewLocalMedia !== 'function' || params.receiveOnly === true) {
-                                    params.approve();
+                                    setTimeout(function () {
+                                        params.approve();
+                                    });
                                 }
                                 return (params.receiveOnly === true);
                             }
@@ -258,7 +268,8 @@ module.exports = function (params) {
                                 }, {
                                     target: 'connecting',
                                     guard: function (params) {
-                                        return (that.caller === false && that.hasLocalMedia === true &&
+                                        return (that.caller === false &&
+                                            (that.hasLocalMedia === true || that.directConnectionOnly === true) &&
                                             typeof params.previewLocalMedia !== 'function');
                                     }
                                 }, {
@@ -510,7 +521,7 @@ module.exports = function (params) {
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
             respoke.log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
         }
-        respoke.log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, params);
+        respoke.log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, args);
     };
 
     /**

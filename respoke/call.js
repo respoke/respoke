@@ -933,10 +933,6 @@ module.exports = function (params) {
         directConnection.listen('accept', function acceptHandler() {
             if (pc.state.caller === false) {
                 log.debug('Answering as a result of approval.');
-                that.answer();
-                if (defMedia && defMedia.promise.isPending()) {
-                    that.approve();
-                }
             } else {
                 defMedia.resolve(directConnection);
             }
