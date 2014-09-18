@@ -65,7 +65,11 @@ module.exports = function (params) {
      */
     function parse() {
         if (params.rawMessage) {
-            that = JSON.parse(params.rawMessage.body); // Incoming message
+            try {
+                that = JSON.parse(params.rawMessage.body); // Incoming message
+            } catch (e) {
+                that = params.rawMessage.body;
+            }
             that.fromType = params.rawMessage.header.fromType;
             that.fromEndpoint = params.rawMessage.header.from;
             that.fromConnection = params.rawMessage.header.fromConnection;
