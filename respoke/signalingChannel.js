@@ -911,8 +911,13 @@ module.exports = function (params) {
             log.debug(signal.signalType, signal);
         }
 
+        if (signal.target === undefined) {
+            throw new Error("target undefined");
+        }
+
         // Only create if this signal is an offer.
         Q.fcall(function makePromise() {
+            var endpoint;
             /*
              * This will return calls regardless of whether they are associated
              * with a direct connection or not, and it will create a call if no
@@ -925,10 +930,11 @@ module.exports = function (params) {
                 fromType: signal.fromType,
                 create: (signal.target === 'call' && signal.signalType === 'offer')
             });
-            return target;
-        }).then(function successHandler(target) {
-            var endpoint;
-            if (!target && signal.target === 'directConnection') {
+            if (target) {
+                return target;
+            }
+
+            if (signal.target === 'directConnection') {
                 // return a promise
                 endpoint = client.getEndpoint({
                     id: signal.fromEndpoint
@@ -944,12 +950,6 @@ module.exports = function (params) {
                     caller: (signal.signalType !== 'offer')
                 });
             }
-            /*
-             * Return the call from the previous promise. This might also return
-             * null if we have no record of this call and the signal wasn't an offer (thus
-             * we weren't supposed to create it).
-             */
-            return target;
         }).done(function successHandler(target) {
             // target might be null, a Call, or a DirectConnection.
             if (target) {

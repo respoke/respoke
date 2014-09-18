@@ -459,6 +459,7 @@ module.exports = function (params) {
 
         that.report.callStarted = new Date().getTime();
         window.pc = pc = new RTCPeerConnection(callSettings.servers, pcOptions);
+
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
@@ -581,10 +582,14 @@ module.exports = function (params) {
             return;
         }
 
-        signalCandidate({
-            candidate: candidate,
-            call: that.call
-        });
+        if (!that.state.sentSDP && !that.state.receivedSDP) {
+            candidateSendingQueue.push(candidate);
+        } else {
+            signalCandidate({
+                candidate: candidate,
+                call: that.call
+            });
+        }
     }
 
     /**
@@ -645,7 +650,14 @@ module.exports = function (params) {
             oSession.type = 'offer';
             signalOffer({
                 call: that.call,
-                sessionDescription: oSession
+                sessionDescription: oSession,
+                onSuccess: function () {
+                    setTimeout(processQueues);
+                },
+                onError: function (err) {
+                    respoke.log.error('offer could not be sent');
+                    that.call.hangup({signal: false});
+                }
             });
             that.state.sentSDP = true;
         }, function errorHandler(p) {
@@ -808,7 +820,6 @@ module.exports = function (params) {
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
                 that.state.dispatch('receiveAnswer');
-                processQueues();
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
@@ -972,13 +983,18 @@ module.exports = function (params) {
     that.addRemoteCandidate = function (params) {
         params = params || {};
 
+        if (!pc && params.processingQueue) { // we hung up.
+            return;
+        }
+
         if (!params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
             log.warn("addRemoteCandidate got wrong format!", params);
             return;
         }
-        if ((!pc || that.state.caller && !that.state.receivedSDP) && !params.processingQueue) {
+
+        if (!pc) {
             candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate.');
+            log.debug('Queueing a candidate because pc is null.');
             return;
         }
 
@@ -993,8 +1009,7 @@ module.exports = function (params) {
             }
         } else if (!params.processingQueue) {
             candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate.');
-            return;
+            log.debug('Queueing a candidate because no offer yet.');
         } else {
             console.log("processing queue error", that.state.sentSDP, that.state.receivedSDP, params);
         }

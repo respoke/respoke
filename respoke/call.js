@@ -1412,7 +1412,7 @@ module.exports = function (params) {
     pc.listen('modify-reject', onModifyReject, true);
     pc.listen('modify-accept', onModifyAccept, true);
     that.listen('signal-icecandidates', function onCandidateSignal(evt) {
-        if (!evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
+        if (!pc || !evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {
             return;
         }
         evt.signal.iceCandidates.forEach(function processCandidate(candidate) {

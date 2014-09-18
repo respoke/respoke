@@ -267,9 +267,11 @@ describe("Respoke groups", function () {
 
             it("should call the onJoin handler", function (done) {
                 followee.join({id: gId}).done(function(theGroup) {
-                    aGroup2 = theGroup;
-                    expect(onJoinSpy.called).to.be.ok;
-                    done();
+                    setTimeout(function () {
+                        aGroup2 = theGroup;
+                        expect(onJoinSpy.called).to.be.ok;
+                        done();
+                    }, 50);
                 }, done);
             });
 
