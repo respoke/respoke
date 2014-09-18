@@ -144,14 +144,6 @@ module.exports = function (params) {
     var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
     /**
      * @memberof! respoke.PeerConnection
-     * @name forceTurn
-     * @private
-     * @type {boolean}
-     * @desc A flag indicating we will not permit data to flow peer-to-peer.
-     */
-    var forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : false;
-    /**
-     * @memberof! respoke.PeerConnection
      * @name candidateSendingQueue
      * @private
      * @type {array}
@@ -576,7 +568,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
+        if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
             return;
         }
 
@@ -684,15 +676,18 @@ module.exports = function (params) {
      * @private
      */
     function saveAnswerAndSend(oSession) {
-        oSession.type = 'answer';
-        log.debug('setting and sending answer', oSession);
-        that.report.sdpsSent.push(oSession);
-        if (!that.call.initiator) {
-            that.report.callerconnection = that.call.connectionId;
-        }
         if (!pc) {
             return;
         }
+
+        if (!that.call.initiator) {
+            that.report.callerconnection = that.call.connectionId;
+        }
+
+        oSession.type = 'answer';
+        log.debug('setting and sending answer', oSession);
+        that.report.sdpsSent.push(oSession);
+
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'answer';
             signalAnswer({
