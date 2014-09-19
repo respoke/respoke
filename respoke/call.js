@@ -448,9 +448,9 @@ module.exports = function (params) {
         });
         pc.state.dispatch('answer', {
             previewLocalMedia: previewLocalMedia,
-            directConnectionOnly: directConnectionOnly,
+            directConnectionOnly: !!directConnectionOnly,
             approve: that.approve,
-            receiveOnly: receiveOnly
+            receiveOnly: !!receiveOnly
         });
         /**
          * The call was answered.
@@ -678,7 +678,9 @@ module.exports = function (params) {
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
-            pc.state.dispatch('receiveLocalMedia');
+            pc.state.dispatch('receiveLocalMedia', {
+                directConnectionOnly: directConnectionOnly
+            });
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);

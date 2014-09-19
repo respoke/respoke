@@ -72,10 +72,10 @@ describe("respoke.CallState for calls as the callee", function () {
                     return fake.hasMedia;
                 },
                 caller: caller,
-                answerTimeout: 200,
-                receiveAnswerTimeout: 200,
-                connectionTimeout: 200,
-                modifyTimeout: 200
+                answerTimeout: 20,
+                receiveAnswerTimeout: 20,
+                connectionTimeout: 20,
+                modifyTimeout: 20
             });
         });
 
@@ -318,7 +318,7 @@ describe("respoke.CallState for calls as the callee", function () {
                         state.listen('terminated:entry', terminatedEntrySpy);
                         setTimeout(function () {
                             done();
-                        }, 1100);
+                        }, 50);
                     });
 
                     afterEach(function () {

@@ -103,14 +103,14 @@ module.exports = function (params) {
     };
 
     function needToObtainMedia(params) {
-        assert(params.directConnectionOnly !== undefined);
-        assert(params.receiveOnly !== undefined);
+        assert(typeof params.directConnectionOnly === 'boolean');
+        assert(typeof params.receiveOnly === 'boolean');
         return (params.directConnectionOnly !== true && params.receiveOnly !== true);
     }
 
     function needToApproveDirectConnection(params) {
-        assert(params.directConnectionOnly !== undefined);
-        assert(params.previewLocalMedia !== undefined);
+        assert(typeof params.directConnectionOnly === 'boolean');
+        assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
         return (params.directConnectionOnly === true && typeof params.previewLocalMedia === 'function');
     }
 
@@ -138,6 +138,9 @@ module.exports = function (params) {
 
     var stateParams = {
         initialState: 'idle',
+        receiveLocalMedia: function () {
+            that.hasLocalMedia = true;
+        },
         states: {
             // State
             idle: {
@@ -149,8 +152,8 @@ module.exports = function (params) {
                 initiate: [{
                     target: 'negotiatingContainer',
                     guard: function (params) {
-                        assert(params.client !== undefined);
-                        assert(params.caller !== undefined);
+                        assert(typeof params.client === 'object');
+                        assert(typeof params.caller === 'boolean');
                         return (params.caller === true || params.client.hasListeners('call'));
                     }
                 }, {
@@ -224,12 +227,12 @@ module.exports = function (params) {
                                         automaticDirectConnectionCaller(params)) {
                                     return false;
                                 }
-                                if (typeof params.previewLocalMedia !== 'function' || params.receiveOnly === true) {
+                                if (!params.previewLocalMedia || params.receiveOnly) {
                                     setTimeout(function () {
                                         params.approve();
                                     });
                                 }
-                                return (params.receiveOnly === true);
+                                return (params.receiveOnly === true || params.directConnectionOnly);
                             }
                         }]
                     },
@@ -237,8 +240,10 @@ module.exports = function (params) {
                     gettingMedia: {
                         reject: rejectEvent,
                         // Event
-                        receiveLocalMedia: [function () {
+                        receiveLocalMedia: [{
+                            action: function () {
                             that.hasLocalMedia = true;
+                            }
                         }, {
                             target: 'offering',
                             guard: function (params) {
@@ -311,9 +316,6 @@ module.exports = function (params) {
                     offeringContainer: {
                         init: 'offering',
                         reject: rejectEvent,
-                        receiveLocalMedia: function () {
-                            that.hasLocalMedia = true;
-                        },
                         sentOffer: function () {
                             // start answer timer
                             receiveAnswerTimer = new Timer(function () {
@@ -330,6 +332,17 @@ module.exports = function (params) {
                                 exit: function () {
                                     that.fire('offering:exit');
                                 },
+                                // Event
+                                receiveLocalMedia: [function () {
+                                    that.hasLocalMedia = true;
+                                }, {
+                                    target: 'connected',
+                                    guard: function (params) {
+                                        assert(typeof params.directConnectionOnly === 'boolean');
+                                        // for direct connection, local media is the same as remote media
+                                        return (params.directConnectionOnly === true);
+                                    }
+                                }],
                                 // Event
                                 receiveRemoteMedia: {
                                     target: 'connected'
@@ -367,6 +380,19 @@ module.exports = function (params) {
                                     }
                                     that.fire('connecting:exit');
                                 },
+                                // Event
+                                receiveLocalMedia: [{
+                                    action: function () {
+                                        that.hasLocalMedia = true;
+                                    }
+                                }, {
+                                    target: 'connected',
+                                    guard: function (params) {
+                                        assert(typeof params.directConnectionOnly === 'boolean');
+                                        // for direct connection, local media is the same as remote media
+                                        return (params.directConnectionOnly === true && that.caller === false);
+                                    }
+                                }],
                                 // Event
                                 receiveRemoteMedia: {
                                     target: 'connected'
@@ -514,7 +540,7 @@ module.exports = function (params) {
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
-            respoke.log.debug('error dispatching', evt, 'from', oldState, err);
+            respoke.log.debug('error dispatching', evt, 'from', oldState, "with", args, err);
             throw err;
         }
         newState = that.getState();

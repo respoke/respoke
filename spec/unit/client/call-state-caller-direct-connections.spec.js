@@ -337,6 +337,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                     });
 
                     describe("event 'answer'", function () {
+                        describe("when previewLocalMedia is used", function () {
                         var approvingContentEntrySpy = sinon.spy();
 
                         beforeEach(function (done) {
@@ -504,6 +505,81 @@ describe("respoke.CallState for direct connections as the caller", function () {
 
                             it("leads to 'terminated'", function () {
                                 expect(state.getState()).to.equal("terminated");
+                            });
+                        });
+                        });
+
+                        describe("when previewLocalMedia is not used", function () {
+                            var offeringEntrySpy;
+
+                            beforeEach(function (done) {
+                                offeringEntrySpy = sinon.spy();
+                                state.listen('offering:entry', offeringEntrySpy);
+                                params.previewLocalMedia = null;
+                                state.dispatch('answer', params);
+                                setTimeout(done);
+                            });
+
+                            afterEach(function () {
+                                params.previewLocalMedia = function () {};
+                                state.ignore('offering:entry', offeringEntrySpy);
+                            });
+
+                            it("sets all the right flags", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(true);
+                                expect(state.hasLocalMedia).to.equal(false);
+                                expect(state.receivedBye).to.equal(false);
+                                expect(state.sentSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(false);
+                            });
+
+                            it("moves to 'offering'", function () {
+                                expect(state.getState()).to.equal('offering');
+                            });
+
+                            it("fires 'offering:entry'", function () {
+                                expect(offeringEntrySpy.called).to.equal(true);
+                            });
+
+                            // with Direct Connection this basically means "i sent the offer" since datachannel
+                            // creation is synchronous for the caller.
+                            describe("event 'receiveLocalMedia'", function () {
+                                var offeringExitSpy;
+                                var connectedEntrySpy;
+
+                                beforeEach(function (done) {
+                                    offeringExitSpy = sinon.spy();
+                                    connectedEntrySpy = sinon.spy();
+                                    state.listen('offering:exit', offeringExitSpy);
+                                    state.listen('connected:entry', connectedEntrySpy);
+                                    state.dispatch('receiveLocalMedia', params);
+                                    setTimeout(done);
+                                });
+
+                                afterEach(function () {
+                                    state.ignore('offering:exit', offeringExitSpy);
+                                    state.ignore('connected:entry', connectedEntrySpy);
+                                });
+
+                                it("sets all the right flags", function () {
+                                    expect(state.hasLocalMediaApproval).to.equal(true);
+                                    expect(state.hasLocalMedia).to.equal(true);
+                                    expect(state.receivedBye).to.equal(false);
+                                    expect(state.sentSDP).to.equal(false);
+                                    expect(state.receivedSDP).to.equal(false);
+                                });
+
+                                it("moves to 'connected'", function () {
+                                    expect(state.getState()).to.equal('connected');
+                                });
+
+                                it("fires 'offering:exit'", function () {
+                                    expect(offeringExitSpy.called).to.equal(true);
+                                });
+
+                                it("fires 'connected:entry'", function () {
+                                    expect(connectedEntrySpy.called).to.equal(true);
+                                });
                             });
                         });
                     });

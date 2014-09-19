@@ -72,10 +72,10 @@ describe("respoke.CallState for calls as the caller", function () {
                     return fake.hasMedia;
                 },
                 caller: caller,
-                answerTimeout: 200,
-                receiveAnswerTimeout: 200,
-                connectionTimeout: 200,
-                modifyTimeout: 200
+                answerTimeout: 20,
+                receiveAnswerTimeout: 20,
+                connectionTimeout: 20,
+                modifyTimeout: 20
             });
         });
 
@@ -509,7 +509,7 @@ describe("respoke.CallState for calls as the caller", function () {
                                             state.dispatch('sentOffer');
                                             setTimeout(function () {
                                                 done();
-                                            }, 1100);
+                                            }, 50);
                                         });
 
                                         afterEach(function () {
@@ -567,7 +567,9 @@ describe("respoke.CallState for calls as the caller", function () {
                                     describe("event 'receiveLocalMedia'", function () {
                                         beforeEach(function () {
                                             state.hasLocalMedia = false;
-                                            state.dispatch('receiveLocalMedia');
+                                            state.dispatch('receiveLocalMedia', {
+                                                directConnectionOnly: false
+                                            });
                                         });
 
                                         it("sets all the right flags", function () {
@@ -625,7 +627,7 @@ describe("respoke.CallState for calls as the caller", function () {
                                                 state.listen('terminated:entry', terminatedEntrySpy);
                                                 setTimeout(function () {
                                                     done();
-                                                }, 1100);
+                                                }, 50);
                                             });
 
                                             afterEach(function () {

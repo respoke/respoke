@@ -337,173 +337,251 @@ describe("respoke.CallState for direct connections as the callee", function () {
                     });
 
                     describe("event 'answer'", function () {
-                        var approvingContentEntrySpy = sinon.spy();
+                        describe("when previewLocalMedia is used", function () {
+                            var approvingContentEntrySpy = sinon.spy();
 
-                        beforeEach(function (done) {
-                            state.listen('approving-content:entry', approvingContentEntrySpy);
-                            state.dispatch('answer', params);
-                            setTimeout(done);
-                        });
-
-                        afterEach(function () {
-                            state.ignore('approving-content:entry', approvingContentEntrySpy);
-                        });
-
-                        it("moves to 'approvingContent'", function () {
-                            expect(state.getState()).to.equal('approvingContent');
-                        });
-
-                        it("fires 'approving-content:entry'", function () {
-                            expect(approvingContentEntrySpy.called).to.equal(true);
-                        });
-
-                        it("sets all the right flags", function () {
-                            expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
-                            expect(state.hasLocalMedia).to.equal(false);
-                            expect(state.receivedBye).to.equal(false);
-                            expect(state.sentSDP).to.equal(false);
-                            expect(state.receivedSDP).to.equal(false);
-                        });
-
-                        describe('invalid event', function () {
-                            var invalidEvents = [
-                                'initiate',
-                                'answer',
-                                'receiveLocalMedia',
-                                'sentOffer',
-                                'accept',
-                                'receiveRemoteMedia',
-                                'receiveAnswer',
-                                'modify'
-                            ];
-
-                            invalidEvents.forEach(function (evt) {
-                                describe("event " + evt, function () {
-                                    var currentState;
-
-                                    beforeEach(function () {
-                                        currentState = state.getState();
-                                        state.dispatch(evt, params || {});
-                                    });
-
-                                    it("doesn't move to a new state", function () {
-                                        expect(state.getState()).to.equal(currentState);
-                                    });
-                                });
-                            });
-                        });
-
-                        describe("event 'approve'", function () {
-                            var connectingEntrySpy;
-                            var approvingContentExitSpy;
-
-                            beforeEach(function () {
-                                connectingEntrySpy = sinon.spy();
-                                approvingContentExitSpy = sinon.spy();
-                                state.listen('connecting:entry', connectingEntrySpy);
-                                state.listen('approving-content:exit', approvingContentExitSpy);
+                            beforeEach(function (done) {
+                                state.listen('approving-content:entry', approvingContentEntrySpy);
+                                state.dispatch('answer', params);
+                                setTimeout(done);
                             });
 
                             afterEach(function () {
-                                state.ignore('connecting:entry', connectingEntrySpy);
+                                state.ignore('approving-content:entry', approvingContentEntrySpy);
                             });
 
-                            // This will always be the case for a DirectConnection because we don't even
-                            // ask for the datachannel until after approve() has been called.
-                            describe("when we have not received local media yet", function () {
+                            it("moves to 'approvingContent'", function () {
+                                expect(state.getState()).to.equal('approvingContent');
+                            });
+
+                            it("fires 'approving-content:entry'", function () {
+                                expect(approvingContentEntrySpy.called).to.equal(true);
+                            });
+
+                            it("sets all the right flags", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                expect(state.hasLocalMedia).to.equal(false);
+                                expect(state.receivedBye).to.equal(false);
+                                expect(state.sentSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(false);
+                            });
+
+                            describe('invalid event', function () {
+                                var invalidEvents = [
+                                    'initiate',
+                                    'answer',
+                                    'receiveLocalMedia',
+                                    'sentOffer',
+                                    'accept',
+                                    'receiveRemoteMedia',
+                                    'receiveAnswer',
+                                    'modify'
+                                ];
+
+                                invalidEvents.forEach(function (evt) {
+                                    describe("event " + evt, function () {
+                                        var currentState;
+
+                                        beforeEach(function () {
+                                            currentState = state.getState();
+                                            state.dispatch(evt, params || {});
+                                        });
+
+                                        it("doesn't move to a new state", function () {
+                                            expect(state.getState()).to.equal(currentState);
+                                        });
+                                    });
+                                });
+                            });
+
+                            describe("event 'approve'", function () {
+                                var connectingEntrySpy;
+                                var approvingContentExitSpy;
+
                                 beforeEach(function () {
-                                    state.dispatch('approve', params);
+                                    connectingEntrySpy = sinon.spy();
+                                    approvingContentExitSpy = sinon.spy();
+                                    state.listen('connecting:entry', connectingEntrySpy);
+                                    state.listen('approving-content:exit', approvingContentExitSpy);
                                 });
 
-                                it("sets the hasLocalMediaApproval flag", function () {
-                                    expect(state.hasLocalMediaApproval).to.equal(true);
+                                afterEach(function () {
+                                    state.ignore('connecting:entry', connectingEntrySpy);
                                 });
 
-                                it("stays in 'approvingContent'", function () {
-                                    expect(state.getState()).to.equal('approvingContent');
+                                // This will always be the case for a DirectConnection because we don't even
+                                // ask for the datachannel until after approve() has been called.
+                                describe("when we have not received local media yet", function () {
+                                    beforeEach(function () {
+                                        state.dispatch('approve', params);
+                                    });
+
+                                    it("sets the hasLocalMediaApproval flag", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(true);
+                                    });
+
+                                    it("stays in 'approvingContent'", function () {
+                                        expect(state.getState()).to.equal('approvingContent');
+                                    });
+
+                                    describe("event 'receiveLocalMedia'", function () {
+                                        beforeEach(function (done) {
+                                            state.dispatch('receiveLocalMedia', params);
+                                            setTimeout(done);
+                                        });
+
+                                        it("sets all the right flags", function () {
+                                            expect(state.hasLocalMediaApproval).to.equal(true);
+                                            expect(state.hasLocalMedia).to.equal(true);
+                                            expect(state.receivedBye).to.equal(false);
+                                            expect(state.sentSDP).to.equal(false);
+                                            expect(state.receivedSDP).to.equal(false);
+                                        });
+
+                                        it("moves to 'connecting'", function () {
+                                            expect(state.getState()).to.equal('connecting');
+                                        });
+
+                                        it("fires 'approving-content:exit'", function () {
+                                            expect(approvingContentExitSpy.called).to.equal(true);
+                                        });
+
+                                        it("fires 'connecting:entry'", function () {
+                                            expect(connectingEntrySpy.called).to.equal(true);
+                                        });
+                                    });
                                 });
 
-                                describe("event 'receiveLocalMedia'", function () {
+                                describe("event 'reject'", function () {
+                                    var terminatedSpy;
+
                                     beforeEach(function (done) {
-                                        state.dispatch('receiveLocalMedia', params);
+                                        terminatedSpy = sinon.spy();
+                                        state.listen('terminated:entry', terminatedSpy);
+                                        state.dispatch("reject");
                                         setTimeout(done);
                                     });
 
-                                    it("sets all the right flags", function () {
-                                        expect(state.hasLocalMediaApproval).to.equal(true);
-                                        expect(state.hasLocalMedia).to.equal(true);
-                                        expect(state.receivedBye).to.equal(false);
-                                        expect(state.sentSDP).to.equal(false);
-                                        expect(state.receivedSDP).to.equal(false);
+                                    it("leads to 'terminated'", function () {
+                                        expect(state.getState()).to.equal("terminated");
                                     });
 
-                                    it("moves to 'connecting'", function () {
-                                        expect(state.getState()).to.equal('connecting');
-                                    });
-
-                                    it("fires 'approving-content:exit'", function () {
-                                        expect(approvingContentExitSpy.called).to.equal(true);
-                                    });
-
-                                    it("fires 'connecting:entry'", function () {
-                                        expect(connectingEntrySpy.called).to.equal(true);
-                                    });
+                                    it("fires the 'terminated:entry' event", function () {
+                                        expect(terminatedSpy.called).to.equal(true);
+                                    })
                                 });
                             });
 
                             describe("event 'reject'", function () {
-                                var terminatedSpy;
+                                var approvingContentExitSpy;
+                                var preparingExitSpy;
 
                                 beforeEach(function (done) {
-                                    terminatedSpy = sinon.spy();
-                                    state.listen('terminated:entry', terminatedSpy);
+                                    approvingContentExitSpy = sinon.spy();
+                                    preparingExitSpy = sinon.spy();
+                                    state.listen('approving-content:exit', approvingContentExitSpy);
+                                    state.listen('preparing:exit', preparingExitSpy);
                                     state.dispatch("reject");
                                     setTimeout(done);
+                                });
+
+                                it("fires 'approving-content:exit'", function () {
+                                    expect(approvingContentExitSpy.called).to.equal(true);
+                                });
+
+                                it("fires 'preparing:exit'", function () {
+                                    expect(approvingContentExitSpy.called).to.equal(true);
                                 });
 
                                 it("leads to 'terminated'", function () {
                                     expect(state.getState()).to.equal("terminated");
                                 });
+                            });
 
-                                it("fires the 'terminated:entry' event", function () {
-                                    expect(terminatedSpy.called).to.equal(true);
-                                })
+                            describe("event 'reject'", function () {
+                                beforeEach(function () {
+                                    state.dispatch("reject");
+                                });
+
+                                it("leads to 'terminated'", function () {
+                                    expect(state.getState()).to.equal("terminated");
+                                });
                             });
                         });
 
-                        describe("event 'reject'", function () {
-                            var approvingContentExitSpy;
-                            var preparingExitSpy;
+                        describe("when previewLocalMedia is not used", function () {
+                            var connectingEntrySpy;
 
                             beforeEach(function (done) {
-                                approvingContentExitSpy = sinon.spy();
-                                preparingExitSpy = sinon.spy();
-                                state.listen('approving-content:exit', approvingContentExitSpy);
-                                state.listen('preparing:exit', preparingExitSpy);
-                                state.dispatch("reject");
+                                connectingEntrySpy = sinon.spy();
+                                state.listen('connecting:entry', connectingEntrySpy);
+                                params.previewLocalMedia = null;
+                                state.dispatch('answer', params);
                                 setTimeout(done);
                             });
 
-                            it("fires 'approving-content:exit'", function () {
-                                expect(approvingContentExitSpy.called).to.equal(true);
+                            afterEach(function () {
+                                params.previewLocalMedia = function () {};
+                                state.ignore('connecting:entry', connectingEntrySpy);
                             });
 
-                            it("fires 'preparing:exit'", function () {
-                                expect(approvingContentExitSpy.called).to.equal(true);
+                            it("moves to 'connecting'", function () {
+                                expect(state.getState()).to.equal('connecting');
                             });
 
-                            it("leads to 'terminated'", function () {
-                                expect(state.getState()).to.equal("terminated");
-                            });
-                        });
-
-                        describe("event 'reject'", function () {
-                            beforeEach(function () {
-                                state.dispatch("reject");
+                            it("fires 'connecting:entry'", function () {
+                                expect(connectingEntrySpy.called).to.equal(true);
                             });
 
-                            it("leads to 'terminated'", function () {
-                                expect(state.getState()).to.equal("terminated");
+                            it("sets all the right flags", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                expect(state.hasLocalMedia).to.equal(false);
+                                expect(state.receivedBye).to.equal(false);
+                                expect(state.sentSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(false);
+                            });
+
+                            it("sets the hasLocalMediaApproval flag", function () {
+                                expect(state.hasLocalMediaApproval).to.equal(true);
+                            });
+
+                            describe("event 'receiveLocalMedia'", function () {
+                                var connectingExitSpy;
+                                var connectedEntrySpy;
+
+                                beforeEach(function (done) {
+                                    connectingExitSpy = sinon.spy();
+                                    connectedEntrySpy = sinon.spy();
+                                    state.listen('connecting:exit', connectingExitSpy);
+                                    state.listen('connected:entry', connectedEntrySpy);
+                                    state.dispatch('receiveLocalMedia', params);
+                                    setTimeout(done);
+                                });
+
+                                afterEach(function () {
+                                    state.ignore('connecting:exit', connectingExitSpy);
+                                    state.ignore('connected:entry', connectedEntrySpy);
+                                });
+
+                                it("sets all the right flags", function () {
+                                    expect(state.hasLocalMediaApproval).to.equal(true);
+                                    expect(state.hasLocalMedia).to.equal(true);
+                                    expect(state.receivedBye).to.equal(false);
+                                    expect(state.sentSDP).to.equal(false);
+                                    expect(state.receivedSDP).to.equal(false);
+                                });
+
+                                it("moves to 'connected'", function () {
+                                    expect(state.getState()).to.equal('connected');
+                                });
+
+                                it("fires 'connecting:exit'", function () {
+                                    expect(connectingExitSpy.called).to.equal(true);
+                                });
+
+                                it("fires 'connected:entry'", function () {
+                                    expect(connectedEntrySpy.called).to.equal(true);
+                                });
                             });
                         });
                     });
