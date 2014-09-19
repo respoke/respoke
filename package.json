@@ -1,6 +1,6 @@
 {
   "name": "transporter",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Client-side JavaScript library for Collective.",
   "main": "index.js",
   "scripts": {
