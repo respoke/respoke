@@ -622,8 +622,8 @@ module.exports = function (params) {
                         id: params.id,
                         number: params.endpointId, //phone number
                         caller: false,
-                        fromType: 'did',
-                        toType: 'web'
+                        fromType: 'web',
+                        toType: 'did'
                     });
                 } catch (e) {
                     log.error("Couldn't create Call.", e.message, e.stack);
@@ -895,15 +895,17 @@ module.exports = function (params) {
         params.fromType = params.fromType || 'web';
 
         params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'offer';
             signalParams.target = 'call';
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't place a call.", err.message, err.stack);
-                signalParams.call.hangup();
-            });
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             signalParams.signalType = 'answer';
@@ -960,7 +962,9 @@ module.exports = function (params) {
         };
 
         params.signalingChannel = signalingChannel;
-        return respoke.Call(params);
+        call = respoke.Call(params);
+        addCall({call: call});
+        return call;
     };
 
     /**
