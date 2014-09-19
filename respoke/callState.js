@@ -114,7 +114,7 @@ module.exports = function (params) {
         return (params.directConnectionOnly === true && typeof params.previewLocalMedia === 'function');
     }
 
-    function automaticDirectConnection(params) {
+    function automaticDirectConnectionCaller(params) {
         return (params.directConnectionOnly === true && typeof params.previewLocalMedia !== 'function' &&
             that.caller === true);
     }
@@ -215,13 +215,13 @@ module.exports = function (params) {
                             guard: needToApproveDirectConnection
                         }, {
                             target: 'offering',
-                            guard: automaticDirectConnection
+                            guard: automaticDirectConnectionCaller
                         }, {
                             // we are not sending anything or developer does not want to approve media.
                             target: 'connecting',
                             guard: function (params) {
                                 if (needToObtainMedia(params) || needToApproveDirectConnection(params) ||
-                                        automaticDirectConnection(params)) {
+                                        automaticDirectConnectionCaller(params)) {
                                     return false;
                                 }
                                 if (typeof params.previewLocalMedia !== 'function' || params.receiveOnly === true) {
