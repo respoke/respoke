@@ -94,14 +94,24 @@ describe("Respoke calling", function () {
 
     describe("when placing a call", function () {
         function callListener(evt) {
-            if (evt.call.initiator !== true) {
+            if (evt.call.caller !== true) {
                 evt.call.answer();
             }
         }
 
         describe("with call listener specified", function () {
+            var iceCandidates = [];
+
             beforeEach(function () {
                 followee.listen('call', callListener);
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
             });
 
             it("succeeds", function (done) {
@@ -129,6 +139,38 @@ describe("Respoke calling", function () {
                     }
                 });
             });
+        });
+
+        describe("ICE candidates when forceTurn is disabled", function () {
+            var followerICE = [];
+            var followeeICE = [];
+
+            beforeEach(function (done) {
+                var doneOnce = doneOnceBuilder(done);
+                followee.listen('call', function (evt) {
+                    if (evt.call.caller !== true) {
+                        evt.call.answer({
+                            forceTurn: false
+                        });
+                    }
+
+                    evt.call.listen('signal-icecandidates', function (evt) {
+                        followeeICE = followeeICE.concat(evt.signal.iceCandidates);
+                    });
+                });
+
+                call = followeeEndpoint.startCall({
+                    onConnect: function (evt) {
+                        setTimeout(doneOnce, 200);
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call hung up automatically."));
+                    }
+                });
+                call.listen('signal-icecandidates', function (evt) {
+                    followerICE = followerICE.concat(evt.signal.iceCandidates);
+                });
+            });
 
             afterEach(function (done) {
                 followee.ignore('call', callListener);
@@ -136,6 +178,54 @@ describe("Respoke calling", function () {
                     done();
                 });
                 call.hangup();
+            });
+
+            it("are received by both sides", function () {
+                expect(followerICE.length > 1).to.equal(true);
+                expect(followeeICE.length > 1).to.equal(true);
+            });
+        });
+
+        describe("ICE candidates when forceTurn is enabled", function () {
+            var followerICE = [];
+            var followeeICE = [];
+
+            beforeEach(function (done) {
+                var doneOnce = doneOnceBuilder(done);
+                followee.listen('call', function (evt) {
+                    if (evt.call.caller !== true) {
+                        evt.call.answer({
+                            forceTurn: true
+                        });
+                    }
+
+                    evt.call.listen('signal-icecandidates', function (evt) {
+                        followeeICE = followeeICE.concat(evt.signal.iceCandidates);
+                    });
+                });
+
+                call = followeeEndpoint.startCall({
+                    forceTurn: true,
+                    onConnect: function (evt) {
+                        setTimeout(doneOnce, 200);
+                    }
+                });
+                call.listen('signal-icecandidates', function (evt) {
+                    followerICE = followerICE.concat(evt.signal.iceCandidates);
+                });
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("no candidates are received", function () {
+                expect(followerICE.length).to.equal(0);
+                expect(followeeICE.length).to.equal(0);
             });
         });
 
@@ -564,33 +654,6 @@ describe("Respoke calling", function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
-                });
-            });
-        });
-
-        // Can't test this because:
-        //   1. We are on the same machine so hole-punching will always find a path, even without ICE!
-        //   2. We don't have access to the peer connection, so we can't observe whether we get any relay candidates.
-        xdescribe("when forceTurn is turned on", function () {
-            beforeEach(function () {
-                followee.listen('call', callListener);
-            });
-
-            afterEach(function () {
-                followee.ignore('call', callListener);
-            });
-
-            it("fails because the test suite can't get TURN credentials", function (done) {
-                var doneOnce = doneOnceBuilder(done);
-
-                call = followeeEndpoint.startCall({
-                    forceTurn: true,
-                    onHangup: function (evt) {
-                        doneOnce();
-                    },
-                    onConnect: function (evt) {
-                        doneOnce(new Error("This is impossible."));
-                    }
                 });
             });
         });
