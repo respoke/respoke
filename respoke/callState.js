@@ -120,7 +120,9 @@ module.exports = function (params) {
     }
 
     function Timer(func, name, time) {
-        var id = setTimeout(function () {
+        var id;
+        id = setTimeout(function () {
+            id = null;
             respoke.log.error(name, "timer expired.");
             func();
         }, time);
@@ -128,8 +130,12 @@ module.exports = function (params) {
         var timer  = {
             name: name,
             clear: function () {
+                if (id === null) {
+                    return;
+                }
                 respoke.log.debug('clearing timer', name);
                 clearTimeout(id);
+                id = null;
             }
         };
         allTimers.push(timer);
