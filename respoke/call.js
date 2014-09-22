@@ -122,35 +122,35 @@ module.exports = function (params) {
      * @private
      * @type {respoke.Call.previewLocalMedia}
      */
-    var previewLocalMedia = null;
+    var previewLocalMedia = params.previewLocalMedia;
     /**
      * @memberof! respoke.Call
      * @name directConnectionOnly
      * @private
      * @type {boolean}
      */
-    var directConnectionOnly = null;
+    var directConnectionOnly = !!params.directConnectionOnly;
     /**
      * @memberof! respoke.Call
      * @name sendOnly
      * @private
      * @type {boolean}
      */
-    var sendOnly = null;
+    var sendOnly = !!params.sendOnly;
     /**
      * @memberof! respoke.Call
      * @name receiveOnly
      * @private
      * @type {boolean}
      */
-    var receiveOnly = null;
+    var receiveOnly = !!params.receiveOnly;
     /**
      * @memberof! respoke.Call
      * @name forceTurn
      * @private
      * @type {boolean}
      */
-    var forceTurn = null;
+    var forceTurn = !!params.forceTurn;
     /**
      * @memberof! respoke.Call
      * @name client
@@ -171,7 +171,7 @@ module.exports = function (params) {
      * @name callDebugReportEnabled
      * @type {boolean}
      */
-    that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
+    that.callDebugReportEnabled = !!params.signalingChannel.callDebugReportEnabled;
     /**
      * A flag indicating whether this call has audio.
      *
@@ -941,6 +941,9 @@ module.exports = function (params) {
         }, true);
 
         directConnection.listen('open', function openHandler() {
+            pc.state.dispatch('receiveRemoteMedia', {
+                directConnectionOnly: directConnectionOnly
+            });
             directConnectionOnly = null;
         }, true);
 

@@ -110,7 +110,12 @@ module.exports = function (params) {
         dataChannel = evt.channel;
         dataChannel.onerror = onDataChannelError;
         dataChannel.onmessage = onDataChannelMessage;
-        dataChannel.onopen = onDataChannelOpen;
+        if (dataChannel.readyState === 'open') {
+            dataChannel.onopen = null;
+            onDataChannelOpen();
+        } else {
+            dataChannel.onopen = onDataChannelOpen;
+        }
     }
 
     /**
@@ -369,8 +374,8 @@ module.exports = function (params) {
 
         if (pc.state.caller === true) {
             createDataChannel();
-            //that.call.answer();
         }
+        that.call.answer();
 
         /**
          * @event respoke.DirectConnection#accept

@@ -1010,8 +1010,6 @@ module.exports = function (params) {
         } else if (!params.processingQueue) {
             candidateReceivingQueue.push(params.candidate);
             log.debug('Queueing a candidate because no offer yet.');
-        } else {
-            console.log("processing queue error", that.state.sentSDP, that.state.receivedSDP, params);
         }
     };
 

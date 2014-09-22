@@ -407,7 +407,6 @@ module.exports = function (params) {
              * @property {respoke.Client} target
              */
             that.listen('call', clientSettings.onCall);
-            that.listen('call', removeCallOnHangup, true);
             /**
              * This event is fired when the local end of the directConnection is available. It still will not be
              * ready to send and receive messages until the 'open' event fires.
@@ -419,7 +418,6 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.listen('direct-connection', clientSettings.onDirectConnection);
-            that.listen('direct-connection', removeDCCallOnHangup, true);
             that.listen('join', clientSettings.onJoin);
             /**
              * This event is fired every time the client leaves a group.
@@ -472,19 +470,6 @@ module.exports = function (params) {
         });
 
         return deferred.promise;
-    }
-
-    function removeCallOnHangup(evt) {
-        evt.call.listen('hangup', function (evt) {
-            removeCall({call: evt.target});
-        }, true);
-    }
-
-    function removeDCCallOnHangup(evt) {
-        addCall({call: evt.directConnection.call});
-        evt.directConnection.listen('close', function (evt) {
-            removeCall({call: evt.target.call});
-        }, true);
     }
 
     /**
@@ -667,6 +652,10 @@ module.exports = function (params) {
         if (that.calls.indexOf(evt.call) === -1) {
             that.calls.push(evt.call);
         }
+
+        evt.call.listen('hangup', function () {
+            removeCall({call: evt.call});
+        });
     }
 
     /**
