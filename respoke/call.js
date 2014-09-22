@@ -146,13 +146,6 @@ module.exports = function (params) {
     var receiveOnly = !!params.receiveOnly;
     /**
      * @memberof! respoke.Call
-     * @name forceTurn
-     * @private
-     * @type {boolean}
-     */
-    var forceTurn = !!params.forceTurn;
-    /**
-     * @memberof! respoke.Call
      * @name client
      * @private
      * @type {respoke.getClient}
@@ -265,7 +258,7 @@ module.exports = function (params) {
                 return that.hasMedia();
             }
         }),
-        forceTurn: forceTurn,
+        forceTurn: !!params.forceTurn,
         call: that,
         callSettings: callSettings,
         pcOptions: {
@@ -358,7 +351,6 @@ module.exports = function (params) {
         that.listen('mute', params.onMute);
         that.listen('requesting-media', params.onRequestingMedia);
 
-        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
         sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
         directConnectionOnly = typeof params.directConnectionOnly === 'boolean' ?
@@ -372,7 +364,7 @@ module.exports = function (params) {
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
         pc.callSettings = callSettings;
-        pc.forceTurn = forceTurn;
+        pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
         pc.receiveOnly = receiveOnly;
         pc.sendOnly = sendOnly;
         pc.listen('stats', function fireStats(evt) {

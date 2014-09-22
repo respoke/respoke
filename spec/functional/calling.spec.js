@@ -1,76 +1,5 @@
 var expect = chai.expect;
-
-// Call a function only if there's a error or on the $num attempt
-function doneCountBuilder(num, done) {
-   return (function () {
-        var called = false;
-        var count = 0;
-        if (!num || num < 0) {
-            throw new Error('First argument must be a positive integer.');
-        }
-
-        return function (err) {
-            if (called === true) {
-                return;
-            }
-
-            count += 1;
-            if (count === num || err) {
-                called = true;
-                done(err);
-            }
-        };
-    })();
-};
-
-describe("doneCountBuilder", function () {
-    var builderSpy;
-    var doneOnce;
-
-    beforeEach(function () {
-        builderSpy = sinon.spy();
-        doneOnce = doneCountBuilder(4, builderSpy);
-    });
-
-    describe("when it's called a fewer number of times as $num", function () {
-        beforeEach(function () {
-            for (var i = 0; i <= 2; i += 1) {
-                doneOnce();
-            }
-        });
-
-        it("doesn't call the function", function () {
-            expect(builderSpy.called).to.equal(false);
-            expect(builderSpy.callCount).to.equal(0);
-        });
-    });
-
-    describe("when it's called the same number of times as $num", function () {
-        beforeEach(function () {
-            for (var i = 0; i <= 4; i += 1) {
-                doneOnce();
-            }
-        });
-
-        it("calls the function only once", function () {
-            expect(builderSpy.called).to.equal(true);
-            expect(builderSpy.callCount).to.equal(1);
-        });
-    });
-
-    describe("when it's called a greater number of times than $num", function () {
-        beforeEach(function () {
-            for (var i = 0; i <= 12; i += 1) {
-                doneOnce();
-            }
-        });
-
-        it("calls the function only once", function () {
-            expect(builderSpy.called).to.equal(true);
-            expect(builderSpy.callCount).to.equal(1);
-        });
-    });
-});
+respoke.log.setLevel('error');
 
 describe("Respoke calling", function () {
     this.timeout(30000);
@@ -104,6 +33,16 @@ describe("Respoke calling", function () {
     var followeeToken;
     var appId;
     var roleId;
+
+    function doneOnceBuilder(done) {
+        var called = false;
+        return function (err) {
+            if (!called) {
+                called = true;
+                done(err);
+            }
+        };
+    };
 
     beforeEach(function (done) {
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
@@ -161,71 +100,143 @@ describe("Respoke calling", function () {
         }
 
         describe("with call listener specified", function () {
-            var hangupReason;
-            var remoteElement;
-            var localElement;
-            var stream;
+            var iceCandidates = [];
 
-            afterEach(function () {
-                followee.ignore('call', callListener);
+            beforeEach(function () {
+                followee.listen('call', callListener);
             });
 
-            beforeEach(function (done) {
-                done = doneCountBuilder(2, done);
-                followee.listen('call', callListener);
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("succeeds", function (done) {
+                var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
-                        stream = evt.stream;
-                        localElement = evt.element;
-                        done();
+                        try {
+                            expect(evt.stream).to.be.ok;
+                            expect(evt.element).to.be.ok;
+                        } catch (e) {
+                            doneOnce(e);
+                        }
                     },
                     onConnect: function (evt) {
-                        remoteElement = evt.element;
-                        done();
+                        try {
+                            expect(evt.element).to.be.ok;
+                            doneOnce();
+                        } catch (e) {
+                            doneOnce(e);
+                        }
                     },
                     onHangup: function (evt) {
-                        hangupReason = evt.reason;
-                        done();
+                        doneOnce(new Error("Call got hung up"));
                     }
                 });
-            });
-
-            it("succeeds", function () {
-                expect(stream).to.be.ok;
-                expect(localElement).to.be.ok;
-                expect(remoteElement).to.be.ok;
-                expect(hangupReason).to.equal(undefined);
             });
         });
 
-        describe("without a call listener specified for callee", function () {
-            var hangupReason;
-            var remoteStream;
-            var error;
+        describe("ICE candidates when forceTurn is disabled", function () {
+            var followerICE = [];
+            var followeeICE = [];
 
             beforeEach(function (done) {
-                var done = doneCountBuilder(1, done);
+                var doneOnce = doneOnceBuilder(done);
+                followee.listen('call', function (evt) {
+                    if (evt.call.caller !== true) {
+                        evt.call.answer({
+                            forceTurn: false
+                        });
+                    }
+
+                    evt.call.listen('signal-icecandidates', function (evt) {
+                        followeeICE = followeeICE.concat(evt.signal.iceCandidates);
+                    });
+                });
 
                 call = followeeEndpoint.startCall({
-                    onHangup: function (evt) {
-                        hangupReason = evt.reason;
-                        done();
-                    },
                     onConnect: function (evt) {
-                        remoteStream = evt.stream;
-                        done();
+                        setTimeout(doneOnce, 200);
                     },
-                    onError: function (evt) {
-                        error = evt.reason;
-                        done();
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call hung up automatically."));
                     }
+                });
+                call.listen('signal-icecandidates', function (evt) {
+                    followerICE = followerICE.concat(evt.signal.iceCandidates);
                 });
             });
 
-            it("fails", function () {
-                expect(remoteStream).not.to.be.ok;
-                expect(hangupReason).to.be.ok;
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("are received by both sides", function () {
+                expect(followerICE.length > 1).to.equal(true);
+                expect(followeeICE.length > 1).to.equal(true);
+            });
+        });
+
+        describe("ICE candidates when forceTurn is enabled", function () {
+            var followerICE = [];
+            var followeeICE = [];
+
+            beforeEach(function (done) {
+                var doneOnce = doneOnceBuilder(done);
+                followee.listen('call', function (evt) {
+                    if (evt.call.caller !== true) {
+                        evt.call.answer({
+                            forceTurn: true
+                        });
+                    }
+
+                    evt.call.listen('signal-icecandidates', function (evt) {
+                        followeeICE = followeeICE.concat(evt.signal.iceCandidates);
+                    });
+                });
+
+                call = followeeEndpoint.startCall({
+                    forceTurn: true,
+                    onConnect: function (evt) {
+                        setTimeout(doneOnce, 200);
+                    }
+                });
+                call.listen('signal-icecandidates', function (evt) {
+                    followerICE = followerICE.concat(evt.signal.iceCandidates);
+                });
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("no candidates are received", function () {
+                expect(followerICE.length).to.equal(0);
+                expect(followeeICE.length).to.equal(0);
+            });
+        });
+
+        xdescribe("without a call listener specified", function () {
+            it("fails", function (done) {
+                call = followeeEndpoint.startCall({
+                    onHangup: function (evt) {
+                        call.ignore('hangup');
+                        done();
+                    }
+                });
             });
         });
 
@@ -234,14 +245,9 @@ describe("Respoke calling", function () {
                 followee.listen('call', callListener);
             });
 
-            afterEach(function () {
-                followee.ignore('call', callListener);
-                call.hangup();
-            });
-
             describe("by constraints", function () {
                 it("only sends audio and not video", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -269,13 +275,13 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("only receives audio and not video", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -296,7 +302,7 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
@@ -304,7 +310,7 @@ describe("Respoke calling", function () {
 
             describe("by the Endpoint.startAudioCall method", function () {
                 it("only sends audio and not video", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startAudioCall({
                         onLocalMedia: function (evt) {
@@ -326,13 +332,13 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("only receives audio and not video", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startAudioCall({
                         onConnect: function (evt) {
@@ -347,7 +353,7 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
@@ -355,8 +361,10 @@ describe("Respoke calling", function () {
 
             afterEach(function (done) {
                 followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
                 call.hangup();
-                done();
             });
         });
 
@@ -365,13 +373,9 @@ describe("Respoke calling", function () {
                 followee.listen('call', callListener);
             });
 
-            afterEach(function () {
-                followee.ignore('call', callListener);
-            });
-
             describe("by constraints", function () {
                 it("only sends video and not audio", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -399,13 +403,13 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("only receives video and not audio", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -426,7 +430,7 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
@@ -438,13 +442,9 @@ describe("Respoke calling", function () {
                 followee.listen('call', callListener);
             });
 
-            afterEach(function () {
-                followee.ignore('call', callListener);
-            });
-
             describe("by constraints", function () {
                 it("sends both video and audio", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -472,13 +472,13 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("receives both video and audio", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         constraints: {
@@ -499,7 +499,7 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
@@ -507,7 +507,7 @@ describe("Respoke calling", function () {
 
             describe("by the Endpoint.startVideoCall method", function () {
                 it("sends both video and audio", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startVideoCall({
                         onLocalMedia: function (evt) {
@@ -529,13 +529,13 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("receives both video and audio", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startVideoCall({
                         onConnect: function (evt) {
@@ -550,7 +550,7 @@ describe("Respoke calling", function () {
                             }
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
@@ -558,8 +558,10 @@ describe("Respoke calling", function () {
 
             afterEach(function (done) {
                 followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
                 call.hangup();
-                done();
             });
         });
 
@@ -570,12 +572,14 @@ describe("Respoke calling", function () {
 
             afterEach(function (done) {
                 followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
                 call.hangup();
-                done();
             });
 
             it("Call.approve is not called automatically", function (done) {
-                var doneOnce = doneCountBuilder(1, done);
+                var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
                     onApprove: function (evt) {
@@ -586,21 +590,21 @@ describe("Respoke calling", function () {
                         doneOnce();
                     },
                     onHangup: function (evt) {
-                        doneOnce(new Error("Call got hung up. " + evt.reason));
+                        doneOnce(new Error("Call got hung up"));
                     }
                 });
             });
 
             describe("when Call.approve is called", function () {
                 beforeEach(function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         previewLocalMedia: function (element, call) {
                             doneOnce();
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
@@ -621,7 +625,7 @@ describe("Respoke calling", function () {
             // additional permissions are needed. Maybe we can test this another way in the future.
             xdescribe("the onRequestingMedia callback", function () {
                 it("gets called before onLocalMedia", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         onRequestingMedia: function (evt) {
@@ -631,13 +635,13 @@ describe("Respoke calling", function () {
                             doneOnce(new Error("onLocalMedia got called first."));
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("gets called before onAllow", function (done) {
-                    var doneOnce = doneCountBuilder(1, done);
+                    var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
                         onRequestingMedia: function (evt) {
@@ -647,36 +651,9 @@ describe("Respoke calling", function () {
                             doneOnce(new Error("onAllow got called first."));
                         },
                         onHangup: function (evt) {
-                            doneOnce(new Error("Call got hung up. " + evt.reason));
+                            doneOnce(new Error("Call got hung up"));
                         }
                     });
-                });
-            });
-        });
-
-        // Can't test this because:
-        //   1. We are on the same machine so hole-punching will always find a path, even without ICE!
-        //   2. We don't have access to the peer connection, so we can't observe whether we get any relay candidates.
-        xdescribe("when forceTurn is turned on", function () {
-            beforeEach(function () {
-                followee.listen('call', callListener);
-            });
-
-            afterEach(function () {
-                followee.ignore('call', callListener);
-            });
-
-            it("fails because the test suite can't get TURN credentials", function (done) {
-                var doneOnce = doneCountBuilder(1, done);
-
-                call = followeeEndpoint.startCall({
-                    forceTurn: true,
-                    onHangup: function (evt) {
-                        doneOnce();
-                    },
-                    onConnect: function (evt) {
-                        doneOnce(new Error("This is impossible."));
-                    }
                 });
             });
         });
@@ -688,12 +665,14 @@ describe("Respoke calling", function () {
 
             afterEach(function (done) {
                 followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
                 call.hangup();
-                done();
             });
 
             it("gets called before onApprove", function (done) {
-                var doneOnce = doneCountBuilder(1, done);
+                var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
@@ -703,13 +682,13 @@ describe("Respoke calling", function () {
                         doneOnce(new Error("onApprove got called first."));
                     },
                     onHangup: function (evt) {
-                        doneOnce(new Error("Call got hung up. " + evt.reason));
+                        doneOnce(new Error("Call got hung up"));
                     }
                 });
             });
 
             it("gets called before onConnect", function (done) {
-                var doneOnce = doneCountBuilder(1, done);
+                var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
@@ -719,7 +698,7 @@ describe("Respoke calling", function () {
                         doneOnce(new Error("onConnect got called first."));
                     },
                     onHangup: function (evt) {
-                        doneOnce(new Error("Call got hung up. " + evt.reason));
+                        doneOnce(new Error("Call got hung up"));
                     }
                 });
             });
@@ -796,9 +775,9 @@ describe("Respoke calling", function () {
                     call.hangup();
                 });
 
-                // This is really hard to test because of scope. Likely the best way to test this is to
+                // This is really hard to test because of scope. Likely the best way to test this is to 
                 // fire an event after sending the call debug report to the API.
-                xit("sends call debugs");
+                it("sends call debugs");
             });
 
             describe('when disabling call debugs', function () {
@@ -848,10 +827,12 @@ describe("Respoke calling", function () {
                     call.hangup();
                 });
 
-                // This is really hard to test because of scope. Likely the best way to test this is to
+                // This is really hard to test because of scope. Likely the best way to test this is to 
                 // fire an event after sending the call debug report to the API.
-                xit("does not send call debugs");
+                it("does not send call debugs");
             });
+
+            
         });
 
         describe("muting", function () {
@@ -916,26 +897,33 @@ describe("Respoke calling", function () {
 
     describe("when receiving a call", function () {
         describe("with call listener specified", function () {
-            afterEach(function (done) {
-                followee.ignore('call');
-                call.hangup();
-                done();
+            beforeEach(function () {
+                followeeEndpoint.startCall();
             });
 
-            it("the call starts and call event gets fired", function (done) {
+            afterEach(function (done) {
+                followee.ignore('call');
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("succeeds", function (done) {
                 followee.listen('call', function (evt) {
                     call = evt.call;
                     done();
                 });
-                followeeEndpoint.startCall();
             });
         });
 
         describe("with only audio", function () {
             afterEach(function (done) {
                 followee.ignore('call');
+                call.listen('hangup', function (evt) {
+                    done();
+                });
                 call.hangup();
-                done();
             });
 
             describe("by constraints in answer()", function () {
@@ -1142,10 +1130,6 @@ describe("Respoke calling", function () {
     });
 
     afterEach(function (done) {
-        if (call) {
-            call.hangup();
-        }
-
         respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {
