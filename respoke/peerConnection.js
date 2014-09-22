@@ -316,7 +316,6 @@ module.exports = function (params) {
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
                         that.state.receivedSDP = true;
-                        processQueues();
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
@@ -644,6 +643,7 @@ module.exports = function (params) {
                 call: that.call,
                 sessionDescription: oSession,
                 onSuccess: function () {
+                    that.state.sentSDP = true;
                     setTimeout(processQueues);
                 },
                 onError: function (err) {
@@ -651,7 +651,6 @@ module.exports = function (params) {
                     that.call.hangup({signal: false});
                 }
             });
-            that.state.sentSDP = true;
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on offer I created.');
             /**
@@ -696,6 +695,7 @@ module.exports = function (params) {
                 call: that.call
             });
             that.state.sentSDP = true;
+            processQueues();
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on answer I created.');
             /**
