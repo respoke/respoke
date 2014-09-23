@@ -229,10 +229,13 @@ describe("Respoke messaging", function () {
             describe('the message metadata is correct', function () {
                 var message;
 
-                beforeEach(function () {
+                beforeEach(function (done) {
                     return sendOneMessage()
                         .then(function () {
-                            message = messagesFolloweeReceived[0];
+                            setTimeout(function () {
+                                message = messagesFolloweeReceived[0];
+                                done();
+                            }, 50);
                         });
                 });
 
@@ -263,10 +266,8 @@ describe("Respoke messaging", function () {
 
             it("all group messages are received correctly", function (done) {
                 sendFiveGroupMessagesEach()
-                    .then(checkMessages)
-                    .done(function successHandler() {
-                        done();
-                    }, done);
+                    .done(checkMessages);
+                    setTimeout(done, 100);
             });
 
             afterEach(function () {
