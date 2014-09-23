@@ -753,6 +753,14 @@ module.exports = function (params) {
 
     /**
      * Place an audio and/or video call to an endpoint.
+     * 
+     *     // defaults to video when no constraints are supplied
+     *     client.startCall({
+     *         endpointId: 'erin',
+     *         onConnect: function (evt) { },
+     *         onLocalMedia: function (evt) { }
+     *     });
+     * 
      * @memberof! respoke.Client
      * @method respoke.Client.startCall
      * @param {object} params
