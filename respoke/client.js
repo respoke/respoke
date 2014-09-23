@@ -1222,8 +1222,7 @@ module.exports = function (params) {
     that.getEndpoint = function (params) {
         var endpoint;
         if (!params || !params.id) {
-            var err = new Error("Can't get an endpoint without endpoint id.");
-            throw err;
+            throw new Error("Can't get an endpoint without endpoint id.");
         }
 
         endpoints.every(function eachEndpoint(ept) {
@@ -1276,12 +1275,16 @@ module.exports = function (params) {
      * @returns {respoke.Connection} The connection whose ID was specified.
      */
     that.getConnection = function (params) {
-        params = params || {};
         var connection;
         var endpoint;
+        var endpointsToSearch = endpoints;
 
-        if (!params || !params.connectionId) {
+        params = params || {};
+        if (!params.connectionId) {
             throw new Error("Can't get a connection without connection id.");
+        }
+        if (!params.endpointId && !params.skipCreate) {
+            throw new Error("Can't create a connection without endpoint id.");
         }
 
         if (params.endpointId) {
@@ -1289,34 +1292,19 @@ module.exports = function (params) {
                 id: params.endpointId,
                 skipCreate: params.skipCreate
             });
+
+            endpointsToSearch = [];
+            if (endpoint) {
+                endpointsToSearch = [endpoint];
+            }
         }
 
-        if (!endpoint) {
-            endpoints.every(function eachEndpoint(ept) {
-                if (params.endpointId) {
-                    if (params.endpointId !== ept.id) {
-                        return true;
-                    } else {
-                        endpoint = ept;
-                    }
-                }
-
-                ept.connections.every(function eachConnection(conn) {
-                    if (conn.id === params.connectionId) {
-                        connection = conn;
-                        return false;
-                    }
-                    return true;
-                });
-                return connection === undefined;
-            });
-        }
+        endpointsToSearch.every(function eachEndpoint(ept) {
+            connection = ept.getConnection(params);
+            return !connection;
+        });
 
         if (!connection && !params.skipCreate) {
-            if (!params.endpointId || !endpoint) {
-                throw new Error("Couldn't find an endpoint for this connection. Did you pass in the endpointId?");
-            }
-
             params.instanceId = instanceId;
             connection = respoke.Connection(params);
             endpoint.connections.push(connection);

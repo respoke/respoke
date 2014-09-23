@@ -561,7 +561,7 @@ module.exports = function (params) {
      * @return {respoke.Connection}
      */
     that.getConnection = function (params) {
-        var connection;
+        var connection = null;
         params = params || {};
         if (that.connections.length === 1 &&
                 (!params.connectionId || that.connections[0] === params.connectionId)) {
