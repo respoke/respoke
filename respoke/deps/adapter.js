@@ -220,3 +220,11 @@ if (navigator.mozGetUserMedia) {
 } else {
   console.log('Browser does not appear to be WebRTC-capable');
 }
+
+
+window.RTCPeerConnection = RTCPeerConnection;
+window.getUserMedia = getUserMedia;
+window.attachMediaStream = attachMediaStream;
+window.reattachMediaStream = reattachMediaStream;
+window.webrtcDetectedBrowser = webrtcDetectedBrowser;
+window.webrtcDetectedVersion = webrtcDetectedVersion;
