@@ -1709,7 +1709,7 @@ module.exports = function (params) {
     /**
      * Construct an API call and return the formatted response and errors. The 'success'
      * attribute indicates the success or failure of the API call. The 'response' attribute
-     * is an associative array constructed by json.decode. The 'error' attriute is a message.
+     * is an associative array constructed by json.decode. The 'error' attribute is a message.
      * If the API call is successful but the server returns invalid JSON, error will be
      * "Invalid JSON." and response will be the unchanged content of the response body.
      * @memberof! respoke.SignalingChannel
