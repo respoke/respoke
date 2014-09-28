@@ -114,7 +114,7 @@ require('./deps/adapter');
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
-    streams: {},
+    streams: [],
     instances: {}
 };
 
@@ -365,4 +365,74 @@ respoke.hasRTCPeerConnection = function () {
 respoke.hasWebsocket = function () {
     "use strict";
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
+};
+
+respoke.clone = function (source) {
+    if (source) {
+        return JSON.parse(JSON.stringify(source));
+    }
+    return source;
+};
+
+function getKeys(obj) {
+    var keys;
+    if(obj.keys) {
+        keys = obj.keys();
+    } else {
+        keys = [];
+ 
+        for(var k in obj) {
+            if(Object.prototype.hasOwnProperty.call(obj, k)) {
+                keys.push(k);
+            }
+        }
+    }
+ 
+    return keys;
+}
+ 
+
+/**
+ * Create a new object so the keys appear in the provided order.
+ * @param {Object} obj The object to be the base for the new object
+ * @param {Array} keys The order in which properties of the new object should appear
+ **/
+function convertToArray(obj, keys) {
+    var result = [];
+    for (var i = 0; i < keys.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(obj, keys[i])) {
+            result.push(obj[keys[i]]);
+        }
+    } 
+    return result;
+}
+
+respoke.isEqual = function (a, b) {
+    //check if arrays
+    if( Object.prototype.toString.call( a ) === '[object Array]' && Object.prototype.toString.call( b ) === '[object Array]') {
+        //check if arrays have any objects
+        if (a.filter(function(e) { return Object.prototype.toString.call( e ) === '[object Object]' }).length > 0 ||
+            b.filter(function(e) { return Object.prototype.toString.call( e ) === '[object Object]' }).length > 0 ) {
+ 
+            if (a.length !== b.length) {
+                //short circuit if arrays are different length
+                return false;
+            } else {
+                for(var i = 0; i < a.length; i++) {
+                    if (!respoke.isEqual(a[i], b[i])) {
+                        return false
+                    }
+                }
+                return true;
+            }
+        } else {
+            // no objects, just primitives
+            return JSON.stringify(a) === JSON.stringify(b);
+        }
+    } else {
+        var orderedA = convertToArray(a, getKeys(a).sort());
+            orderedB = convertToArray(b, getKeys(b).sort());
+ 
+        return respoke.isEqual(orderedA, orderedB);
+    }
 };// End respoke.Class

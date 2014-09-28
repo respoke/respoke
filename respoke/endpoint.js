@@ -53,10 +53,6 @@ module.exports = function (params) {
      */
     var signalingChannel = params.signalingChannel;
 
-    var clone = function (source) {
-        return JSON.parse(JSON.stringify(source));
-    };
-
     var addCall = params.addCall;
 
     delete that.signalingChannel;
@@ -270,7 +266,7 @@ module.exports = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var combinedCallSettings = clone(client.callSettings);
+        var combinedCallSettings = respoke.clone(client.callSettings);
         params = params || {};
 
         log.debug('Endpoint.call');
@@ -286,7 +282,7 @@ module.exports = function (params) {
         }
 
         // Apply call-specific callSettings to the app's defaults
-        combinedCallSettings.constraints = params.constraints || combinedCallSettings.constraints;
+        combinedCallSettings.constraints = respoke.clone(params.constraints) || combinedCallSettings.constraints;
         combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
         log.debug('Final callSettings is', combinedCallSettings);
 
@@ -390,7 +386,7 @@ module.exports = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var combinedConnectionSettings = clone(client.callSettings);
+        var combinedConnectionSettings = respoke.clone(client.callSettings);
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;

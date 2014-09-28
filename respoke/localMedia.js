@@ -134,6 +134,16 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     var stream;
+    
+    function getStream(theConstraints) {
+        for(var i = 0; i < respoke.streams.length; i++) {
+            var s = respoke.streams[i];
+            if (respoke.isEqual(s.constraints, theConstraints)) {
+                return s.stream;
+            }
+        }
+        return null;
+    }
 
     /**
      * Register any event listeners passed in as callbacks
@@ -159,7 +169,7 @@ module.exports = function (params) {
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
         params.videoLocalElement = videoLocalElement;
     }
-
+    
     /**
      * Must call saveParameters as part of object construction.
      */
@@ -217,8 +227,8 @@ module.exports = function (params) {
         // will be needed. The first one passed back will contain media and the others will fake it. Media
         // will still be sent with every peer connection. Also need to study the use of getLocalElement
         // and the implications of passing back a video element with no media attached.
-        if (respoke.streams[that.constraints]) {
-            respoke.streams[that.constraints].numPc += 1;
+        if (getStream(that.constraints)) {
+            getStream(that.constraints).numPc += 1;
             /**
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
@@ -233,8 +243,8 @@ module.exports = function (params) {
             });
         } else {
             stream.numPc = 1;
-            respoke.streams[that.constraints] = stream;
-
+            respoke.streams.push[{stream: stream, constraints: that.constraints}];
+            
             stream.id = client.endpointId;
             attachMediaStream(videoLocalElement, stream);
             // We won't want our local video outputting audio.
@@ -282,15 +292,15 @@ module.exports = function (params) {
             throw new Error('No constraints.');
         }
 
-        if (respoke.streams[that.constraints]) {
+        if (getStream(that.constraints)) {
             log.debug('using old stream');
-            onReceiveUserMedia(respoke.streams[that.constraints]);
+            onReceiveUserMedia(getStream(that.constraints));
             return;
         }
 
         try {
             log.debug("Running getUserMedia with constraints", that.constraints);
-            // TODO set respoke.streams[that.constraints] = true as a flag that we are already
+            // TODO set getStream(that.constraints) = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
             allowTimer = setTimeout(function allowTimer() {
@@ -469,7 +479,7 @@ module.exports = function (params) {
         stream.numPc -= 1;
         if (stream.numPc === 0) {
             stream.stop();
-            delete respoke.streams[that.constraints];
+            delete getStream(that.constraints);
         }
         stream = null;
         /**
