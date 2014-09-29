@@ -4,13 +4,11 @@ var expect = chai.expect;
 respoke.log.setLevel('warn');
 
 describe("respoke.CallState for calls as the caller", function () {
-    var directConnectionOnly = false;
     var caller = true;
     var state;
     var fake = {hasMedia: false};
     var params = {
         receiveOnly: false,
-        directConnectionOnly: directConnectionOnly,
         previewLocalMedia: function () {},
         approve: function () {},
         signal: false,
@@ -62,7 +60,6 @@ describe("respoke.CallState for calls as the caller", function () {
         beforeEach(function () {
             params = {
                 caller: caller,
-                directConnectionOnly: directConnectionOnly,
                 previewLocalMedia: function () {},
                 receiveOnly: false,
                 approve: function () {}
@@ -567,9 +564,7 @@ describe("respoke.CallState for calls as the caller", function () {
                                     describe("event 'receiveLocalMedia'", function () {
                                         beforeEach(function () {
                                             state.hasLocalMedia = false;
-                                            state.dispatch('receiveLocalMedia', {
-                                                directConnectionOnly: false
-                                            });
+                                            state.dispatch('receiveLocalMedia');
                                         });
 
                                         it("sets all the right flags", function () {

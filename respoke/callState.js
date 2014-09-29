@@ -57,6 +57,7 @@ module.exports = function (params) {
     that.receivedBye = false;
     that.sentSDP = false;
     that.receivedSDP = false;
+    that.needDc = !!that.needDc;
 
     // Event
     var rejectEvent = [{
@@ -103,19 +104,17 @@ module.exports = function (params) {
     };
 
     function needToObtainMedia(params) {
-        assert(typeof params.directConnectionOnly === 'boolean');
         assert(typeof params.receiveOnly === 'boolean');
-        return (params.directConnectionOnly !== true && params.receiveOnly !== true);
+        return (that.needDc !== true && params.receiveOnly !== true);
     }
 
     function needToApproveDirectConnection(params) {
-        assert(typeof params.directConnectionOnly === 'boolean');
         assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
-        return (params.directConnectionOnly === true && typeof params.previewLocalMedia === 'function');
+        return (that.needDc === true && typeof params.previewLocalMedia === 'function');
     }
 
     function automaticDirectConnectionCaller(params) {
-        return (params.directConnectionOnly === true && typeof params.previewLocalMedia !== 'function' &&
+        return (that.needDc === true && typeof params.previewLocalMedia !== 'function' &&
             that.caller === true);
     }
 
@@ -238,7 +237,7 @@ module.exports = function (params) {
                                         params.approve();
                                     });
                                 }
-                                return (params.receiveOnly === true || params.directConnectionOnly);
+                                return (params.receiveOnly === true || that.needDc === true);
                             }
                         }]
                     },
@@ -248,7 +247,7 @@ module.exports = function (params) {
                         // Event
                         receiveLocalMedia: [{
                             action: function () {
-                            that.hasLocalMedia = true;
+                                that.hasLocalMedia = true;
                             }
                         }, {
                             target: 'offering',
@@ -280,7 +279,7 @@ module.exports = function (params) {
                                     target: 'connecting',
                                     guard: function (params) {
                                         return (that.caller === false &&
-                                            (that.hasLocalMedia === true || that.directConnectionOnly === true) &&
+                                            (that.hasLocalMedia === true || that.needDc === true) &&
                                             typeof params.previewLocalMedia !== 'function');
                                     }
                                 }, {
@@ -344,9 +343,8 @@ module.exports = function (params) {
                                 }, {
                                     target: 'connected',
                                     guard: function (params) {
-                                        assert(typeof params.directConnectionOnly === 'boolean');
                                         // for direct connection, local media is the same as remote media
-                                        return (params.directConnectionOnly === true);
+                                        return (that.needDc === true);
                                     }
                                 }],
                                 // Event
@@ -394,9 +392,8 @@ module.exports = function (params) {
                                 }, {
                                     target: 'connected',
                                     guard: function (params) {
-                                        assert(typeof params.directConnectionOnly === 'boolean');
                                         // for direct connection, local media is the same as remote media
-                                        return (params.directConnectionOnly === true && that.caller === false);
+                                        return (that.needDc === true && that.caller === false);
                                     }
                                 }],
                                 // Event

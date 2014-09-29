@@ -21,7 +21,7 @@ var respoke = require('./respoke');
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
- * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+ * @param {boolean} [params.needDc] - flag to enable skipping media & opening direct connection.
  * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
  * relay servers. If it cannot flow through relay servers, the call will fail.
  * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -123,13 +123,6 @@ module.exports = function (params) {
      * @type {respoke.Call.previewLocalMedia}
      */
     var previewLocalMedia = params.previewLocalMedia;
-    /**
-     * @memberof! respoke.Call
-     * @name directConnectionOnly
-     * @private
-     * @type {boolean}
-     */
-    var directConnectionOnly = !!params.directConnectionOnly;
     /**
      * @memberof! respoke.Call
      * @name sendOnly
@@ -254,6 +247,7 @@ module.exports = function (params) {
         instanceId: instanceId,
         state: respoke.CallState({
             caller: that.caller,
+            needDc: params.needDc,
             hasMedia: function () {
                 return that.hasMedia();
             }
@@ -297,7 +291,7 @@ module.exports = function (params) {
         }
 
         pc.init(callSettings); // instantiates RTCPeerConnection, can't call on modify
-        if (defModify === undefined && directConnectionOnly === true) {
+        if (defModify === undefined && pc.state.needDc === true) {
             actuallyAddDirectConnection(params);
         }
     }
@@ -353,8 +347,7 @@ module.exports = function (params) {
 
         receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
         sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
-        directConnectionOnly = typeof params.directConnectionOnly === 'boolean' ?
-            params.directConnectionOnly : directConnectionOnly;
+        pc.state.needDc = typeof params.needDc === 'boolean' ? params.needDc : pc.state.needDc;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
 
@@ -389,7 +382,7 @@ module.exports = function (params) {
         delete that.onConnect;
         delete that.onLocalMedia;
         delete that.callSettings;
-        delete that.directConnectionOnly;
+        delete that.needDc;
     }
 
     /**
@@ -440,7 +433,6 @@ module.exports = function (params) {
         });
         pc.state.dispatch('answer', {
             previewLocalMedia: previewLocalMedia,
-            directConnectionOnly: !!directConnectionOnly,
             approve: that.approve,
             receiveOnly: !!receiveOnly
         });
@@ -670,9 +662,7 @@ module.exports = function (params) {
         stream.listen('stream-received', function streamReceivedHandler(evt) {
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
-            pc.state.dispatch('receiveLocalMedia', {
-                directConnectionOnly: directConnectionOnly
-            });
+            pc.state.dispatch('receiveLocalMedia');
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
@@ -933,10 +923,8 @@ module.exports = function (params) {
         }, true);
 
         directConnection.listen('open', function openHandler() {
-            pc.state.dispatch('receiveRemoteMedia', {
-                directConnectionOnly: directConnectionOnly
-            });
-            directConnectionOnly = null;
+            pc.state.dispatch('receiveRemoteMedia');
+            pc.state.needDc = null;
         }, true);
 
         directConnection.listen('error', function errorHandler(err) {
@@ -1112,9 +1100,9 @@ module.exports = function (params) {
         });
 
         if (pc.state.isModifying()) {
-            if (directConnectionOnly === true) {
+            if (pc.state.needDc === true) {
                 info.directConnection = directConnection;
-            } else if (directConnectionOnly === false) {
+            } else if (pc.state.needDc === false) {
                 // Nothing
             } else {
                 info.call = that;
@@ -1183,7 +1171,7 @@ module.exports = function (params) {
                 defMedia.resolve(false);
             }
         }
-        directConnectionOnly = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
+        pc.state.needDc = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
         callSettings.constraints = evt.signal.constraints || callSettings.constraints;
     }
 
@@ -1416,7 +1404,7 @@ module.exports = function (params) {
         });
     }, true);
 
-    if (directConnectionOnly !== true) {
+    if (pc.state.needDc !== true) {
         pc.state.once('preparing:entry', function () {
             /**
              * This event provides notification for when an incoming call is being received.  If the user wishes

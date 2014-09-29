@@ -4,13 +4,11 @@ var expect = chai.expect;
 respoke.log.setLevel('warn');
 
 describe("respoke.CallState for direct connections as the caller", function () {
-    var directConnectionOnly = true;
     var caller = true;
     var state;
     var fake = {hasMedia: false};
     var params = {
         receiveOnly: false,
-        directConnectionOnly: directConnectionOnly,
         previewLocalMedia: function () {},
         approve: function () {},
         signal: false,
@@ -21,6 +19,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
         beforeEach(function () {
             state = respoke.CallState({
                 gloveColor: 'white',
+                needDc: true,
                 caller: caller,
                 hasMedia: function () {
                     return fake.hasMedia;
@@ -62,7 +61,6 @@ describe("respoke.CallState for direct connections as the caller", function () {
         beforeEach(function () {
             params = {
                 caller: caller,
-                directConnectionOnly: directConnectionOnly,
                 previewLocalMedia: function () {},
                 receiveOnly: false,
                 approve: function () {}
@@ -71,6 +69,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                 hasMedia: function () {
                     return fake.hasMedia;
                 },
+                needDc: true,
                 caller: caller,
                 answerTimeout: 200,
                 receiveAnswerTimeout: 200,

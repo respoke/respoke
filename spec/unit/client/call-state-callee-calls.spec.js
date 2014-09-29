@@ -4,13 +4,11 @@ var expect = chai.expect;
 respoke.log.setLevel('warn');
 
 describe("respoke.CallState for calls as the callee", function () {
-    var directConnectionOnly = false;
     var caller = false;
     var state;
     var fake = {hasMedia: false};
     var params = {
         receiveOnly: false,
-        directConnectionOnly: directConnectionOnly,
         previewLocalMedia: function () {},
         approve: function () {},
         signal: false,
@@ -63,7 +61,6 @@ describe("respoke.CallState for calls as the callee", function () {
             params = {
                 caller: caller,
                 receiveOnly: false,
-                directConnectionOnly: directConnectionOnly,
                 previewLocalMedia: function () {},
                 approve: function () {}
             };
