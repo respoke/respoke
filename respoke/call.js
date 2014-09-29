@@ -125,20 +125,6 @@ module.exports = function (params) {
     var previewLocalMedia = params.previewLocalMedia;
     /**
      * @memberof! respoke.Call
-     * @name sendOnly
-     * @private
-     * @type {boolean}
-     */
-    var sendOnly = !!params.sendOnly;
-    /**
-     * @memberof! respoke.Call
-     * @name receiveOnly
-     * @private
-     * @type {boolean}
-     */
-    var receiveOnly = !!params.receiveOnly;
-    /**
-     * @memberof! respoke.Call
      * @name client
      * @private
      * @type {respoke.getClient}
@@ -248,6 +234,8 @@ module.exports = function (params) {
         state: respoke.CallState({
             caller: that.caller,
             needDc: params.needDc,
+            sendOnly: params.sendOnly,
+            receiveOnly: params.receiveOnly,
             hasMedia: function () {
                 return that.hasMedia();
             }
@@ -345,8 +333,8 @@ module.exports = function (params) {
         that.listen('mute', params.onMute);
         that.listen('requesting-media', params.onRequestingMedia);
 
-        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
+        pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;
+        pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
         pc.state.needDc = typeof params.needDc === 'boolean' ? params.needDc : pc.state.needDc;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
@@ -358,8 +346,6 @@ module.exports = function (params) {
 
         pc.callSettings = callSettings;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
-        pc.receiveOnly = receiveOnly;
-        pc.sendOnly = sendOnly;
         pc.listen('stats', function fireStats(evt) {
             /**
              * This event is fired every time statistical information about audio and/or video on a call
@@ -383,6 +369,8 @@ module.exports = function (params) {
         delete that.onLocalMedia;
         delete that.callSettings;
         delete that.needDc;
+        delete that.sendOnly;
+        delete that.receiveOnly;
     }
 
     /**
@@ -434,7 +422,6 @@ module.exports = function (params) {
         pc.state.dispatch('answer', {
             previewLocalMedia: previewLocalMedia,
             approve: that.approve,
-            receiveOnly: !!receiveOnly
         });
         /**
          * The call was answered.

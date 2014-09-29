@@ -108,27 +108,6 @@ module.exports = function (params) {
     delete that.pc;
     /**
      * @memberof! respoke.LocalMedia
-     * @name forceTurn
-     * @private
-     * @type {boolean}
-     */
-    var forceTurn;
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name sendOnly
-     * @private
-     * @type {boolean}
-     */
-    var sendOnly;
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name receiveOnly
-     * @private
-     * @type {boolean}
-     */
-    var receiveOnly;
-    /**
-     * @memberof! respoke.LocalMedia
      * @name stream
      * @private
      * @type {RTCMediaStream}
@@ -143,20 +122,11 @@ module.exports = function (params) {
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {object} [params.callSettings]
      * @param {object} [params.constraints]
-     * @param {array} [params.servers]
-     * @param {boolean} [params.forceTurn]
-     * @param {boolean} [params.receiveOnly]
-     * @param {boolean} [params.sendOnly]
      * @private
      */
     function saveParameters(params) {
-        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
-        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
         callSettings = params.callSettings || callSettings || {};
-        callSettings.servers = params.servers || callSettings.servers;
         callSettings.constraints = params.constraints || callSettings.constraints;
-        callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
         params.videoLocalElement = videoLocalElement;
     }
 

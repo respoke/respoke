@@ -16,8 +16,6 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @param {boolean} [params.receiveOnly] - whether or not we accept media
- * @param {boolean} [params.sendOnly] - whether or not we send media
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
  * candidates.
  * @param {respoke.Call} params.call
@@ -91,24 +89,7 @@ module.exports = function (params) {
      * @desc A callback provided by the developer that we'll call after receiving local media and before
      * approve() is called.
      */
-    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
-        params.previewLocalMedia : undefined;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name sendOnly
-     * @private
-     * @type {boolean}
-     * @desc A flag indicating we will send media but not receive it.
-     */
-    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name receiveOnly
-     * @private
-     * @type {boolean}
-     * @desc A flag indicating we will receive media but will not send it.
-     */
-    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
+    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
     /**
      * @memberof! respoke.PeerConnection
      * @name candidateSendingQueue

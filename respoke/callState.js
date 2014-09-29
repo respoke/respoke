@@ -58,6 +58,8 @@ module.exports = function (params) {
     that.sentSDP = false;
     that.receivedSDP = false;
     that.needDc = !!that.needDc;
+    that.sendOnly = !!that.sendOnly;
+    that.receiveOnly = !!that.receiveOnly;
 
     // Event
     var rejectEvent = [{
@@ -104,8 +106,7 @@ module.exports = function (params) {
     };
 
     function needToObtainMedia(params) {
-        assert(typeof params.receiveOnly === 'boolean');
-        return (that.needDc !== true && params.receiveOnly !== true);
+        return (that.needDc !== true && that.receiveOnly !== true);
     }
 
     function needToApproveDirectConnection(params) {
@@ -232,12 +233,12 @@ module.exports = function (params) {
                                         automaticDirectConnectionCaller(params)) {
                                     return false;
                                 }
-                                if (!params.previewLocalMedia || params.receiveOnly) {
+                                if (!params.previewLocalMedia || that.receiveOnly) {
                                     setTimeout(function () {
                                         params.approve();
                                     });
                                 }
-                                return (params.receiveOnly === true || that.needDc === true);
+                                return (that.receiveOnly === true || that.needDc === true);
                             }
                         }]
                     },
