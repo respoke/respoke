@@ -1138,7 +1138,7 @@ module.exports = function (params) {
      * Socket handler for pub-sub messages.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.onPubSub
-     * @param {object} The Socket.io message.
+     * @param {object} message The Socket.io message.
      * @private
      * @fires respoke.Group#message
      * @fires respoke.Client#message
@@ -1189,7 +1189,7 @@ module.exports = function (params) {
      * Socket handler for join messages.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.onJoin
-     * @param {object} The Socket.io message.
+     * @param {object} message The Socket.io message.
      * @private
      */
     var onJoin = function onJoin(message) {
@@ -1256,7 +1256,7 @@ module.exports = function (params) {
      * Socket handler for leave messages.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.onLeave
-     * @param {object} The Socket.io message.
+     * @param {object} message The Socket.io message.
      * @private
      */
     var onLeave = function onLeave(message) {
@@ -1291,7 +1291,7 @@ module.exports = function (params) {
      * Socket handler for presence messages.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.onMessage
-     * @param {object} The Socket.io message.
+     * @param {object} message The Socket.io message.
      * @private
      * @fires respoke.Endpoint#message
      * @fires respoke.Client#message
@@ -1374,7 +1374,7 @@ module.exports = function (params) {
      * Socket handler for presence messages.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.onPresence
-     * @param {object} The Socket.io message.
+     * @param {object} message The Socket.io message.
      * @private
      */
     function onPresence(message) {
@@ -1709,7 +1709,7 @@ module.exports = function (params) {
     /**
      * Construct an API call and return the formatted response and errors. The 'success'
      * attribute indicates the success or failure of the API call. The 'response' attribute
-     * is an associative array constructed by json.decode. The 'error' attriute is a message.
+     * is an associative array constructed by json.decode. The 'error' attribute is a message.
      * If the API call is successful but the server returns invalid JSON, error will be
      * "Invalid JSON." and response will be the unchanged content of the response body.
      * @memberof! respoke.SignalingChannel
