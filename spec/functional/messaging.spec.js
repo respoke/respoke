@@ -353,7 +353,9 @@ describe("Respoke messaging", function () {
                 return Q.all([follower.disconnect(), followee.disconnect()]);
             }).fin(function () {
                 done();
-            }).done();
+            }).done(null, function (err) {
+                // who cares
+            });
         });
 
         describe("point-to-point messaging", function () {
