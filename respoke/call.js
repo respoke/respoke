@@ -236,6 +236,7 @@ module.exports = function (params) {
             needDc: params.needDc,
             sendOnly: params.sendOnly,
             receiveOnly: params.receiveOnly,
+            // hasMedia is not defined yet.
             hasMedia: function () {
                 return that.hasMedia();
             }
