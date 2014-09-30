@@ -430,8 +430,8 @@ module.exports = function (params) {
         }
 
         that.report.callStarted = new Date().getTime();
-        window.pc = pc = new RTCPeerConnection(callSettings.servers, pcOptions);
 
+        pc = new RTCPeerConnection(callSettings.servers, pcOptions);
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
