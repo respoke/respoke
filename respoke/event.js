@@ -129,7 +129,6 @@ var EventEmitter = module.exports = function (params) {
     that.fire = function (eventType, evt) {
         var args = null;
         var count = 0;
-        var onces = [];
 
         evt = evt || {};
         evt.name = eventType;
