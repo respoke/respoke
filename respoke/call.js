@@ -915,7 +915,6 @@ module.exports = function (params) {
 
         directConnection.listen('open', function openHandler() {
             pc.state.dispatch('receiveRemoteMedia');
-            pc.state.needDc = null;
         }, true);
 
         directConnection.listen('error', function errorHandler(err) {

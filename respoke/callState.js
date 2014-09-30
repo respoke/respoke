@@ -456,6 +456,7 @@ module.exports = function (params) {
                         // Event
                         entry: function () {
                             oldRole = that.caller;
+                            that.needDc = false;
                             that.fire('connected:entry');
                         },
                         // Event
