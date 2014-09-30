@@ -55,7 +55,7 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = params.videoLocalElement || document.createElement('video');
+    var videoLocalElement = params.videoLocalElement;
     /**
      * @memberof! respoke.LocalMedia
      * @name videoIsMuted
@@ -85,7 +85,8 @@ module.exports = function (params) {
      * @private
      * @type {object}
      */
-    var callSettings = params.callSettings;
+    var callSettings = params.callSettings || callSettings || {};
+    callSettings.constraints = params.constraints || callSettings.constraints;
     /**
      * @memberof! respoke.LocalMedia
      * @name mediaOptions
@@ -113,27 +114,6 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     var stream;
-
-    /**
-     * Register any event listeners passed in as callbacks
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.saveParameters
-     * @param {object} params
-     * @param {respoke.Call.onHangup} [params.onHangup]
-     * @param {object} [params.callSettings]
-     * @param {object} [params.constraints]
-     * @private
-     */
-    function saveParameters(params) {
-        callSettings = params.callSettings || callSettings || {};
-        callSettings.constraints = params.constraints || callSettings.constraints;
-        params.videoLocalElement = videoLocalElement;
-    }
-
-    /**
-     * Must call saveParameters as part of object construction.
-     */
-    saveParameters(params);
 
     /**
      * Save the local stream. Kick off SDP creation.

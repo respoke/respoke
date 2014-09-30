@@ -100,8 +100,6 @@ describe("Respoke calling", function () {
         }
 
         describe("with call listener specified", function () {
-            var iceCandidates = [];
-
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -129,6 +127,58 @@ describe("Respoke calling", function () {
                     onConnect: function (evt) {
                         try {
                             expect(evt.element).to.be.ok;
+                            doneOnce();
+                        } catch (e) {
+                            doneOnce(e);
+                        }
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
+                    }
+                });
+            });
+        });
+
+        describe("when passing in our own video element", function () {
+            var local;
+            var remote;
+
+            beforeEach(function () {
+                local = document.createElement("VIDEO");
+                local.id = "my-local-video-element";
+                remote = document.createElement("VIDEO");
+                remote.id = "my-remote-video-element";
+                followee.listen('call', callListener);
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', callListener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("uses my video elements and doesn't create new ones", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startCall({
+                    videoLocalElement: local,
+                    videoRemoteElement: remote,
+                    onLocalMedia: function (evt) {
+                        try {
+                            expect(evt.stream).to.be.ok;
+                            expect(evt.element).to.be.ok;
+                            expect(evt.element.id).to.equal("my-local-video-element");
+                        } catch (e) {
+                            doneOnce(e);
+                        }
+                    },
+                    onConnect: function (evt) {
+                        try {
+                            expect(evt.stream).to.be.ok;
+                            expect(evt.element).to.be.ok;
+                            expect(evt.element.id).to.equal("my-remote-video-element");
                             doneOnce();
                         } catch (e) {
                             doneOnce(e);
@@ -1125,6 +1175,61 @@ describe("Respoke calling", function () {
                         });
                     });
                 });
+            });
+        });
+
+        describe("when passing in our own video element", function () {
+            var local;
+            var remote;
+            var listener;
+            var localElement;
+            var remoteElement;
+            var call;
+
+            beforeEach(function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                listener = function (evt) {
+                    if (!evt.call.caller) {
+                        evt.call.answer({
+                            videoLocalElement: local,
+                            videoRemoteElement: remote,
+                            onLocalMedia: function (evt) {
+                                localElement = evt.element;
+                            },
+                            onConnect: function (evt) {
+                                remoteElement = evt.element;
+                                doneOnce();
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
+                    }
+                };
+
+                local = document.createElement("VIDEO");
+                local.id = "my-local-video-element";
+                remote = document.createElement("VIDEO");
+                remote.id = "my-remote-video-element";
+                followee.listen('call', listener);
+
+                call = followeeEndpoint.startCall();
+            });
+
+            afterEach(function (done) {
+                followee.ignore('call', listener);
+                call.listen('hangup', function (evt) {
+                    done();
+                });
+                call.hangup();
+            });
+
+            it("uses my video elements and doesn't create new ones", function () {
+                expect(localElement).to.be.ok;
+                expect(localElement.id).to.equal("my-local-video-element");
+                expect(remoteElement).to.be.ok;
+                expect(remoteElement.id).to.equal("my-remote-video-element");
             });
         });
     });
