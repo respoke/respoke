@@ -9,7 +9,7 @@
     },
     "mocha": {
       "version": "1.20.1",
-      "from": "mocha@1.20.1",
+      "from": "https://registry.npmjs.org/mocha/-/mocha-1.20.1.tgz",
       "resolved": "https://registry.npmjs.org/mocha/-/mocha-1.20.1.tgz",
       "dependencies": {
         "commander": {
@@ -19,7 +19,8 @@
         },
         "growl": {
           "version": "1.7.0",
-          "from": "growl@1.7.0"
+          "from": "growl@1.7.x",
+          "resolved": "https://registry.npmjs.org/growl/-/growl-1.7.0.tgz"
         },
         "jade": {
           "version": "0.26.3",
@@ -40,7 +41,7 @@
         },
         "diff": {
           "version": "1.0.7",
-          "from": "diff@1.0.7",
+          "from": "https://registry.npmjs.org/diff/-/diff-1.0.7.tgz",
           "resolved": "https://registry.npmjs.org/diff/-/diff-1.0.7.tgz"
         },
         "debug": {
@@ -67,24 +68,25 @@
           "dependencies": {
             "minimatch": {
               "version": "0.2.14",
-              "from": "minimatch@0.2.14",
+              "from": "https://registry.npmjs.org/minimatch/-/minimatch-0.2.14.tgz",
               "resolved": "https://registry.npmjs.org/minimatch/-/minimatch-0.2.14.tgz",
               "dependencies": {
                 "lru-cache": {
                   "version": "2.5.0",
-                  "from": "lru-cache@2.5.0",
+                  "from": "https://registry.npmjs.org/lru-cache/-/lru-cache-2.5.0.tgz",
                   "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-2.5.0.tgz"
                 },
                 "sigmund": {
                   "version": "1.0.0",
-                  "from": "sigmund@1.0.0",
+                  "from": "https://registry.npmjs.org/sigmund/-/sigmund-1.0.0.tgz",
                   "resolved": "https://registry.npmjs.org/sigmund/-/sigmund-1.0.0.tgz"
                 }
               }
             },
             "graceful-fs": {
               "version": "2.0.3",
-              "from": "graceful-fs@2.0.3"
+              "from": "graceful-fs@2.0.3",
+              "resolved": "https://registry.npmjs.org/graceful-fs/-/graceful-fs-2.0.3.tgz"
             },
             "inherits": {
               "version": "2.0.1",
@@ -158,7 +160,7 @@
     },
     "statechart": {
       "version": "0.1.1",
-      "from": "git://github.com/DavidDurman/statechart",
+      "from": "statechart@git://github.com/DavidDurman/statechart#d9b165b6c21e9f60407138447b6e2997dac51080",
       "resolved": "git://github.com/DavidDurman/statechart#d9b165b6c21e9f60407138447b6e2997dac51080"
     }
   }
