@@ -1411,6 +1411,10 @@ module.exports = function (params) {
         }, true);
     }
 
+    pc.state.listen('idle:exit', function (evt) {
+        saveParameters(params);
+    });
+
     pc.state.listen('preparing:entry', function (evt) {
         init();
 
@@ -1430,7 +1434,6 @@ module.exports = function (params) {
             callSettings.servers.iceServers = result;
         }
     }).fin(function () {
-        saveParameters(params);
         pc.state.dispatch('initiate', {
             client: client,
             caller: that.caller
