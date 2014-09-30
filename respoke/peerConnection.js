@@ -312,7 +312,7 @@ module.exports = function (params) {
                         that.call.fire('error', {
                             message: err.message
                         });
-                        log.error('set remote desc of answer failed', evt.signal.sessionDescription);
+                        log.error('create answer failed');
                         that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
                         that.close();
                     });

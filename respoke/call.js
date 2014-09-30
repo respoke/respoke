@@ -425,7 +425,7 @@ module.exports = function (params) {
         });
         pc.state.dispatch('answer', {
             previewLocalMedia: previewLocalMedia,
-            approve: that.approve,
+            approve: that.approve
         });
         /**
          * The call was answered.

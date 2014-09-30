@@ -158,6 +158,7 @@ if (!window.skipBugsnag) {
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
     window.onerror = function (message, file, line) {
+        "use strict";
         //Only send errors from the respoke.js file to Airbrake
         if (file.match(/respoke/)) {
             Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
@@ -267,6 +268,7 @@ respoke.createClient = function (params) {
  * @return {function}
  */
 respoke.once = function (func) {
+    "use strict";
     return (function () {
         var called = false;
         return function () {
@@ -338,7 +340,6 @@ respoke.handlePromise = function (promise, onSuccess, onError) {
  * @classdesc Empty base class.
  * @constructor
  * @private
- * @author Erin Spiceland <espiceland@digium.com>
  */
 respoke.Class = function (params) {
     "use strict";
@@ -362,7 +363,6 @@ respoke.Class = function (params) {
  * @static
  * @memberof respoke
  * @returns {boolean}
- * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasUserMedia = function () {
     "use strict";
@@ -374,7 +374,6 @@ respoke.hasUserMedia = function () {
  * @static
  * @memberof respoke
  * @returns {boolean}
- * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasRTCPeerConnection = function () {
     "use strict";
@@ -387,7 +386,6 @@ respoke.hasRTCPeerConnection = function () {
  * @static
  * @memberof respoke
  * @returns {boolean}
- * @author Dan Jenkins <djenkins@digium.com>
  */
 respoke.hasWebsocket = function () {
     "use strict";
@@ -400,7 +398,6 @@ respoke.hasWebsocket = function () {
  * @memberof respoke
  * @params {RTCSessionDescription}
  * @returns {boolean}
- * @author Matt Smith<msmith@digium.com>
  */
 respoke.sdpHasAudio = function (sdp) {
     "use strict";
@@ -413,7 +410,6 @@ respoke.sdpHasAudio = function (sdp) {
  * @memberof respoke
  * @params {RTCSessionDescription}
  * @returns {boolean}
- * @author Matt Smith<msmith@digium.com>
  */
 respoke.sdpHasVideo = function (sdp) {
     "use strict";
@@ -426,7 +422,6 @@ respoke.sdpHasVideo = function (sdp) {
  * @memberof respoke
  * @params {RTCSessionDescription}
  * @returns {boolean}
- * @author Erin Spiceland <espiceland@digium.com>
  */
 respoke.sdpHasDataChannel = function (sdp) {
     "use strict";

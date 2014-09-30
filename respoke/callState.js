@@ -11,7 +11,6 @@ var Q = require('q');
 
 /**
  * State machine for WebRTC calling, data channels, and screen sharing.
- * @author Erin Spiceland <espiceland@digium.com>
  * @class respoke.CallState
  * @constructor
  * @augments respoke.EventEmitter
