@@ -402,8 +402,8 @@
     },
     "grunt-stratos": {
       "version": "0.1.16",
-      "from": "grunt-stratos@git+http://stash.digium.com/stash/scm/stratos/grunt-stratos.git",
-      "resolved": "git+http://stash.digium.com/stash/scm/stratos/grunt-stratos.git#2d30f7ac344fc61cad6d2746a301df2da79f1c51"
+      "from": "grunt-stratos@git+https://stash.digium.com/stash/scm/stratos/grunt-stratos.git",
+      "resolved": "git+https://stash.digium.com/stash/scm/stratos/grunt-stratos.git#2d30f7ac344fc61cad6d2746a301df2da79f1c51"
     },
     "grunt-webpack": {
       "version": "1.0.7",
