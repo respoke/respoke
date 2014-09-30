@@ -252,11 +252,11 @@ describe("A respoke.Endpoint", function () {
                 });
 
                 describe("and a wrong connectionId is specified", function () {
-                    it("returns undefined", function () {
+                    it("returns null", function () {
                         var connection = endpoint.getConnection({
                             connectionId: respoke.makeGUID()
                         });
-                        expect(connection).to.be.undefined;
+                        expect(connection).to.equal(null);
                     });
                 });
             });
