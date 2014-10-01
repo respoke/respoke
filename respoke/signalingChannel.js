@@ -202,7 +202,7 @@ module.exports = function (params) {
     }
 
     /**
-     * Open a connection to the REST API and validate the app, creating an appauthsession.
+     * Open a connection to the REST API and validate the app, creating a session token.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.open
      * @private
@@ -280,7 +280,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Open a connection to the REST API and validate the app, creating an appauthsession.
+     * Open a connection to the REST API and validate the app, creating a session token.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.doOpen
      * @param {object} params
@@ -299,7 +299,7 @@ module.exports = function (params) {
         }
 
         call({
-            path: '/v1/appauthsessions',
+            path: '/v1/session-tokens',
             httpMethod: 'POST',
             parameters: {
                 tokenId: params.token
@@ -321,7 +321,7 @@ module.exports = function (params) {
     }
 
     /**
-     * Close a connection to the REST API. Invalidate the appauthsession.
+     * Close a connection to the REST API. Invalidate the session token.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.close
      * @private
@@ -334,12 +334,12 @@ module.exports = function (params) {
         clearInterval(heartbeat);
 
         wsCall({
-            path: '/v1/endpointconnections/%s/',
+            path: '/v1/connections/%s/',
             httpMethod: 'DELETE',
             objectId: client.endpointId
         }).fin(function finallyHandler() {
             return call({
-                path: '/v1/appauthsessions',
+                path: '/v1/session-tokens',
                 httpMethod: 'DELETE'
             });
         }).fin(function finallyHandler() {
@@ -1359,10 +1359,10 @@ module.exports = function (params) {
             });
 
             wsCall({
-                path: '/v1/endpointconnections',
+                path: '/v1/connections',
                 httpMethod: 'POST'
             }).done(function successHandler(res) {
-                log.debug('endpointconnections result', res);
+                log.debug('connections result', res);
                 client.endpointId = res.endpointId;
                 client.connectionId = res.id;
                 onSuccess();
