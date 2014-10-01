@@ -398,6 +398,9 @@ function getKeys(obj) {
  * @param {Array} keys The order in which properties of the new object should appear
  **/
 function convertToArray(obj, keys) {
+    if (keys.length === 0) {
+        return [obj];
+    }
     var result = [];
     for (var i = 0; i < keys.length; i++) {
         if (Object.prototype.hasOwnProperty.call(obj, keys[i])) {
@@ -430,9 +433,13 @@ respoke.isEqual = function (a, b) {
             return JSON.stringify(a) === JSON.stringify(b);
         }
     } else {
-        var orderedA = convertToArray(a, getKeys(a).sort());
-            orderedB = convertToArray(b, getKeys(b).sort());
- 
-        return respoke.isEqual(orderedA, orderedB);
+        var keysA = getKeys(a).sort();
+        var keysB = getKeys(b).sort();
+         if(respoke.isEqual(keysA, keysB)) {
+            var orderedA = convertToArray(a, keysA);
+                orderedB = convertToArray(b, keysB);
+                return respoke.isEqual(orderedA, orderedB);
+        }
+        return false;        
     }
 };// End respoke.Class

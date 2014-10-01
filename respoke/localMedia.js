@@ -144,6 +144,20 @@ module.exports = function (params) {
         }
         return null;
     }
+    
+    function removeStream(theConstraints) {
+        var toRemoveIndex;
+        for(var i = 0; i < respoke.streams.length; i++) {
+            var s = respoke.streams[i];
+            if(respoke.isEqual(s.constraints, theConstraints)) {
+                toRemoveIndex = i;
+                break;
+            }
+        }
+        if (toRemoveIndex) {
+            respoke.streams.slice(toRemoveIndex, 1);
+        }
+    }
 
     /**
      * Register any event listeners passed in as callbacks
@@ -227,8 +241,9 @@ module.exports = function (params) {
         // will be needed. The first one passed back will contain media and the others will fake it. Media
         // will still be sent with every peer connection. Also need to study the use of getLocalElement
         // and the implications of passing back a video element with no media attached.
-        if (getStream(that.constraints)) {
-            getStream(that.constraints).numPc += 1;
+        var aStream = getStream(that.constraints);
+        if (aStream) {
+            aStream.numPc += 1;
             /**
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
@@ -243,7 +258,7 @@ module.exports = function (params) {
             });
         } else {
             stream.numPc = 1;
-            respoke.streams.push[{stream: stream, constraints: that.constraints}];
+            respoke.streams.push({stream: stream, constraints: that.constraints});
             
             stream.id = client.endpointId;
             attachMediaStream(videoLocalElement, stream);
@@ -291,10 +306,10 @@ module.exports = function (params) {
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
-
-        if (getStream(that.constraints)) {
+        var theStream = getStream(that.constraints);
+        if (theStream) {
             log.debug('using old stream');
-            onReceiveUserMedia(getStream(that.constraints));
+            onReceiveUserMedia(theStream);
             return;
         }
 
@@ -479,7 +494,7 @@ module.exports = function (params) {
         stream.numPc -= 1;
         if (stream.numPc === 0) {
             stream.stop();
-            delete getStream(that.constraints);
+            removeStream(that.constraints);
         }
         stream = null;
         /**
