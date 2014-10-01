@@ -91,7 +91,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
             expect(state.hasLocalMedia).to.equal(false);
             expect(state.receivedBye).to.equal(false);
             expect(state.sentSDP).to.equal(false);
-            expect(state.receivedSDP).to.equal(false);
+            expect(state.processedRemoteSDP).to.equal(false);
         });
 
         describe('invalid event', function () {
@@ -153,7 +153,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                 expect(state.hasLocalMedia).to.equal(false);
                 expect(state.receivedBye).to.equal(false);
                 expect(state.sentSDP).to.equal(false);
-                expect(state.receivedSDP).to.equal(false);
+                expect(state.processedRemoteSDP).to.equal(false);
             });
         });
 
@@ -195,7 +195,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                     expect(state.hasLocalMedia).to.equal(false);
                     expect(state.receivedBye).to.equal(false);
                     expect(state.sentSDP).to.equal(false);
-                    expect(state.receivedSDP).to.equal(false);
+                    expect(state.processedRemoteSDP).to.equal(false);
                 });
 
                 describe("when media is not flowing", function () {
@@ -230,7 +230,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                             expect(state.hasLocalMedia).to.equal(false);
                             expect(state.receivedBye).to.equal(false);
                             expect(state.sentSDP).to.equal(false);
-                            expect(state.receivedSDP).to.equal(false);
+                            expect(state.processedRemoteSDP).to.equal(false);
                         });
                     });
 
@@ -301,7 +301,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                             expect(state.hasLocalMedia).to.equal(false);
                             expect(state.receivedBye).to.equal(false);
                             expect(state.sentSDP).to.equal(false);
-                            expect(state.receivedSDP).to.equal(false);
+                            expect(state.processedRemoteSDP).to.equal(false);
                         });
 
                         describe('invalid event', function () {
@@ -362,7 +362,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                             expect(state.hasLocalMedia).to.equal(false);
                             expect(state.receivedBye).to.equal(false);
                             expect(state.sentSDP).to.equal(false);
-                            expect(state.receivedSDP).to.equal(false);
+                            expect(state.processedRemoteSDP).to.equal(false);
                         });
 
                         describe('invalid event', function () {
@@ -434,7 +434,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                                         expect(state.hasLocalMedia).to.equal(true);
                                         expect(state.receivedBye).to.equal(false);
                                         expect(state.sentSDP).to.equal(false);
-                                        expect(state.receivedSDP).to.equal(false);
+                                        expect(state.processedRemoteSDP).to.equal(false);
                                     });
 
                                     it("moves to 'offering'", function () {
@@ -529,7 +529,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                                 expect(state.hasLocalMedia).to.equal(false);
                                 expect(state.receivedBye).to.equal(false);
                                 expect(state.sentSDP).to.equal(false);
-                                expect(state.receivedSDP).to.equal(false);
+                                expect(state.processedRemoteSDP).to.equal(false);
                             });
 
                             it("moves to 'offering'", function () {
@@ -565,7 +565,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                                     expect(state.hasLocalMedia).to.equal(true);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                 });
 
                                 it("moves to 'connected'", function () {
@@ -688,7 +688,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                                     expect(state.hasLocalMedia).to.equal(false);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                 });
 
                                 describe("event 'accept'", function () {
@@ -859,7 +859,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                                     expect(state.hasLocalMedia).to.equal(false);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                 });
 
                                 describe("event 'reject'", function () {

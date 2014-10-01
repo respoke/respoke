@@ -164,7 +164,7 @@ describe("A Direct Connection", function () {
         }
 
         // Still seeing intermittent failures.
-        xdescribe("with call listener specified", function () {
+        describe("with call listener specified", function () {
             var hangupReason;
             var dc;
 

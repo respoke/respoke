@@ -1114,6 +1114,11 @@ module.exports = function (params) {
              */
             that.fire('modify', info);
         }
+
+        pc.state.dispatch('receiveOffer', {
+            previewLocalMedia: previewLocalMedia,
+            approve: that.approve
+        });
     }
 
     /**

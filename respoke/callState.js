@@ -54,8 +54,10 @@ module.exports = function (params) {
     that.hasLocalMediaApproval = false;
     that.hasLocalMedia = false;
     that.receivedBye = false;
+    that.isAnswered = false;
     that.sentSDP = false;
     that.receivedSDP = false;
+    that.processedRemoteSDP = false;
     that.needDc = !!that.needDc;
     that.sendOnly = !!that.sendOnly;
     that.receiveOnly = !!that.receiveOnly;
@@ -69,6 +71,11 @@ module.exports = function (params) {
                 // Reset the role if we have aborted a modify.
                 that.caller = oldRole;
             }
+
+            if (modifyTimer) {
+                modifyTimer.clear();
+            }
+
             return that.hasMedia();
         }
     }, {
@@ -84,11 +91,14 @@ module.exports = function (params) {
     // Event
     function rejectModify() {
         // reject modification
+        if (modifyTimer) {
+            modifyTimer.clear();
+        }
     }
 
     // Event
     function clearReceiveAnswerTimer() {
-        that.receivedSDP = true;
+        that.processedRemoteSDP = true;
         if (receiveAnswerTimer) {
             receiveAnswerTimer.clear();
         }
@@ -191,9 +201,13 @@ module.exports = function (params) {
                                 that.hasLocalMedia = false;
                                 that.sentSDP = false;
                                 that.receivedSDP = false;
-                                answerTimer = new Timer(function () {
-                                    that.dispatch('reject', {reason: "answer own call timer " + that.caller});
-                                }, 'answer own call', answerTimeout);
+                                that.processedRemoteSDP = false;
+                                that.isAnswered = false;
+                                if (!that.isModifying()) {
+                                    answerTimer = new Timer(function () {
+                                        that.dispatch('reject', {reason: "answer own call timer " + that.caller});
+                                    }, 'answer own call', answerTimeout);
+                                }
                                 that.fire('preparing:entry');
                             }
                         },
@@ -207,8 +221,22 @@ module.exports = function (params) {
                         // Event
                         reject: rejectEvent,
                         // Event
+                        receiveOffer: {
+                            action: function (params) {
+                                that.receivedSDP = true;
+                                if (that.isAnswered) {
+                                    // If we get here, we are the callee and we've answered the call before the call
+                                    // creation/receive offer promise chain completed.
+                                    setTimeout(function () {
+                                        that.dispatch('answer', params);
+                                    });
+                                }
+                            }
+                        },
+                        // Event
                         answer: [{
                             action: function (params) {
+                                that.isAnswered = true;
                                 if (typeof params.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
                                 }
@@ -228,10 +256,17 @@ module.exports = function (params) {
                             // we are not sending anything or developer does not want to approve media.
                             target: 'connecting',
                             guard: function (params) {
+                                // always for callee, caller will always answer before sending offer.
+                                // callee should always answer after receiving offer.
+                                if (!that.receivedSDP) {
+                                    return false;
+                                }
+
                                 if (needToObtainMedia(params) || needToApproveDirectConnection(params) ||
                                         automaticDirectConnectionCaller(params)) {
                                     return false;
                                 }
+
                                 if (!params.previewLocalMedia || that.receiveOnly) {
                                     setTimeout(function () {
                                         params.approve();
