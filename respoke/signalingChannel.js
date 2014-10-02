@@ -30,6 +30,64 @@ if (performance && performance.now) {
 }
 
 /**
+ * Container for holding requests that are currently waiting on responses.
+ * @returns {PendingRequests}
+ * @private
+ * @constructor
+ */
+var PendingRequests = function () {
+    /**
+     * Pending requests.
+     * @private
+     * @type {Array}
+     */
+    var contents = [];
+    /**
+     * Counter to provide the next id.
+     * @private
+     * @type {number}
+     */
+    var counter = 0;
+    var that = {};
+
+    /**
+     * Add a new pending request.
+     *
+     * @memberof PendingRequests
+     * @param obj
+     * @returns {*} The key to use for the `remove` method.
+     */
+    that.add = function (obj) {
+        contents[counter] = obj;
+        return counter++;
+    };
+
+    /**
+     * Remove a pending request.
+     *
+     * @param {*} key Key returned from `add` method.
+     */
+    that.remove = function (key) {
+        delete contents[key];
+    };
+
+    /**
+     * Disposes of any currently pending requests, synchronously invoking the provided function on
+     * each.
+     *
+     * @param {function} [fn] Callback for pending requests.
+     */
+    that.reset = function (fn) {
+        if (fn) {
+            contents.forEach(fn);
+        }
+        contents = [];
+    };
+
+    return that;
+};
+
+/**
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
  * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
@@ -110,11 +168,11 @@ module.exports = function (params) {
      */
     var actuallyConnect = null;
     /**
-     * Array of promises for any pending requests on the WebSocket.
+     * Set of promises for any pending requests on the WebSocket.
      * @private
-     * @type {Array}
+     * @type {PendingRequests}
      */
-    var pendingRequests = [];
+    var pendingRequests = PendingRequests();
     /**
      * @memberof! respoke.SignalingChannel
      * @name reconnectTimeout
@@ -1564,13 +1622,10 @@ module.exports = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
-            if (pendingRequests.length > 0) {
-                log.debug('Failing ' + pendingRequests.length + ' pending requests');
-                pendingRequests.forEach(function (pendingRequest) {
-                    pendingRequest.reject(new Error("WebSocket disconnected"));
-                });
-                pendingRequests = [];
-            }
+            pendingRequests.reset(function (pendingRequest) {
+                log.debug('Failing pending requests');
+                pendingRequest.reject(new Error("WebSocket disconnected"));
+            });
 
             /**
              * @event respoke.Client#disconnect
@@ -1663,6 +1718,7 @@ module.exports = function (params) {
         var start = now();
         // Too many of these!
         var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
+        var pendingRequestsKey;
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -1693,14 +1749,14 @@ module.exports = function (params) {
             });
         }
 
-        pendingRequests.push(deferred);
+        pendingRequestsKey = pendingRequests.add(deferred);
         socket.emit(params.httpMethod, JSON.stringify({
             url: params.path,
             data: params.parameters,
             headers: {'App-Token': appToken}
         }), function handleResponse(response) {
             var durationMillis = now() - start;
-            pendingRequests.shift();
+            pendingRequests.remove(pendingRequestsKey);
 
             try {
                 response = JSON.parse(response);
