@@ -623,6 +623,10 @@ module.exports = function (params) {
 
         stream = respoke.LocalMedia(params);
         stream.listen('requesting-media', function waitAllowHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
              * to modify the UI of the application so that the user notices the request for permissions
@@ -635,6 +639,10 @@ module.exports = function (params) {
             that.fire('requesting-media');
         }, true);
         stream.listen('allow', function allowHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
             /**
              * The user has approved the request for media. Any UI changes made to remind the user to click Allow
              * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
@@ -651,6 +659,10 @@ module.exports = function (params) {
             });
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
             pc.state.dispatch('receiveLocalMedia');

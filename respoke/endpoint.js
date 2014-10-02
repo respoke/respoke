@@ -339,7 +339,7 @@ module.exports = function (params) {
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send candidate.", err.message, err.stack);
+                log.warn("Couldn't send candidate.", err.message, err.stack);
             });
         };
         params.signalHangup = function (signalParams) {
@@ -352,7 +352,9 @@ module.exports = function (params) {
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            signalingChannel.sendReport(signalParams).done(null, function errorHandler(err) {
+                log.warn("Couldn't debug report.", err.message, err.stack);
+            });
         };
 
         params.signalingChannel = signalingChannel;

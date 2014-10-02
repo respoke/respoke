@@ -100,41 +100,38 @@ describe("Respoke calling", function () {
         }
 
         describe("with call listener specified", function () {
-            beforeEach(function () {
+            var stream;
+            var localElement;
+            var remoteElement
+
+            beforeEach(function (done) {
                 followee.listen('call', callListener);
-            });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
-            });
-
-            it("succeeds", function (done) {
                 var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
-                        try {
-                            expect(evt.stream).to.be.ok;
-                            expect(evt.element).to.be.ok;
-                        } catch (e) {
-                            doneOnce(e);
-                        }
+                        localElement = evt.element;
+                        stream = evt.stream;
                     },
                     onConnect: function (evt) {
-                        try {
-                            expect(evt.element).to.be.ok;
-                            doneOnce();
-                        } catch (e) {
-                            doneOnce(e);
-                        }
+                        remoteElement = evt.element;
+                        doneOnce();
                     },
                     onHangup: function (evt) {
                         doneOnce(new Error("Call got hung up"));
                     }
+                });
+            });
+
+            it("succeeds", function () {
+                expect(stream).to.be.ok;
+                expect(localElement).to.be.ok;
+                expect(remoteElement).to.be.ok;
+            });
+
+            describe("hasMedia", function () {
+                it("returns true", function () {
+                    expect(call.hasMedia()).to.equal(true);
                 });
             });
         });
@@ -149,14 +146,6 @@ describe("Respoke calling", function () {
                 remote = document.createElement("VIDEO");
                 remote.id = "my-remote-video-element";
                 followee.listen('call', callListener);
-            });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
             });
 
             it("uses my video elements and doesn't create new ones", function (done) {
@@ -222,17 +211,9 @@ describe("Respoke calling", function () {
                 });
             });
 
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
-            });
-
             it("are received by both sides", function () {
-                expect(followerICE.length > 1).to.equal(true);
-                expect(followeeICE.length > 1).to.equal(true);
+                expect(followerICE.length).to.be.above(1);
+                expect(followeeICE.length).to.be.above(1);
             });
         });
 
@@ -265,25 +246,16 @@ describe("Respoke calling", function () {
                 });
             });
 
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
-            });
-
             it("no candidates are received", function () {
                 expect(followerICE.length).to.equal(0);
                 expect(followeeICE.length).to.equal(0);
             });
         });
 
-        xdescribe("without a call listener specified", function () {
-            it("fails", function (done) {
+        describe("without a call listener specified", function () {
+            it("gets hung up automatically", function (done) {
                 call = followeeEndpoint.startCall({
                     onHangup: function (evt) {
-                        call.ignore('hangup');
                         done();
                     }
                 });
@@ -407,14 +379,6 @@ describe("Respoke calling", function () {
                         }
                     });
                 });
-            });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
             });
         });
 
@@ -605,27 +569,11 @@ describe("Respoke calling", function () {
                     });
                 });
             });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
-            });
         });
 
         describe("when previewLocalMedia is specified", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
-            });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
             });
 
             it("Call.approve is not called automatically", function (done) {
@@ -670,7 +618,7 @@ describe("Respoke calling", function () {
             });
 
             // Can't actually test this because we are using the fake gUM UI flag which doesn't give any time
-            // between asking for media and receiving it. We have a 500ms delay between asking for media and
+            // between asking for media and receiving it. The library a 500ms delay between asking for media and
             // firing requesting-media so that the UI doesn't flash a request to click the button when no
             // additional permissions are needed. Maybe we can test this another way in the future.
             xdescribe("the onRequestingMedia callback", function () {
@@ -711,14 +659,6 @@ describe("Respoke calling", function () {
         describe("the onLocalMedia callback", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
-            });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
             });
 
             it("gets called before onApprove", function (done) {
@@ -881,8 +821,6 @@ describe("Respoke calling", function () {
                 // fire an event after sending the call debug report to the API.
                 it("does not send call debugs");
             });
-
-            
         });
 
         describe("muting", function () {
@@ -900,14 +838,6 @@ describe("Respoke calling", function () {
                     },
                     onMute: muteSpy
                 });
-            });
-
-            afterEach(function (done) {
-                followee.ignore('call', callListener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
             });
 
             describe("video", function () {
@@ -931,8 +861,7 @@ describe("Respoke calling", function () {
                     call.muteAudio();
                 });
 
-                // broke
-                xit("disables the audio stream", function () {
+                it("disables the audio stream", function () {
                     var audioTracks = localMedia.getAudioTracks();
                     expect(audioTracks.length).to.equal(1);
                     expect(audioTracks[0].enabled).to.equal(false);
@@ -951,14 +880,6 @@ describe("Respoke calling", function () {
                 followeeEndpoint.startCall();
             });
 
-            afterEach(function (done) {
-                followee.ignore('call');
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
-            });
-
             it("succeeds", function (done) {
                 followee.listen('call', function (evt) {
                     call = evt.call;
@@ -968,14 +889,6 @@ describe("Respoke calling", function () {
         });
 
         describe("with only audio", function () {
-            afterEach(function (done) {
-                followee.ignore('call');
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
-            });
-
             describe("by constraints in answer()", function () {
                 var constraints = {
                     video : false,
@@ -1035,8 +948,7 @@ describe("Respoke calling", function () {
                     followeeEndpoint.startAudioCall();
                 });
 
-                // broke
-                xit("only sends audio and not video", function (done) {
+                it("only sends audio and not video", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
@@ -1054,8 +966,7 @@ describe("Respoke calling", function () {
                     });
                 });
 
-                // broke
-                xit("only receives audio and not video", function (done) {
+                it("only receives audio and not video", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
@@ -1137,8 +1048,7 @@ describe("Respoke calling", function () {
                     });
                 });
 
-                // broke
-                xit("only sends video and not audio", function (done) {
+                it("only sends video and not audio", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
@@ -1217,12 +1127,8 @@ describe("Respoke calling", function () {
                 call = followeeEndpoint.startCall();
             });
 
-            afterEach(function (done) {
+            afterEach(function () {
                 followee.ignore('call', listener);
-                call.listen('hangup', function (evt) {
-                    done();
-                });
-                call.hangup();
             });
 
             it("uses my video elements and doesn't create new ones", function () {
@@ -1235,6 +1141,12 @@ describe("Respoke calling", function () {
     });
 
     afterEach(function (done) {
+        [follower, followee].forEach(function (client) {
+            for (var i = client.calls.length - 1; i >= 0; i -= 1) {
+                client.calls[i].hangup();
+            }
+        });
+
         respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {

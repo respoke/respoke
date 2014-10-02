@@ -160,16 +160,7 @@ module.exports = function (params) {
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalHangup = (function () {
-        var called = false;
-        var sendSignal = params.signalHangup;
-        return function (params) {
-            if (called === false) {
-                sendSignal(params);
-                called = true;
-            }
-        };
-    })();
+    var signalHangup = respoke.once(params.signalHangup);
     /**
      * @memberof! respoke.PeerConnection
      * @name signalReport
