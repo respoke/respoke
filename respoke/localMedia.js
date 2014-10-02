@@ -85,7 +85,7 @@ module.exports = function (params) {
      * @private
      * @type {object}
      */
-    var callSettings = params.callSettings || callSettings || {};
+    var callSettings = params.callSettings || {};
     callSettings.constraints = params.constraints || callSettings.constraints;
     /**
      * @memberof! respoke.LocalMedia
