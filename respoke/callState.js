@@ -11,6 +11,8 @@ var Q = require('q');
 
 /**
  * State machine for WebRTC calling, data channels, and screen sharing.
+ * NOTE: All state transitions are synchronous! However, listeners to the events this class fires will be called
+ * asynchronously.
  * @class respoke.CallState
  * @constructor
  * @augments respoke.EventEmitter
@@ -559,6 +561,12 @@ module.exports = function (params) {
         }
     });
 
+    /**
+     * Return the name of the current state.
+     * @memberof! respoke.CallState
+     * @method respoke.Call.getState
+     * @returns {string}
+     */
     that.getState = function () {
         if (!fsm) {
             return 'terminated';
@@ -566,7 +574,11 @@ module.exports = function (params) {
         return fsm.currentState().name;
     };
 
-    //that.dispatch = fsm.dispatch.bind(fsm);
+    /**
+     * Synchronously dispatch an event, which may or may not change the state.
+     * @memberof! respoke.CallState
+     * @method respoke.Call.dispatch
+     */
     that.dispatch = function (evt, args) {
         var oldState;
         var newState;
