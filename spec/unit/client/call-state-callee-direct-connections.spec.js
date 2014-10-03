@@ -19,7 +19,7 @@ describe("respoke.CallState for direct connections as the callee", function () {
         beforeEach(function () {
             state = respoke.CallState({
                 gloveColor: 'white',
-                needDc: true,
+                needDirectConnection: true,
                 caller: caller,
                 hasMedia: function () {
                     return fake.hasMedia;
@@ -69,7 +69,7 @@ describe("respoke.CallState for direct connections as the callee", function () {
                 hasMedia: function () {
                     return fake.hasMedia;
                 },
-                needDc: true,
+                needDirectConnection: true,
                 caller: caller,
                 answerTimeout: 200,
                 receiveAnswerTimeout: 200,
@@ -351,7 +351,7 @@ describe("respoke.CallState for direct connections as the callee", function () {
 
                             beforeEach(function (done) {
                                 state.listen('approving-content:entry', approvingContentEntrySpy);
-                                expect(state.needDc).to.equal(true);
+                                expect(state.needDirectConnection).to.equal(true);
                                 state.dispatch('receiveOffer');
                                 state.dispatch('answer', params);
                                 setTimeout(done);

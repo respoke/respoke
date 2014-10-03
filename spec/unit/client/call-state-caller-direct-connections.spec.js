@@ -19,7 +19,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
         beforeEach(function () {
             state = respoke.CallState({
                 gloveColor: 'white',
-                needDc: true,
+                needDirectConnection: true,
                 caller: caller,
                 hasMedia: function () {
                     return fake.hasMedia;
@@ -69,7 +69,7 @@ describe("respoke.CallState for direct connections as the caller", function () {
                 hasMedia: function () {
                     return fake.hasMedia;
                 },
-                needDc: true,
+                needDirectConnection: true,
                 caller: caller,
                 answerTimeout: 200,
                 receiveAnswerTimeout: 200,

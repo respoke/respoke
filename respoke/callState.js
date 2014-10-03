@@ -58,7 +58,7 @@ module.exports = function (params) {
     that.sentSDP = false;
     that.receivedSDP = false;
     that.processedRemoteSDP = false;
-    that.needDc = !!that.needDc;
+    that.needDirectConnection = !!that.needDirectConnection;
     that.sendOnly = !!that.sendOnly;
     that.receiveOnly = !!that.receiveOnly;
 
@@ -115,16 +115,16 @@ module.exports = function (params) {
     };
 
     function needToObtainMedia(params) {
-        return (that.needDc !== true && that.receiveOnly !== true);
+        return (that.needDirectConnection !== true && that.receiveOnly !== true);
     }
 
     function needToApproveDirectConnection(params) {
         assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
-        return (that.needDc === true && typeof params.previewLocalMedia === 'function');
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia === 'function');
     }
 
     function automaticDirectConnectionCaller(params) {
-        return (that.needDc === true && typeof params.previewLocalMedia !== 'function' &&
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function' &&
             that.caller === true);
     }
 
@@ -272,7 +272,7 @@ module.exports = function (params) {
                                         params.approve();
                                     });
                                 }
-                                return (that.receiveOnly === true || that.needDc === true);
+                                return (that.receiveOnly === true || that.needDirectConnection === true);
                             }
                         }]
                     },
@@ -314,7 +314,7 @@ module.exports = function (params) {
                                     target: 'connecting',
                                     guard: function (params) {
                                         return (that.caller === false &&
-                                            (that.hasLocalMedia === true || that.needDc === true) &&
+                                            (that.hasLocalMedia === true || that.needDirectConnection === true) &&
                                             typeof params.previewLocalMedia !== 'function');
                                     }
                                 }, {
@@ -379,7 +379,7 @@ module.exports = function (params) {
                                     target: 'connected',
                                     guard: function (params) {
                                         // for direct connection, local media is the same as remote media
-                                        return (that.needDc === true);
+                                        return (that.needDirectConnection === true);
                                     }
                                 }],
                                 // Event
@@ -428,7 +428,7 @@ module.exports = function (params) {
                                     target: 'connected',
                                     guard: function (params) {
                                         // for direct connection, local media is the same as remote media
-                                        return (that.needDc === true && that.caller === false);
+                                        return (that.needDirectConnection === true && that.caller === false);
                                     }
                                 }],
                                 // Event
@@ -490,7 +490,7 @@ module.exports = function (params) {
                         // Event
                         entry: function () {
                             oldRole = that.caller;
-                            that.needDc = false;
+                            that.needDirectConnection = false;
                             that.fire('connected:entry');
                         },
                         // Event

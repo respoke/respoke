@@ -21,7 +21,7 @@ var respoke = require('./respoke');
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
- * @param {boolean} [params.needDc] - flag to enable skipping media & opening direct connection.
+ * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
  * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
  * relay servers. If it cannot flow through relay servers, the call will fail.
  * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -235,7 +235,7 @@ module.exports = function (params) {
         instanceId: instanceId,
         state: respoke.CallState({
             caller: that.caller,
-            needDc: params.needDc,
+            needDirectConnection: params.needDirectConnection,
             sendOnly: params.sendOnly,
             receiveOnly: params.receiveOnly,
             // hasMedia is not defined yet.
@@ -282,7 +282,7 @@ module.exports = function (params) {
         }
 
         pc.init(callSettings); // instantiates RTCPeerConnection, can't call on modify
-        if (defModify === undefined && pc.state.needDc === true) {
+        if (defModify === undefined && pc.state.needDirectConnection === true) {
             actuallyAddDirectConnection(params);
         }
     }
@@ -314,7 +314,7 @@ module.exports = function (params) {
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
-     * @param {boolean} [params.needDc] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
      * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
      * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
      * @private
@@ -341,7 +341,7 @@ module.exports = function (params) {
 
         pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;
         pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
-        pc.state.needDc = typeof params.needDc === 'boolean' ? params.needDc : pc.state.needDc;
+        pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ? params.needDirectConnection : pc.state.needDirectConnection;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
 
@@ -1102,9 +1102,9 @@ module.exports = function (params) {
         });
 
         if (pc.state.isModifying()) {
-            if (pc.state.needDc === true) {
+            if (pc.state.needDirectConnection === true) {
                 info.directConnection = directConnection;
-            } else if (pc.state.needDc === false) {
+            } else if (pc.state.needDirectConnection === false) {
                 // Nothing
             } else {
                 info.call = that;
@@ -1178,7 +1178,7 @@ module.exports = function (params) {
                 defMedia.resolve(false);
             }
         }
-        pc.state.needDc = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
+        pc.state.needDirectConnection = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
         callSettings.constraints = evt.signal.constraints || callSettings.constraints;
     }
 
@@ -1411,7 +1411,7 @@ module.exports = function (params) {
         });
     }, true);
 
-    if (pc.state.needDc !== true) {
+    if (pc.state.needDirectConnection !== true) {
         pc.state.once('preparing:entry', function () {
             /**
              * This event provides notification for when an incoming call is being received.  If the user wishes
