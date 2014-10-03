@@ -63,11 +63,17 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        browsers: ['Chrome_autoaccept'],
+        browsers: ['ChromeAutoaccept', 'FirefoxAutoaccept'],
         customLaunchers: {
-            Chrome_autoaccept: {
+            ChromeAutoaccept: {
                 base: 'Chrome',
-                flags: ['--use-fake-ui-for-media-stream', '--disable-web-security']
+                flags: ['--use-fake-ui-for-media-stream']
+            },
+            FirefoxAutoaccept: {
+                base: 'Firefox',
+                prefs: {
+                    'media.navigator.permission.disabled': true
+                }
             }
         },
 
