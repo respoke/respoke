@@ -9,6 +9,85 @@ var io = require('socket.io-client');
 var respoke = require('./respoke');
 
 /**
+ * Returns a timestamp, measured in milliseconds.
+ *
+ * This method will use high resolution time, if available. Otherwise it falls back to just
+ * using the wall clock.
+ *
+ * @return {number} Number of milliseconds that have passed since some point in the past.
+ * @private
+ */
+var now;
+
+if (performance && performance.now) {
+    now = performance.now.bind(performance);
+} else if (Date.now) {
+    now = Date.now.bind(Date);
+} else {
+    now = function () {
+        return new Date().getTime();
+    }
+}
+
+/**
+ * Container for holding requests that are currently waiting on responses.
+ * @returns {PendingRequests}
+ * @private
+ * @constructor
+ */
+var PendingRequests = function () {
+    /**
+     * Pending requests.
+     * @private
+     * @type {Array}
+     */
+    var contents = [];
+    /**
+     * Counter to provide the next id.
+     * @private
+     * @type {number}
+     */
+    var counter = 0;
+    var that = {};
+
+    /**
+     * Add a new pending request.
+     *
+     * @memberof PendingRequests
+     * @param obj
+     * @returns {*} The key to use for the `remove` method.
+     */
+    that.add = function (obj) {
+        contents[counter] = obj;
+        return counter++;
+    };
+
+    /**
+     * Remove a pending request.
+     *
+     * @param {*} key Key returned from `add` method.
+     */
+    that.remove = function (key) {
+        delete contents[key];
+    };
+
+    /**
+     * Disposes of any currently pending requests, synchronously invoking the provided function on
+     * each.
+     *
+     * @param {function} [fn] Callback for pending requests.
+     */
+    that.reset = function (fn) {
+        if (fn) {
+            contents.forEach(fn);
+        }
+        contents = [];
+    };
+
+    return that;
+};
+
+/**
  * The purpose of this class is to make a method call for each API call
  * to the backend REST interface.  This class takes care of App authentication, websocket connection,
  * Endpoint authentication, and all App interactions thereafter.  Almost all methods return a Promise.
@@ -56,13 +135,6 @@ module.exports = function (params) {
     var socket = null;
     /**
      * @memberof! respoke.SignalingChannel
-     * @name heartbeat
-     * @private
-     * @type {number}
-     */
-    var heartbeat = null;
-    /**
-     * @memberof! respoke.SignalingChannel
      * @name clientSettings
      * @private
      * @type {object}
@@ -95,6 +167,12 @@ module.exports = function (params) {
      * @type {function}
      */
     var actuallyConnect = null;
+    /**
+     * Set of promises for any pending requests on the WebSocket.
+     * @private
+     * @type {PendingRequests}
+     */
+    var pendingRequests = PendingRequests();
     /**
      * @memberof! respoke.SignalingChannel
      * @name reconnectTimeout
@@ -202,7 +280,7 @@ module.exports = function (params) {
     }
 
     /**
-     * Open a connection to the REST API and validate the app, creating an appauthsession.
+     * Open a connection to the REST API and validate the app, creating a session token.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.open
      * @private
@@ -280,7 +358,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Open a connection to the REST API and validate the app, creating an appauthsession.
+     * Open a connection to the REST API and validate the app, creating a session token.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.doOpen
      * @param {object} params
@@ -299,7 +377,7 @@ module.exports = function (params) {
         }
 
         call({
-            path: '/v1/appauthsessions',
+            path: '/v1/session-tokens',
             httpMethod: 'POST',
             parameters: {
                 tokenId: params.token
@@ -321,7 +399,7 @@ module.exports = function (params) {
     }
 
     /**
-     * Close a connection to the REST API. Invalidate the appauthsession.
+     * Close a connection to the REST API. Invalidate the session token.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.close
      * @private
@@ -331,15 +409,14 @@ module.exports = function (params) {
     that.close = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        clearInterval(heartbeat);
 
         wsCall({
-            path: '/v1/endpointconnections/%s/',
+            path: '/v1/connections/%s/',
             httpMethod: 'DELETE',
             objectId: client.endpointId
         }).fin(function finallyHandler() {
             return call({
-                path: '/v1/appauthsessions',
+                path: '/v1/session-tokens',
                 httpMethod: 'DELETE'
             });
         }).fin(function finallyHandler() {
@@ -1359,10 +1436,10 @@ module.exports = function (params) {
             });
 
             wsCall({
-                path: '/v1/endpointconnections',
+                path: '/v1/connections',
                 httpMethod: 'POST'
             }).done(function successHandler(res) {
-                log.debug('endpointconnections result', res);
+                log.debug('connections result', res);
                 client.endpointId = res.endpointId;
                 client.connectionId = res.id;
                 onSuccess();
@@ -1500,17 +1577,6 @@ module.exports = function (params) {
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
             deferred.resolve();
-            heartbeat = setInterval(function heartbeatHandler() {
-                that.sendMessage({
-                    message: 'heartbeat',
-                    recipient: {id: 'system-heartbeat'}
-                }).done(null, function errorHandler(err) {
-                    if (err.message.indexOf('Not authorized') > -1) {
-                        clearInterval(heartbeat);
-                        socket.disconnect();
-                    }
-                });
-            }, 6000);
         }, function onError(err) {
             deferred.reject(err);
         }));
@@ -1556,13 +1622,17 @@ module.exports = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
+            pendingRequests.reset(function (pendingRequest) {
+                log.debug('Failing pending requests');
+                pendingRequest.reject(new Error("WebSocket disconnected"));
+            });
+
             /**
              * @event respoke.Client#disconnect
              * @property {string} name - the event name.
              * @property {respoke.Client} target
              */
             client.fire('disconnect');
-            clearInterval(heartbeat);
 
             if (clientSettings.reconnect !== true) {
                 socket = null;
@@ -1645,7 +1715,10 @@ module.exports = function (params) {
     function wsCall(params) {
         params = params || {};
         var deferred = Q.defer();
-        var requestTimer;
+        var start = now();
+        // Too many of these!
+        var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
+        var pendingRequestsKey;
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -1668,32 +1741,37 @@ module.exports = function (params) {
             params.path = params.path.replace(/\%s/ig, params.objectId);
         }
 
-        // Too many of these!
-        if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-            log.debug('socket request', params.httpMethod, params.path, params.parameters);
+        if (logRequest) {
+            log.debug('socket request', {
+                method: params.httpMethod,
+                path: params.path,
+                parameters: params.parameters
+            });
         }
 
-        requestTimer = setTimeout(function () {
-            log.error('request timeout', params.httpMethod, params.path, params.parameters);
-            socket.disconnect();
-            deferred.reject(new Error("Request timeout. Disconnecting."));
-        }, 5 * 1000);
-
+        pendingRequestsKey = pendingRequests.add(deferred);
         socket.emit(params.httpMethod, JSON.stringify({
             url: params.path,
             data: params.parameters,
             headers: {'App-Token': appToken}
         }), function handleResponse(response) {
-            clearTimeout(requestTimer);
-            // Too many of these!
-            if (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) {
-                log.debug('socket response', params.httpMethod, params.path, response);
-            }
+            var durationMillis = now() - start;
+            pendingRequests.remove(pendingRequestsKey);
 
             try {
                 response = JSON.parse(response);
             } catch (e) {
                 deferred.reject(new Error("Server response could not be parsed!"));
+                return;
+            }
+
+            if (logRequest) {
+                log.debug('socket response', {
+                    method: params.httpMethod,
+                    path: params.path,
+                    durationMillis: durationMillis,
+                    response: response
+                });
             }
 
             if (response && response.error) {
@@ -1729,12 +1807,11 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var paramString = null;
         var uri = null;
-        var response = null;
-        var responseCodes = [200, 400, 401, 403, 404, 409];
         var response = {
             'result': null,
             'code': null
         };
+        var start = now();
 
         uri = clientSettings.baseURL + params.path;
 
@@ -1772,7 +1849,11 @@ module.exports = function (params) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
             return;
         }
-        log.debug('calling', params.httpMethod, uri, "with params", paramString);
+        log.debug('request', {
+            method: params.httpMethod,
+            uri: uri,
+            params: paramString
+        });
 
         try {
             xhr.send(paramString);
@@ -1782,6 +1863,7 @@ module.exports = function (params) {
         }
 
         xhr.onreadystatechange = function () {
+            var durationMillis = now() - start;
             if (this.readyState !== 4) {
                 return;
             }
@@ -1801,7 +1883,10 @@ module.exports = function (params) {
                         response.error = "Invalid JSON.";
                     }
                 }
-                log.debug(response);
+                log.debug('response', {
+                    method: params.httpMethod,
+                    durationMillis: durationMillis,
+                    response: response });
                 deferred.resolve(response);
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
