@@ -23,7 +23,7 @@ function doneCountBuilder(num, done) {
     })();
 };
 
-describe("doneCountBuilder", function () {
+xdescribe("doneCountBuilder", function () {
     var builderSpy;
     var doneOnce;
 

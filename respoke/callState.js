@@ -3,7 +3,6 @@
  * @ignore
  */
 
-//var Q = require('q');
 var log = require('loglevel');
 var respoke = require('./respoke');
 var Statechart = require('statechart');
@@ -18,7 +17,7 @@ var Q = require('q');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {respoke.Call} call
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @returns {respoke.CallState}
  */
 module.exports = function (params) {
@@ -121,7 +120,6 @@ module.exports = function (params) {
     }
 
     function needToApproveDirectConnection(params) {
-        assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
         return (that.needDirectConnection === true && typeof params.previewLocalMedia === 'function');
     }
 
@@ -238,6 +236,7 @@ module.exports = function (params) {
                         // Event
                         answer: [{
                             action: function (params) {
+                                assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
                                 that.isAnswered = true;
                                 if (typeof params.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
