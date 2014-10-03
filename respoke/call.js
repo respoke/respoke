@@ -739,7 +739,6 @@ module.exports = function (params) {
         var stream;
         log.debug('Call.doAddVideo');
         params = params || {};
-        params.callSettings = params.callSettings || callSettings;
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
         params.instanceId = instanceId;

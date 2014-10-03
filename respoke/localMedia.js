@@ -183,7 +183,7 @@ module.exports = function (params) {
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
         params.videoLocalElement = videoLocalElement;
     }
-    
+
     /**
      * Must call saveParameters as part of object construction.
      */

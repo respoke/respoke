@@ -375,20 +375,7 @@ respoke.clone = function (source) {
 };
 
 function getKeys(obj) {
-    var keys;
-    if(obj.keys) {
-        keys = obj.keys();
-    } else {
-        keys = [];
- 
-        for(var k in obj) {
-            if(Object.prototype.hasOwnProperty.call(obj, k)) {
-                keys.push(k);
-            }
-        }
-    }
- 
-    return keys;
+    return obj.keys ? obj.keys() : Object.keys(obj);
 }
  
 
