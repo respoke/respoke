@@ -314,6 +314,7 @@ module.exports = function (params) {
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
+     * @param {boolean} [params.needDc] - flag to enable skipping media & opening direct connection.
      * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
      * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
      * @private
@@ -1031,7 +1032,6 @@ module.exports = function (params) {
         }
 
         if (pc) {
-            var signal = (pc.state.receivedBye ? false : pc.state.signalBye);
             pc.close({signal: (pc.state.receivedBye ? false : pc.state.signalBye)});
         }
 

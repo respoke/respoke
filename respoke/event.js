@@ -143,14 +143,13 @@ var EventEmitter = module.exports = function (params) {
             return;
         }
 
-        eventList[eventType] = eventList[eventType] || [];
         for (var i = eventList[eventType].length; i > -1; i -= 1) {
             var listener = eventList[eventType][i];
             if (typeof listener === 'function') {
                 setTimeout(listenerBuilder(listener, evt, eventType));
 
                 count += 1;
-                if (listener.once && eventList[eventType]) {
+                if (listener.once) {
                     eventList[eventType].splice(i, 1);
                 }
             }
