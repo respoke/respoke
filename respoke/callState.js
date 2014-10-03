@@ -129,8 +129,7 @@ module.exports = function (params) {
     }
 
     function createTimer(func, name, time) {
-        var id;
-        id = setTimeout(function () {
+        var id = setTimeout(function () {
             id = null;
             respoke.log.error(name, "timer expired.");
             func();
