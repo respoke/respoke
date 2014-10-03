@@ -130,7 +130,7 @@ module.exports = function (params) {
             that.caller === true);
     }
 
-    function Timer(func, name, time) {
+    function createTimer(func, name, time) {
         var id;
         id = setTimeout(function () {
             id = null;
@@ -206,7 +206,7 @@ module.exports = function (params) {
                                 that.processedRemoteSDP = false;
                                 that.isAnswered = false;
                                 if (!that.isModifying()) {
-                                    answerTimer = new Timer(function () {
+                                    answerTimer = createTimer(function () {
                                         that.dispatch('reject', {reason: "answer own call timer " + that.caller});
                                     }, 'answer own call', answerTimeout);
                                 }
@@ -360,7 +360,7 @@ module.exports = function (params) {
                         reject: rejectEvent,
                         sentOffer: function () {
                             // start answer timer
-                            receiveAnswerTimer = new Timer(function () {
+                            receiveAnswerTimer = createTimer(function () {
                                 that.dispatch('reject', {reason: "receive answer timer"});
                             }, 'receive answer', receiveAnswerTimeout);
                         },
@@ -407,7 +407,7 @@ module.exports = function (params) {
                                     that.fire('connecting:entry');
 
                                     // set connection timer
-                                    connectionTimer = new Timer(function () {
+                                    connectionTimer = createTimer(function () {
                                         that.dispatch('reject', {reason: "connection timer"});
                                     }, 'connection', connectionTimeout);
                                 },
@@ -457,7 +457,7 @@ module.exports = function (params) {
                     modifying: {
                         // Event
                         entry: function () {
-                            modifyTimer = new Timer(function () {
+                            modifyTimer = createTimer(function () {
                                 that.dispatch('reject', {reason: "modify timer"});
                             }, 'modify for caller', modifyTimeout);
                             that.fire('modifying:entry');
@@ -507,7 +507,7 @@ module.exports = function (params) {
                                 params = params || {};
                                 if (params.receive === true) {
                                     that.caller = false;
-                                    modifyTimer = new Timer(function () {
+                                    modifyTimer = createTimer(function () {
                                         // If modify gets interrupted, go back to previous roles.
                                         that.dispatch('reject', {reason: "modify timer"});
                                     }, 'modify', modifyTimeout);
