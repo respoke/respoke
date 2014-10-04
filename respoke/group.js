@@ -8,10 +8,10 @@ var respoke = require('./respoke');
 
 /**
  * A `respoke.Group` represents a collection of endpoints.
- * 
- * There are methods to communicate with the endpoints at the group level and track 
+ *
+ * There are methods to communicate with the endpoints at the group level and track
  * their presence in the group.
- * 
+ *
  * @class respoke.Group
  * @augments respoke.EventEmitter
  * @constructor
@@ -70,7 +70,7 @@ module.exports = function (params) {
     that.listen('join', params.onJoin);
     /**
      * Indicates that a message has been sent to this group.
-     * 
+     *
      * @event respoke.Group#message
      * @type {respoke.Event}
      * @property {respoke.TextMessage} message
@@ -300,18 +300,18 @@ module.exports = function (params) {
     }
 
     /**
-     * 
+     *
      * Send a message to all of the endpoints in the group.
-     * 
+     *
      *      var group = client.getGroup({ id: 'js-enthusiasts'});
-     *      
+     *
      *      group.sendMessage({
      *          message: "Cat on keyboard",
      *          onSuccess: function (evt) {
      *              console.log('Message was sent');
      *          }
      *      });
-     * 
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.sendMessage
      * @param {object} params
@@ -323,28 +323,25 @@ module.exports = function (params) {
     that.sendMessage = function (params) {
         params = params || {};
         params.id = that.id;
-        var retVal;
-        var deferred;
+        var promise;
 
         try {
             validateConnection();
             validateMembership();
         } catch (err) {
-            deferred = Q.defer();
-            retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
-            deferred.reject(err);
-            return retVal;
+            promise = Q.reject(err);
         }
 
-        return signalingChannel.publish(params);
+        return respoke.handlePromise(promise ? promise : signalingChannel.publish(params),
+                params.onSuccess, params.onError);
     };
 
     /**
      * Get group members
-     * 
+     *
      * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
      * or a promise.
-     * 
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.getMembers
      * @param {object} params

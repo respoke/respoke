@@ -256,7 +256,7 @@ describe("A respoke.Endpoint", function () {
                         var connection = endpoint.getConnection({
                             connectionId: respoke.makeGUID()
                         });
-                        expect(connection).to.be.undefined;
+                        expect(connection).to.equal(null);
                     });
                 });
             });
