@@ -165,16 +165,16 @@ module.exports = function (params) {
      */
     that.hasVideo = undefined;
 
+    /**
+     * Local media
+     * @name outgoingMedia
+     * @type {respoke.LocalMedia}
+     */
+    that.outgoingMedia = respoke.LocalMedia(params);
+
     delete params.signalingChannel;
     delete that.signalingChannel;
 
-    /**
-     * @memberof! respoke.Call
-     * @name videoLocalElement
-     * @private
-     * @type {Video}
-     */
-    var videoLocalElement = null;
     /**
      * @memberof! respoke.Call
      * @name videoRemoteElement
@@ -210,13 +210,6 @@ module.exports = function (params) {
      * @type {respoke.DirectConnection}
      */
     var directConnection = null;
-    /**
-     * @memberof! respoke.Call
-     * @name localStreams
-     * @private
-     * @type {Array<respoke.LocalMedia>}
-     */
-    var localStreams = [];
     /**
      * @memberof! respoke.Call
      * @name toSendHangup
@@ -349,7 +342,7 @@ module.exports = function (params) {
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
-        videoLocalElement = params.videoLocalElement || videoLocalElement;
+        that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
         videoRemoteElement = params.videoRemoteElement || videoRemoteElement;
 
         pc.callSettings = callSettings;
@@ -580,7 +573,7 @@ module.exports = function (params) {
      * @returns {Video} An HTML5 video element.
      */
     that.getLocalElement = function () {
-        return videoLocalElement;
+        return that.outgoingMedia.element;
     };
 
     /**
@@ -611,18 +604,16 @@ module.exports = function (params) {
      * @fires respoke.Call#local-stream-received
      */
     function doAddVideo(params) {
-        var stream;
         log.debug('Call.doAddVideo');
         params = params || {};
         saveParameters(params);
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
         params.instanceId = instanceId;
-        params.videoLocalElement = videoLocalElement;
+        params.element = params.videoLocalElement;
         params.videoRemoteElement = videoRemoteElement;
 
-        stream = respoke.LocalMedia(params);
-        stream.listen('requesting-media', function waitAllowHandler(evt) {
+        that.outgoingMedia.listen('requesting-media', function waitAllowHandler(evt) {
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
              * to modify the UI of the application so that the user notices the request for permissions
@@ -634,7 +625,7 @@ module.exports = function (params) {
              */
             that.fire('requesting-media');
         }, true);
-        stream.listen('allow', function allowHandler(evt) {
+        that.outgoingMedia.listen('allow', function allowHandler(evt) {
             /**
              * The user has approved the request for media. Any UI changes made to remind the user to click Allow
              * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
@@ -650,11 +641,10 @@ module.exports = function (params) {
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
-        stream.listen('stream-received', function streamReceivedHandler(evt) {
-            defMedia.resolve(stream);
+        that.outgoingMedia.listen('stream-received', function streamReceivedHandler(evt) {
+            defMedia.resolve(that.outgoingMedia);
             pc.addStream(evt.stream);
             pc.state.dispatch('receiveLocalMedia');
-            videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
             }
@@ -669,14 +659,12 @@ module.exports = function (params) {
              */
             that.fire('local-stream-received', {
                 element: evt.element,
-                stream: stream
+                stream: that.outgoingMedia
             });
         }, true);
-        stream.listen('error', function errorHandler(evt) {
-            var message = evt.reason;
-            that.removeStream({id: stream.id});
+        that.outgoingMedia.listen('error', function errorHandler(evt) {
             pc.state.dispatch('reject', {reason: 'media stream error'});
-            pc.report.callStoppedReason = message;
+            pc.report.callStoppedReason = evt.reason;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event respoke.Call#error
@@ -686,11 +674,12 @@ module.exports = function (params) {
              * @property {string} name - the event name.
              */
             that.fire('error', {
-                reason: message
+                reason: evt.reason
             });
         });
-        localStreams.push(stream);
-        return stream;
+
+        that.outgoingMedia.start();
+        return that.outgoingMedia;
     }
 
     /**
@@ -763,24 +752,6 @@ module.exports = function (params) {
     };
 
     /**
-     * Remove a stream from the existing call.
-     * @memberof! respoke.Call
-     * @method respoke.Call.removeStream
-     * @param {object} params
-     * @param {boolean} id - the id of the stream to remove.
-     */
-    that.removeStream = function (params) {
-        var savedIndex;
-        localStreams.forEach(function eachStream(stream, idx) {
-            if (stream.id === params.id) {
-                stream.stop();
-                savedIndex = idx;
-            }
-        });
-        localStreams.splice(savedIndex, 1);
-    };
-
-    /**
      * Get the direct connection on this call, if it exists.
      * @memberof! respoke.Call
      * @method respoke.Call.getDirectConnection
@@ -804,7 +775,7 @@ module.exports = function (params) {
             directConnection.close({skipRemove: true});
         }
 
-        if (localStreams.length === 0) {
+        if (!that.hasMedia()) {
             log.debug('Hanging up because there are no local streams.');
             that.hangup();
             return;
@@ -894,8 +865,7 @@ module.exports = function (params) {
         directConnection = respoke.DirectConnection(params);
 
         directConnection.listen('close', function closeHandler() {
-            // TODO: make this look for remote streams, too. Don't want to hang up on a one-way media call.
-            if (localStreams.length === 0) {
+            if (!that.hasMedia()) {
                 log.debug('Hanging up because there are no local streams.');
                 that.hangup();
             } else {
@@ -1007,9 +977,7 @@ module.exports = function (params) {
     var doHangup = function () {
         log.debug('hangup', that.caller);
 
-        localStreams.forEach(function eachStream(stream) {
-            stream.stop();
-        });
+        that.outgoingMedia.stop();
 
         if (directConnection && directConnection.isActive()) {
             directConnection.close();
@@ -1064,7 +1032,7 @@ module.exports = function (params) {
     that.isActive = function () {
         // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
         return !!(pc && pc.isActive() && (
-            (localStreams.length > 0) ||
+            (that.outgoingMedia.hasMedia()) ||
             (directConnection && directConnection.isActive())
         ));
     };
@@ -1248,9 +1216,7 @@ module.exports = function (params) {
         if (videoIsMuted) {
             return;
         }
-        localStreams.forEach(function muteAllVideo(stream) {
-            stream.muteVideo();
-        });
+        that.outgoingMedia.muteVideo();
         /**
          * This event indicates that local video has been muted.
          * @event respoke.Call#mute
@@ -1277,9 +1243,7 @@ module.exports = function (params) {
         if (!videoIsMuted) {
             return;
         }
-        localStreams.forEach(function unmuteAllVideo(stream) {
-            stream.unmuteVideo();
-        });
+        that.outgoingMedia.unmuteVideo();
         /**
          * This event indicates that local video has been unmuted.
          * @event respoke.Call#mute
@@ -1306,9 +1270,7 @@ module.exports = function (params) {
         if (audioIsMuted) {
             return;
         }
-        localStreams.forEach(function muteAllAudio(stream) {
-            stream.muteAudio();
-        });
+        that.outgoingMedia.muteAudio();
         /**
          * This event indicates that local audio has been muted.
          * @event respoke.Call#mute
@@ -1336,9 +1298,7 @@ module.exports = function (params) {
             return;
         }
 
-        localStreams.forEach(function unmuteAllAudio(stream) {
-            stream.unmuteAudio();
-        });
+        that.outgoingMedia.unmuteAudio();
 
         /**
          * This event indicates that local audio has been unmuted.

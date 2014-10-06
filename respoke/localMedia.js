@@ -14,7 +14,7 @@ var respoke = require('./respoke');
  * @param {object} params
  * @param {string} params.instanceId - client id
  * @param {object} params.callSettings
- * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
+ * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local video attached to it.
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {
@@ -51,11 +51,10 @@ module.exports = function (params) {
     var client = respoke.getClient(instanceId);
     /**
      * @memberof! respoke.LocalMedia
-     * @name videoLocalElement
-     * @private
+     * @name element
      * @type {Video}
      */
-    var videoLocalElement = params.videoLocalElement;
+    that.element = params.element;
     /**
      * @memberof! respoke.LocalMedia
      * @name videoIsMuted
@@ -160,7 +159,7 @@ module.exports = function (params) {
             return;
         }
 
-        videoLocalElement = params.videoLocalElement || videoLocalElement || document.createElement('video');
+        that.element = params.element || that.element || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
         // back to the App. This is because we assume at the moment that only one local media video element
@@ -178,7 +177,7 @@ module.exports = function (params) {
              * @property {respoke.LocalMedia} target
              */
             that.fire('stream-received', {
-                element: videoLocalElement,
+                element: that.element,
                 stream: stream
             });
         } else {
@@ -186,11 +185,10 @@ module.exports = function (params) {
             respoke.streams[that.constraints] = stream;
 
             stream.id = client.endpointId;
-            attachMediaStream(videoLocalElement, stream);
+            attachMediaStream(that.element, stream);
             // We won't want our local video outputting audio.
-            videoLocalElement.muted = true;
-            videoLocalElement.autoplay = true;
-            videoLocalElement.used = true;
+            that.element.muted = true;
+            that.element.autoplay = true;
 
             /**
              * @event respoke.LocalMedia#stream-received
@@ -201,21 +199,11 @@ module.exports = function (params) {
              * @property {respoke.LocalMedia} target
              */
             that.fire('stream-received', {
-                element: videoLocalElement,
+                element: that.element,
                 stream: stream
             });
         }
     }
-
-    /**
-     * Return local video element.
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.getElement
-     * @returns {Video}
-     */
-    that.getElement = function () {
-        return videoLocalElement;
-    };
 
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
@@ -430,7 +418,24 @@ module.exports = function (params) {
         that.fire('stop');
     };
 
-    // give devs a chance to attach listeners before kicking of media retrieval.
-    setTimeout(requestMedia);
+    /**
+     * Indicate whether we have media yet.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.hasMedia
+     */
+    that.hasMedia = function () {
+        return !!stream;
+    };
+
+    /**
+     * Start the stream.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.start
+     * @fires respoke.LocalMedia#start
+     */
+    that.start = function () {
+        requestMedia();
+    };
+
     return that;
 }; // End respoke.LocalMedia
