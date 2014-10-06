@@ -1,8 +1,6 @@
 
 var expect = chai.expect;
 
-respoke.log.setLevel('warn');
-
 describe("respoke.CallState for calls as the caller", function () {
     var caller = true;
     var state;
@@ -452,11 +450,12 @@ describe("respoke.CallState for calls as the caller", function () {
                                 var offeringEntrySpy;
                                 var approvingContentExitSpy;
 
-                                beforeEach(function () {
+                                beforeEach(function (done) {
                                     offeringEntrySpy = sinon.spy();
                                     approvingContentExitSpy = sinon.spy();
                                     state.listen('offering:entry', offeringEntrySpy);
                                     state.listen('approving-content:exit', approvingContentExitSpy);
+                                    setTimeout(done);
                                 });
 
                                 afterEach(function () {

@@ -1,5 +1,4 @@
 var expect = chai.expect;
-respoke.log.setLevel('error');
 
 describe("Respoke calling", function () {
     this.timeout(30000);

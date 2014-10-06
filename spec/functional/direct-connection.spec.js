@@ -106,7 +106,6 @@ describe("A Direct Connection", function () {
     var roleId;
 
     beforeEach(function (done) {
-        respoke.log.setLevel('debug');
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 

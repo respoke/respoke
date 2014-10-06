@@ -1,8 +1,6 @@
 
 var expect = chai.expect;
 
-respoke.log.setLevel('warn');
-
 describe("respoke.CallState for calls as the callee", function () {
     var caller = false;
     var state;
