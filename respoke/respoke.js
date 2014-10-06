@@ -367,6 +367,13 @@ respoke.hasWebsocket = function () {
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
 };
 
+/**
+ * Clone an object.
+ * @static
+ * @memberof respoke
+ * @param {Object} source - The object to clone
+ * @returns {Object}
+ **/
 respoke.clone = function (source) {
     if (source) {
         return JSON.parse(JSON.stringify(source));
@@ -374,15 +381,35 @@ respoke.clone = function (source) {
     return source;
 };
 
+/**
+ * Get the keys for an object
+ * @param {Object} obj - The Object to get the keys for.
+ * @returns {Array}
+ * @private
+ **/
 function getKeys(obj) {
-    return obj.keys ? obj.keys() : Object.keys(obj);
+    var keys;
+    if(obj.keys) {
+        keys = obj.keys();
+    } else {
+        keys = [];
+ 
+        for(var k in obj) {
+            if(Object.prototype.hasOwnProperty.call(obj, k)) {
+                keys.push(k);
+            }
+        }
+    }
+ 
+    return keys;
 }
  
 
 /**
  * Create a new object so the keys appear in the provided order.
- * @param {Object} obj The object to be the base for the new object
- * @param {Array} keys The order in which properties of the new object should appear
+ * @param {Object} obj - The object to be the base for the new object
+ * @param {Array} keys - The order in which properties of the new object should appear
+ * @returns {Array}
  **/
 function convertToArray(obj, keys) {
     if (keys.length === 0) {
@@ -397,6 +424,14 @@ function convertToArray(obj, keys) {
     return result;
 }
 
+/**
+ * Compares two objects for equality
+ * @static
+ * @memberof respoke
+ * @param {Object} a
+ * @param {Object} b
+ * @returns {boolean}
+ */
 respoke.isEqual = function (a, b) {
     //check if arrays
     if( Object.prototype.toString.call( a ) === '[object Array]' && Object.prototype.toString.call( b ) === '[object Array]') {
