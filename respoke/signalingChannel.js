@@ -1316,9 +1316,6 @@ module.exports = function (params) {
                 }
             }
 
-            if (!presenceRegistered[message.endpointId]) {
-                that.registerPresence({endpointList: [message.endpointId]});
-            }
             group = client.getGroup({id: message.header.channel});
 
             if (group && connection) {
