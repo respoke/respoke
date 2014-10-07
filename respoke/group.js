@@ -390,11 +390,6 @@ module.exports = function (params) {
                 });
             });
 
-            if (endpointList.length > 0) {
-                signalingChannel.registerPresence({
-                    endpointList: endpointList
-                });
-            }
             deferred.resolve(that.connections);
         }, function errorHandler(err) {
             deferred.reject(err);
