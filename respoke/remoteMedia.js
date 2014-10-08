@@ -258,7 +258,7 @@ module.exports = function (params) {
         if (stream) {
             return (stream.getVideoTracks().length > 0);
         }
-        return false; // TODO parse SDP
+        return sdpHasVideo;
     };
 
     /**
@@ -271,7 +271,7 @@ module.exports = function (params) {
         if (stream) {
             return (stream.getAudioTracks().length > 0);
         }
-        return false; // TODO parse SDP
+        return sdpHasAudio;
     };
 
     /**
@@ -295,6 +295,19 @@ module.exports = function (params) {
         sdpHasVideo = respoke.sdpHasVideo(oSession.sdp);
         sdpHasAudio = respoke.sdpHasAudio(oSession.sdp);
         sdpHasDataChannel = respoke.sdpHasDataChannel(oSession.sdp);
+    };
+
+    /**
+     * Parse the constraints
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.setConstraints
+     * @param {MediaConstraints} constraints
+     * @private
+     */
+    that.setConstraints = function (constraints) {
+        that.constraints = constraints;
+        sdpHasVideo = respoke.constraintsHasVideo(constraints);
+        sdpHasAudio = respoke.constraintsHasAudio(constraints);
     };
 
     /**

@@ -350,7 +350,14 @@ module.exports = function (params) {
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
         that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
+        that.outgoingMedia.setConstraints(callSettings.constraints);
+        if (pc.state.caller === true) {
+            // Only the person who initiated this round of media negotiation needs to estimate remote
+            // media based on what constraints local media is using.
+            that.incomingMedia.setConstraints(callSettings.constraints);
+        }
         videoRemoteElement = params.videoRemoteElement || videoRemoteElement;
+
 
         pc.callSettings = callSettings;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;

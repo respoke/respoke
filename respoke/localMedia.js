@@ -489,6 +489,19 @@ module.exports = function (params) {
     };
 
     /**
+     * Parse the constraints
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.setConstraints
+     * @param {MediaConstraints} constraints
+     * @private
+     */
+    that.setConstraints = function (constraints) {
+        that.constraints = constraints;
+        sdpHasVideo = respoke.constraintsHasVideo(constraints);
+        sdpHasAudio = respoke.constraintsHasAudio(constraints);
+    };
+
+    /**
      * Start the stream.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.start

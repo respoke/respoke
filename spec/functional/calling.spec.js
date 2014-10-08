@@ -99,7 +99,7 @@ describe("Respoke calling", function () {
             }
         }
 
-        describe.only("with call listener specified", function () {
+        describe("with call listener specified", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -120,6 +120,10 @@ describe("Respoke calling", function () {
                         try {
                             expect(evt.stream).to.be.ok;
                             expect(evt.element).to.be.ok;
+                            expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                            expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                            expect(call.incomingMedia.hasVideo()).to.equal(true);
+                            expect(call.incomingMedia.hasAudio()).to.equal(true);
                         } catch (e) {
                             doneOnce(e);
                         }
@@ -139,12 +143,8 @@ describe("Respoke calling", function () {
 
                 expect(call.outgoingMedia).to.be.ok;
                 expect(call.outgoingMedia.className).to.equal('respoke.LocalMedia');
-                expect(call.outgoingMedia.hasVideo()).to.equal(true);
-                expect(call.outgoingMedia.hasAudio()).to.equal(true);
                 expect(call.incomingMedia).to.be.ok;
                 expect(call.incomingMedia.className).to.equal('respoke.RemoteMedia');
-                expect(call.incomingMedia.hasVideo()).to.equal(true);
-                expect(call.incomingMedia.hasAudio()).to.equal(true);
             });
         });
 
@@ -321,6 +321,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.empty;
+                                expect(call.outgoingMedia.hasVideo()).to.equal(false);
+                                expect(call.outgoingMedia.hasAudio()).to.equal(true);
                             } catch (e) {
                                 doneOnce(e);
                             }
@@ -355,6 +357,8 @@ describe("Respoke calling", function () {
                                 expect(evt.stream).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.empty;
+                                expect(call.incomingMedia.hasVideo()).to.equal(false);
+                                expect(call.incomingMedia.hasAudio()).to.equal(true);
                                 doneOnce();
                             } catch (e) {
                                 doneOnce(e);
@@ -378,6 +382,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.empty;
+                                expect(call.outgoingMedia.hasVideo()).to.equal(false);
+                                expect(call.outgoingMedia.hasAudio()).to.equal(true);
                             } catch (e) {
                                 doneOnce(e);
                             }
@@ -406,6 +412,8 @@ describe("Respoke calling", function () {
                                 expect(evt.stream).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.empty;
+                                expect(call.incomingMedia.hasVideo()).to.equal(false);
+                                expect(call.incomingMedia.hasAudio()).to.equal(true);
                                 doneOnce();
                             } catch (e) {
                                 doneOnce(e);
@@ -449,6 +457,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.empty;
                                 expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                                expect(call.outgoingMedia.hasAudio()).to.equal(false);
                             } catch (e) {
                                 doneOnce(e);
                             }
@@ -483,6 +493,8 @@ describe("Respoke calling", function () {
                                 expect(evt.stream).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.empty;
                                 expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.incomingMedia.hasVideo()).to.equal(true);
+                                expect(call.incomingMedia.hasAudio()).to.equal(false);
                                 doneOnce();
                             } catch (e) {
                                 doneOnce(e);
@@ -518,6 +530,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                                expect(call.outgoingMedia.hasAudio()).to.equal(true);
                             } catch (e) {
                                 doneOnce(e);
                             }
@@ -552,6 +566,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.incomingMedia.hasVideo()).to.equal(true);
+                                expect(call.incomingMedia.hasAudio()).to.equal(true);
                                 doneOnce();
                             } catch (e) {
                                 doneOnce(e);
@@ -575,6 +591,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                                expect(call.outgoingMedia.hasAudio()).to.equal(true);
                             } catch (e) {
                                 doneOnce(e);
                             }
@@ -603,6 +621,8 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.incomingMedia.hasVideo()).to.equal(true);
+                                expect(call.incomingMedia.hasAudio()).to.equal(true);
                                 doneOnce();
                             } catch (e) {
                                 doneOnce(e);
