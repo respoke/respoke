@@ -23,7 +23,7 @@ function doneCountBuilder(num, done) {
     })();
 };
 
-describe("doneCountBuilder", function () {
+xdescribe("doneCountBuilder", function () {
     var builderSpy;
     var doneOnce;
 
@@ -106,7 +106,6 @@ describe("A Direct Connection", function () {
     var roleId;
 
     beforeEach(function (done) {
-        respoke.log.setLevel('debug');
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 
@@ -164,7 +163,7 @@ describe("A Direct Connection", function () {
         }
 
         // Still seeing intermittent failures.
-        xdescribe("with call listener specified", function () {
+        describe("with call listener specified", function () {
             var hangupReason;
             var dc;
 

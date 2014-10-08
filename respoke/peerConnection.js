@@ -160,16 +160,7 @@ module.exports = function (params) {
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalHangup = (function () {
-        var called = false;
-        var sendSignal = params.signalHangup;
-        return function (params) {
-            if (called === false) {
-                sendSignal(params);
-                called = true;
-            }
-        };
-    })();
+    var signalHangup = respoke.once(params.signalHangup);
     /**
      * @memberof! respoke.PeerConnection
      * @name signalReport
@@ -297,7 +288,7 @@ module.exports = function (params) {
                     log.debug('set remote desc of offer succeeded');
                     that.call.incomingMedia.setSDP(oOffer); // callee's incoming media
                     pc.createAnswer(function successHandler(oSession) {
-                        that.state.receivedSDP = true;
+                        that.state.processedRemoteSDP = true;
                         that.call.outgoingMedia.setSDP(oSession); // callee's outgoing media
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
@@ -379,6 +370,10 @@ module.exports = function (params) {
                 peerConnection: pc,
                 interval: params.interval,
                 onStats: function statsHandler(stats) {
+                    if (!pc) {
+                        return;
+                    }
+
                     /**
                      * @event respoke.PeerConnection#stats
                      * @type {respoke.Event}
@@ -471,6 +466,7 @@ module.exports = function (params) {
                 channel: evt.channel
             });
         };
+
         that.state.listen('offering:entry', function (evt) {
             if (that.state.caller) {
                 initOffer();
@@ -556,7 +552,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (!that.state.sentSDP && !that.state.receivedSDP) {
+        if (!that.state.sentSDP && !that.state.processedRemoteSDP) {
             candidateSendingQueue.push(candidate);
         } else {
             signalCandidate({
@@ -993,7 +989,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (that.state.sentSDP || that.state.receivedSDP) {
+        if (that.state.sentSDP || that.state.processedRemoteSDP) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
                 log.debug('Got a remote candidate.', params.candidate);

@@ -3,7 +3,6 @@
  * @ignore
  */
 
-//var Q = require('q');
 var log = require('loglevel');
 var respoke = require('./respoke');
 var Statechart = require('statechart');
@@ -11,12 +10,14 @@ var Q = require('q');
 
 /**
  * State machine for WebRTC calling, data channels, and screen sharing.
+ * NOTE: All state transitions are synchronous! However, listeners to the events this class fires will be called
+ * asynchronously.
  * @class respoke.CallState
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {respoke.Call} call
- * @link https://www.respoke.io/min/respoke.min.js
+ * @link https://cdn.respoke.io/respoke.min.js
  * @returns {respoke.CallState}
  */
 module.exports = function (params) {
@@ -54,9 +55,11 @@ module.exports = function (params) {
     that.hasLocalMediaApproval = false;
     that.hasLocalMedia = false;
     that.receivedBye = false;
+    that.isAnswered = false;
     that.sentSDP = false;
     that.receivedSDP = false;
-    that.needDc = !!that.needDc;
+    that.processedRemoteSDP = false;
+    that.needDirectConnection = !!that.needDirectConnection;
     that.sendOnly = !!that.sendOnly;
     that.receiveOnly = !!that.receiveOnly;
 
@@ -69,6 +72,11 @@ module.exports = function (params) {
                 // Reset the role if we have aborted a modify.
                 that.caller = oldRole;
             }
+
+            if (modifyTimer) {
+                modifyTimer.clear();
+            }
+
             return that.hasMedia();
         }
     }, {
@@ -84,11 +92,14 @@ module.exports = function (params) {
     // Event
     function rejectModify() {
         // reject modification
+        if (modifyTimer) {
+            modifyTimer.clear();
+        }
     }
 
     // Event
     function clearReceiveAnswerTimer() {
-        that.receivedSDP = true;
+        that.processedRemoteSDP = true;
         if (receiveAnswerTimer) {
             receiveAnswerTimer.clear();
         }
@@ -105,22 +116,20 @@ module.exports = function (params) {
     };
 
     function needToObtainMedia(params) {
-        return (that.needDc !== true && that.receiveOnly !== true);
+        return (that.needDirectConnection !== true && that.receiveOnly !== true);
     }
 
     function needToApproveDirectConnection(params) {
-        assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
-        return (that.needDc === true && typeof params.previewLocalMedia === 'function');
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia === 'function');
     }
 
     function automaticDirectConnectionCaller(params) {
-        return (that.needDc === true && typeof params.previewLocalMedia !== 'function' &&
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function' &&
             that.caller === true);
     }
 
-    function Timer(func, name, time) {
-        var id;
-        id = setTimeout(function () {
+    function createTimer(func, name, time) {
+        var id = setTimeout(function () {
             id = null;
             respoke.log.error(name, "timer expired.");
             func();
@@ -191,9 +200,13 @@ module.exports = function (params) {
                                 that.hasLocalMedia = false;
                                 that.sentSDP = false;
                                 that.receivedSDP = false;
-                                answerTimer = new Timer(function () {
-                                    that.dispatch('reject', {reason: "answer own call timer " + that.caller});
-                                }, 'answer own call', answerTimeout);
+                                that.processedRemoteSDP = false;
+                                that.isAnswered = false;
+                                if (!that.isModifying()) {
+                                    answerTimer = createTimer(function () {
+                                        that.dispatch('reject', {reason: "answer own call timer " + that.caller});
+                                    }, 'answer own call', answerTimeout);
+                                }
                                 that.fire('preparing:entry');
                             }
                         },
@@ -207,8 +220,23 @@ module.exports = function (params) {
                         // Event
                         reject: rejectEvent,
                         // Event
+                        receiveOffer: {
+                            action: function (params) {
+                                that.receivedSDP = true;
+                                if (that.isAnswered) {
+                                    // If we get here, we are the callee and we've answered the call before the call
+                                    // creation/receive offer promise chain completed.
+                                    setTimeout(function () {
+                                        that.dispatch('answer', params);
+                                    });
+                                }
+                            }
+                        },
+                        // Event
                         answer: [{
                             action: function (params) {
+                                assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
+                                that.isAnswered = true;
                                 if (typeof params.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
                                 }
@@ -228,16 +256,23 @@ module.exports = function (params) {
                             // we are not sending anything or developer does not want to approve media.
                             target: 'connecting',
                             guard: function (params) {
+                                // always for callee, caller will always answer before sending offer.
+                                // callee should always answer after receiving offer.
+                                if (!that.receivedSDP) {
+                                    return false;
+                                }
+
                                 if (needToObtainMedia(params) || needToApproveDirectConnection(params) ||
                                         automaticDirectConnectionCaller(params)) {
                                     return false;
                                 }
+
                                 if (!params.previewLocalMedia || that.receiveOnly) {
                                     setTimeout(function () {
                                         params.approve();
                                     });
                                 }
-                                return (that.receiveOnly === true || that.needDc === true);
+                                return (that.receiveOnly === true || that.needDirectConnection === true);
                             }
                         }]
                     },
@@ -279,7 +314,7 @@ module.exports = function (params) {
                                     target: 'connecting',
                                     guard: function (params) {
                                         return (that.caller === false &&
-                                            (that.hasLocalMedia === true || that.needDc === true) &&
+                                            (that.hasLocalMedia === true || that.needDirectConnection === true) &&
                                             typeof params.previewLocalMedia !== 'function');
                                     }
                                 }, {
@@ -323,7 +358,7 @@ module.exports = function (params) {
                         reject: rejectEvent,
                         sentOffer: function () {
                             // start answer timer
-                            receiveAnswerTimer = new Timer(function () {
+                            receiveAnswerTimer = createTimer(function () {
                                 that.dispatch('reject', {reason: "receive answer timer"});
                             }, 'receive answer', receiveAnswerTimeout);
                         },
@@ -344,7 +379,7 @@ module.exports = function (params) {
                                     target: 'connected',
                                     guard: function (params) {
                                         // for direct connection, local media is the same as remote media
-                                        return (that.needDc === true);
+                                        return (that.needDirectConnection === true);
                                     }
                                 }],
                                 // Event
@@ -370,7 +405,7 @@ module.exports = function (params) {
                                     that.fire('connecting:entry');
 
                                     // set connection timer
-                                    connectionTimer = new Timer(function () {
+                                    connectionTimer = createTimer(function () {
                                         that.dispatch('reject', {reason: "connection timer"});
                                     }, 'connection', connectionTimeout);
                                 },
@@ -393,7 +428,7 @@ module.exports = function (params) {
                                     target: 'connected',
                                     guard: function (params) {
                                         // for direct connection, local media is the same as remote media
-                                        return (that.needDc === true && that.caller === false);
+                                        return (that.needDirectConnection === true && that.caller === false);
                                     }
                                 }],
                                 // Event
@@ -420,7 +455,7 @@ module.exports = function (params) {
                     modifying: {
                         // Event
                         entry: function () {
-                            modifyTimer = new Timer(function () {
+                            modifyTimer = createTimer(function () {
                                 that.dispatch('reject', {reason: "modify timer"});
                             }, 'modify for caller', modifyTimeout);
                             that.fire('modifying:entry');
@@ -455,7 +490,7 @@ module.exports = function (params) {
                         // Event
                         entry: function () {
                             oldRole = that.caller;
-                            that.needDc = false;
+                            that.needDirectConnection = false;
                             that.fire('connected:entry');
                         },
                         // Event
@@ -470,7 +505,7 @@ module.exports = function (params) {
                                 params = params || {};
                                 if (params.receive === true) {
                                     that.caller = false;
-                                    modifyTimer = new Timer(function () {
+                                    modifyTimer = createTimer(function () {
                                         // If modify gets interrupted, go back to previous roles.
                                         that.dispatch('reject', {reason: "modify timer"});
                                     }, 'modify', modifyTimeout);
@@ -524,6 +559,12 @@ module.exports = function (params) {
         }
     });
 
+    /**
+     * Return the name of the current state.
+     * @memberof! respoke.CallState
+     * @method respoke.Call.getState
+     * @returns {string}
+     */
     that.getState = function () {
         if (!fsm) {
             return 'terminated';
@@ -531,7 +572,11 @@ module.exports = function (params) {
         return fsm.currentState().name;
     };
 
-    //that.dispatch = fsm.dispatch.bind(fsm);
+    /**
+     * Synchronously dispatch an event, which may or may not change the state.
+     * @memberof! respoke.CallState
+     * @method respoke.Call.dispatch
+     */
     that.dispatch = function (evt, args) {
         var oldState;
         var newState;

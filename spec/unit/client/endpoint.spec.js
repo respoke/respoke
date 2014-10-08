@@ -2,7 +2,6 @@ var expect = chai.expect;
 
 var instanceId = respoke.makeGUID();
 var connectionId = respoke.makeGUID();
-respoke.log.setLevel('error');
 
 var client = respoke.createClient({
     instanceId: instanceId

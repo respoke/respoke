@@ -1,8 +1,6 @@
 
 var expect = chai.expect;
 
-respoke.log.setLevel('warn');
-
 describe("respoke.CallState for calls as the callee", function () {
     var caller = false;
     var state;
@@ -93,7 +91,7 @@ describe("respoke.CallState for calls as the callee", function () {
             expect(state.hasLocalMedia).to.equal(false);
             expect(state.receivedBye).to.equal(false);
             expect(state.sentSDP).to.equal(false);
-            expect(state.receivedSDP).to.equal(false);
+            expect(state.processedRemoteSDP).to.equal(false);
         });
 
         describe("event 'hangup'", function () {
@@ -483,7 +481,7 @@ describe("respoke.CallState for calls as the callee", function () {
                                     expect(state.hasLocalMedia).to.equal(true);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                 });
 
                                 describe('invalid event', function () {
@@ -613,7 +611,7 @@ describe("respoke.CallState for calls as the callee", function () {
                                         expect(state.hasLocalMedia).to.equal(true);
                                         expect(state.receivedBye).to.equal(false);
                                         expect(state.sentSDP).to.equal(false);
-                                        expect(state.receivedSDP).to.equal(false);
+                                        expect(state.processedRemoteSDP).to.equal(false);
                                     });
 
                                     describe('invalid event', function () {
@@ -863,7 +861,7 @@ describe("respoke.CallState for calls as the callee", function () {
                                     expect(state.hasLocalMedia).to.equal(false);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                     expect(state.caller).to.equal(true);
                                 });
                             });
@@ -981,7 +979,7 @@ describe("respoke.CallState for calls as the callee", function () {
                                 expect(state.hasLocalMedia).to.equal(false);
                                 expect(state.receivedBye).to.equal(false);
                                 expect(state.sentSDP).to.equal(false);
-                                expect(state.receivedSDP).to.equal(false);
+                                expect(state.processedRemoteSDP).to.equal(false);
                                 expect(state.caller).to.equal(false);
                             });
 

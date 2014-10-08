@@ -1,8 +1,6 @@
 
 var expect = chai.expect;
 
-respoke.log.setLevel('warn');
-
 describe("respoke.CallState for direct connections as the callee", function () {
     var caller = false;
     var state;
@@ -19,7 +17,7 @@ describe("respoke.CallState for direct connections as the callee", function () {
         beforeEach(function () {
             state = respoke.CallState({
                 gloveColor: 'white',
-                needDc: true,
+                needDirectConnection: true,
                 caller: caller,
                 hasMedia: function () {
                     return fake.hasMedia;
@@ -69,7 +67,7 @@ describe("respoke.CallState for direct connections as the callee", function () {
                 hasMedia: function () {
                     return fake.hasMedia;
                 },
-                needDc: true,
+                needDirectConnection: true,
                 caller: caller,
                 answerTimeout: 200,
                 receiveAnswerTimeout: 200,
@@ -91,7 +89,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
             expect(state.hasLocalMedia).to.equal(false);
             expect(state.receivedBye).to.equal(false);
             expect(state.sentSDP).to.equal(false);
+            expect(state.processedRemoteSDP).to.equal(false);
             expect(state.receivedSDP).to.equal(false);
+            expect(state.isAnswered).to.equal(false);
         });
 
         describe('invalid event', function () {
@@ -153,7 +153,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                 expect(state.hasLocalMedia).to.equal(false);
                 expect(state.receivedBye).to.equal(false);
                 expect(state.sentSDP).to.equal(false);
+                expect(state.processedRemoteSDP).to.equal(false);
                 expect(state.receivedSDP).to.equal(false);
+                expect(state.isAnswered).to.equal(false);
             });
         });
 
@@ -195,7 +197,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                     expect(state.hasLocalMedia).to.equal(false);
                     expect(state.receivedBye).to.equal(false);
                     expect(state.sentSDP).to.equal(false);
+                    expect(state.processedRemoteSDP).to.equal(false);
                     expect(state.receivedSDP).to.equal(false);
+                    expect(state.isAnswered).to.equal(false);
                 });
 
                 describe("when media is not flowing", function () {
@@ -230,7 +234,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                             expect(state.hasLocalMedia).to.equal(false);
                             expect(state.receivedBye).to.equal(false);
                             expect(state.sentSDP).to.equal(false);
+                            expect(state.processedRemoteSDP).to.equal(false);
                             expect(state.receivedSDP).to.equal(false);
+                            expect(state.isAnswered).to.equal(false);
                         });
                     });
 
@@ -301,7 +307,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                             expect(state.hasLocalMedia).to.equal(false);
                             expect(state.receivedBye).to.equal(false);
                             expect(state.sentSDP).to.equal(false);
+                            expect(state.processedRemoteSDP).to.equal(false);
                             expect(state.receivedSDP).to.equal(false);
+                            expect(state.isAnswered).to.equal(false);
                         });
 
                         describe('invalid event', function () {
@@ -341,7 +349,8 @@ describe("respoke.CallState for direct connections as the callee", function () {
 
                             beforeEach(function (done) {
                                 state.listen('approving-content:entry', approvingContentEntrySpy);
-                                expect(state.needDc).to.equal(true);
+                                expect(state.needDirectConnection).to.equal(true);
+                                state.dispatch('receiveOffer');
                                 state.dispatch('answer', params);
                                 setTimeout(done);
                             });
@@ -363,7 +372,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                                 expect(state.hasLocalMedia).to.equal(false);
                                 expect(state.receivedBye).to.equal(false);
                                 expect(state.sentSDP).to.equal(false);
-                                expect(state.receivedSDP).to.equal(false);
+                                expect(state.processedRemoteSDP).to.equal(false);
+                                expect(state.receivedSDP).to.equal(true);
+                                expect(state.isAnswered).to.equal(true);
                             });
 
                             describe('invalid event', function () {
@@ -435,7 +446,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                                             expect(state.hasLocalMedia).to.equal(true);
                                             expect(state.receivedBye).to.equal(false);
                                             expect(state.sentSDP).to.equal(false);
-                                            expect(state.receivedSDP).to.equal(false);
+                                            expect(state.processedRemoteSDP).to.equal(false);
+                                            expect(state.receivedSDP).to.equal(true);
+                                            expect(state.isAnswered).to.equal(true);
                                         });
 
                                         it("moves to 'connecting'", function () {
@@ -510,77 +523,135 @@ describe("respoke.CallState for direct connections as the callee", function () {
                         });
 
                         describe("when previewLocalMedia is not used", function () {
-                            var connectingEntrySpy;
-
-                            beforeEach(function (done) {
-                                connectingEntrySpy = sinon.spy();
-                                state.listen('connecting:entry', connectingEntrySpy);
-                                params.previewLocalMedia = null;
-                                state.dispatch('answer', params);
-                                setTimeout(done);
-                            });
-
-                            afterEach(function () {
-                                params.previewLocalMedia = function () {};
-                                state.ignore('connecting:entry', connectingEntrySpy);
-                            });
-
-                            it("moves to 'connecting'", function () {
-                                expect(state.getState()).to.equal('connecting');
-                            });
-
-                            it("fires 'connecting:entry'", function () {
-                                expect(connectingEntrySpy.called).to.equal(true);
-                            });
-
-                            it("sets all the right flags", function () {
-                                expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
-                                expect(state.hasLocalMedia).to.equal(false);
-                                expect(state.receivedBye).to.equal(false);
-                                expect(state.sentSDP).to.equal(false);
-                                expect(state.receivedSDP).to.equal(false);
-                            });
-
-                            it("sets the hasLocalMediaApproval flag", function () {
-                                expect(state.hasLocalMediaApproval).to.equal(true);
-                            });
-
-                            describe("event 'receiveLocalMedia'", function () {
-                                var connectingExitSpy;
-                                var connectedEntrySpy;
+                            describe("and the dc is accepted before the offer is received", function () {
+                                var connectingEntrySpy;
 
                                 beforeEach(function (done) {
-                                    connectingExitSpy = sinon.spy();
-                                    connectedEntrySpy = sinon.spy();
-                                    state.listen('connecting:exit', connectingExitSpy);
-                                    state.listen('connected:entry', connectedEntrySpy);
-                                    state.dispatch('receiveLocalMedia', params);
+                                    connectingEntrySpy = sinon.spy();
+                                    state.listen('connecting:entry', connectingEntrySpy);
+                                    params.previewLocalMedia = null;
+                                    state.dispatch('answer', params);
                                     setTimeout(done);
                                 });
 
                                 afterEach(function () {
-                                    state.ignore('connecting:exit', connectingExitSpy);
-                                    state.ignore('connected:entry', connectedEntrySpy);
+                                    params.previewLocalMedia = function () {};
+                                    state.ignore('connecting:entry', connectingEntrySpy);
                                 });
 
                                 it("sets all the right flags", function () {
-                                    expect(state.hasLocalMediaApproval).to.equal(true);
-                                    expect(state.hasLocalMedia).to.equal(true);
+                                    expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                    expect(state.hasLocalMedia).to.equal(false);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
+                                    expect(state.isAnswered).to.equal(true);
                                 });
 
-                                it("moves to 'connected'", function () {
-                                    expect(state.getState()).to.equal('connected');
+                                it("doesn't change state", function () {
+                                    expect(state.getState()).to.equal('preparing');
                                 });
 
-                                it("fires 'connecting:exit'", function () {
-                                    expect(connectingExitSpy.called).to.equal(true);
+                                describe("event 'receiveOffer'", function () {
+                                    beforeEach(function (done) {
+                                        state.dispatch('receiveOffer', params);
+                                        setTimeout(done);
+                                    });
+
+                                    it("sets all the right flags", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                        expect(state.hasLocalMedia).to.equal(false);
+                                        expect(state.receivedBye).to.equal(false);
+                                        expect(state.sentSDP).to.equal(false);
+                                        expect(state.processedRemoteSDP).to.equal(false);
+                                        expect(state.receivedSDP).to.equal(true);
+                                        expect(state.isAnswered).to.equal(true);
+                                    });
+
+                                    it("moves to 'connecting'", function () {
+                                        expect(state.getState()).to.equal('connecting');
+                                    });
+                                });
+                            });
+
+                            describe("and the ofter is received before answer", function () {
+                                var connectingEntrySpy;
+
+                                beforeEach(function (done) {
+                                    connectingEntrySpy = sinon.spy();
+                                    state.listen('connecting:entry', connectingEntrySpy);
+                                    params.previewLocalMedia = null;
+                                    state.dispatch('receiveOffer');
+                                    state.dispatch('answer', params);
+                                    setTimeout(done);
                                 });
 
-                                it("fires 'connected:entry'", function () {
-                                    expect(connectedEntrySpy.called).to.equal(true);
+                                afterEach(function () {
+                                    params.previewLocalMedia = function () {};
+                                    state.ignore('connecting:entry', connectingEntrySpy);
+                                });
+
+                                it("moves to 'connecting'", function () {
+                                    expect(state.getState()).to.equal('connecting');
+                                });
+
+                                it("fires 'connecting:entry'", function () {
+                                    expect(connectingEntrySpy.called).to.equal(true);
+                                });
+
+                                it("sets all the right flags", function () {
+                                    expect(state.hasLocalMediaApproval).to.equal(!params.previewLocalMedia);
+                                    expect(state.hasLocalMedia).to.equal(false);
+                                    expect(state.receivedBye).to.equal(false);
+                                    expect(state.sentSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
+                                    expect(state.receivedSDP).to.equal(true);
+                                    expect(state.isAnswered).to.equal(true);
+                                });
+
+                                it("sets the hasLocalMediaApproval flag", function () {
+                                    expect(state.hasLocalMediaApproval).to.equal(true);
+                                });
+
+                                describe("event 'receiveLocalMedia'", function () {
+                                    var connectingExitSpy;
+                                    var connectedEntrySpy;
+
+                                    beforeEach(function (done) {
+                                        connectingExitSpy = sinon.spy();
+                                        connectedEntrySpy = sinon.spy();
+                                        state.listen('connecting:exit', connectingExitSpy);
+                                        state.listen('connected:entry', connectedEntrySpy);
+                                        state.dispatch('receiveLocalMedia', params);
+                                        setTimeout(done);
+                                    });
+
+                                    afterEach(function () {
+                                        state.ignore('connecting:exit', connectingExitSpy);
+                                        state.ignore('connected:entry', connectedEntrySpy);
+                                    });
+
+                                    it("sets all the right flags", function () {
+                                        expect(state.hasLocalMediaApproval).to.equal(true);
+                                        expect(state.hasLocalMedia).to.equal(true);
+                                        expect(state.receivedBye).to.equal(false);
+                                        expect(state.sentSDP).to.equal(false);
+                                        expect(state.processedRemoteSDP).to.equal(false);
+                                        expect(state.receivedSDP).to.equal(true);
+                                        expect(state.isAnswered).to.equal(true);
+                                    });
+
+                                    it("moves to 'connected'", function () {
+                                        expect(state.getState()).to.equal('connected');
+                                    });
+
+                                    it("fires 'connecting:exit'", function () {
+                                        expect(connectingExitSpy.called).to.equal(true);
+                                    });
+
+                                    it("fires 'connected:entry'", function () {
+                                        expect(connectedEntrySpy.called).to.equal(true);
+                                    });
                                 });
                             });
                         });
@@ -691,7 +762,7 @@ describe("respoke.CallState for direct connections as the callee", function () {
                                     expect(state.hasLocalMedia).to.equal(false);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
-                                    expect(state.receivedSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                 });
 
                                 describe("event 'accept'", function () {
@@ -862,7 +933,9 @@ describe("respoke.CallState for direct connections as the callee", function () {
                                     expect(state.hasLocalMedia).to.equal(false);
                                     expect(state.receivedBye).to.equal(false);
                                     expect(state.sentSDP).to.equal(false);
+                                    expect(state.processedRemoteSDP).to.equal(false);
                                     expect(state.receivedSDP).to.equal(false);
+                                    expect(state.isAnswered).to.equal(false);
                                 });
 
                                 describe("event 'reject'", function () {
