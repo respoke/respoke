@@ -142,6 +142,7 @@ respoke.PeerConnection = require('./peerConnection');
 respoke.CallState = require('./callState');
 respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
+respoke.RemoteMedia = require('./remoteMedia');
 respoke.log = log;
 respoke.Q = Q;
 

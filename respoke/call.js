@@ -172,6 +172,13 @@ module.exports = function (params) {
      */
     that.outgoingMedia = respoke.LocalMedia(params);
 
+    /**
+     * Remote media
+     * @name incomingMedia
+     * @type {respoke.RemoteMedia}
+     */
+    that.incomingMedia = respoke.RemoteMedia(params);
+
     delete params.signalingChannel;
     delete that.signalingChannel;
 
@@ -515,6 +522,7 @@ module.exports = function (params) {
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
         setTimeout(videoRemoteElement.play.bind(videoRemoteElement));
+        that.incomingMedia.setStream(evt.stream);
 
         /**
          * Indicates that a remote media stream has been added to the call.

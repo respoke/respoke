@@ -99,7 +99,7 @@ describe("Respoke calling", function () {
             }
         }
 
-        describe("with call listener specified", function () {
+        describe.only("with call listener specified", function () {
             beforeEach(function () {
                 followee.listen('call', callListener);
             });
@@ -112,10 +112,10 @@ describe("Respoke calling", function () {
                 call.hangup();
             });
 
-            it("succeeds", function (done) {
+            it("succeeds and sets up outgoingMedia", function (done) {
                 var doneOnce = doneOnceBuilder(done);
 
-                call = followeeEndpoint.startCall({
+                window.call = call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
                         try {
                             expect(evt.stream).to.be.ok;
@@ -136,6 +136,15 @@ describe("Respoke calling", function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
+
+                expect(call.outgoingMedia).to.be.ok;
+                expect(call.outgoingMedia.className).to.equal('respoke.LocalMedia');
+                expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                expect(call.incomingMedia).to.be.ok;
+                expect(call.incomingMedia.className).to.equal('respoke.RemoteMedia');
+                expect(call.incomingMedia.hasVideo()).to.equal(true);
+                expect(call.incomingMedia.hasAudio()).to.equal(true);
             });
         });
 

@@ -57,6 +57,27 @@ module.exports = function (params) {
     that.element = params.element;
     /**
      * @memberof! respoke.LocalMedia
+     * @name sdpHasAudio
+     * @private
+     * @type {boolean}
+     */
+    var sdpHasAudio = false;
+    /**
+     * @memberof! respoke.LocalMedia
+     * @name sdpHasVideo
+     * @private
+     * @type {boolean}
+     */
+    var sdpHasVideo = false;
+    /**
+     * @memberof! respoke.LocalMedia
+     * @name sdpHasDataChannel
+     * @private
+     * @type {boolean}
+     */
+    var sdpHasDataChannel = false;
+    /**
+     * @memberof! respoke.LocalMedia
      * @name videoIsMuted
      * @private
      * @type {boolean}
@@ -419,12 +440,52 @@ module.exports = function (params) {
     };
 
     /**
+     * Indicate whether we are sending video.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.hasVideo
+     * @return {boolean}
+     */
+    that.hasVideo = function () {
+        if (stream) {
+            return (stream.getVideoTracks().length > 0);
+        }
+        return sdpHasVideo;
+    };
+
+    /**
+     * Indicate whether we are sending audio.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.hasAudio
+     * @return {boolean}
+     */
+    that.hasAudio = function () {
+        if (stream) {
+            return (stream.getAudioTracks().length > 0);
+        }
+        return sdpHasAudio;
+    };
+
+    /**
      * Indicate whether we have media yet.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.hasMedia
+     * @return {boolean}
      */
     that.hasMedia = function () {
         return !!stream;
+    };
+
+    /**
+     * Save and parse the SDP
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.setSDP
+     * @param {RTCSessionDescription} oSession
+     * @private
+     */
+    that.setSDP = function (oSession) {
+        sdpHasVideo = respoke.sdpHasVideo(oSession.sdp);
+        sdpHasAudio = respoke.sdpHasAudio(oSession.sdp);
+        sdpHasDataChannel = respoke.sdpHasDataChannel(oSession.sdp);
     };
 
     /**
@@ -432,6 +493,7 @@ module.exports = function (params) {
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.start
      * @fires respoke.LocalMedia#start
+     * @private
      */
     that.start = function () {
         requestMedia();
