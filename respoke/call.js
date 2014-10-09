@@ -165,23 +165,39 @@ module.exports = function (params) {
      */
     that.hasVideo = undefined;
 
+    /**
+     * Local media
+     * @name outgoingMedia
+     * @type {respoke.LocalMedia}
+     */
+    that.outgoingMedia = respoke.LocalMedia(params);
+
+    /**
+     * Remote media
+     * @name incomingMedia
+     * @type {respoke.RemoteMedia}
+     */
+    that.incomingMedia = respoke.RemoteMedia(params);
+
+    /**
+     * This event indicates that local video has been unmuted.
+     * @event respoke.Call#mute
+     * @property {string} name - the event name.
+     * @property {respoke.Call} target
+     * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+     * has been changed.
+     * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+     */
+    that.outgoingMedia.listen('mute', function (evt) {
+        that.fire('mute', {
+            type: evt.type,
+            muted: evt.muted
+        });
+    });
+
     delete params.signalingChannel;
     delete that.signalingChannel;
 
-    /**
-     * @memberof! respoke.Call
-     * @name videoLocalElement
-     * @private
-     * @type {Video}
-     */
-    var videoLocalElement = null;
-    /**
-     * @memberof! respoke.Call
-     * @name videoRemoteElement
-     * @private
-     * @type {Video}
-     */
-    var videoRemoteElement = null;
     /**
      * @memberof! respoke.Call
      * @name videoIsMuted
@@ -210,13 +226,6 @@ module.exports = function (params) {
      * @type {respoke.DirectConnection}
      */
     var directConnection = null;
-    /**
-     * @memberof! respoke.Call
-     * @name localStreams
-     * @private
-     * @type {Array<respoke.LocalMedia>}
-     */
-    var localStreams = [];
     /**
      * @memberof! respoke.Call
      * @name toSendHangup
@@ -350,8 +359,15 @@ module.exports = function (params) {
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
-        videoLocalElement = params.videoLocalElement || videoLocalElement;
-        videoRemoteElement = params.videoRemoteElement || videoRemoteElement;
+        that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
+        that.outgoingMedia.setConstraints(callSettings.constraints);
+        if (pc.state.caller === true) {
+            // Only the person who initiated this round of media negotiation needs to estimate remote
+            // media based on what constraints local media is using.
+            that.incomingMedia.setConstraints(callSettings.constraints);
+        }
+        that.incomingMedia.element = params.videoRemoteElement || that.incomingMedia.element;
+
 
         pc.callSettings = callSettings;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
@@ -517,12 +533,7 @@ module.exports = function (params) {
         }
         log.debug('received remote media', evt);
 
-        videoRemoteElement = videoRemoteElement || document.createElement('video');
-
-        attachMediaStream(videoRemoteElement, evt.stream);
-        videoRemoteElement.autoplay = true;
-        videoRemoteElement.used = true;
-        setTimeout(videoRemoteElement.play.bind(videoRemoteElement));
+        that.incomingMedia.setStream(evt.stream);
 
         /**
          * Indicates that a remote media stream has been added to the call.
@@ -538,7 +549,7 @@ module.exports = function (params) {
         pc.state.dispatch('receiveRemoteMedia');
         that.fire('connect', {
             stream: evt.stream,
-            element: videoRemoteElement
+            element: that.incomingMedia.element
         });
     }
 
@@ -581,7 +592,7 @@ module.exports = function (params) {
      * @returns {Video} An HTML5 video element.
      */
     that.getLocalElement = function () {
-        return videoLocalElement;
+        return that.outgoingMedia.element;
     };
 
     /**
@@ -591,7 +602,7 @@ module.exports = function (params) {
      * @returns {Video} An HTML5 video element.
      */
     that.getRemoteElement = function () {
-        return videoRemoteElement;
+        return that.incomingMedia.element;
     };
 
     /**
@@ -612,18 +623,9 @@ module.exports = function (params) {
      * @fires respoke.Call#local-stream-received
      */
     function doAddVideo(params) {
-        var stream;
         log.debug('Call.doAddVideo');
-        params = params || {};
         saveParameters(params);
-        params.constraints = params.constraints || callSettings.constraints;
-        params.pc = pc;
-        params.instanceId = instanceId;
-        params.videoLocalElement = videoLocalElement;
-        params.videoRemoteElement = videoRemoteElement;
-
-        stream = respoke.LocalMedia(params);
-        stream.listen('requesting-media', function waitAllowHandler(evt) {
+        that.outgoingMedia.listen('requesting-media', function waitAllowHandler(evt) {
             if (!pc) {
                 return;
             }
@@ -639,7 +641,7 @@ module.exports = function (params) {
              */
             that.fire('requesting-media');
         }, true);
-        stream.listen('allow', function allowHandler(evt) {
+        that.outgoingMedia.listen('allow', function allowHandler(evt) {
             if (!pc) {
                 return;
             }
@@ -659,15 +661,14 @@ module.exports = function (params) {
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
-        stream.listen('stream-received', function streamReceivedHandler(evt) {
+        that.outgoingMedia.listen('stream-received', function streamReceivedHandler(evt) {
             if (!pc) {
                 return;
             }
 
-            defMedia.resolve(stream);
+            defMedia.resolve(that.outgoingMedia);
             pc.addStream(evt.stream);
             pc.state.dispatch('receiveLocalMedia');
-            videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
             }
@@ -682,14 +683,12 @@ module.exports = function (params) {
              */
             that.fire('local-stream-received', {
                 element: evt.element,
-                stream: stream
+                stream: that.outgoingMedia
             });
         }, true);
-        stream.listen('error', function errorHandler(evt) {
-            var message = evt.reason;
-            that.removeStream({id: stream.id});
+        that.outgoingMedia.listen('error', function errorHandler(evt) {
             pc.state.dispatch('reject', {reason: 'media stream error'});
-            pc.report.callStoppedReason = message;
+            pc.report.callStoppedReason = evt.reason;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event respoke.Call#error
@@ -699,11 +698,12 @@ module.exports = function (params) {
              * @property {string} name - the event name.
              */
             that.fire('error', {
-                reason: message
+                reason: evt.reason
             });
         });
-        localStreams.push(stream);
-        return stream;
+
+        that.outgoingMedia.start();
+        return that.outgoingMedia;
     }
 
     /**
@@ -776,24 +776,6 @@ module.exports = function (params) {
     };
 
     /**
-     * Remove a stream from the existing call.
-     * @memberof! respoke.Call
-     * @method respoke.Call.removeStream
-     * @param {object} params
-     * @param {boolean} id - the id of the stream to remove.
-     */
-    that.removeStream = function (params) {
-        var savedIndex;
-        localStreams.forEach(function eachStream(stream, idx) {
-            if (stream.id === params.id) {
-                stream.stop();
-                savedIndex = idx;
-            }
-        });
-        localStreams.splice(savedIndex, 1);
-    };
-
-    /**
      * Get the direct connection on this call, if it exists.
      * @memberof! respoke.Call
      * @method respoke.Call.getDirectConnection
@@ -817,7 +799,7 @@ module.exports = function (params) {
             directConnection.close({skipRemove: true});
         }
 
-        if (localStreams.length === 0) {
+        if (!that.hasMedia()) {
             log.debug('Hanging up because there are no local streams.');
             that.hangup();
             return;
@@ -907,8 +889,7 @@ module.exports = function (params) {
         directConnection = respoke.DirectConnection(params);
 
         directConnection.listen('close', function closeHandler() {
-            // TODO: make this look for remote streams, too. Don't want to hang up on a one-way media call.
-            if (localStreams.length === 0) {
+            if (!that.hasMedia()) {
                 log.debug('Hanging up because there are no local streams.');
                 that.hangup();
             } else {
@@ -1020,9 +1001,7 @@ module.exports = function (params) {
     var doHangup = function () {
         log.debug('hangup', that.caller);
 
-        localStreams.forEach(function eachStream(stream) {
-            stream.stop();
-        });
+        that.outgoingMedia.stop();
 
         if (directConnection && directConnection.isActive()) {
             directConnection.close();
@@ -1076,7 +1055,7 @@ module.exports = function (params) {
     that.isActive = function () {
         // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
         return !!(pc && pc.isActive() && (
-            (localStreams.length > 0) ||
+            (that.outgoingMedia.hasMedia()) ||
             (directConnection && directConnection.isActive())
         ));
     };
@@ -1265,22 +1244,7 @@ module.exports = function (params) {
         if (videoIsMuted) {
             return;
         }
-        localStreams.forEach(function muteAllVideo(stream) {
-            stream.muteVideo();
-        });
-        /**
-         * This event indicates that local video has been muted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: true
-        });
+        that.outgoingMedia.muteVideo();
         videoIsMuted = true;
     };
 
@@ -1294,22 +1258,7 @@ module.exports = function (params) {
         if (!videoIsMuted) {
             return;
         }
-        localStreams.forEach(function unmuteAllVideo(stream) {
-            stream.unmuteVideo();
-        });
-        /**
-         * This event indicates that local video has been unmuted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: false
-        });
+        that.outgoingMedia.unmuteVideo();
         videoIsMuted = false;
     };
 
@@ -1323,22 +1272,7 @@ module.exports = function (params) {
         if (audioIsMuted) {
             return;
         }
-        localStreams.forEach(function muteAllAudio(stream) {
-            stream.muteAudio();
-        });
-        /**
-         * This event indicates that local audio has been muted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: true
-        });
+        that.outgoingMedia.muteAudio();
         audioIsMuted = true;
     };
 
@@ -1353,23 +1287,7 @@ module.exports = function (params) {
             return;
         }
 
-        localStreams.forEach(function unmuteAllAudio(stream) {
-            stream.unmuteAudio();
-        });
-
-        /**
-         * This event indicates that local audio has been unmuted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: false
-        });
+        that.outgoingMedia.unmuteAudio();
         audioIsMuted = false;
     };
 

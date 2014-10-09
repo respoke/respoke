@@ -286,8 +286,10 @@ module.exports = function (params) {
                     }
 
                     log.debug('set remote desc of offer succeeded');
+                    that.call.incomingMedia.setSDP(oOffer); // callee's incoming media
                     pc.createAnswer(function successHandler(oSession) {
                         that.state.processedRemoteSDP = true;
+                        that.call.outgoingMedia.setSDP(oSession); // callee's outgoing media
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
@@ -614,6 +616,8 @@ module.exports = function (params) {
         }
         log.debug('setting and sending offer', oSession);
         that.report.sdpsSent.push(oSession);
+        that.call.outgoingMedia.setSDP(oSession); // caller's outgoing media
+        that.call.incomingMedia.setSDP(oSession); // caller's incoming media estimate
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
             signalOffer({
@@ -759,6 +763,20 @@ module.exports = function (params) {
     };
 
     /**
+     * Set the estimated media status on incoming and outgoing media.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.listenOffer
+     * @param {object} evt
+     * @param {object} evt.signal - The signal, including the remote SDP and the connectionId of the endpoint who
+     * answered the call.
+     * @private
+     */
+    function listenOffer(evt) {
+        that.call.incomingMedia.setSDP(evt.signal.sessionDescription); // callee's incoming media
+        that.call.outgoingMedia.setSDP(evt.signal.sessionDescription); // callee's outgoing media estimate
+    }
+
+    /**
      * Save the answer and tell the browser about it.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.listenAnswer
@@ -791,6 +809,7 @@ module.exports = function (params) {
         pc.setRemoteDescription(
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
+                that.call.incomingMedia.setSDP(evt.signal.sessionDescription); // caller's incoming media
                 that.state.dispatch('receiveAnswer');
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
@@ -985,6 +1004,7 @@ module.exports = function (params) {
         }
     };
 
+    that.call.listen('signal-offer', listenOffer, true);
     that.call.listen('signal-answer', listenAnswer, true);
     that.call.listen('signal-connected', listenConnected, true);
     that.call.listen('signal-modify', listenModify, true);

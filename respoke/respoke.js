@@ -142,6 +142,7 @@ respoke.PeerConnection = require('./peerConnection');
 respoke.CallState = require('./callState');
 respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
+respoke.RemoteMedia = require('./remoteMedia');
 respoke.log = log;
 respoke.Q = Q;
 
@@ -427,3 +428,28 @@ respoke.sdpHasDataChannel = function (sdp) {
     "use strict";
     return sdp.indexOf('m=application') !== -1;
 };
+
+/**
+ * Does the sdp indicate an audio stream?
+ * @static
+ * @memberof respoke
+ * @params {MediaConstraints}
+ * @returns {boolean}
+ */
+respoke.constraintsHasAudio = function (constraints) {
+    "use strict";
+    return (constraints.audio === true);
+};
+
+/**
+ * Does the constraints indicate a video stream?
+ * @static
+ * @memberof respoke
+ * @params {MediaConstraints}
+ * @returns {boolean}
+ */
+respoke.constraintsHasVideo = function (constraints) {
+    "use strict";
+    return (constraints.video === true || typeof constraints.video === 'object');
+};
+
