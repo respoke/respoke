@@ -200,13 +200,6 @@ module.exports = function (params) {
 
     /**
      * @memberof! respoke.Call
-     * @name videoRemoteElement
-     * @private
-     * @type {Video}
-     */
-    var videoRemoteElement = null;
-    /**
-     * @memberof! respoke.Call
      * @name videoIsMuted
      * @private
      * @type {boolean}
@@ -373,7 +366,7 @@ module.exports = function (params) {
             // media based on what constraints local media is using.
             that.incomingMedia.setConstraints(callSettings.constraints);
         }
-        videoRemoteElement = params.videoRemoteElement || videoRemoteElement;
+        that.incomingMedia.element = params.videoRemoteElement || that.incomingMedia.element;
 
 
         pc.callSettings = callSettings;
@@ -540,12 +533,6 @@ module.exports = function (params) {
         }
         log.debug('received remote media', evt);
 
-        videoRemoteElement = videoRemoteElement || document.createElement('video');
-
-        attachMediaStream(videoRemoteElement, evt.stream);
-        videoRemoteElement.autoplay = true;
-        videoRemoteElement.used = true;
-        setTimeout(videoRemoteElement.play.bind(videoRemoteElement));
         that.incomingMedia.setStream(evt.stream);
 
         /**
@@ -562,7 +549,7 @@ module.exports = function (params) {
         pc.state.dispatch('receiveRemoteMedia');
         that.fire('connect', {
             stream: evt.stream,
-            element: videoRemoteElement
+            element: that.incomingMedia.element
         });
     }
 
@@ -615,7 +602,7 @@ module.exports = function (params) {
      * @returns {Video} An HTML5 video element.
      */
     that.getRemoteElement = function () {
-        return videoRemoteElement;
+        return that.incomingMedia.element;
     };
 
     /**
@@ -637,14 +624,7 @@ module.exports = function (params) {
      */
     function doAddVideo(params) {
         log.debug('Call.doAddVideo');
-        params = params || {};
         saveParameters(params);
-        params.constraints = params.constraints || callSettings.constraints;
-        params.pc = pc;
-        params.instanceId = instanceId;
-        params.element = params.videoLocalElement;
-        params.videoRemoteElement = videoRemoteElement;
-
         that.outgoingMedia.listen('requesting-media', function waitAllowHandler(evt) {
             if (!pc) {
                 return;

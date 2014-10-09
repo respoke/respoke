@@ -52,10 +52,9 @@ module.exports = function (params) {
     /**
      * @memberof! respoke.RemoteMedia
      * @name element
-     * @private
      * @type {Video}
      */
-    var element = params.videoRemoteElement;
+    that.element = params.videoRemoteElement;
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasAudio
@@ -320,6 +319,9 @@ module.exports = function (params) {
     that.setStream = function (str) {
         if (str) {
             stream = str;
+            that.element = that.element || document.createElement('video');
+            that.element.autoplay = true;
+            setTimeout(that.element.play.bind(that.element));
         }
     };
 
