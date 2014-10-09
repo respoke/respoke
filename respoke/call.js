@@ -179,6 +179,22 @@ module.exports = function (params) {
      */
     that.incomingMedia = respoke.RemoteMedia(params);
 
+    /**
+     * This event indicates that local video has been unmuted.
+     * @event respoke.Call#mute
+     * @property {string} name - the event name.
+     * @property {respoke.Call} target
+     * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+     * has been changed.
+     * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+     */
+    that.outgoingMedia.listen('mute', function (evt) {
+        that.fire('mute', {
+            type: evt.type,
+            muted: evt.muted
+        });
+    });
+
     delete params.signalingChannel;
     delete that.signalingChannel;
 
@@ -1249,19 +1265,6 @@ module.exports = function (params) {
             return;
         }
         that.outgoingMedia.muteVideo();
-        /**
-         * This event indicates that local video has been muted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: true
-        });
         videoIsMuted = true;
     };
 
@@ -1276,19 +1279,6 @@ module.exports = function (params) {
             return;
         }
         that.outgoingMedia.unmuteVideo();
-        /**
-         * This event indicates that local video has been unmuted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: false
-        });
         videoIsMuted = false;
     };
 
@@ -1303,19 +1293,6 @@ module.exports = function (params) {
             return;
         }
         that.outgoingMedia.muteAudio();
-        /**
-         * This event indicates that local audio has been muted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: true
-        });
         audioIsMuted = true;
     };
 
@@ -1331,20 +1308,6 @@ module.exports = function (params) {
         }
 
         that.outgoingMedia.unmuteAudio();
-
-        /**
-         * This event indicates that local audio has been unmuted.
-         * @event respoke.Call#mute
-         * @property {string} name - the event name.
-         * @property {respoke.Call} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: false
-        });
         audioIsMuted = false;
     };
 

@@ -852,51 +852,103 @@ describe("Respoke calling", function () {
         });
 
         describe("muting", function () {
-            var localMedia;
-            var muteSpy = sinon.spy();
+            describe("local", function () {
+                var localStream;
+                var muteSpy1 = sinon.spy();
+                var muteSpy2 = sinon.spy();
 
-            beforeEach(function (done) {
-                followee.listen('call', callListener);
-                call = followeeEndpoint.startCall({
-                    onLocalMedia: function (evt) {
-                        localMedia = evt.stream;
-                    },
-                    onConnect: function (evt) {
-                        done();
-                    },
-                    onMute: muteSpy
+                beforeEach(function (done) {
+                    followee.listen('call', callListener);
+                    call = followeeEndpoint.startCall({
+                        onLocalMedia: function (evt) {
+                            localStream = evt.stream;
+                            call.outgoingMedia.listen('mute', muteSpy2);
+                            done();
+                        },
+                        onMute: muteSpy1
+                    });
+                });
+
+                describe("video", function () {
+                    beforeEach(function () {
+                        call.muteVideo();
+                    });
+
+                    it("disables the video stream", function () {
+                        var videoTracks = localStream.getVideoTracks();
+                        expect(videoTracks.length).to.equal(1);
+                        expect(videoTracks[0].enabled).to.equal(false);
+                    });
+
+                    it("causes the mute events to fire", function () {
+                        expect(muteSpy1.called).to.be.ok;
+                        expect(muteSpy2.called).to.be.ok;
+                    });
+                });
+
+                describe("audio", function () {
+                    beforeEach(function () {
+                        call.muteAudio();
+                    });
+
+                    it("disables the audio stream", function () {
+                        var audioTracks = localStream.getAudioTracks();
+                        expect(audioTracks.length).to.equal(1);
+                        expect(audioTracks[0].enabled).to.equal(false);
+                    });
+
+                    it("causes the mute events to fire", function () {
+                        expect(muteSpy1.called).to.be.ok;
+                        expect(muteSpy2.called).to.be.ok;
+                    });
                 });
             });
 
-            describe("video", function () {
-                beforeEach(function () {
-                    call.muteVideo();
+            describe("remote", function () {
+                var remoteStream;
+                var muteSpy = sinon.spy();
+
+                beforeEach(function (done) {
+                    followee.listen('call', callListener);
+                    call = followeeEndpoint.startCall({
+                        onConnect: function (evt) {
+                            remoteStream = evt.stream;
+                            call.incomingMedia.listen('mute', muteSpy);
+                            done();
+                        }
+                    });
                 });
 
-                it("disables the video stream", function () {
-                    var videoTracks = localMedia.getVideoTracks();
-                    expect(videoTracks.length).to.equal(1);
-                    expect(videoTracks[0].enabled).to.equal(false);
+                describe("video", function () {
+                    beforeEach(function () {
+                        call.incomingMedia.muteVideo();
+                    });
+
+                    it("disables the video stream", function () {
+                        var videoTracks = remoteStream.getVideoTracks();
+                        expect(videoTracks.length).to.equal(1);
+                        expect(videoTracks[0].enabled).to.equal(false);
+                    });
+
+                    it("causes the mute event to fire", function () {
+                        expect(muteSpy.called).to.be.ok;
+                    });
                 });
 
-                it("causes the mute event to fire", function () {
-                    expect(muteSpy.called).to.be.ok;
-                });
-            });
+                describe("audio", function () {
+                    beforeEach(function () {
+                        call.incomingMedia.muteAudio();
+                    });
 
-            describe("audio", function () {
-                beforeEach(function () {
-                    call.muteAudio();
-                });
+                    it("disables the audio stream", function () {
+                        var audioTracks = remoteStream.getAudioTracks();
+                        expect(audioTracks.length).to.equal(1);
+                        expect(audioTracks[0].enabled).to.equal(false);
+                    });
 
-                it("disables the audio stream", function () {
-                    var audioTracks = localMedia.getAudioTracks();
-                    expect(audioTracks.length).to.equal(1);
-                    expect(audioTracks[0].enabled).to.equal(false);
-                });
-
-                it("causes the mute event to fire", function () {
-                    expect(muteSpy.called).to.be.ok;
+                    it("causes the mute event to fire", function () {
+                        expect(muteSpy.called).to.be.ok;
+                    });
                 });
             });
         });

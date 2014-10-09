@@ -7,7 +7,7 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * WebRTC Call including getUserMedia, path and codec negotation, and call state.
+ * Class for managing the remote media stream.
  * @class respoke.RemoteMedia
  * @constructor
  * @augments respoke.EventEmitter
@@ -51,11 +51,11 @@ module.exports = function (params) {
     var client = respoke.getClient(instanceId);
     /**
      * @memberof! respoke.RemoteMedia
-     * @name videoRemoteElement
+     * @name element
      * @private
      * @type {Video}
      */
-    var videoRemoteElement = params.videoRemoteElement;
+    var element = params.videoRemoteElement;
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasAudio
@@ -346,6 +346,118 @@ module.exports = function (params) {
          * @property {respoke.RemoteMedia} target
          */
         that.fire('stop');
+    };
+
+    /**
+     * Mute local video stream.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.muteVideo
+     * @fires respoke.RemoteMedia#mute
+     */
+    that.muteVideo = function () {
+        if (videoIsMuted) {
+            return;
+        }
+        stream.getVideoTracks().forEach(function eachTrack(track) {
+            track.enabled = false;
+        });
+        /**
+         * @event respoke.RemoteMedia#mute
+         * @property {string} name - the event name.
+         * @property {respoke.RemoteMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+         */
+        that.fire('mute', {
+            type: 'video',
+            muted: true
+        });
+        videoIsMuted = true;
+    };
+
+    /**
+     * Unmute local video stream.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.unmuteVideo
+     * @fires respoke.RemoteMedia#mute
+     */
+    that.unmuteVideo = function () {
+        if (!videoIsMuted) {
+            return;
+        }
+        stream.getVideoTracks().forEach(function eachTrack(track) {
+            track.enabled = true;
+        });
+        /**
+         * @event respoke.RemoteMedia#mute
+         * @property {string} name - the event name.
+         * @property {respoke.RemoteMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+         */
+        that.fire('mute', {
+            type: 'video',
+            muted: false
+        });
+        videoIsMuted = false;
+    };
+
+    /**
+     * Mute local audio stream.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.muteAudio
+     * @fires respoke.RemoteMedia#mute
+     */
+    that.muteAudio = function () {
+        if (audioIsMuted) {
+            return;
+        }
+        stream.getAudioTracks().forEach(function eachTrack(track) {
+            track.enabled = false;
+        });
+        /**
+         * @event respoke.RemoteMedia#mute
+         * @property {string} name - the event name.
+         * @property {respoke.RemoteMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+         */
+        that.fire('mute', {
+            type: 'audio',
+            muted: true
+        });
+        audioIsMuted = true;
+    };
+
+    /**
+     * Unmute local audio stream.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.unmuteAudio
+     * @fires respoke.RemoteMedia#mute
+     */
+    that.unmuteAudio = function () {
+        if (!audioIsMuted) {
+            return;
+        }
+        stream.getAudioTracks().forEach(function eachTrack(track) {
+            track.enabled = true;
+        });
+        /**
+         * @event respoke.RemoteMedia#mute
+         * @property {string} name - the event name.
+         * @property {respoke.RemoteMedia} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+         */
+        that.fire('mute', {
+            type: 'audio',
+            muted: false
+        });
+        audioIsMuted = false;
     };
 
     return that;
