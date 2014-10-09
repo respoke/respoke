@@ -382,49 +382,6 @@ respoke.clone = function (source) {
 };
 
 /**
- * Get the keys for an object
- * @param {Object} obj - The Object to get the keys for.
- * @returns {Array}
- * @private
- **/
-function getKeys(obj) {
-    var keys;
-    if(obj.keys) {
-        keys = obj.keys();
-    } else {
-        keys = [];
- 
-        for(var k in obj) {
-            if(Object.prototype.hasOwnProperty.call(obj, k)) {
-                keys.push(k);
-            }
-        }
-    }
- 
-    return keys;
-}
- 
-
-/**
- * Create a new object so the keys appear in the provided order.
- * @param {Object} obj - The object to be the base for the new object
- * @param {Array} keys - The order in which properties of the new object should appear
- * @returns {Array}
- **/
-function convertToArray(obj, keys) {
-    if (keys.length === 0) {
-        return [obj];
-    }
-    var result = [];
-    for (var i = 0; i < keys.length; i++) {
-        if (Object.prototype.hasOwnProperty.call(obj, keys[i])) {
-            result.push(obj[keys[i]]);
-        }
-    } 
-    return result;
-}
-
-/**
  * Compares two objects for equality
  * @static
  * @memberof respoke
@@ -433,35 +390,32 @@ function convertToArray(obj, keys) {
  * @returns {boolean}
  */
 respoke.isEqual = function (a, b) {
+    var aKeys;
+
     //check if arrays
-    if( Object.prototype.toString.call( a ) === '[object Array]' && Object.prototype.toString.call( b ) === '[object Array]') {
-        //check if arrays have any objects
-        if (a.filter(function(e) { return Object.prototype.toString.call( e ) === '[object Object]' }).length > 0 ||
-            b.filter(function(e) { return Object.prototype.toString.call( e ) === '[object Object]' }).length > 0 ) {
- 
-            if (a.length !== b.length) {
-                //short circuit if arrays are different length
+    if (a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
+        if (a.length !== b.length) {
+            //short circuit if arrays are different length
+            return false;
+        }
+
+        for (var i = 0; i < a.length; i += 1) {
+            if (!respoke.isEqual(a[i], b[i])) {
                 return false;
-            } else {
-                for(var i = 0; i < a.length; i++) {
-                    if (!respoke.isEqual(a[i], b[i])) {
-                        return false
-                    }
-                }
-                return true;
             }
-        } else {
-            // no objects, just primitives
-            return JSON.stringify(a) === JSON.stringify(b);
         }
-    } else {
-        var keysA = getKeys(a).sort();
-        var keysB = getKeys(b).sort();
-         if(respoke.isEqual(keysA, keysB)) {
-            var orderedA = convertToArray(a, keysA);
-                orderedB = convertToArray(b, keysB);
-                return respoke.isEqual(orderedA, orderedB);
-        }
-        return false;        
+        return true;
     }
+
+    if (typeof a === 'object' && typeof b === 'object') {
+        aKeys = Object.keys(a);
+        for (var i = 0; i < aKeys.length; i += 1) {
+            if (!respoke.isEqual(a[aKeys[i]], b[aKeys[i]])) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    return a === b;
 };// End respoke.Class
