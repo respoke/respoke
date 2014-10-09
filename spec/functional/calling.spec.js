@@ -154,6 +154,8 @@ describe("Respoke calling", function () {
                 remote = document.createElement("VIDEO");
                 remote.id = "my-remote-video-element";
                 followee.listen('call', callListener);
+                expect(local.src).not.to.be.ok;
+                expect(remote.src).not.to.be.ok;
             });
 
             it("uses my video elements and doesn't create new ones", function (done) {
@@ -167,6 +169,16 @@ describe("Respoke calling", function () {
                             expect(evt.stream).to.be.ok;
                             expect(evt.element).to.be.ok;
                             expect(evt.element.id).to.equal("my-local-video-element");
+
+                            try {
+                                expect(evt.element.src).to.be.ok;
+                            } catch (f) {
+                                try {
+                                    expect(evt.element.mozSrcObject).to.be.ok;
+                                } catch (g) {
+                                    throw f;
+                                }
+                            }
                         } catch (e) {
                             doneOnce(e);
                         }
@@ -176,6 +188,17 @@ describe("Respoke calling", function () {
                             expect(evt.stream).to.be.ok;
                             expect(evt.element).to.be.ok;
                             expect(evt.element.id).to.equal("my-remote-video-element");
+
+                            try {
+                                expect(evt.element.src).to.be.ok;
+                            } catch (f) {
+                                try {
+                                    expect(evt.element.mozSrcObject).to.be.ok;
+                                } catch (g) {
+                                    throw f;
+                                }
+                            }
+
                             doneOnce();
                         } catch (e) {
                             doneOnce(e);
