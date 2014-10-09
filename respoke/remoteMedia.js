@@ -320,6 +320,7 @@ module.exports = function (params) {
         if (str) {
             stream = str;
             that.element = that.element || document.createElement('video');
+            attachMediaStream(that.element, stream);
             that.element.autoplay = true;
             setTimeout(that.element.play.bind(that.element));
         }
