@@ -139,6 +139,7 @@ respoke.Group = require('./group');
 respoke.SignalingChannel = require('./signalingChannel');
 respoke.DirectConnection = require('./directConnection');
 respoke.PeerConnection = require('./peerConnection');
+respoke.CallState = require('./callState');
 respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
 respoke.log = log;
@@ -156,12 +157,13 @@ if (!window.skipBugsnag) {
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
-    window.onerror = function(message, file, line) {
+    window.onerror = function (message, file, line) {
+        "use strict";
         //Only send errors from the respoke.js file to Airbrake
         if (file.match(/respoke/)) {
             Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
         }
-    }
+    };
 }
 
 /**
@@ -258,6 +260,27 @@ respoke.createClient = function (params) {
 };
 
 /**
+ * Build a closure from a listener that will ensure the listener can only be called once.
+ * @static
+ * @private
+ * @memberof respoke
+ * @param {function} func
+ * @return {function}
+ */
+respoke.once = function (func) {
+    "use strict";
+    return (function () {
+        var called = false;
+        return function () {
+            if (called === false) {
+                func.apply(null, arguments);
+                called = true;
+            }
+        };
+    })();
+};
+
+/**
  * @static
  * @private
  * @memberof respoke
@@ -299,13 +322,15 @@ respoke.makeGUID = function () {
  */
 respoke.handlePromise = function (promise, onSuccess, onError) {
     "use strict";
+    var returnUndef = false;
     if (onSuccess || onError) {
-        onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
-        onError = typeof onError === 'function' ? onError : function () {};
-        promise.done(onSuccess, onError);
-        return;
+        returnUndef = true;
     }
-    return promise;
+
+    onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
+    onError = typeof onError === 'function' ? onError : function () {};
+    promise.done(onSuccess, onError);
+    return (returnUndef ? undefined : promise);
 };
 
 /**
@@ -331,7 +356,7 @@ respoke.Class = function (params) {
     });
 
     return that;
-};
+}; // end of respoke.Class
 
 /**
  * Does the browser support `UserMedia`?
@@ -365,4 +390,40 @@ respoke.hasRTCPeerConnection = function () {
 respoke.hasWebsocket = function () {
     "use strict";
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
-};// End respoke.Class
+};
+
+/**
+ * Does the sdp indicate an audio stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpHasAudio = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=audio') !== -1;
+};
+
+/**
+ * Does the sdp indicate a video stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpHasVideo = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=video') !== -1;
+};
+
+/**
+ * Does the sdp indicate a data channel?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpHasDataChannel = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=application') !== -1;
+};

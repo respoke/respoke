@@ -2,7 +2,6 @@ var expect = chai.expect;
 
 var instanceId = respoke.makeGUID();
 var connectionId = respoke.makeGUID();
-respoke.log.setLevel('error');
 
 var client = respoke.createClient({
     instanceId: instanceId
@@ -252,7 +251,7 @@ describe("A respoke.Endpoint", function () {
                 });
 
                 describe("and a wrong connectionId is specified", function () {
-                    it("returns undefined", function () {
+                    it("returns null", function () {
                         var connection = endpoint.getConnection({
                             connectionId: respoke.makeGUID()
                         });

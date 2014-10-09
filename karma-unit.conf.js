@@ -14,7 +14,7 @@ module.exports = function(config) {
           'node_modules/sinon/pkg/sinon.js',
           'respoke.min.js',
           'respoke-stats.min.js',
-          'spec/unit/client/**/*.js'
+          'spec/unit/client/*.spec.js'
         ],
 
         // test results reporter to use

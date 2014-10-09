@@ -21,7 +21,7 @@ var respoke = require('./respoke');
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
- * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+ * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
  * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
  * relay servers. If it cannot flow through relay servers, the call will fail.
  * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -79,60 +79,26 @@ module.exports = function (params) {
      */
     that.className = 'respoke.Call';
 
-    if (!that.caller) {
-        /**
-         * Whether or not the client is the caller of the call.
-         * @memberof! respoke.Call
-         * @name caller
-         * @type {boolean}
-         */
-        that.caller = false;
-    } else {
-        /**
-         * The call ID.
-         * @memberof! respoke.Call
-         * @name id
-         * @type {string}
-         */
-        that.id = respoke.makeGUID();
-    }
+    /**
+     * Whether or not the client is the caller of the call.
+     * @memberof! respoke.Call
+     * @name caller
+     * @type {boolean}
+     */
+    that.caller = !!that.caller;
+
+    /**
+     * The call ID.
+     * @memberof! respoke.Call
+     * @name id
+     * @type {string}
+     */
+    that.id = that.caller ? respoke.makeGUID() : that.id;
 
     if (!that.id) {
         throw new Error("Can't start a new call without a call id.");
     }
 
-    /**
-     * Promise used to trigger actions dependant upon having received an offer.
-     * @memberof! respoke.Call
-     * @name defSDPOffer
-     * @private
-     * @type {Promise}
-     */
-    var defSDPOffer = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon having received an answer.
-     * @memberof! respoke.Call
-     * @name defSDPAnswer
-     * @private
-     * @type {Promise}
-     */
-    var defSDPAnswer = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon the call having been answered.
-     * @memberof! respoke.Call
-     * @name defAnswered
-     * @private
-     * @type {Promise}
-     */
-    var defAnswered = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon having received media or a datachannel.
-     * @memberof! respoke.Call
-     * @name defApproved
-     * @private
-     * @type {Promise}
-     */
-    var defApproved = Q.defer();
     /**
      * Promise used to trigger actions dependant upon having received media or a datachannel.
      * @memberof! respoke.Call
@@ -141,14 +107,6 @@ module.exports = function (params) {
      * @type {Promise}
      */
     var defMedia = Q.defer();
-    /**
-     * Promise used to trigger actions dependant upon having completed deferred initialization
-     * @memberof! respoke.Call
-     * @name defInit
-     * @private
-     * @type {Promise}
-     */
-    var defInit = Q.defer();
     /**
      * Promise used to trigger notification of a request for renegotiating media. For the caller of the
      * renegotiation (which doesn't have to be the same as the caller of the call), this is resolved
@@ -166,28 +124,7 @@ module.exports = function (params) {
      * @private
      * @type {respoke.Call.previewLocalMedia}
      */
-    var previewLocalMedia = null;
-    /**
-     * @memberof! respoke.Call
-     * @name directConnectionOnly
-     * @private
-     * @type {boolean}
-     */
-    var directConnectionOnly = null;
-    /**
-     * @memberof! respoke.Call
-     * @name sendOnly
-     * @private
-     * @type {boolean}
-     */
-    var sendOnly = null;
-    /**
-     * @memberof! respoke.Call
-     * @name receiveOnly
-     * @private
-     * @type {boolean}
-     */
-    var receiveOnly = null;
+    var previewLocalMedia = params.previewLocalMedia;
     /**
      * @memberof! respoke.Call
      * @name client
@@ -208,10 +145,10 @@ module.exports = function (params) {
      * @name callDebugReportEnabled
      * @type {boolean}
      */
-    that.callDebugReportEnabled = params.signalingChannel.callDebugReportEnabled;
+    that.callDebugReportEnabled = !!params.signalingChannel.callDebugReportEnabled;
     /**
      * A flag indicating whether this call has audio.
-     * 
+     *
      * This becomes available after the call is accepted, for the client being called only.
      *
      * @name hasAudio
@@ -220,7 +157,7 @@ module.exports = function (params) {
     that.hasAudio = undefined;
     /**
      * A flag indicating whether this call has video.
-     * 
+     *
      * This becomes available after the call is accepted, for the client being called only.
      *
      * @name hasVideo
@@ -237,14 +174,14 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = params.videoLocalElement || null;
+    var videoLocalElement = null;
     /**
      * @memberof! respoke.Call
      * @name videoRemoteElement
      * @private
      * @type {Video}
      */
-    var videoRemoteElement = params.videoRemoteElement || null;
+    var videoRemoteElement = null;
     /**
      * @memberof! respoke.Call
      * @name videoIsMuted
@@ -296,6 +233,16 @@ module.exports = function (params) {
      */
     var pc = respoke.PeerConnection({
         instanceId: instanceId,
+        state: respoke.CallState({
+            caller: that.caller,
+            needDirectConnection: params.needDirectConnection,
+            sendOnly: params.sendOnly,
+            receiveOnly: params.receiveOnly,
+            // hasMedia is not defined yet.
+            hasMedia: function () {
+                return that.hasMedia();
+            }
+        }),
         forceTurn: !!params.forceTurn,
         call: that,
         callSettings: callSettings,
@@ -306,7 +253,10 @@ module.exports = function (params) {
             ]
         },
         offerOptions: params.offerOptions || null,
-        signalOffer: params.signalOffer,
+        signalOffer: function (args) {
+            params.signalOffer(args);
+            pc.state.dispatch('sentOffer');
+        },
         signalConnected: params.signalConnected,
         signalAnswer: params.signalAnswer,
         signalModify: params.signalModify,
@@ -328,101 +278,13 @@ module.exports = function (params) {
         log.debug('Call.init');
 
         if (defModify !== undefined) {
-            defSDPOffer = Q.defer();
-            defSDPAnswer = Q.defer();
-            defApproved = Q.defer();
-            defAnswered = Q.defer();
             defMedia = Q.defer();
         }
 
         pc.init(callSettings); // instantiates RTCPeerConnection, can't call on modify
-        if (defModify === undefined && directConnectionOnly === true) {
+        if (defModify === undefined && pc.state.needDirectConnection === true) {
             actuallyAddDirectConnection(params);
         }
-
-        /* Must make sure that the deferred init and the call has been answered before calling this code */
-        Q.all([defInit.promise, defAnswered.promise]).spread(function initializedAndAnswerCalled(init, params) {
-            /**
-             * saveParameters will only be meaningful for the non-initiate,
-             * since the library calls this method for the initiate. Developers will use this method to pass in
-             * callbacks for the non-initiate.
-             */
-            saveParameters(params);
-
-            pc.listen('connect', onRemoteStreamAdded, true);
-            pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
-
-            /**
-             * The call was answered.
-             * @event respoke.Call#answer
-             * @property {string} name - the event name.
-             * @property {respoke.Call} target
-             */
-            that.fire('answer');
-
-            /**
-             * There are a few situations in which we need to call approve automatically. Approve is for previewing
-             * media, so if there is no media (because we are receiveOnly or this is a DirectConnection) we do not
-             * need to wait for the developer to call approve().  Secondly, if the developer did not give us a
-             * previewLocalMedia callback to call, we will not wait for approval.
-             */
-            if (receiveOnly !== true && directConnectionOnly === null) {
-                doAddVideo(params);
-            } else if (typeof previewLocalMedia !== 'function') {
-                that.approve();
-            }
-        }).done();
-
-        if (that.caller !== true) {
-            Q.all([defApproved.promise, defSDPOffer.promise]).spread(function successHandler(approved, oOffer) {
-                if (pc && oOffer && oOffer.sessionDescription) {
-                    pc.processOffer(oOffer.sessionDescription);
-                }
-            }, function errorHandler(err) {
-                log.warn("Call rejected.");
-            }).done();
-        } else {
-            Q.all([defApproved.promise, defMedia.promise]).spread(function successHandler(approved, media) {
-                if (media) {
-                    pc.initOffer();
-                }
-            }, function errorHandler(err) {
-                var message = "Call not approved locally or local media error.";
-                /**
-                 * This event is fired on errors that occur during call setup or media negotiation.
-                 * @event respoke.Call#error
-                 * @type {respoke.Event}
-                 * @property {string} reason - A human readable description about the error.
-                 * @property {respoke.Call} target
-                 * @property {string} name - the event name.
-                 */
-                that.fire('error', {
-                    reason: message
-                });
-            });
-            that.answer();
-        }
-
-        if (directConnectionOnly === true) {
-            // create the call in stealth mode.
-            return;
-        }
-
-        /**
-         * This event provides notification for when an incoming call is being received.  If the user wishes
-         * to allow the call, the app should call evt.call.answer() to answer the call.
-         * @event respoke.Client#call
-         * @type {respoke.Event}
-         * @property {respoke.Call} call
-         * @property {respoke.Endpoint} endpoint
-         * @property {string} name - the event name.
-         * @property {respoke.Client} target
-         * @private
-         */
-        client.fire('call', {
-            endpoint: that.remoteEndpoint,
-            call: that
-        });
     }
 
     /**
@@ -452,6 +314,9 @@ module.exports = function (params) {
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
+     * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
      * @private
      * @fires respoke.Call#stats
      */
@@ -474,10 +339,9 @@ module.exports = function (params) {
         that.listen('mute', params.onMute);
         that.listen('requesting-media', params.onRequestingMedia);
 
-        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
-        directConnectionOnly = typeof params.directConnectionOnly === 'boolean' ?
-            params.directConnectionOnly : directConnectionOnly;
+        pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;
+        pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
+        pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ? params.needDirectConnection : pc.state.needDirectConnection;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
 
@@ -486,13 +350,11 @@ module.exports = function (params) {
         callSettings.constraints = params.constraints || callSettings.constraints;
         callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
 
-        callSettings.videoRemoteElement = params.videoRemoteElement = videoRemoteElement || params.videoRemoteElement;
-        callSettings.videoLocalElement = params.videoLocalElement = videoLocalElement || params.videoLocalElement;
+        videoLocalElement = params.videoLocalElement || videoLocalElement;
+        videoRemoteElement = params.videoRemoteElement || videoRemoteElement;
 
         pc.callSettings = callSettings;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
-        pc.receiveOnly = receiveOnly;
-        pc.sendOnly = sendOnly;
         pc.listen('stats', function fireStats(evt) {
             /**
              * This event is fired every time statistical information about audio and/or video on a call
@@ -512,10 +374,6 @@ module.exports = function (params) {
         delete that.signalHangup;
         delete that.signalReport;
         delete that.signalCandidate;
-        delete that.onConnect;
-        delete that.onLocalMedia;
-        delete that.callSettings;
-        delete that.directConnectionOnly;
     }
 
     /**
@@ -551,14 +409,32 @@ module.exports = function (params) {
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
      * @param {object} [params.constraints] - Information about the media for this call.
      * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
+     * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
+     * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
      */
     that.answer = function (params) {
         params = params || {};
         log.debug('Call.answer');
-        if (!defAnswered.promise.isPending()) {
-            return;
-        }
-        defAnswered.resolve(params);
+
+        saveParameters(params);
+
+        pc.listen('connect', onRemoteStreamAdded, true);
+        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
+
+        pc.state.once('approving-device-access:entry', function (evt) {
+            doAddVideo(params);
+        });
+        pc.state.dispatch('answer', {
+            previewLocalMedia: previewLocalMedia,
+            approve: that.approve
+        });
+        /**
+         * The call was answered.
+         * @event respoke.Call#answer
+         * @property {string} name - the event name.
+         * @property {respoke.Call} target
+         */
+        that.fire('answer');
     };
 
     /**
@@ -596,9 +472,6 @@ module.exports = function (params) {
      * @fires respoke.Call#approve
      */
     that.approve = function () {
-        if (!defApproved.promise.isPending()) {
-            return;
-        }
         log.debug('Call.approve');
         /**
          * Fired when the local media access is approved.
@@ -609,8 +482,10 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('approve');
+        pc.state.dispatch('approve', {
+            previewLocalMedia: previewLocalMedia
+        });
 
-        defApproved.resolve(true);
         if (defModify && defModify.promise.isPending()) {
             defModify.resolve(true);
             defModify = undefined;
@@ -637,16 +512,17 @@ module.exports = function (params) {
      * @fires respoke.Call#connect
      */
     function onRemoteStreamAdded(evt) {
+        if (!pc) {
+            return;
+        }
         log.debug('received remote media', evt);
 
-        videoRemoteElement = videoRemoteElement
-                           || evt.target.callSettings.videoRemoteElement
-                           || document.createElement('video');
+        videoRemoteElement = videoRemoteElement || document.createElement('video');
 
         attachMediaStream(videoRemoteElement, evt.stream);
         videoRemoteElement.autoplay = true;
         videoRemoteElement.used = true;
-        setTimeout(function () {videoRemoteElement.play()});
+        setTimeout(videoRemoteElement.play.bind(videoRemoteElement));
 
         /**
          * Indicates that a remote media stream has been added to the call.
@@ -659,6 +535,7 @@ module.exports = function (params) {
          * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
+        pc.state.dispatch('receiveRemoteMedia');
         that.fire('connect', {
             stream: evt.stream,
             element: videoRemoteElement
@@ -689,7 +566,6 @@ module.exports = function (params) {
     function getStats(params) {
         if (pc && pc.getStats) {
             that.listen('stats', params.onStats);
-            delete params.onStats;
             return pc.getStats(params);
         }
         return null;
@@ -743,9 +619,15 @@ module.exports = function (params) {
         params.constraints = params.constraints || callSettings.constraints;
         params.pc = pc;
         params.instanceId = instanceId;
+        params.videoLocalElement = videoLocalElement;
+        params.videoRemoteElement = videoRemoteElement;
 
         stream = respoke.LocalMedia(params);
         stream.listen('requesting-media', function waitAllowHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
              * to modify the UI of the application so that the user notices the request for permissions
@@ -758,6 +640,10 @@ module.exports = function (params) {
             that.fire('requesting-media');
         }, true);
         stream.listen('allow', function allowHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
             /**
              * The user has approved the request for media. Any UI changes made to remind the user to click Allow
              * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
@@ -769,10 +655,18 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('allow');
+            pc.state.dispatch('approve', {
+                previewLocalMedia: previewLocalMedia
+            });
         }, true);
         stream.listen('stream-received', function streamReceivedHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
             defMedia.resolve(stream);
             pc.addStream(evt.stream);
+            pc.state.dispatch('receiveLocalMedia');
             videoLocalElement = evt.element;
             if (typeof previewLocalMedia === 'function') {
                 previewLocalMedia(evt.element, that);
@@ -790,14 +684,11 @@ module.exports = function (params) {
                 element: evt.element,
                 stream: stream
             });
-
-            if (typeof previewLocalMedia !== 'function') {
-                that.approve();
-            }
         }, true);
         stream.listen('error', function errorHandler(evt) {
             var message = evt.reason;
             that.removeStream({id: stream.id});
+            pc.state.dispatch('reject', {reason: 'media stream error'});
             pc.report.callStoppedReason = message;
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
@@ -842,9 +733,9 @@ module.exports = function (params) {
         params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
         params.instanceId = instanceId;
 
-        if (!defMedia.promise.isFulfilled()) {
+        if (!defMedia.promise.isFulfilled()) { // we're the callee & have just accepted to modify
             doAddVideo(params);
-        } else {
+        } else { // we're the caller and need to see if we can modify
             pc.startModify({
                 constraints: params.constraints
             });
@@ -905,9 +796,9 @@ module.exports = function (params) {
     /**
      * Get the direct connection on this call, if it exists.
      * @memberof! respoke.Call
-     * @method respoke.Call.startDirectConnection
+     * @method respoke.Call.getDirectConnection
      */
-    that.startDirectConnection = function () {
+    that.getDirectConnection = function () {
         return directConnection || null;
     };
 
@@ -1003,8 +894,9 @@ module.exports = function (params) {
         if (directConnection && directConnection.isActive()) {
             if (defMedia.promise.isPending()) {
                 defMedia.resolve(directConnection);
+            } else {
+                log.warn("Not creating a new direct connection.");
             }
-            log.warn("Not creating a new direct connection.");
             return defMedia.promise;
         }
 
@@ -1027,22 +919,15 @@ module.exports = function (params) {
         }, true);
 
         directConnection.listen('accept', function acceptHandler() {
-            if (that.caller === false) {
+            if (pc.state.caller === false) {
                 log.debug('Answering as a result of approval.');
-                that.answer();
-                if (defMedia && defMedia.promise.isPending()) {
-                    that.approve();
-                }
             } else {
-                if (defApproved.promise.isPending()) { // This happens on modify
-                    defApproved.resolve(true);
-                }
                 defMedia.resolve(directConnection);
             }
         }, true);
 
         directConnection.listen('open', function openHandler() {
-            directConnectionOnly = null;
+            pc.state.dispatch('receiveRemoteMedia');
         }, true);
 
         directConnection.listen('error', function errorHandler(err) {
@@ -1083,7 +968,7 @@ module.exports = function (params) {
             endpoint: that.remoteEndpoint
         });
 
-        if (that.caller === true) {
+        if (pc.state.caller === true) {
             directConnection.accept();
         }
 
@@ -1110,22 +995,30 @@ module.exports = function (params) {
      * @method respoke.Call.hangup
      * @fires respoke.Call#hangup
      * @param {object} params
-     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
+     * @arg {boolean} params.signal Optional flag to indicate whether to send or suppress sending
      * a hangup signal to the remote side.
      */
     that.hangup = function (params) {
-        params = params || {};
-        log.debug('hangup', directConnection);
-
-        if (toSendHangup !== null) {
-            log.info("call.hangup() called when call is already hung up.");
+        if (!pc) {
             return;
         }
-        toSendHangup = false;
+        params = params || {};
+        params.reason = params.reason || "hangup method called.";
+        pc.state.dispatch('hangup', params);
+    };
+    that.hangup = respoke.once(that.hangup);
 
-        if (!that.caller && defApproved.promise.isPending()) {
-            defApproved.reject(new Error("Call hung up before approval."));
-        }
+    /**
+     * Tear down the call, release user media.  Send a hangup signal to the remote party if
+     * signal is not false and we have not received a hangup signal from the remote party. This is an event
+     * handler added to the state machine via `once`.
+     * @memberof! respoke.Call
+     * @method respoke.Call.hangup
+     * @fires respoke.Call#hangup
+     * @private
+     */
+    var doHangup = function () {
+        log.debug('hangup', that.caller);
 
         localStreams.forEach(function eachStream(stream) {
             stream.stop();
@@ -1134,10 +1027,12 @@ module.exports = function (params) {
         if (directConnection && directConnection.isActive()) {
             directConnection.close();
             that.remoteEndpoint.directConnection = null;
+            directConnection.ignore();
+            directConnection = null;
         }
 
         if (pc) {
-            toSendHangup = pc.close(params);
+            pc.close({signal: (pc.state.receivedBye ? false : pc.state.signalBye)});
         }
 
         /**
@@ -1149,29 +1044,27 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('hangup', {
-            sentSignal: toSendHangup
+            reason: pc.state.hangupReason || "No reason specified."
         });
 
+        pc.state.ignore();
+        pc.ignore();
         that.ignore();
-        directConnection = null;
         pc = null;
     };
+    doHangup = respoke.once(doHangup);
 
     /**
      * Expose hangup as reject for approve/reject workflow.
      * @memberof! respoke.Call
      * @method respoke.Call.reject
      * @param {object} params
-     * @param {boolean} params.signal Optional flag to indicate whether to send or suppress sending
-     * a hangup signal to the remote side.
      */
-    that.reject = function (params) {
-        if (defModify && defModify.promise.isPending()) {
-            defModify.reject(new Error("Modify rejected."));
-            defModify = undefined;
-        } else {
-            that.hangup(params);
+    that.reject = function () {
+        if (!pc) {
+            return;
         }
+        pc.state.dispatch('reject', {reason: 'call.reject() called'});
     };
 
     /**
@@ -1182,7 +1075,7 @@ module.exports = function (params) {
      */
     that.isActive = function () {
         // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
-        return !!(pc.isActive() && (
+        return !!(pc && pc.isActive() && (
             (localStreams.length > 0) ||
             (directConnection && directConnection.isActive())
         ));
@@ -1198,12 +1091,20 @@ module.exports = function (params) {
      * @fires respoke.Call#modify
      */
     function listenOffer(evt) {
-        log.debug('listenOffer');
+        log.debug('listenOffer', evt.signal);
         var info = {};
-        if (defModify && defModify.promise.isPending()) {
-            if (directConnectionOnly === true) {
+
+        that.sessionId = evt.signal.sessionId;
+        pc.state.listen('connecting:entry', function () {
+            if (!pc.state.caller) {
+                pc.processOffer(evt.signal.sessionDescription);
+            }
+        });
+
+        if (pc.state.isModifying()) {
+            if (pc.state.needDirectConnection === true) {
                 info.directConnection = directConnection;
-            } else if (directConnectionOnly === false) {
+            } else if (pc.state.needDirectConnection === false) {
                 // Nothing
             } else {
                 info.call = that;
@@ -1225,25 +1126,11 @@ module.exports = function (params) {
              */
             that.fire('modify', info);
         }
-        defSDPOffer.resolve(evt.signal);
-    }
 
-    /**
-     * Save the answer and tell the browser about it.
-     * @memberof! respoke.Call
-     * @method respoke.Call.listenAnswer
-     * @param {object} evt
-     * @param {object} evt.signal - The offer signal including the sdp and the connectionId of the endpoint who
-     * answered the call.
-     * @private
-     */
-    function listenAnswer(evt) {
-        log.debug('Call.listenAnswer');
-        if (defSDPAnswer.promise.isFulfilled()) {
-            log.debug("Ignoring duplicate answer.");
-            return;
-        }
-        defSDPAnswer.resolve(evt.signal.sessionDescription);
+        pc.state.dispatch('receiveOffer', {
+            previewLocalMedia: previewLocalMedia,
+            approve: that.approve
+        });
     }
 
     /**
@@ -1256,6 +1143,7 @@ module.exports = function (params) {
         log.debug('Call.listenModify', evt);
         if (evt.signal.action === 'initiate') {
             defModify = Q.defer();
+            pc.state.dispatch('modify', {receive: true});
         }
     }
 
@@ -1267,13 +1155,7 @@ module.exports = function (params) {
      * @private
      */
     function onModifyAccept(evt) {
-        that.caller = evt.signal.action === 'initiate' ? false : true;
-        try {
-            init();
-        } catch (err) {
-            defModify.reject(err);
-            return;
-        }
+        pc.state.dispatch('accept');
 
         if (evt.signal.action !== 'initiate') {
             defModify.resolve(); // resolved later for callee
@@ -1294,10 +1176,9 @@ module.exports = function (params) {
             if (directConnection) {
                 that.removeDirectConnection({skipModify: true});
                 defMedia.resolve(false);
-                defApproved.resolve(false);
             }
         }
-        directConnectionOnly = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
+        pc.state.needDirectConnection = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
         callSettings.constraints = evt.signal.constraints || callSettings.constraints;
     }
 
@@ -1347,6 +1228,31 @@ module.exports = function (params) {
                 that.unmuteAudio();
             }
         }
+    };
+
+    /**
+     * Indicate whether the call has media flowing.
+     * @memberof! respoke.Call
+     * @method respoke.Call.hasMedia
+     * @returns {boolean}
+     */
+    that.hasMedia = function () {
+        var local;
+        var remote;
+
+        if (!pc || !pc.getLocalStreams) {
+            // PeerConnection.init() has not been called yet
+            return false;
+        }
+
+        local = pc.getLocalStreams();
+        remote = pc.getRemoteStreams();
+
+        if (directConnection && directConnection.isActive()) {
+            return true;
+        }
+
+        return (local.length > 0 || remote.length > 0);
     };
 
     /**
@@ -1476,12 +1382,19 @@ module.exports = function (params) {
      * @private
      */
     function listenHangup(evt) {
+        if (!pc) {
+            return;
+        }
         pc.report.callStoppedReason = evt.signal.reason || "Remote side hung up";
-        that.hangup({signal: false});
+        pc.state.receivedBye = true;
+        pc.state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});
     }
 
+    pc.state.once('terminated:entry', function (evt) {
+        doHangup();
+    }, true);
+
     that.listen('signal-offer', listenOffer, true);
-    that.listen('signal-answer', listenAnswer, true);
     that.listen('signal-hangup', listenHangup, true);
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
@@ -1491,8 +1404,42 @@ module.exports = function (params) {
             return;
         }
         evt.signal.iceCandidates.forEach(function processCandidate(candidate) {
+            if (!pc) {
+                return;
+            }
             pc.addRemoteCandidate({candidate: candidate});
         });
+    }, true);
+
+    if (pc.state.needDirectConnection !== true) {
+        pc.state.once('preparing:entry', function () {
+            /**
+             * This event provides notification for when an incoming call is being received.  If the user wishes
+             * to allow the call, the app should call evt.call.answer() to answer the call.
+             * @event respoke.Client#call
+             * @type {respoke.Event}
+             * @property {respoke.Call} call
+             * @property {respoke.Endpoint} endpoint
+             * @property {string} name - the event name.
+             * @property {respoke.Client} target
+             */
+            client.fire('call', {
+                endpoint: that.remoteEndpoint,
+                call: that
+            });
+        }, true);
+    }
+
+    pc.state.listen('idle:exit', function (evt) {
+        saveParameters(params);
+    });
+
+    pc.state.listen('preparing:entry', function (evt) {
+        init();
+
+        if (pc.state.caller === true) {
+            that.answer();
+        }
     }, true);
 
     signalingChannel.getTurnCredentials().then(function (result) {
@@ -1506,9 +1453,10 @@ module.exports = function (params) {
             callSettings.servers.iceServers = result;
         }
     }).fin(function () {
-        saveParameters(params);
-        init();
-        defInit.resolve();
+        pc.state.dispatch('initiate', {
+            client: client,
+            caller: that.caller
+        });
     }).done(null, function (err) {
         // who cares
     });

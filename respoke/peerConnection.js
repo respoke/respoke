@@ -16,8 +16,6 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @param {boolean} [params.receiveOnly] - whether or not we accept media
- * @param {boolean} [params.sendOnly] - whether or not we send media
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
  * candidates.
  * @param {respoke.Call} params.call
@@ -64,12 +62,6 @@ module.exports = function (params) {
      * @type {respoke.Endpoint}
      */
     var toSendHangup;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name state
-     * @type {number}
-     */
-    that.state = -1;
 
     /**
      * @memberof! respoke.PeerConnection
@@ -80,33 +72,6 @@ module.exports = function (params) {
      * raw data transfer occurs within the PeerConnection.
      */
     var pc = null;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name defSDPOffer
-     * @private
-     * @type {Promise}
-     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
-     * handling, or sending of some information.
-     */
-    var defSDPOffer = Q.defer();
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name defSDPAnswer
-     * @private
-     * @type {Promise}
-     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
-     * handling, or sending of some information.
-     */
-    var defSDPAnswer = Q.defer();
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name defApproved
-     * @private
-     * @type {Promise}
-     * @desc Used in the state machine to trigger methods or functions whose execution depends on the reception,
-     * handling, or sending of some information.
-     */
-    var defApproved = Q.defer();
     /**
      * @memberof! respoke.PeerConnection
      * @name defModify
@@ -124,24 +89,7 @@ module.exports = function (params) {
      * @desc A callback provided by the developer that we'll call after receiving local media and before
      * approve() is called.
      */
-    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
-        params.previewLocalMedia : undefined;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name sendOnly
-     * @private
-     * @type {boolean}
-     * @desc A flag indicating we will send media but not receive it.
-     */
-    var sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : false;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name receiveOnly
-     * @private
-     * @type {boolean}
-     * @desc A flag indicating we will receive media but will not send it.
-     */
-    var receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : false;
+    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
     /**
      * @memberof! respoke.PeerConnection
      * @name candidateSendingQueue
@@ -212,7 +160,7 @@ module.exports = function (params) {
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalHangup = params.signalHangup;
+    var signalHangup = respoke.once(params.signalHangup);
     /**
      * @memberof! respoke.PeerConnection
      * @name signalReport
@@ -275,10 +223,10 @@ module.exports = function (params) {
     that.report = {
         callStarted: 0,
         callStopped: 0,
-        callerendpoint: that.call.initiator ? client.name : that.call.remoteEndpoint.id,
-        callerconnection: that.call.initiator ? client.id : that.call.connectionId,
-        calleeendpoint: that.call.initiator ? that.call.remoteEndpoint.id : client.id,
-        calleeconnection: that.call.initiator ? that.call.connectionId : client.connectionId,
+        callerendpoint: that.call.caller ? client.name : that.call.remoteEndpoint.id,
+        callerconnection: that.call.caller ? client.id : that.call.connectionId,
+        calleeendpoint: that.call.caller ? that.call.remoteEndpoint.id : client.id,
+        calleeconnection: that.call.caller ? that.call.connectionId : client.connectionId,
         sessionId: that.call.id,
         lastSDPString: '',
         sdpsSent: [],
@@ -295,8 +243,9 @@ module.exports = function (params) {
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.initOffer
      * @fires respoke.PeerConnection#initOffer
+     * @private
      */
-    that.initOffer = function () {
+    function initOffer() {
         if (!pc) {
             return;
         }
@@ -305,36 +254,29 @@ module.exports = function (params) {
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
         }, offerOptions);
-    };
+    }
 
     /**
-     * Process a remote offer if we are not the caller.
+     * Process a remote offer if we are not the caller. This is necessary because we don't process the offer until
+     * the callee has answered the call.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.processOffer
      * @param {RTCSessionDescriptor}
      * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
-        log.debug('processOffer', oOffer);
-        if (that.call.caller) {
-            log.warn('Got offer in precall state.');
-            that.report.callStoppedReason = 'Got offer in precall state';
-            signalHangup({
-                call: that.call
-            });
-            defSDPOffer.reject();
-            return;
-        }
-
         if (!pc) {
             return;
         }
+        log.debug('processOffer', oOffer);
 
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
+
         //set flags for audio / video being offered
-        that.call.hasAudio = hasAudio(oOffer.sdp);
-        that.call.hasVideo = hasVideo(oOffer.sdp);
+        that.call.hasAudio = respoke.sdpHasAudio(oOffer.sdp);
+        that.call.hasVideo = respoke.sdpHasVideo(oOffer.sdp);
+        that.call.hasDataChannel = respoke.sdpHasDataChannel(oOffer.sdp);
 
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
@@ -345,8 +287,8 @@ module.exports = function (params) {
 
                     log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
+                        that.state.processedRemoteSDP = true;
                         saveAnswerAndSend(oSession);
-                        defSDPOffer.resolve();
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
                         that.report.callStoppedReason = err.message;
@@ -361,7 +303,9 @@ module.exports = function (params) {
                         that.call.fire('error', {
                             message: err.message
                         });
-                        defSDPOffer.reject(err);
+                        log.error('create answer failed');
+                        that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                        that.close();
                     });
                 }, function errorHandler(err) {
                     err = new Error('Error calling setRemoteDescription on offer I received.' + err.message);
@@ -377,7 +321,6 @@ module.exports = function (params) {
                     that.call.fire('error', {
                         message: err.message
                     });
-                    defSDPOffer.reject(err);
                 }
             );
         } catch (err) {
@@ -394,9 +337,7 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: newErr.message
             });
-            defSDPOffer.reject(newErr);
         }
-        return defSDPOffer.promise;
     };
 
     /**
@@ -417,21 +358,20 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
-        if (!pc) {
-            deferred.reject(new Error("Can't get stats, pc is null."));
-            return retVal;
-        }
-
         if (!respoke.MediaStats) {
             deferred.reject(new Error("Statistics module is not loaded."));
             return retVal;
         }
 
-        Q.all([defSDPOffer.promise, defSDPAnswer.promise]).then(function onSuccess() {
+        function onConnect() {
             var stats = respoke.MediaStatsParser({
                 peerConnection: pc,
                 interval: params.interval,
                 onStats: function statsHandler(stats) {
+                    if (!pc) {
+                        return;
+                    }
+
                     /**
                      * @event respoke.PeerConnection#stats
                      * @type {respoke.Event}
@@ -449,7 +389,13 @@ module.exports = function (params) {
                 stats.stopStats();
             }, true);
             deferred.resolve();
-        });
+        }
+
+        if (!pc) {
+            that.once('stream-received', onConnect);
+        } else {
+            onConnect();
+        }
 
         return retVal;
     }
@@ -479,12 +425,8 @@ module.exports = function (params) {
         }
 
         that.report.callStarted = new Date().getTime();
+
         pc = new RTCPeerConnection(callSettings.servers, pcOptions);
-
-        defSDPOffer.promise.done(function () {
-            processQueues();
-        }, null);
-
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
@@ -523,12 +465,47 @@ module.exports = function (params) {
             });
         };
 
-        /*
-         * Expose some methods on the PeerConnection.
-         */
-        that.getRemoteStreams = pc.getRemoteStreams.bind(pc);
-        that.getLocalStreams = pc.getLocalStreams.bind(pc);
-        that.createDataChannel = pc.createDataChannel.bind(pc);
+        that.state.listen('offering:entry', function (evt) {
+            if (that.state.caller) {
+                initOffer();
+            }
+        });
+    };
+
+    /**
+     * Return an array of remote media streams.
+     * @muremberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.getRemoteStreams
+     */
+    that.getRemoteStreams = function () {
+        if (!pc) {
+            return [];
+        }
+        return pc.getRemoteStreams.apply(pc, Array.prototype.slice.call(arguments));
+    };
+
+    /**
+     * Return an array of local media streams.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.getLocalStreams
+     */
+    that.getLocalStreams = function () {
+        if (!pc) {
+            return [];
+        }
+        return pc.getLocalStreams.apply(pc, Array.prototype.slice.call(arguments));
+    };
+
+    /**
+     * Create a data channel.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.createDataChannel
+     */
+    that.createDataChannel = function () {
+        if (!pc) {
+            return;
+        }
+        return pc.createDataChannel.apply(pc, Array.prototype.slice.call(arguments));
     };
 
     /**
@@ -569,10 +546,11 @@ module.exports = function (params) {
         }
 
         if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
+            log.debug("Dropping candidate because forceTurn is on.");
             return;
         }
 
-        if (that.call.caller && defSDPOffer.promise.isPending()) {
+        if (!that.state.sentSDP && !that.state.processedRemoteSDP) {
             candidateSendingQueue.push(candidate);
         } else {
             signalCandidate({
@@ -631,7 +609,7 @@ module.exports = function (params) {
      */
     function saveOfferAndSend(oSession) {
         oSession.type = 'offer';
-        if (!pc || !defSDPOffer.promise.isPending()) {
+        if (!pc) {
             return;
         }
         log.debug('setting and sending offer', oSession);
@@ -642,12 +620,12 @@ module.exports = function (params) {
                 call: that.call,
                 sessionDescription: oSession,
                 onSuccess: function () {
-                    setTimeout(function () {
-                    defSDPOffer.resolve(oSession);
-                    });
+                    that.state.sentSDP = true;
+                    setTimeout(processQueues);
                 },
                 onError: function (err) {
-                    defSDPOffer.reject(err);
+                    respoke.log.error('offer could not be sent');
+                    that.call.hangup({signal: false});
                 }
             });
         }, function errorHandler(p) {
@@ -663,7 +641,6 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: err.message
             });
-            defSDPOffer.reject(err);
         });
     }
 
@@ -680,7 +657,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (!that.call.initiator) {
+        if (!that.state.caller) {
             that.report.callerconnection = that.call.connectionId;
         }
 
@@ -694,7 +671,8 @@ module.exports = function (params) {
                 sessionDescription: oSession,
                 call: that.call
             });
-            defSDPAnswer.resolve(oSession);
+            that.state.sentSDP = true;
+            processQueues();
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on answer I created.');
             /**
@@ -708,7 +686,6 @@ module.exports = function (params) {
             that.call.fire('error', {
                 message: err.message
             });
-            defSDPAnswer.reject();
         });
     }
 
@@ -726,20 +703,12 @@ module.exports = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        if (!pc || toSendHangup !== undefined) {
-            log.debug("PeerConnection.close got called twice.");
-            return;
-        }
         toSendHangup = true;
 
-        if (that.call.caller === true) {
-            if (defSDPOffer.promise.isPending()) {
+        if (that.state.caller === true) {
+            if (!that.state.sentSDP) {
                 // Never send hangup if we are the caller but we haven't sent any other signal yet.
                 toSendHangup = false;
-            }
-        } else {
-            if (defApproved.promise.isPending()) {
-                defApproved.reject(new Error("Call hung up before approval."));
             }
         }
 
@@ -777,6 +746,7 @@ module.exports = function (params) {
         }
         that.report = null;
     };
+    that.close = respoke.once(that.close);
 
     /**
      * Indicate whether a call is being setup or is in progress.
@@ -789,30 +759,6 @@ module.exports = function (params) {
     };
 
     /**
-     * Indicate whether sdp has Audio element
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.hasAudio
-     * @param {object} sdp
-     * @returns {boolean}
-     * @private
-     */
-    function hasAudio(sdp) {
-        return sdp.indexOf('m=audio') !== -1;
-    }
-
-    /**
-     * Indicate whether sdp has Video element
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.hasVideo
-     * @param {object} sdp
-     * @returns {boolean}
-     * @private
-     */
-    function hasVideo(sdp) {
-        return sdp.indexOf('m=video') !== -1;
-    }
-
-    /**
      * Save the answer and tell the browser about it.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.listenAnswer
@@ -822,25 +768,22 @@ module.exports = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        if (!pc || !defSDPAnswer.promise.isPending()) {
+        if (!pc) {
             return;
         }
-        defSDPAnswer.promise.done(null, function errorHandler() {
-            log.error('set remote desc of answer failed', evt.signal.sessionDescription);
-            that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
-            that.close();
-        });
         log.debug('got answer', evt.signal);
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
         that.report.lastSDPString = evt.signal.sessionDescription.sdp;
         //set flags for audio / video for answer
-        that.call.hasAudio = hasAudio(evt.signal.sessionDescription.sdp);
-        that.call.hasVideo = hasVideo(evt.signal.sessionDescription.sdp);
-        if (that.call.caller) {
+        that.call.hasAudio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
+        that.call.hasVideo = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
+        that.call.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
+        if (that.state.caller) {
             that.report.calleeconnection = evt.signal.fromConnection;
         }
         that.call.connectionId = evt.signal.fromConnection;
+        // TODO don't signal connected more than once.
         signalConnected({
             call: that.call
         });
@@ -848,7 +791,7 @@ module.exports = function (params) {
         pc.setRemoteDescription(
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
-                defSDPAnswer.resolve(evt.signal.sessionDescription);
+                that.state.dispatch('receiveAnswer');
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
@@ -863,7 +806,9 @@ module.exports = function (params) {
                 that.call.fire('error', {
                     message: newErr.message
                 });
-                defSDPAnswer.reject();
+                log.error('set remote desc of answer failed', evt.signal.sessionDescription);
+                that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                that.close();
             }
         );
     }
@@ -893,14 +838,6 @@ module.exports = function (params) {
      */
     that.startModify = function (params) {
         defModify = Q.defer();
-        defModify.promise.then(function successHandler() {
-            // No offer/answer when tearing down direct connection.
-            if (params.directConnection !== false) {
-                defSDPOffer = Q.defer();
-                defApproved = Q.defer();
-                defSDPAnswer = Q.defer();
-            }
-        });
         signalModify({
             action: 'initiate',
             call: that.call,
@@ -922,7 +859,6 @@ module.exports = function (params) {
         log.debug('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
-            that.call.caller = true;
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
@@ -975,7 +911,7 @@ module.exports = function (params) {
 
         defModify = Q.defer();
 
-        if (defSDPOffer.promise.isPending() || defSDPAnswer.promise.isPending()) {
+        if (!that.state.sentSDP || that.state.isState('idle')) {
             err = new Error("Got modify in a precall state.");
             /**
              * @event respoke.PeerConnection#modify-reject
@@ -993,13 +929,6 @@ module.exports = function (params) {
             return;
         }
 
-        // No offer/answer when tearing down a direct connection.
-        if (evt.signal.directConnection !== false) {
-            defSDPOffer = Q.defer();
-            defApproved = Q.defer();
-            defSDPAnswer = Q.defer();
-        }
-
        /**
          * @event respoke.PeerConnection#modify-accept
          * @type {respoke.Event}
@@ -1012,7 +941,6 @@ module.exports = function (params) {
             action: 'accept',
             call: that.call
         });
-        that.call.caller = false;
         defModify.resolve();
     }
 
@@ -1042,7 +970,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (defSDPOffer.promise.isFulfilled()) {
+        if (that.state.sentSDP || that.state.processedRemoteSDP) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
                 log.debug('Got a remote candidate.', params.candidate);
@@ -1051,11 +979,9 @@ module.exports = function (params) {
                 log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
                 return;
             }
-        } else {
-            if (!params.processingQueue) {
-                candidateReceivingQueue.push(params.candidate);
-                log.debug('Queueing a candidate because no offer yet.');
-            }
+        } else if (!params.processingQueue) {
+            candidateReceivingQueue.push(params.candidate);
+            log.debug('Queueing a candidate because no offer yet.');
         }
     };
 

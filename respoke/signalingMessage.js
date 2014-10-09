@@ -10,12 +10,12 @@
  * @param {object} params
  * @param {string} [params.fromEndpoint] - If sending, the endpoint ID of the recipient
  * @param {string} [params.fromConnection] - If sending, the connection ID of the recipient
+ * @param {string} [params.connectionId] - The connectionId of the endpoint whose answer signal has been accepted.
  * @param {string} [params.signal] - If sending, a message to send
  * @param {respoke.Endpoint} [params.recipient]
  * @param {string} [params.signalType]
  * @param {string} [params.sessionId] - A globally unique ID to identify this call.
  * @param {string} [params.target] - Either 'call' or 'directConnection', TODO remove the need for this.
- * @param {string} [params.signalId] - A globally unique ID to identify this signal and it's ACK.
  * @param {string} [params.callerId] - Human readable caller ID. Not implemented.
  * @param {RTCSessionDescription} [params.sdp]
  * @param {Array<RTCIceCandidate>} [params.iceCandidates]
@@ -66,10 +66,10 @@ module.exports = function (params) {
     function parse() {
         if (params.rawMessage) {
             try {
-                params.rawMessage.body = JSON.parse(params.rawMessage.body);
-            } catch(e) {
+                that = JSON.parse(params.rawMessage.body); // Incoming message
+            } catch (e) {
+                that = params.rawMessage.body;
             }
-            that = params.rawMessage.body; // Incoming message
             that.fromType = params.rawMessage.header.fromType;
             that.fromEndpoint = params.rawMessage.header.from;
             that.fromConnection = params.rawMessage.header.fromConnection;

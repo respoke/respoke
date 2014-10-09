@@ -151,7 +151,7 @@ module.exports = function (params) {
 
         signalingChannel.leaveGroup({
             id: that.id
-        }).then(function successHandler() {
+        }).done(function successHandler() {
             /**
              * This event is fired when the client leaves a group.
              * @event respoke.Client#leave

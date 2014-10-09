@@ -407,7 +407,6 @@ module.exports = function (params) {
              * @property {respoke.Client} target
              */
             that.listen('call', clientSettings.onCall);
-            that.listen('call', removeCallOnHangup, true);
             /**
              * This event is fired when the local end of the directConnection is available. It still will not be
              * ready to send and receive messages until the 'open' event fires.
@@ -419,7 +418,6 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.listen('direct-connection', clientSettings.onDirectConnection);
-            that.listen('direct-connection', removeDCCallOnHangup, true);
             that.listen('join', clientSettings.onJoin);
             /**
              * This event is fired every time the client leaves a group.
@@ -474,19 +472,6 @@ module.exports = function (params) {
         return deferred.promise;
     }
 
-    function removeCallOnHangup(evt) {
-        evt.call.listen('hangup', function (evt) {
-            removeCall({call: evt.target});
-        }, true);
-    }
-
-    function removeDCCallOnHangup(evt) {
-        addCall({call: evt.directConnection.call});
-        evt.directConnection.listen('close', function (evt) {
-            removeCall({call: evt.target.call});
-        }, true);
-    }
-
     /**
      * Disconnect from the Respoke infrastructure, leave all groups, invalidate the token, and disconnect the websocket.
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
@@ -504,6 +489,13 @@ module.exports = function (params) {
         params = params || {};
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
+
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            deferred.reject(e);
+            return retVal;
+        }
 
         var leaveGroups = groups.map(function eachGroup(group) {
             group.leave();
@@ -653,12 +645,17 @@ module.exports = function (params) {
      * @private
      */
     function addCall(evt) {
+        log.debug('addCall');
         if (!evt.call) {
             throw new Error("Can't add call without a call parameter.");
         }
         if (that.calls.indexOf(evt.call) === -1) {
             that.calls.push(evt.call);
         }
+
+        evt.call.listen('hangup', function () {
+            removeCall({call: evt.call});
+        });
     }
 
     /**
@@ -790,7 +787,7 @@ module.exports = function (params) {
      * information.
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
-     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
      * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -1067,15 +1064,16 @@ module.exports = function (params) {
             params.instanceId = instanceId;
 
             group = that.getGroup({id: params.id});
+
             if (!group) {
                 group = respoke.Group(params);
                 that.addGroup(group);
             }
-            
+
             group.listen('join', params.onJoin);
             group.listen('leave', params.onLeave);
-            group.listen('message', params.onMessage);            
-            
+            group.listen('message', params.onMessage);
+
             group.addMember({
                 connection: that.getConnection({
                     endpointId: that.endpointId,

@@ -55,7 +55,7 @@ module.exports = function (params) {
      * @private
      * @type {Video}
      */
-    var videoLocalElement = params.videoLocalElement || document.createElement('video');
+    var videoLocalElement = params.videoLocalElement;
     /**
      * @memberof! respoke.LocalMedia
      * @name videoIsMuted
@@ -85,7 +85,8 @@ module.exports = function (params) {
      * @private
      * @type {object}
      */
-    var callSettings = params.callSettings;
+    var callSettings = params.callSettings || {};
+    callSettings.constraints = params.constraints || callSettings.constraints;
     /**
      * @memberof! respoke.LocalMedia
      * @name mediaOptions
@@ -108,62 +109,11 @@ module.exports = function (params) {
     delete that.pc;
     /**
      * @memberof! respoke.LocalMedia
-     * @name forceTurn
-     * @private
-     * @type {boolean}
-     */
-    var forceTurn;
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name sendOnly
-     * @private
-     * @type {boolean}
-     */
-    var sendOnly;
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name receiveOnly
-     * @private
-     * @type {boolean}
-     */
-    var receiveOnly;
-    /**
-     * @memberof! respoke.LocalMedia
      * @name stream
      * @private
      * @type {RTCMediaStream}
      */
     var stream;
-
-    /**
-     * Register any event listeners passed in as callbacks
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.saveParameters
-     * @param {object} params
-     * @param {respoke.Call.onHangup} [params.onHangup]
-     * @param {object} [params.callSettings]
-     * @param {object} [params.constraints]
-     * @param {array} [params.servers]
-     * @param {boolean} [params.forceTurn]
-     * @param {boolean} [params.receiveOnly]
-     * @param {boolean} [params.sendOnly]
-     * @private
-     */
-    function saveParameters(params) {
-        forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : forceTurn;
-        receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : receiveOnly;
-        sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : sendOnly;
-        callSettings = params.callSettings || callSettings || {};
-        callSettings.servers = params.servers || callSettings.servers;
-        callSettings.constraints = params.constraints || callSettings.constraints;
-        callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
-        params.videoLocalElement = videoLocalElement;
-    }
-
-    /**
-     * Must call saveParameters as part of object construction.
-     */
-    saveParameters(params);
 
     /**
      * Save the local stream. Kick off SDP creation.
@@ -462,7 +412,7 @@ module.exports = function (params) {
      * @fires respoke.LocalMedia#stop
      */
     that.stop = function () {
-        if (stream === null) {
+        if (!stream) {
             return;
         }
 

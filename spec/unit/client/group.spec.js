@@ -1,7 +1,5 @@
 var expect = chai.expect;
 
-respoke.log.setLevel('error');
-
 var client;
 var instanceId;
 var group;

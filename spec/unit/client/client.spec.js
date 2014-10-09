@@ -2,7 +2,6 @@
 var expect = chai.expect;
 
 var instanceId;
-respoke.log.setLevel('error');
 
 describe("respoke.Client", function () {
     var client;
@@ -120,9 +119,9 @@ describe("respoke.Client", function () {
                     client.connect({
                         appId: respoke.makeGUID(),
                         developmentMode: true
-                    }).then(function success() {
+                    }).done(function success() {
                         done(new Error("connect() succeeded with invalid params."));
-                    }).catch(function failure(err) {
+                    }, function failure(err) {
                         expect(err).to.exist;
                         expect(err.message).to.contain('Must pass');
                         done();
@@ -132,25 +131,32 @@ describe("respoke.Client", function () {
         });
 
         describe("disconnect()", function () {
+            var error;
+            var oldConnected;
+            var handler = sinon.spy();
+
+            beforeEach(function (done) {
+                oldConnected = client.isConnected();
+                client.listen('disconnect', handler);
+                client.disconnect().done(function () {
+                    done();
+                }, function (err) {
+                    error = err;
+                    done();
+                });
+            });
+
             it("doesn't change the client.isConnected() value", function () {
-                var oldConnected = client.isConnected();
                 expect(oldConnected).to.be.false;
-                client.disconnect();
                 expect(oldConnected).to.equal(client.isConnected());
             });
 
-            it("doesn't fire the disconnect event", function (done) {
-                var handler = sinon.spy();
-                client.listen('disconnect', handler);
-                client.disconnect();
-                setTimeout(function () {
-                    expect(handler.notCalled).to.be.defined;
-                    if (handler.getCall(0)) {
-                        expect(handler.getCall(0).args[0]).to.be.ok;
-                        console.log(handler.getCall(0).args);
-                    }
-                    done();
-                }, 10);
+            it("doesn't fire the disconnect event", function () {
+                expect(handler.called).to.equal(false);
+            });
+
+            it("rejects the disconnect promise", function () {
+                expect(error).to.be.ok;
             });
         });
 

@@ -110,7 +110,12 @@ module.exports = function (params) {
         dataChannel = evt.channel;
         dataChannel.onerror = onDataChannelError;
         dataChannel.onmessage = onDataChannelMessage;
-        dataChannel.onopen = onDataChannelOpen;
+        if (dataChannel.readyState === 'open') {
+            dataChannel.onopen = null;
+            onDataChannelOpen();
+        } else {
+            dataChannel.onopen = onDataChannelOpen;
+        }
     }
 
     /**
@@ -365,11 +370,12 @@ module.exports = function (params) {
         log.debug('DirectConnection.accept');
         saveParameters(params);
 
-        log.debug("I am " + (that.call.caller ? '' : 'not ') + "the caller.");
+        log.debug("I am " + (pc.state.caller ? '' : 'not ') + "the caller.");
 
-        if (that.call.caller === true) {
+        if (pc.state.caller === true) {
             createDataChannel();
         }
+        that.call.answer();
 
         /**
          * @event respoke.DirectConnection#accept
