@@ -69,9 +69,13 @@ module.exports = function (grunt) {
                 singleRun: true,
                 configFile: './karma-unit.conf.js'
             },
-            functional: {
+            functionalChrome: {
                 singleRun: true,
-                configFile: './karma-functional.conf.js'
+                configFile: './karma-functional-chrome.conf.js'
+            },
+            functionalFirefox: {
+                singleRun: true,
+                configFile: './karma-functional-firefox.conf.js'
             }
         },
         watch: {
@@ -151,7 +155,8 @@ module.exports = function (grunt) {
         'start-saucer-section',
         'start-webhook-service',
         'liftSails',
-        'karma:functional',
+        'karma:functionalChrome',
+        'karma:functionalFirefox',
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'
@@ -164,7 +169,8 @@ module.exports = function (grunt) {
         'start-webhook-service',
         'liftSails',
         'karma:unit',
-        'karma:functional',
+        'karma:functionalChrome',
+        'karma:functionalFirefox',
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'

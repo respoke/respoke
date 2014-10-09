@@ -263,6 +263,10 @@ module.exports = function (params) {
         },
         offerOptions: params.offerOptions || null,
         signalOffer: function (args) {
+            if (!pc) {
+                return;
+            }
+
             params.signalOffer(args);
             pc.state.dispatch('sentOffer');
         },
