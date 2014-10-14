@@ -125,7 +125,7 @@ module.exports = function (params) {
      * @property {boolean} [developmentMode=false] - Indication to obtain an authentication token from the service.
      * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
      * operation and will limit the services you will be able to use.
-     * @property {boolean} [reconnect=true] - Whether or not to automatically reconnect to the Respoke service
+     * @property {boolean} [reconnect=false] - Whether or not to automatically reconnect to the Respoke service
      * when a disconnect occurs.
      * @property {onJoin} [onJoin] - Callback for when this client's endpoint joins a group.
      * @property {onLeave} [onLeave] - Callback for when this client's endpoint leaves a group.
@@ -145,7 +145,7 @@ module.exports = function (params) {
         token: params.token,
         appId: params.appId,
         developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false,
-        reconnect: typeof params.developmentMode === 'boolean' ? params.developmentMode : true,
+        reconnect: typeof params.developmentMode === 'boolean' ? params.developmentMode : false,
         endpointId: params.endpointId,
         onJoin: params.onJoin,
         onLeave: params.onLeave,

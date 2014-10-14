@@ -70,7 +70,6 @@ require('./deps/adapter');
  *
  *      // connect to respoke with the token
  *      client.connect({
- *          reconnect: false,
  *          token: tokenId
  *      });
  *
@@ -79,7 +78,6 @@ require('./deps/adapter');
  *          // fetch another token from your server.
  *          var newTokenId = "XXXX-XXXX-brokered-auth-token2-XXXXX";
  *          client.connect({
- *              reconnect: false,
  *              token: newTokenId
  *          });
  *      });
@@ -189,7 +187,7 @@ if (!window.skipBugsnag) {
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
  * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
  * operation and will limit the services you will be able to use.
- * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
+ * @param {boolean} [params.reconnect=false] - Whether or not to automatically reconnect to the Respoke service
  * when a disconnect occurs.
  * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
  * @param {function} [params.onError] - Error handler for this invocation of this method only.
