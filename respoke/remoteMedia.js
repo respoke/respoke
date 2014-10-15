@@ -319,6 +319,14 @@ module.exports = function (params) {
     that.setStream = function (str) {
         if (str) {
             that.stream = str;
+            /**
+             * Expose getAudioTracks.
+             */
+            that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
+            /**
+             * Expose getVideoTracks.
+             */
+            that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
             that.element = that.element || document.createElement('video');
             attachMediaStream(that.element, that.stream);
             that.element.autoplay = true;
