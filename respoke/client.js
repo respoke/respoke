@@ -127,8 +127,8 @@ module.exports = function (params) {
      * operation and will limit the services you will be able to use.
      * @property {boolean} [reconnect=false] - Whether or not to automatically reconnect to the Respoke service
      * when a disconnect occurs.
-     * @property {onJoin} [onJoin] - Callback for when this client's endpoint joins a group.
-     * @property {onLeave} [onLeave] - Callback for when this client's endpoint leaves a group.
+     * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
+     * @param {respoke.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
      * @property {respoke.Client.onClientMessage} [onMessage] - Callback for when any message is received
      * from anywhere on the system.
      * @property {respoke.Client.onConnect} [onConnect] - Callback for Client connect.
@@ -140,24 +140,9 @@ module.exports = function (params) {
      * @property {boolean} enableCallDebugReport=true - Upon finishing a call, should the client send debugging
      * information to the API? Defaults to `true`.
      */
-    var clientSettings = {
-        baseURL: params.baseURL,
-        token: params.token,
-        appId: params.appId,
-        developmentMode: typeof params.developmentMode === 'boolean' ? params.developmentMode : false,
-        reconnect: typeof params.developmentMode === 'boolean' ? params.developmentMode : false,
-        endpointId: params.endpointId,
-        onJoin: params.onJoin,
-        onLeave: params.onLeave,
-        onMessage: params.onMessage,
-        onConnect: params.onConnect,
-        onDisconnect: params.onDisconnect,
-        onReconnect: params.onReconnect,
-        onCall: params.onCall,
-        onDirectConnection: params.onDirectConnection,
-        resolveEndpointPresence: params.resolveEndpointPresence,
-        enableCallDebugReport: typeof params.enableCallDebugReport === 'boolean' ? params.enableCallDebugReport : true
-    };
+    var clientSettings = {};
+
+    saveParameters(params);
     delete that.appId;
     delete that.baseURL;
     delete that.developmentMode;
@@ -230,6 +215,63 @@ module.exports = function (params) {
         instanceId: instanceId,
         clientSettings: clientSettings
     });
+
+    /**
+     * Save parameters of the constructor or client.connect() onto the clientSettings object
+     * @memberof! respoke.Client
+     * @method respoke.saveParameters
+     * @param {object} params
+     * @param {respoke.Client.connectSuccessHandler} [params.onSuccess] - Success handler for this invocation
+     * of this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
+     * respoke.connect, respoke.createClient, or to client.connect.
+     * @param {string} [params.token] - The endpoint's authentication token.
+     * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
+     * different parameters than the built-in defaults.
+     * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
+     * different parameters than the built-in defaults.
+     * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
+     * endpoint. This is only used when `developmentMode` is set to `true`.
+     * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
+     * @param {respoke.client.resolveEndpointPresence} [params.resolveEndpointPresence] An optional function for
+     * resolving presence for an endpoint.  An endpoint can have multiple Connections this function will be used
+     * to decide which Connection's presence gets precedence for the Endpoint.
+     * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
+     * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
+     * operation and will limit the services you will be able to use.
+     * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
+     * when a disconnect occurs.
+     * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
+     * @param {respoke.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves
+     * a group.
+     * @param {respoke.Client.onClientMessage} [params.onMessage] - Callback for when any message is
+     * received from anywhere on the system.
+     * @param {respoke.Client.onConnect} [params.onConnect] - Callback for Client connect.
+     * @param {respoke.Client.onDisconnect} [params.onDisconnect] - Callback for Client disconnect.
+     * @param {respoke.Client.onReconnect} [params.onReconnect] - Callback for Client reconnect. Not Implemented.
+     * @param {respoke.Client.onCall} [params.onCall] - Callback for when this client receives a call.
+     * @param {respoke.Client.onDirectConnection} [params.onDirectConnection] - Callback for when this
+     * client receives a request for a direct connection.
+     * @private
+     */
+    function saveParameters(params) {
+        Object.keys(params).forEach(function eachParam(key) {
+            if (['onSuccess', 'onError', 'reconnect'].indexOf(key) === -1 && params[key] !== undefined) {
+                clientSettings[key] = params[key];
+            }
+        });
+
+        clientSettings.developmentMode = !!clientSettings.developmentMode;
+        clientSettings.enableCallDebugReport = !!clientSettings.enableCallDebugReport;
+
+        if (typeof params.reconnect !== 'boolean') {
+            clientSettings.reconnect = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
+        } else {
+            clientSettings.reconnect = !!params.reconnect;
+        }
+    }
 
     /**
      * Connect to the Respoke infrastructure and authenticate using `params.token`.
@@ -320,11 +362,8 @@ module.exports = function (params) {
         log.debug('Client.connect');
         that.connectTries += 1;
 
-        Object.keys(params).forEach(function eachParam(key) {
-            if (['onSuccess', 'onError'].indexOf(key) === -1 && params[key] !== undefined) {
-                clientSettings[key] = params[key];
-            }
-        });
+        saveParameters(params);
+
         that.endpointId = clientSettings.endpointId;
         promise = actuallyConnect(params);
         retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
