@@ -234,16 +234,16 @@ module.exports = function (params) {
     /**
      * Connect to the Respoke infrastructure and authenticate using `params.token`.
      *
-     * After `"connect"`, the app auth session token is stored so it can be used in API requests.
+     * After `connect`, the app auth session token is stored so it can be used in API requests.
      *
      * This method attaches quite a few event listeners for things like group joining and connection status changes.
      *
      * #### Usage
      *
      *      client.connect({
-     *          appId: "XXXX-XXX-XX-XXXX",
-     *          token: "XXXX-XXX-XX-XXXX", // if not developmentMode
-     *          developmentMode: false || true
+     *          appId: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX",
+     *          token: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX", // if not developmentMode
+     *          developmentMode: false || true,
      *          // if developmentMode, otherwise your server will set endpointId
      *          endpointId: "billy"
      *      });
@@ -259,8 +259,8 @@ module.exports = function (params) {
      * If `params.reconnect` is set to true (which it is by default for `developmentMode`), the `client`
      * will attempt to keep reconnecting each time the app auth session expires.
      *
-     * If not using `developmentMode`, disable automatic reconnect by sending `reconnect: false`.
-     * Then listen to the Client's disconnect event to fetch a new brokered auth token and call
+     * If not using `developmentMode`, automatic reconnect will be disabled. You will need to
+     * listen to the Client's `disconnect` event to fetch a new brokered auth token and call
      * `client.connect()` with the new token.
      *
      *      client.listen('disconnect', function () {
@@ -533,7 +533,7 @@ module.exports = function (params) {
      *                      || ['Away', 'At lunch'];
      *
      *      client.setPresence({
-     *          presence: myPresence, 
+     *          presence: myPresence,
      *          onSuccess: function (evt) {
      *              // successfully updated my presence
      *          }
@@ -580,6 +580,16 @@ module.exports = function (params) {
 
     /**
      * Get the Call with the endpoint specified.
+     *
+     *     // hang up on chad
+     *     var call = client.getCall({
+     *         endpointId: 'chad'
+     *     });
+     *
+     *     if (call) {
+     *         call.hangup()
+     *     }
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.getCall
      * @param {object} params
@@ -719,6 +729,13 @@ module.exports = function (params) {
 
     /**
      * Send a message to an endpoint.
+     *
+     *     client.sendMessage({
+     *         endpointId: 'dan',
+     *         message: "Jolly good."
+     *     });
+     *
+     *
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.Client
      * @method respoke.Client.sendMessage
@@ -750,14 +767,14 @@ module.exports = function (params) {
 
     /**
      * Place an audio and/or video call to an endpoint.
-     * 
+     *
      *     // defaults to video when no constraints are supplied
      *     client.startCall({
      *         endpointId: 'erin',
      *         onConnect: function (evt) { },
      *         onLocalMedia: function (evt) { }
      *     });
-     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.startCall
      * @param {object} params
@@ -819,7 +836,14 @@ module.exports = function (params) {
     };
 
     /**
-     * Place an audio call with a phone number.
+     * Place an audio call with a phone number. Video is disabled for phone calls.
+     *
+     *     client.startPhoneCall({
+     *         number: '5558675309',
+     *         onConnect: function (evt) { },
+     *         onLocalMedia: function (evt) { }
+     *     });
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.startPhoneCall
      * @param {object} params
@@ -853,7 +877,6 @@ module.exports = function (params) {
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @return {respoke.Call}
-     * @private
      */
     that.startPhoneCall = function (params) {
         var promise;
@@ -895,7 +918,7 @@ module.exports = function (params) {
         params.callSettings = combinedCallSettings;
         params.instanceId = instanceId;
         params.remoteEndpoint = recipient;
-        
+
         params.toType = params.toType || 'did';
         params.fromType = params.fromType || 'web';
 
@@ -997,14 +1020,14 @@ module.exports = function (params) {
 
     /**
      * Join a group and begin keeping track of it.
-     * 
+     *
      * You can leave the group by calling `group.leave()`;
-     * 
+     *
      * ##### Joining and leaving a group
-     * 
+     *
      *      var group;
-     * 
-     *      client.join({ 
+     *
+     *      client.join({
      *          id: "book-club",
      *          onSuccess: function (evt) {
      *              console.log('I joined', evt.group.id);
@@ -1015,7 +1038,7 @@ module.exports = function (params) {
      *              });
      *          }
      *      });
-     * 
+     *
      *      // . . .
      *      // Some time later, leave the group.
      *      // . . .
@@ -1025,7 +1048,7 @@ module.exports = function (params) {
      *              // "I left book-club"
      *          }
      *      });
-     * 
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.join
      * @param {object} params
@@ -1131,6 +1154,11 @@ module.exports = function (params) {
 
     /**
      * Find a group by id and return it.
+     *
+     *     var group = client.getGroup({
+     *         id: "resistance"
+     *     });
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.getGroup
      * @param {object} params
@@ -1210,6 +1238,10 @@ module.exports = function (params) {
      * If it is not already cached locally, will be added to the local cache of tracked endpoints,
      * its presence will be determined, and will be available in `client.getEndpoints()`.
      *
+     *     var endpoint = client.getEndpoint({
+     *         id: "dlee"
+     *     });
+     *
      * @ignore If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`),
      * it will be created. This is useful, for example, in the case of dynamic endpoints where groups are
      * not in use. Override dynamic endpoint creation by setting `params.skipCreate = true`.
@@ -1264,6 +1296,10 @@ module.exports = function (params) {
 
     /**
      * Find a Connection by id and return it.
+     *
+     *     var connection = client.getConnection({
+     *         id: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX"
+     *     });
      *
      * @ignore In most cases, if we don't find it we will create it. This is useful
      * in the case of dynamic endpoints where groups are not in use. Set skipCreate=true

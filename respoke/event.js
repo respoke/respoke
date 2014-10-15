@@ -7,7 +7,7 @@ var log = require('loglevel');
 
 /**
  * A generic class for emitting and listening to events.
- * 
+ *
  * @class respoke.EventEmitter
  * @inherits respoke.Class
  * @constructor
@@ -42,6 +42,11 @@ var EventEmitter = module.exports = function (params) {
      * listener is not already registered to this event and the listener is a function.  The third argument 'isInternal'
      * is used only internally by the library to indicate that this listener is a library-used listener and should not
      * count when we are trying to determine if an event has listeners placed by the developer.
+     *
+     *     client.once('connect', function (evt) {
+     *         console.log("This is the first time we connected.");
+     *     });
+     *
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.listen
      * @param {string} eventType - A developer-specified string identifying the event.
@@ -60,6 +65,11 @@ var EventEmitter = module.exports = function (params) {
      * listener is not already registered to this even and the listener is a function.  The third argument 'isInternal'
      * is used only internally by the library to indicate that this listener is a library-used listener and should not
      * count when we are trying to determine if an event has listeners placed by the developer.
+     *
+     *     client.listen('connect', function (evt) {
+     *         console.log("We've connected!");
+     *     });
+     *
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.listen
      * @param {string} eventType - A developer-specified string identifying the event.
@@ -89,6 +99,9 @@ var EventEmitter = module.exports = function (params) {
      * cleared. If an eventType is specified but no listener is specified, all listeners will be
      * removed from the specified eventType.  If a listener is also specified, only that listener
      * will be removed.
+     *
+     *     client.ignore('connect', connectHandler);
+     *
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.ignore
      * @param {string} [eventType] - An optional developer-specified string identifying the event.
@@ -125,6 +138,7 @@ var EventEmitter = module.exports = function (params) {
      * @param {string} eventType - A developer-specified string identifying the event to fire.
      * @param {string|number|object|array} evt - Any number of optional parameters to be passed to
      * the listener
+     * @private
      */
     that.fire = function (eventType, evt) {
         var args = null;
@@ -173,6 +187,11 @@ var EventEmitter = module.exports = function (params) {
      * method is used in the library to handle situations where an action is needed if an event won't be acted on.
      * For instance, if a call comes in for the logged-in user, but the developer isn't listening to
      * {respoke.Client#call}, we'll need to reject the call immediately.
+     *
+     *     if (client.hasListeners('call')) {
+     *         // already handled!
+     *     }
+     *
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.hasListeners
      * @param {string} eventType - The name of the event

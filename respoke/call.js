@@ -401,6 +401,13 @@ module.exports = function (params) {
      * side. This method must be called on the callee's side to indicate that the endpoint does wish to accept the
      * call. The app will have a later opportunity, by passing a callback named previewLocalMedia, to approve or
      * reject the call based on whether audio and/or video is working and is working at an acceptable level.
+     *
+     *     client.listen('call', function (evt) {
+     *         if (!evt.call.caller) {
+     *             evt.call.answer();
+     *         }
+     *     });
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.answer
      * @fires respoke.Call#answer
@@ -461,9 +468,15 @@ module.exports = function (params) {
      * Accept a request to modify the media on the call. This method should be called within the Call#modify
      * event listener, which gives the developer or website user a chance to see what changes are proposed and
      * to accept or reject them.
+     *
+     *     call.listen('modify', function (evt) {
+     *         evt.call.accept();
+     *     });
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.accept
      * @fires respoke.Call#accept
+     * @private
      * @param {object} [params]
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
@@ -487,6 +500,13 @@ module.exports = function (params) {
      * audio and/or video is working correctly,
      * this method must be called on both sides in order to begin the call. If call.approve() is called, the call
      * will progress as expected. If call.reject() is called, the call will be aborted.
+     *
+     *     call.listen('local-stream-received', function (evt) {
+     *         if (userLikesVideo()) {
+     *             evt.call.approve();
+     *         }
+     *     });
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.approve
      * @fires respoke.Call#approve
@@ -566,6 +586,17 @@ module.exports = function (params) {
      * statistics; rather it contains methods of interacting with the actions of obtaining statistics. To obtain
      * the actual statistics one time, use stats.getStats(); use the onStats callback to obtain a continuous
      * stream of statistics every `interval` seconds.  Returns null if stats module is not loaded.
+     *
+     *     call.getStats({
+     *         onStats: function (evt) {
+     *             console.log('Stats', evt.stats);
+     *         }
+     *     }).done(function () {
+     *         console.log('Stats started');
+     *     }, function (err) {
+     *         console.log('Call is already hung up.');
+     *     });
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.getStats
      * @param {object} params
@@ -591,6 +622,10 @@ module.exports = function (params) {
 
     /**
      * Return local video element with the logged-in endpoint's audio and/or video streams attached to it.
+     *
+     *     var el = call.getLocalElement();
+     *     container.append(el);
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.getLocalElement
      * @returns {Video} An HTML5 video element.
@@ -601,6 +636,10 @@ module.exports = function (params) {
 
     /**
      * Return remote video element with the remote endpoint's audio and/or video streams attached to it.
+     *
+     *     var el = call.getRemoteElement();
+     *     container.append(el);
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.getRemoteElement
      * @returns {Video} An HTML5 video element.
@@ -781,8 +820,17 @@ module.exports = function (params) {
 
     /**
      * Get the direct connection on this call, if it exists.
+     *
+     *     var dc = call.getDirectConnection();
+     *     if (!dc) {
+     *         console.log("No direct connection has been started.");
+     *     } else {
+     *         dc.sendMessage({message: 'hi'});
+     *     }
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.getDirectConnection
+     * @returns {respoke.DirectConnection}
      */
     that.getDirectConnection = function () {
         return directConnection || null;
@@ -794,6 +842,7 @@ module.exports = function (params) {
      * @method respoke.Call.removeDirectConnection
      * @private
      * @param {object} params
+     * @arg {boolean} [params.skipModify] Do not restart media negotiation.
      */
     that.removeDirectConnection = function (params) {
         params = params || {};
@@ -825,6 +874,13 @@ module.exports = function (params) {
 
     /**
      * Add a direct connection to the existing call.
+     *
+     *     call.addDirectConnection({
+     *         onOpen: function (evt) {
+     *             console.log("Direct connection open!");
+     *         }
+     *     });
+     *
      * @memberof! respoke.Call
      * @method respoke.Call.addDirectConnection
      * @private
@@ -961,7 +1017,6 @@ module.exports = function (params) {
     }
 
     /**
-     *
      * Close the direct connection.
      * @memberof! respoke.Call
      * @method respoke.Call.closeDirectConnection

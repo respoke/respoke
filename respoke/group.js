@@ -91,6 +91,15 @@ module.exports = function (params) {
 
     /**
      * Join this group.
+     *
+     *     group.join().done(function () {
+     *         group.sendMessage({
+     *             message: "Hey, guys! I'm here!"
+     *         });
+     *     }, function (err) {
+     *         // Couldn't leave the group
+     *     });
+     *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Group
      * @method respoke.Group.join
@@ -126,6 +135,16 @@ module.exports = function (params) {
 
     /**
      * Leave this group.
+     *
+     *     group.join({
+     *         onSuccess: function () {
+     *             // good riddance
+     *         },
+     *         onError: function (err) {
+     *             // Couldn't leave the group
+     *         }
+     *     });
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.leave
      * @param {object} params
@@ -219,6 +238,13 @@ module.exports = function (params) {
 
     /**
      * Return true if the logged-in user is a member of this group and false if not.
+     *
+     *     if (group.isJoined()) {
+     *         // I'm a member!
+     *     } else {
+     *         // Maybe join here
+     *     }
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.isJoined
      * @returns {boolean}
@@ -341,6 +367,14 @@ module.exports = function (params) {
      *
      * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
      * or a promise.
+     *
+     *     group.getMembers({
+     *         onSuccess: function (members) {
+     *             members.forEach(function (member) {
+     *                 // do something
+     *             });
+     *         }
+     *     });
      *
      * @memberof! respoke.Group
      * @method respoke.Group.getMembers
