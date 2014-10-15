@@ -131,7 +131,6 @@ module.exports = function (params) {
      * The local `MediaStream` from `getUserMedia()`.
      * @memberof! respoke.LocalMedia
      * @name stream
-     * @private
      * @type {RTCMediaStream}
      */
     that.stream = null;
@@ -160,6 +159,20 @@ module.exports = function (params) {
         that.fire('allow');
         log.debug('User gave permission to use media.');
         log.debug('onReceiveUserMedia');
+
+        /**
+         * Expose getAudioTracks.
+         * @memberof! respoke.LocalMedia
+         * @method respoke.LocalMedia.getAudioTracks
+         */
+        that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
+
+        /**
+         * Expose getVideoTracks.
+         * @memberof! respoke.LocalMedia
+         * @method respoke.LocalMedia.getVideoTracks
+         */
+        that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
 
         // This happens when we get an automatic hangup or reject from the other side.
         if (pc === null) {
