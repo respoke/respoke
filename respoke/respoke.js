@@ -153,17 +153,18 @@ if (!window.skipBugsnag) {
     first.parentNode.insertBefore(airbrake, first);
 
     airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
-    airbrake.setAttribute('defer', 'defer');
     airbrake.setAttribute('data-airbrake-project-id', '98133');
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
-    window.onerror = function (message, file, line) {
-        "use strict";
-        //Only send errors from the respoke.js file to Airbrake
-        if (file.match(/respoke/)) {
-            Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
-        }
+    airbrake.onload = function () {
+        window.onerror = function (message, file, line) {
+            "use strict";
+            //Only send errors from the respoke.js file to Airbrake
+            if (file.match(/respoke/)) {
+                Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
+            }
+        };
     };
 }
 
