@@ -128,12 +128,12 @@ module.exports = function (params) {
     var pc = params.pc;
     delete that.pc;
     /**
+     * The remote `MediaStream`.
      * @memberof! respoke.RemoteMedia
      * @name stream
-     * @private
      * @type {RTCMediaStream}
      */
-    var stream;
+    that.stream = null;
 
     /**
      * Mute remote video stream.
@@ -145,7 +145,7 @@ module.exports = function (params) {
         if (videoIsMuted) {
             return;
         }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
+        that.stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -173,7 +173,7 @@ module.exports = function (params) {
         if (!videoIsMuted) {
             return;
         }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
+        that.stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
@@ -201,7 +201,7 @@ module.exports = function (params) {
         if (audioIsMuted) {
             return;
         }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
+        that.stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -229,7 +229,7 @@ module.exports = function (params) {
         if (!audioIsMuted) {
             return;
         }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
+        that.stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
@@ -254,8 +254,8 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.hasVideo = function () {
-        if (stream) {
-            return (stream.getVideoTracks().length > 0);
+        if (that.stream) {
+            return (that.stream.getVideoTracks().length > 0);
         }
         return sdpHasVideo;
     };
@@ -267,8 +267,8 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.hasAudio = function () {
-        if (stream) {
-            return (stream.getAudioTracks().length > 0);
+        if (that.stream) {
+            return (that.stream.getAudioTracks().length > 0);
         }
         return sdpHasAudio;
     };
@@ -280,7 +280,7 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.hasMedia = function () {
-        return !!stream;
+        return !!that.stream;
     };
 
     /**
@@ -318,9 +318,9 @@ module.exports = function (params) {
      */
     that.setStream = function (str) {
         if (str) {
-            stream = str;
+            that.stream = str;
             that.element = that.element || document.createElement('video');
-            attachMediaStream(that.element, stream);
+            attachMediaStream(that.element, that.stream);
             that.element.autoplay = true;
             setTimeout(that.element.play.bind(that.element));
         }
@@ -333,16 +333,16 @@ module.exports = function (params) {
      * @fires respoke.RemoteMedia#stop
      */
     that.stop = function () {
-        if (!stream) {
+        if (!that.stream) {
             return;
         }
 
-        stream.numPc -= 1;
-        if (stream.numPc === 0) {
-            stream.stop();
+        that.stream.numPc -= 1;
+        if (that.stream.numPc === 0) {
+            that.stream.stop();
             delete respoke.streams[that.constraints];
         }
-        stream = null;
+        that.stream = null;
         /**
          * @event respoke.RemoteMedia#stop
          * @property {string} name - the event name.
@@ -361,7 +361,7 @@ module.exports = function (params) {
         if (videoIsMuted) {
             return;
         }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
+        that.stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -389,7 +389,7 @@ module.exports = function (params) {
         if (!videoIsMuted) {
             return;
         }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
+        that.stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
@@ -417,7 +417,7 @@ module.exports = function (params) {
         if (audioIsMuted) {
             return;
         }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
+        that.stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -445,7 +445,7 @@ module.exports = function (params) {
         if (!audioIsMuted) {
             return;
         }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
+        that.stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
