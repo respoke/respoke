@@ -38,7 +38,7 @@ module.exports = function (params) {
      */
     that.className = 'respoke.LocalMedia';
     /**
-     * Respoke media ID (different from a `MediaStreamTrack.id`).
+     * Respoke media ID (different from a `MediaStream.id`).
      * @memberof! respoke.LocalMedia
      * @name id
      * @type {string}
