@@ -7,11 +7,11 @@ var respoke = require('./respoke');
 
 /**
  * A `respoke.Connection` always belongs to an Endpoint.
- * 
- * There is a distinction between Endpoint and Connection because an Endpoint can be authenticated 
- * from multiple devices, browsers, or browser tabs. Each of these separate authentications is a Connection. 
+ *
+ * There is a distinction between Endpoint and Connection because an Endpoint can be authenticated
+ * from multiple devices, browsers, or browser tabs. Each of these separate authentications is a Connection.
  * A Client can choose to interact with connections of the same endpoint in different ways.
- * 
+ *
  * @constructor
  * @class respoke.Connection
  * @augments respoke.Presentable
@@ -60,9 +60,13 @@ module.exports = function (params) {
     that.className = 'respoke.Connection';
 
     /**
-     * Send a message to this connection of an endpoint. If the endpoint has mutliple connections, 
+     * Send a message to this connection of an endpoint. If the endpoint has multiple connections,
      * it will only receive the message at this connection.
-     * 
+     *
+     *     connection.sendMessage({
+     *         message: "PJ, put that PBR down!"
+     *     });
+     *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Connection
      * @method respoke.Connection.sendMessage
@@ -83,6 +87,11 @@ module.exports = function (params) {
     /**
      * Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered
      * by another connection of this Endpoint.
+     *
+     *     connection.startCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Connection
      * @method respoke.Connection.startCall
      * @param {object} params
@@ -130,6 +139,11 @@ module.exports = function (params) {
 
     /**
      * Create a new audio-only call.
+     *
+     *     connection.startAudioCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Connection
      * @method respoke.Connection.startAudioCall
      * @param {object} params
@@ -180,6 +194,11 @@ module.exports = function (params) {
 
     /**
      * Create a new call with audio and video.
+     *
+     *     connection.startVideoCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Connection
      * @method respoke.Connection.startVideoCall
      * @param {object} params
@@ -225,6 +244,11 @@ module.exports = function (params) {
      * by another connection of this Endpoint.  This method creates a new Call as well, attaching this
      * DirectConnection to it for the purposes of creating a peer-to-peer link for sending data such as messages to
      * the other endpoint. Information sent through a DirectConnection is not handled by the cloud infrastructure.
+     *
+     *     connection.startDirectConnection({
+     *         onOpen: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Connection
      * @method respoke.Connection.startDirectConnection
      * @param {object} params

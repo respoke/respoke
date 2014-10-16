@@ -9,15 +9,15 @@ var respoke = require('./respoke');
 
 /**
  * `respoke.Endpoint`s are users of a Respoke app.
- * 
+ *
  * An Endpoint can be a person in a browser or device, or an app using Respoke APIs from a server.
- * 
+ *
  * A Client can interact with endpoints through messages, audio or video calls, or direct connections.
- * 
+ *
  * An Endpoint may be authenticated from multiple devices to the same app (each of
  * which is represented by a Connection).
- * 
- * 
+ *
+ *
  * @constructor
  * @class respoke.Endpoint
  * @augments respoke.Presentable
@@ -96,6 +96,11 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
+     *
+     *    endpoint.sendMessage({
+     *        message: "wassuuuuup"
+     *    });
+     *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.sendMessage
@@ -125,6 +130,11 @@ module.exports = function (params) {
 
     /**
      * Create a new audio-only call.
+     *
+     *     endpoint.startAudioCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startAudioCall
      * @param {object} params
@@ -176,6 +186,11 @@ module.exports = function (params) {
 
     /**
      * Create a new call with audio and video.
+     *
+     *     endpoint.startVideoCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startVideoCall
      * @param {object} params
@@ -227,6 +242,11 @@ module.exports = function (params) {
 
     /**
      * Create a new call.
+     *
+     *     endpoint.startCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startCall
      * @param {object} params
@@ -369,6 +389,11 @@ module.exports = function (params) {
      * Information sent through a DirectConnection is not handled by the cloud infrastructure.  If there is already
      * a direct connection open, this method will resolve the promise with that direct connection instead of
      * attempting to create a new one.
+     *
+     *     endpoint.startDirectConnection({
+     *         onOpen: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startDirectConnection
      * @param {object} params
@@ -557,6 +582,11 @@ module.exports = function (params) {
 
     /**
      * Get the Connection with the specified id. The connection ID is optional if only one connection exists.
+     *
+     *     var connection = endpoint.getConnection({
+     *         connectionId: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX"
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.getConnection
      * @private

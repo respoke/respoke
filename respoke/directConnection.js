@@ -58,7 +58,7 @@ module.exports = function (params) {
     that.className = 'respoke.DirectConnection';
     /**
      * The unique identifier of the direct connection.
-     * 
+     *
      * @memberof! respoke.DirectConnection
      * @name id
      * @type {string}
@@ -200,6 +200,17 @@ module.exports = function (params) {
     /**
      * Return media stats. Since we have to wait for both the answer and offer to be available before starting
      * statistics, we'll return a promise for the stats object.
+     *
+     *     directConnection.getStats({
+     *         onStats: function (evt) {
+     *             console.log('Stats', evt.stats);
+     *         }
+     *     }).done(function () {
+     *         console.log('Stats started.');
+     *     }, function (err) {
+     *         console.log('Direct connection is already closed.');
+     *     });
+     *
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.getStats
@@ -356,6 +367,11 @@ module.exports = function (params) {
      * Start the process of obtaining media. saveParameters will only be meaningful for the callee,
      * since the library calls this method for the caller. Developers will use this method to pass in
      * callbacks for the callee.
+     *
+     *     directConnection.accept({
+     *         onOpen: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.accept
      * @fires respoke.DirectConnection#accept
@@ -363,7 +379,6 @@ module.exports = function (params) {
      * @param {respoke.DirectConnection.onOpen} [params.onOpen]
      * @param {respoke.DirectConnection.onClose} [params.onClose]
      * @param {respoke.DirectConnection.onMessage} [params.onMessage]
-     * @param {respoke.DirectConnection.onStart} [params.onStart]
      */
     that.accept = function (params) {
         params = params || {};
@@ -423,6 +438,11 @@ module.exports = function (params) {
      * Send a message over the datachannel in the form of a JSON-encoded plain old JavaScript object. Only one
      * attribute may be given: either a string 'message' or an object 'object'.
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
+     *
+     *     directConnection.sendMessage({
+     *         message: "And they say HTTP is stateless!"
+     *     });
+     *
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.sendMessage
      * @param {object} params
@@ -450,6 +470,13 @@ module.exports = function (params) {
 
     /**
      * Expose close as reject for approve/reject workflow.
+     *
+     *     client.listen('direct-connection, function (evt) {
+     *         if (iDontLikeThisPerson()) {
+     *             evt.directConnection.reject();
+     *         }
+     *     });
+     *
      * @memberof! respoke.DirectConnection
      * @method respoke.DirectConnection.reject
      * @param {boolean} signal - Optional flag to indicate whether to send or suppress sending
