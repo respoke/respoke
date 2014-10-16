@@ -7,7 +7,9 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * WebRTC Call including getUserMedia, path and codec negotation, and call state.
+ * A wrapper around the stream from `getUserMedia`, 
+ * which is attached to a call at `call.outgoingMedia`.
+ *
  * @class respoke.LocalMedia
  * @constructor
  * @augments respoke.EventEmitter
@@ -36,6 +38,7 @@ module.exports = function (params) {
      */
     that.className = 'respoke.LocalMedia';
     /**
+     * Respoke media ID (different from a `MediaStreamTrack.id`).
      * @memberof! respoke.LocalMedia
      * @name id
      * @type {string}
@@ -50,9 +53,10 @@ module.exports = function (params) {
      */
     var client = respoke.getClient(instanceId);
     /**
+     * The HTML element with video attached.
      * @memberof! respoke.LocalMedia
      * @name element
-     * @type {Video}
+     * @type {HTMLVideoElement}
      */
     that.element = params.element;
     /**

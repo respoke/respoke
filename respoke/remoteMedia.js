@@ -7,7 +7,9 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * Class for managing the remote media stream.
+ * Class for managing the remote media stream, 
+ * which is attached to a call at `call.outgoingMedia`.
+ * 
  * @class respoke.RemoteMedia
  * @constructor
  * @augments respoke.EventEmitter
@@ -36,6 +38,7 @@ module.exports = function (params) {
      */
     that.className = 'respoke.RemoteMedia';
     /**
+     * Respoke media ID (different from a `MediaStreamTrack.id`).
      * @memberof! respoke.RemoteMedia
      * @name id
      * @type {string}
@@ -50,9 +53,10 @@ module.exports = function (params) {
      */
     var client = respoke.getClient(instanceId);
     /**
+     * The HTML element with attached video.
      * @memberof! respoke.RemoteMedia
      * @name element
-     * @type {Video}
+     * @type {HTMLVideoElement}
      */
     that.element = params.videoRemoteElement;
     /**
