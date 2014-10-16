@@ -9,9 +9,9 @@ var respoke = require('./respoke');
 /**
  * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using
  * a `respoke.Client` instance.
- * 
+ *
  * There are two ways to get a client:
- * 
+ *
  *      var client = respoke.createClient(clientParams);
  *      // . . . set stuff up, then . . .
  *      client.connect(connectParams);
@@ -264,7 +264,8 @@ module.exports = function (params) {
         });
 
         clientSettings.developmentMode = !!clientSettings.developmentMode;
-        clientSettings.enableCallDebugReport = !!clientSettings.enableCallDebugReport;
+        clientSettings.enableCallDebugReport = typeof clientSettings.enableCallDebugReport === 'boolean' ?
+            clientSettings.enableCallDebugReport : true;
 
         if (typeof params.reconnect !== 'boolean') {
             clientSettings.reconnect = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
