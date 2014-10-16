@@ -234,7 +234,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Mute local video stream.
+     * Mute remote video stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.muteVideo
      * @fires respoke.RemoteMedia#mute
@@ -301,7 +301,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Unmute local video stream.
+     * Unmute remote video stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.unmuteVideo
      * @fires respoke.RemoteMedia#mute
@@ -328,7 +328,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Mute local audio stream.
+     * Mute remote audio stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.muteAudio
      * @fires respoke.RemoteMedia#mute
@@ -355,7 +355,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Unmute local audio stream.
+     * Unmute remote audio stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.unmuteAudio
      * @fires respoke.RemoteMedia#mute
