@@ -293,43 +293,18 @@ module.exports = function (params) {
     }
 
     /**
-     * Whether the audio stream is muted.
-     * 
-     * All audio tracks must be muted for this to return `false`.
-     * @returns boolean
-     */
-    that.isAudioMuted = function () {
-        var isMuted = true;
-        var tracks = that.stream.getAudioTracks();
-        var track;
-        for (var i=0; i < tracks.length; i++) {
-            track = tracks[i];
-            if (track.enabled) {
-                isMuted = false;
-                break;
-            }
-        }
-        return isMuted;
-    };
-
-    /**
      * Whether the video stream is muted.
      * 
      * All video tracks must be muted for this to return `false`.
      * @returns boolean
      */
     that.isVideoMuted = function () {
-        var isMuted = true;
-        var tracks = that.stream.getVideoTracks();
-        var track;
-        for (var i=0; i < tracks.length; i++) {
-            track = tracks[i];
-            if (track.enabled) {
-                isMuted = false;
-                break;
-            }
+        if (!that.stream) {
+            return false;
         }
-        return isMuted;
+        return that.stream.getVideoTracks().every(function (track) {
+            return !track.enabled;
+        });
     };
 
     /**
@@ -383,6 +358,21 @@ module.exports = function (params) {
         that.fire('mute', {
             type: 'video',
             muted: false
+        });
+    };
+
+    /**
+     * Whether the audio stream is muted.
+     * 
+     * All audio tracks must be muted for this to return `false`.
+     * @returns boolean
+     */
+    that.isAudioMuted = function () {
+        if (!that.stream) {
+            return false;
+        }
+        return that.stream.getAudioTracks().every(function (track) {
+            return !track.enabled;
         });
     };
 
