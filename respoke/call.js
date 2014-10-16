@@ -545,8 +545,8 @@ module.exports = function (params) {
          * @event respoke.Call#connect
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
-         * @property {Element} element - The HTML5 Video element with the new stream attached.
-         * @property {MediaStream} stream - The media stream.
+         * @property {Element} element - The HTML5 Video element with the remote stream attached.
+         * @property {respoke.RemoteMedia} stream - The incomingMedia property on the call.
          * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
@@ -1409,8 +1409,8 @@ module.exports = function (params) {
  * element with the local audio and/or video attached.
  * @param {respoke.Event} evt
  * @param {Element} evt.element
- * @param {respoke.LocalMedia} evt.stream
- * @param {string} evt.name - the event name.
+ * @param {respoke.LocalMedia} - The outgoingMedia property on the call.
+ * @param {string} evt.name - The event name.
  * @param {respoke.Call} evt.target
  */
 /**
