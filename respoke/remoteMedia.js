@@ -77,20 +77,6 @@ module.exports = function (params) {
      */
     var sdpHasDataChannel = false;
     /**
-     * @memberof! respoke.RemoteMedia
-     * @name videoIsMuted
-     * @private
-     * @type {boolean}
-     */
-    var videoIsMuted = false;
-    /**
-     * @memberof! respoke.RemoteMedia
-     * @name audioIsMuted
-     * @private
-     * @type {boolean}
-     */
-    var audioIsMuted = false;
-    /**
      * A timer to make sure we only fire {respoke.RemoteMedia#requesting-media} if the browser doesn't
      * automatically grant permission on behalf of the user. Timer is canceled in onReceiveUserMedia.
      * @memberof! respoke.RemoteMedia
@@ -134,134 +120,6 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     that.stream = null;
-
-    /**
-     * Whether the audio stream is muted.
-     * @returns boolean
-     */
-    that.isAudioMuted = function () {
-        return !!audioIsMuted;
-    };
-    
-    /**
-     * Whether the video stream is muted.
-     * @returns boolean
-     */
-    that.isVideoMuted = function () {
-        return !!videoIsMuted;
-    };
-
-    /**
-     * Mute remote video stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.muteVideo
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.muteVideo = function () {
-        if (videoIsMuted) {
-            return;
-        }
-        that.stream.getVideoTracks().forEach(function eachTrack(track) {
-            track.enabled = false;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: true
-        });
-        videoIsMuted = true;
-    };
-
-    /**
-     * Unmute remote video stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.unmuteVideo
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.unmuteVideo = function () {
-        if (!videoIsMuted) {
-            return;
-        }
-        that.stream.getVideoTracks().forEach(function eachTrack(track) {
-            track.enabled = true;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: false
-        });
-        videoIsMuted = false;
-    };
-
-    /**
-     * Mute remote audio stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.muteAudio
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.muteAudio = function () {
-        if (audioIsMuted) {
-            return;
-        }
-        that.stream.getAudioTracks().forEach(function eachTrack(track) {
-            track.enabled = false;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: true
-        });
-        audioIsMuted = true;
-    };
-
-    /**
-     * Unmute remote audio stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.unmuteAudio
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.unmuteAudio = function () {
-        if (!audioIsMuted) {
-            return;
-        }
-        that.stream.getAudioTracks().forEach(function eachTrack(track) {
-            track.enabled = true;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: false
-        });
-        audioIsMuted = false;
-    };
 
     /**
      * Indicate whether we are receiving video.
@@ -382,7 +240,7 @@ module.exports = function (params) {
      * @fires respoke.RemoteMedia#mute
      */
     that.muteVideo = function () {
-        if (videoIsMuted) {
+        if (that.isVideoMuted()) {
             return;
         }
         that.stream.getVideoTracks().forEach(function eachTrack(track) {
@@ -400,7 +258,46 @@ module.exports = function (params) {
             type: 'video',
             muted: true
         });
-        videoIsMuted = true;
+    };
+
+    /**
+     * Whether the audio stream is muted.
+     * 
+     * All audio tracks must be muted for this to return `false`.
+     * @returns boolean
+     */
+    that.isAudioMuted = function () {
+        var isMuted = true;
+        var tracks = that.stream.getAudioTracks();
+        var track;
+        for (var i=0; i < tracks.length; i++) {
+            track = tracks[i];
+            if (track.enabled) {
+                isMuted = false;
+                break;
+            }
+        }
+        return isMuted;
+    };
+
+    /**
+     * Whether the video stream is muted.
+     * 
+     * All video tracks must be muted for this to return `false`.
+     * @returns boolean
+     */
+    that.isVideoMuted = function () {
+        var isMuted = true;
+        var tracks = that.stream.getVideoTracks();
+        var track;
+        for (var i=0; i < tracks.length; i++) {
+            track = tracks[i];
+            if (track.enabled) {
+                isMuted = false;
+                break;
+            }
+        }
+        return isMuted;
     };
 
     /**
@@ -410,7 +307,7 @@ module.exports = function (params) {
      * @fires respoke.RemoteMedia#mute
      */
     that.unmuteVideo = function () {
-        if (!videoIsMuted) {
+        if (!that.isVideoMuted()) {
             return;
         }
         that.stream.getVideoTracks().forEach(function eachTrack(track) {
@@ -428,7 +325,6 @@ module.exports = function (params) {
             type: 'video',
             muted: false
         });
-        videoIsMuted = false;
     };
 
     /**
@@ -438,7 +334,7 @@ module.exports = function (params) {
      * @fires respoke.RemoteMedia#mute
      */
     that.muteAudio = function () {
-        if (audioIsMuted) {
+        if (that.isAudioMuted()) {
             return;
         }
         that.stream.getAudioTracks().forEach(function eachTrack(track) {
@@ -456,7 +352,6 @@ module.exports = function (params) {
             type: 'audio',
             muted: true
         });
-        audioIsMuted = true;
     };
 
     /**
@@ -466,7 +361,7 @@ module.exports = function (params) {
      * @fires respoke.RemoteMedia#mute
      */
     that.unmuteAudio = function () {
-        if (!audioIsMuted) {
+        if (!that.isAudioMuted()) {
             return;
         }
         that.stream.getAudioTracks().forEach(function eachTrack(track) {
@@ -484,7 +379,6 @@ module.exports = function (params) {
             type: 'audio',
             muted: false
         });
-        audioIsMuted = false;
     };
 
     return that;

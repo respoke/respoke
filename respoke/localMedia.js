@@ -77,20 +77,6 @@ module.exports = function (params) {
      */
     var sdpHasDataChannel = false;
     /**
-     * @memberof! respoke.LocalMedia
-     * @name videoIsMuted
-     * @private
-     * @type {boolean}
-     */
-    var videoIsMuted = false;
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name audioIsMuted
-     * @private
-     * @type {boolean}
-     */
-    var audioIsMuted = false;
-    /**
      * A timer to make sure we only fire {respoke.LocalMedia#requesting-media} if the browser doesn't
      * automatically grant permission on behalf of the user. Timer is canceled in onReceiveUserMedia.
      * @memberof! respoke.LocalMedia
@@ -304,18 +290,42 @@ module.exports = function (params) {
 
     /**
      * Whether the audio stream is muted.
+     * 
+     * All audio tracks must be muted for this to return `false`.
      * @returns boolean
      */
     that.isAudioMuted = function () {
-        return !!audioIsMuted;
+        var isMuted = true;
+        var tracks = that.stream.getAudioTracks();
+        var track;
+        for (var i=0; i < tracks.length; i++) {
+            track = tracks[i];
+            if (track.enabled) {
+                isMuted = false;
+                break;
+            }
+        }
+        return isMuted;
     };
-    
+
     /**
      * Whether the video stream is muted.
+     * 
+     * All video tracks must be muted for this to return `false`.
      * @returns boolean
      */
     that.isVideoMuted = function () {
-        return !!videoIsMuted;
+        var isMuted = true;
+        var tracks = that.stream.getVideoTracks();
+        var track;
+        for (var i=0; i < tracks.length; i++) {
+            track = tracks[i];
+            if (track.enabled) {
+                isMuted = false;
+                break;
+            }
+        }
+        return isMuted;
     };
 
     /**
@@ -325,7 +335,7 @@ module.exports = function (params) {
      * @fires respoke.LocalMedia#mute
      */
     that.muteVideo = function () {
-        if (videoIsMuted) {
+        if (that.isVideoMuted()) {
             return;
         }
         that.stream.getVideoTracks().forEach(function eachTrack(track) {
@@ -343,7 +353,6 @@ module.exports = function (params) {
             type: 'video',
             muted: true
         });
-        videoIsMuted = true;
     };
 
     /**
@@ -353,7 +362,7 @@ module.exports = function (params) {
      * @fires respoke.LocalMedia#mute
      */
     that.unmuteVideo = function () {
-        if (!videoIsMuted) {
+        if (!that.isVideoMuted()) {
             return;
         }
         that.stream.getVideoTracks().forEach(function eachTrack(track) {
@@ -371,7 +380,6 @@ module.exports = function (params) {
             type: 'video',
             muted: false
         });
-        videoIsMuted = false;
     };
 
     /**
@@ -381,7 +389,7 @@ module.exports = function (params) {
      * @fires respoke.LocalMedia#mute
      */
     that.muteAudio = function () {
-        if (audioIsMuted) {
+        if (that.isAudioMuted()) {
             return;
         }
         that.stream.getAudioTracks().forEach(function eachTrack(track) {
@@ -399,7 +407,6 @@ module.exports = function (params) {
             type: 'audio',
             muted: true
         });
-        audioIsMuted = true;
     };
 
     /**
@@ -409,7 +416,7 @@ module.exports = function (params) {
      * @fires respoke.LocalMedia#mute
      */
     that.unmuteAudio = function () {
-        if (!audioIsMuted) {
+        if (!that.isAudioMuted()) {
             return;
         }
         that.stream.getAudioTracks().forEach(function eachTrack(track) {
@@ -427,7 +434,6 @@ module.exports = function (params) {
             type: 'audio',
             muted: false
         });
-        audioIsMuted = false;
     };
 
     /**
