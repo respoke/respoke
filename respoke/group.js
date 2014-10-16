@@ -94,10 +94,10 @@ module.exports = function (params) {
      *
      *     group.join().done(function () {
      *         group.sendMessage({
-     *             message: "Hey, guys! I'm here!"
+     *             message: "Hey, ppl! I'm here!"
      *         });
      *     }, function (err) {
-     *         // Couldn't leave the group
+     *         // Couldn't join the group, possibly permissions error
      *     });
      *
      * **Using callbacks** will disable promises.
@@ -136,12 +136,12 @@ module.exports = function (params) {
     /**
      * Leave this group.
      *
-     *     group.join({
+     *     group.leave({
      *         onSuccess: function () {
      *             // good riddance
      *         },
      *         onError: function (err) {
-     *             // Couldn't leave the group
+     *             // Couldn't leave the group, possibly a permissions error
      *         }
      *     });
      *

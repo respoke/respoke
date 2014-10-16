@@ -98,7 +98,7 @@ module.exports = function (params) {
      * Send a message to the endpoint through the infrastructure.
      *
      *    endpoint.sendMessage({
-     *        message: "it's a bug"
+     *        message: "wassuuuuup"
      *    });
      *
      * **Using callbacks** will disable promises.
