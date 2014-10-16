@@ -136,6 +136,22 @@ module.exports = function (params) {
     that.stream = null;
 
     /**
+     * Whether the audio stream is muted.
+     * @returns boolean
+     */
+    that.isAudioMuted = function () {
+        return !!audioIsMuted;
+    };
+    
+    /**
+     * Whether the video stream is muted.
+     * @returns boolean
+     */
+    that.isVideoMuted = function () {
+        return !!videoIsMuted;
+    };
+
+    /**
      * Mute remote video stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.muteVideo

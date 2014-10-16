@@ -303,6 +303,22 @@ module.exports = function (params) {
     }
 
     /**
+     * Whether the audio stream is muted.
+     * @returns boolean
+     */
+    that.isAudioMuted = function () {
+        return !!audioIsMuted;
+    };
+    
+    /**
+     * Whether the video stream is muted.
+     * @returns boolean
+     */
+    that.isVideoMuted = function () {
+        return !!videoIsMuted;
+    };
+
+    /**
      * Mute local video stream.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.muteVideo
