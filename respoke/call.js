@@ -54,7 +54,6 @@ var respoke = require('./respoke');
  * @param {respoke.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
- * @param {object} params.callSettings
  * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
  * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.Call}
@@ -166,18 +165,26 @@ module.exports = function (params) {
     that.hasVideo = undefined;
 
     /**
-     * Local media
+     * Local media that we are sending to the remote party.
      * @name outgoingMedia
      * @type {respoke.LocalMedia}
      */
-    that.outgoingMedia = respoke.LocalMedia(params);
+    that.outgoingMedia = respoke.LocalMedia({
+        instanceId: instanceId,
+        callId: that.id,
+        constraints: params.constraints || client.callSettings.constraints
+    });
 
     /**
-     * Remote media
+     * Remote media that we are receiving from the remote party.
      * @name incomingMedia
      * @type {respoke.RemoteMedia}
      */
-    that.incomingMedia = respoke.RemoteMedia(params);
+    that.incomingMedia = respoke.RemoteMedia({
+        instanceId: instanceId,
+        callId: that.id,
+        constraints: params.constraints || client.callSettings.constraints
+    });
 
     /**
      * This event indicates that local video has been unmuted.
@@ -214,13 +221,6 @@ module.exports = function (params) {
     var audioIsMuted = false;
     /**
      * @memberof! respoke.Call
-     * @name callSettings
-     * @private
-     * @type {object}
-     */
-    var callSettings = params.callSettings;
-    /**
-     * @memberof! respoke.Call
      * @name directConnection
      * @private
      * @type {respoke.DirectConnection}
@@ -254,7 +254,7 @@ module.exports = function (params) {
         }),
         forceTurn: !!params.forceTurn,
         call: that,
-        callSettings: callSettings,
+        servers: params.servers,
         pcOptions: {
             optional: [
                 { DtlsSrtpKeyAgreement: true },
@@ -294,7 +294,7 @@ module.exports = function (params) {
             defMedia = Q.defer();
         }
 
-        pc.init(callSettings); // instantiates RTCPeerConnection, can't call on modify
+        pc.init(); // instantiates RTCPeerConnection, can't call on modify
         if (defModify === undefined && pc.state.needDirectConnection === true) {
             actuallyAddDirectConnection(params);
         }
@@ -321,7 +321,6 @@ module.exports = function (params) {
      * @param {respoke.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
      * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
      * granted by the browser without asking the user to approve it.
-     * @param {object} [params.callSettings]
      * @param {object} [params.constraints]
      * @param {array} [params.servers]
      * @param {boolean} [params.forceTurn]
@@ -352,29 +351,26 @@ module.exports = function (params) {
         that.listen('mute', params.onMute);
         that.listen('requesting-media', params.onRequestingMedia);
 
-        pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;
-        pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
-        pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ? params.needDirectConnection : pc.state.needDirectConnection;
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
 
-        callSettings = params.callSettings || callSettings || {};
-        callSettings.servers = params.servers || callSettings.servers;
-        callSettings.constraints = params.constraints || callSettings.constraints;
-        callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
+        pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;
+        pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
+        pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ?
+            params.needDirectConnection : pc.state.needDirectConnection;
+        pc.servers = params.servers || pc.servers;
+        pc.disableTurn = params.disableTurn || pc.disableTurn;
+        pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
 
+        that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;
         that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
-        that.outgoingMedia.setConstraints(callSettings.constraints);
         if (pc.state.caller === true) {
             // Only the person who initiated this round of media negotiation needs to estimate remote
             // media based on what constraints local media is using.
-            that.incomingMedia.setConstraints(callSettings.constraints);
+            that.incomingMedia.setConstraints(that.outgoingMedia.constraints);
         }
         that.incomingMedia.element = params.videoRemoteElement || that.incomingMedia.element;
 
-
-        pc.callSettings = callSettings;
-        pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
         pc.listen('stats', function fireStats(evt) {
             /**
              * This event is fired every time statistical information about audio and/or video on a call
@@ -1146,7 +1142,6 @@ module.exports = function (params) {
                 // Nothing
             } else {
                 info.call = that;
-                info.constraints = callSettings.constraints;
             }
             /**
              * Indicates a request to add something to an existing call. If 'constraints' is set, evt.constraints
@@ -1217,7 +1212,7 @@ module.exports = function (params) {
             }
         }
         pc.state.needDirectConnection = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
-        callSettings.constraints = evt.signal.constraints || callSettings.constraints;
+        that.outgoingMedia.constraints = evt.signal.constraints || that.outgoingMedia.constraints;
     }
 
     /**
@@ -1422,12 +1417,12 @@ module.exports = function (params) {
     signalingChannel.getTurnCredentials().then(function (result) {
         if (!result) {
             log.warn("Relay service not available.");
-            callSettings.servers = {
+            pc.servers = {
                 iceServers: []
             };
         } else {
-            callSettings.servers = client.callSettings.servers;
-            callSettings.servers.iceServers = result;
+            pc.servers = client.callSettings.servers;
+            pc.servers.iceServers = result;
         }
     }).fin(function () {
         pc.state.dispatch('initiate', {

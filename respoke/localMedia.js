@@ -13,7 +13,8 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @param {object} params.callSettings
+ * @param {string} params.callId - call id
+ * @param {object} [params.constraints]
  * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local video attached to it.
  * @returns {respoke.LocalMedia}
  */
@@ -99,14 +100,6 @@ module.exports = function (params) {
      * @type {number}
      */
     var allowTimer = 0;
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name callSettings
-     * @private
-     * @type {object}
-     */
-    var callSettings = params.callSettings || {};
-    callSettings.constraints = params.constraints || callSettings.constraints;
     /**
      * @memberof! respoke.LocalMedia
      * @name mediaOptions
@@ -235,8 +228,6 @@ module.exports = function (params) {
     function requestMedia() {
         log.debug('requestMedia');
 
-        that.constraints = callSettings.constraints;
-
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
@@ -264,7 +255,7 @@ module.exports = function (params) {
                  */
                 that.fire('requesting-media');
             }, 500);
-            getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
+            getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
             log.error("Couldn't get user media: " + e.message);
         }
@@ -486,19 +477,6 @@ module.exports = function (params) {
         sdpHasVideo = respoke.sdpHasVideo(oSession.sdp);
         sdpHasAudio = respoke.sdpHasAudio(oSession.sdp);
         sdpHasDataChannel = respoke.sdpHasDataChannel(oSession.sdp);
-    };
-
-    /**
-     * Parse the constraints
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.setConstraints
-     * @param {MediaConstraints} constraints
-     * @private
-     */
-    that.setConstraints = function (constraints) {
-        that.constraints = constraints;
-        sdpHasVideo = respoke.constraintsHasVideo(constraints);
-        sdpHasAudio = respoke.constraintsHasAudio(constraints);
     };
 
     /**

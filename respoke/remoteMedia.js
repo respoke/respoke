@@ -13,7 +13,8 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @param {object} params.callSettings
+ * @param {string} params.callId - call id
+ * @param {object} params.constraints
  * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
  * @returns {respoke.RemoteMedia}
  */
@@ -61,14 +62,14 @@ module.exports = function (params) {
      * @private
      * @type {boolean}
      */
-    var sdpHasAudio = false;
+    var sdpHasAudio = respoke.constraintsHasAudio(that.constraints);
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasVideo
      * @private
      * @type {boolean}
      */
-    var sdpHasVideo = false;
+    var sdpHasVideo = respoke.constraintsHasVideo(that.constraints);
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasDataChannel
@@ -99,14 +100,6 @@ module.exports = function (params) {
      * @type {number}
      */
     var allowTimer = 0;
-    /**
-     * @memberof! respoke.RemoteMedia
-     * @name callSettings
-     * @private
-     * @type {object}
-     */
-    var callSettings = params.callSettings || callSettings || {};
-    callSettings.constraints = params.constraints || callSettings.constraints;
     /**
      * @memberof! respoke.RemoteMedia
      * @name mediaOptions
@@ -297,7 +290,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Parse the constraints
+     * Parse the constraints.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.setConstraints
      * @param {MediaConstraints} constraints
@@ -305,8 +298,8 @@ module.exports = function (params) {
      */
     that.setConstraints = function (constraints) {
         that.constraints = constraints;
-        sdpHasVideo = respoke.constraintsHasVideo(constraints);
-        sdpHasAudio = respoke.constraintsHasAudio(constraints);
+        sdpHasVideo = respoke.constraintsHasVideo(that.constraints);
+        sdpHasAudio = respoke.constraintsHasAudio(that.constraints);
     };
 
     /**
