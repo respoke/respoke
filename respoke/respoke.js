@@ -70,7 +70,6 @@ require('./deps/adapter');
  *
  *      // connect to respoke with the token
  *      client.connect({
- *          reconnect: false,
  *          token: tokenId
  *      });
  *
@@ -79,7 +78,6 @@ require('./deps/adapter');
  *          // fetch another token from your server.
  *          var newTokenId = "XXXX-XXXX-brokered-auth-token2-XXXXX";
  *          client.connect({
- *              reconnect: false,
  *              token: newTokenId
  *          });
  *      });
@@ -139,8 +137,10 @@ respoke.Group = require('./group');
 respoke.SignalingChannel = require('./signalingChannel');
 respoke.DirectConnection = require('./directConnection');
 respoke.PeerConnection = require('./peerConnection');
+respoke.CallState = require('./callState');
 respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
+respoke.RemoteMedia = require('./remoteMedia');
 respoke.log = log;
 respoke.Q = Q;
 
@@ -151,17 +151,19 @@ if (!window.skipBugsnag) {
     first.parentNode.insertBefore(airbrake, first);
 
     airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
-    airbrake.setAttribute('defer', 'defer');
     airbrake.setAttribute('data-airbrake-project-id', '98133');
     airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
     airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
 
-    window.onerror = function(message, file, line) {
-        //Only send errors from the respoke.js file to Airbrake
-        if (file.match(/respoke/)) {
-            Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
-        }
-    }
+    airbrake.onload = function () {
+        window.onerror = function (message, file, line) {
+            "use strict";
+            //Only send errors from the respoke.js file to Airbrake
+            if (file.match(/respoke/)) {
+                Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
+            }
+        };
+    };
 }
 
 /**
@@ -186,7 +188,7 @@ if (!window.skipBugsnag) {
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
  * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of
  * operation and will limit the services you will be able to use.
- * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
+ * @param {boolean} [params.reconnect=false] - Whether or not to automatically reconnect to the Respoke service
  * when a disconnect occurs.
  * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
  * @param {function} [params.onError] - Error handler for this invocation of this method only.
@@ -258,6 +260,27 @@ respoke.createClient = function (params) {
 };
 
 /**
+ * Build a closure from a listener that will ensure the listener can only be called once.
+ * @static
+ * @private
+ * @memberof respoke
+ * @param {function} func
+ * @return {function}
+ */
+respoke.once = function (func) {
+    "use strict";
+    return (function () {
+        var called = false;
+        return function () {
+            if (called === false) {
+                func.apply(null, arguments);
+                called = true;
+            }
+        };
+    })();
+};
+
+/**
  * @static
  * @private
  * @memberof respoke
@@ -299,13 +322,15 @@ respoke.makeGUID = function () {
  */
 respoke.handlePromise = function (promise, onSuccess, onError) {
     "use strict";
+    var returnUndef = false;
     if (onSuccess || onError) {
-        onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
-        onError = typeof onError === 'function' ? onError : function () {};
-        promise.done(onSuccess, onError);
-        return;
+        returnUndef = true;
     }
-    return promise;
+
+    onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};
+    onError = typeof onError === 'function' ? onError : function () {};
+    promise.done(onSuccess, onError);
+    return (returnUndef ? undefined : promise);
 };
 
 /**
@@ -331,7 +356,7 @@ respoke.Class = function (params) {
     });
 
     return that;
-};
+}; // end of respoke.Class
 
 /**
  * Does the browser support `UserMedia`?
@@ -373,7 +398,7 @@ respoke.hasWebsocket = function () {
  * @memberof respoke
  * @param {Object} source - The object to clone
  * @returns {Object}
- **/
+ */
 respoke.clone = function (source) {
     if (source) {
         return JSON.parse(JSON.stringify(source));
@@ -418,4 +443,64 @@ respoke.isEqual = function (a, b) {
     };
 
     return a === b;
-};// End respoke.Class
+};
+
+/*
+ * Does the sdp indicate an audio stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpHasAudio = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=audio') !== -1;
+};
+
+/**
+ * Does the sdp indicate a video stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpHasVideo = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=video') !== -1;
+};
+
+/**
+ * Does the sdp indicate a data channel?
+ * @static
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpHasDataChannel = function (sdp) {
+    "use strict";
+    return sdp.indexOf('m=application') !== -1;
+};
+
+/**
+ * Does the sdp indicate an audio stream?
+ * @static
+ * @memberof respoke
+ * @params {MediaConstraints}
+ * @returns {boolean}
+ */
+respoke.constraintsHasAudio = function (constraints) {
+    "use strict";
+    return (constraints.audio === true);
+};
+
+/**
+ * Does the constraints indicate a video stream?
+ * @static
+ * @memberof respoke
+ * @params {MediaConstraints}
+ * @returns {boolean}
+ */
+respoke.constraintsHasVideo = function (constraints) {
+    "use strict";
+    return (constraints.video === true || typeof constraints.video === 'object');
+};

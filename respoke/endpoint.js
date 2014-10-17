@@ -9,15 +9,15 @@ var respoke = require('./respoke');
 
 /**
  * `respoke.Endpoint`s are users of a Respoke app.
- * 
+ *
  * An Endpoint can be a person in a browser or device, or an app using Respoke APIs from a server.
- * 
+ *
  * A Client can interact with endpoints through messages, audio or video calls, or direct connections.
- * 
+ *
  * An Endpoint may be authenticated from multiple devices to the same app (each of
  * which is represented by a Connection).
- * 
- * 
+ *
+ *
  * @constructor
  * @class respoke.Endpoint
  * @augments respoke.Presentable
@@ -92,6 +92,11 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
+     *
+     *    endpoint.sendMessage({
+     *        message: "wassuuuuup"
+     *    });
+     *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.sendMessage
@@ -121,6 +126,11 @@ module.exports = function (params) {
 
     /**
      * Create a new audio-only call.
+     *
+     *     endpoint.startAudioCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startAudioCall
      * @param {object} params
@@ -150,7 +160,7 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
-     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
      * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -172,6 +182,11 @@ module.exports = function (params) {
 
     /**
      * Create a new call with audio and video.
+     *
+     *     endpoint.startVideoCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startVideoCall
      * @param {object} params
@@ -201,7 +216,7 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
-     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
      * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -223,6 +238,11 @@ module.exports = function (params) {
 
     /**
      * Create a new call.
+     *
+     *     endpoint.startCall({
+     *         onConnect: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startCall
      * @param {object} params
@@ -253,7 +273,7 @@ module.exports = function (params) {
      * @param {RTCConstraints} [params.constraints]
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
-     * @param {boolean} [params.directConnectionOnly] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
      * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -306,6 +326,7 @@ module.exports = function (params) {
             signalParams.signalType = 'answer';
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
@@ -314,6 +335,7 @@ module.exports = function (params) {
         params.signalConnected = function (signalParams) {
             signalParams.target = 'call';
             signalParams.connectionId = signalParams.call.connectionId;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalParams.recipient = that;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send connected.", err.message, err.stack);
@@ -323,6 +345,7 @@ module.exports = function (params) {
         params.signalModify = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send modify.", err.message, err.stack);
             });
@@ -330,20 +353,24 @@ module.exports = function (params) {
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send candidate.", err.message, err.stack);
+                log.warn("Couldn't send candidate.", err.message, err.stack);
             });
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = that;
+            signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            signalingChannel.sendReport(signalParams).done(null, function errorHandler(err) {
+                log.warn("Couldn't debug report.", err.message, err.stack);
+            });
         };
 
         params.signalingChannel = signalingChannel;
@@ -358,6 +385,11 @@ module.exports = function (params) {
      * Information sent through a DirectConnection is not handled by the cloud infrastructure.  If there is already
      * a direct connection open, this method will resolve the promise with that direct connection instead of
      * attempting to create a new one.
+     *
+     *     endpoint.startDirectConnection({
+     *         onOpen: function (evt) {}
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startDirectConnection
      * @param {object} params
@@ -469,7 +501,7 @@ module.exports = function (params) {
             log.debug("Not sending report");
             log.debug(signalParams.report);
         };
-        params.directConnectionOnly = true;
+        params.needDirectConnection = true;
         // Don't include audio in the offer SDP
         params.offerOptions = {
             mandatory: {
@@ -498,9 +530,6 @@ module.exports = function (params) {
             }
         }, true);
 
-        if (params.caller === true) {
-            call.answer(params);
-        }
         return retVal;
     };
 
@@ -549,6 +578,11 @@ module.exports = function (params) {
 
     /**
      * Get the Connection with the specified id. The connection ID is optional if only one connection exists.
+     *
+     *     var connection = endpoint.getConnection({
+     *         connectionId: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX"
+     *     });
+     *
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.getConnection
      * @private

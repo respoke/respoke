@@ -14,7 +14,7 @@ module.exports = function(config) {
           'node_modules/sinon/pkg/sinon.js',
           'respoke.min.js',
           'respoke-stats.min.js',
-          'spec/unit/client/**/*.js'
+          'spec/unit/*.spec.js'
         ],
 
         // test results reporter to use
@@ -56,7 +56,7 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        browsers: ['Chrome'],
+        browsers: ['Firefox'],
 
         // If browser does not capture in given timeout [ms], kill it
         captureTimeout: 60000

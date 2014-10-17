@@ -8,10 +8,10 @@ var respoke = require('./respoke');
 
 /**
  * A `respoke.Group` represents a collection of endpoints.
- * 
- * There are methods to communicate with the endpoints at the group level and track 
+ *
+ * There are methods to communicate with the endpoints at the group level and track
  * their presence in the group.
- * 
+ *
  * @class respoke.Group
  * @augments respoke.EventEmitter
  * @constructor
@@ -70,7 +70,7 @@ module.exports = function (params) {
     that.listen('join', params.onJoin);
     /**
      * Indicates that a message has been sent to this group.
-     * 
+     *
      * @event respoke.Group#message
      * @type {respoke.Event}
      * @property {respoke.TextMessage} message
@@ -91,6 +91,15 @@ module.exports = function (params) {
 
     /**
      * Join this group.
+     *
+     *     group.join().done(function () {
+     *         group.sendMessage({
+     *             message: "Hey, ppl! I'm here!"
+     *         });
+     *     }, function (err) {
+     *         // Couldn't join the group, possibly permissions error
+     *     });
+     *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Group
      * @method respoke.Group.join
@@ -126,6 +135,16 @@ module.exports = function (params) {
 
     /**
      * Leave this group.
+     *
+     *     group.leave({
+     *         onSuccess: function () {
+     *             // good riddance
+     *         },
+     *         onError: function (err) {
+     *             // Couldn't leave the group, possibly a permissions error
+     *         }
+     *     });
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.leave
      * @param {object} params
@@ -151,7 +170,7 @@ module.exports = function (params) {
 
         signalingChannel.leaveGroup({
             id: that.id
-        }).then(function successHandler() {
+        }).done(function successHandler() {
             /**
              * This event is fired when the client leaves a group.
              * @event respoke.Client#leave
@@ -219,6 +238,13 @@ module.exports = function (params) {
 
     /**
      * Return true if the logged-in user is a member of this group and false if not.
+     *
+     *     if (group.isJoined()) {
+     *         // I'm a member!
+     *     } else {
+     *         // Maybe join here
+     *     }
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.isJoined
      * @returns {boolean}
@@ -300,18 +326,18 @@ module.exports = function (params) {
     }
 
     /**
-     * 
+     *
      * Send a message to all of the endpoints in the group.
-     * 
+     *
      *      var group = client.getGroup({ id: 'js-enthusiasts'});
-     *      
+     *
      *      group.sendMessage({
      *          message: "Cat on keyboard",
      *          onSuccess: function (evt) {
      *              console.log('Message was sent');
      *          }
      *      });
-     * 
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.sendMessage
      * @param {object} params
@@ -323,28 +349,33 @@ module.exports = function (params) {
     that.sendMessage = function (params) {
         params = params || {};
         params.id = that.id;
-        var retVal;
-        var deferred;
+        var promise;
 
         try {
             validateConnection();
             validateMembership();
         } catch (err) {
-            deferred = Q.defer();
-            retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
-            deferred.reject(err);
-            return retVal;
+            promise = Q.reject(err);
         }
 
-        return signalingChannel.publish(params);
+        return respoke.handlePromise(promise ? promise : signalingChannel.publish(params),
+                params.onSuccess, params.onError);
     };
 
     /**
      * Get group members
-     * 
+     *
      * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
      * or a promise.
-     * 
+     *
+     *     group.getMembers({
+     *         onSuccess: function (members) {
+     *             members.forEach(function (member) {
+     *                 // do something
+     *             });
+     *         }
+     *     });
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.getMembers
      * @param {object} params
@@ -393,11 +424,6 @@ module.exports = function (params) {
                 });
             });
 
-            if (endpointList.length > 0) {
-                signalingChannel.registerPresence({
-                    endpointList: endpointList
-                });
-            }
             deferred.resolve(that.connections);
         }, function errorHandler(err) {
             deferred.reject(err);

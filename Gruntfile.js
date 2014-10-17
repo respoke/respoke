@@ -65,13 +65,21 @@ module.exports = function (grunt) {
             }
         },
         karma: {
-            unit: {
+            unitChrome: {
                 singleRun: true,
-                configFile: './karma-unit.conf.js'
+                configFile: './karma-unit-chrome.conf.js'
             },
-            functional: {
+            unitFirefox: {
                 singleRun: true,
-                configFile: './karma-functional.conf.js'
+                configFile: './karma-unit-firefox.conf.js'
+            },
+            functionalChrome: {
+                singleRun: true,
+                configFile: './karma-functional-chrome.conf.js'
+            },
+            functionalFirefox: {
+                singleRun: true,
+                configFile: './karma-functional-firefox.conf.js'
             }
         },
         watch: {
@@ -99,7 +107,8 @@ module.exports = function (grunt) {
 
     grunt.registerTask('unit', 'Run unit specs', [
         'dist',
-        'karma:unit'
+        'karma:unitChrome',
+        'karma:unitFirefox'
     ]);
 
     grunt.registerTask('start-webhook-service', 'Start webhook-service', function () {
@@ -151,7 +160,8 @@ module.exports = function (grunt) {
         'start-saucer-section',
         'start-webhook-service',
         'liftSails',
-        'karma:functional',
+        'karma:functionalChrome',
+        'karma:functionalFirefox',
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'
@@ -163,8 +173,10 @@ module.exports = function (grunt) {
         'start-saucer-section',
         'start-webhook-service',
         'liftSails',
-        'karma:unit',
-        'karma:functional',
+        'karma:unitChrome',
+        'karma:unitFirefox',
+        'karma:functionalChrome',
+        'karma:functionalFirefox',
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'

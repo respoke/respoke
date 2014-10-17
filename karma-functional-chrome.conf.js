@@ -56,18 +56,11 @@ module.exports = function(config) {
         autoWatch: false,
 
         // Start these browsers, currently available:
-        // - Chrome
-        // - ChromeCanary
-        // - Firefox
-        // - Opera
-        // - Safari (only Mac)
-        // - PhantomJS
-        // - IE (only Windows)
-        browsers: ['Chrome_autoaccept'],
+        browsers: ['ChromeAutoaccept'],
         customLaunchers: {
-            Chrome_autoaccept: {
+            ChromeAutoaccept: {
                 base: 'Chrome',
-                flags: ['--use-fake-ui-for-media-stream', '--disable-web-security']
+                flags: ['--use-fake-ui-for-media-stream']
             }
         },
 
