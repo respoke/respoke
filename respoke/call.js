@@ -362,7 +362,9 @@ module.exports = function (params) {
         pc.disableTurn = params.disableTurn || pc.disableTurn;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
 
+        console.log('constraints was', that.outgoingMedia.constraints);
         that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;
+        console.log('constraints is now', that.outgoingMedia.constraints);
         that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
         if (pc.state.caller === true) {
             // Only the person who initiated this round of media negotiation needs to estimate remote
