@@ -923,7 +923,7 @@ module.exports = function (params) {
         var retVal;
         var call = null;
         var recipient = {};
-        var combinedCallSettings = JSON.parse(JSON.stringify(that.callSettings)); //clone
+        var combinedCallSettings = respoke.clone(that.callSettings);
         params = params || {};
 
         try {
@@ -948,7 +948,7 @@ module.exports = function (params) {
         recipient.id = params.number;
 
         // Apply call-specific callSettings to the app's defaults
-        combinedCallSettings.constraints = params.constraints || combinedCallSettings.constraints;
+        combinedCallSettings.constraints = respoke.clone(params.constraints) || combinedCallSettings.constraints;
         combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
         // Audio only phone calls allowed
         combinedCallSettings.constraints.audio = true;

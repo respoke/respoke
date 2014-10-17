@@ -112,7 +112,7 @@ require('./deps/adapter');
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
-    streams: {},
+    streams: [],
     instances: {}
 };
 
@@ -393,6 +393,59 @@ respoke.hasWebsocket = function () {
 };
 
 /**
+ * Clone an object.
+ * @static
+ * @memberof respoke
+ * @param {Object} source - The object to clone
+ * @returns {Object}
+ */
+respoke.clone = function (source) {
+    if (source) {
+        return JSON.parse(JSON.stringify(source));
+    }
+    return source;
+};
+
+/**
+ * Compares two objects for equality
+ * @static
+ * @memberof respoke
+ * @param {Object} a
+ * @param {Object} b
+ * @returns {boolean}
+ */
+respoke.isEqual = function (a, b) {
+    var aKeys;
+
+    //check if arrays
+    if (a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
+        if (a.length !== b.length) {
+            //short circuit if arrays are different length
+            return false;
+        }
+
+        for (var i = 0; i < a.length; i += 1) {
+            if (!respoke.isEqual(a[i], b[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    if (typeof a === 'object' && typeof b === 'object') {
+        aKeys = Object.keys(a);
+        for (var i = 0; i < aKeys.length; i += 1) {
+            if (!respoke.isEqual(a[aKeys[i]], b[aKeys[i]])) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    return a === b;
+};
+
+/*
  * Does the sdp indicate an audio stream?
  * @static
  * @memberof respoke
@@ -451,4 +504,3 @@ respoke.constraintsHasVideo = function (constraints) {
     "use strict";
     return (constraints.video === true || typeof constraints.video === 'object');
 };
-

@@ -134,6 +134,30 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     var stream;
+    
+    function getStream(theConstraints) {
+        for(var i = 0; i < respoke.streams.length; i++) {
+            var s = respoke.streams[i];
+            if (respoke.isEqual(s.constraints, theConstraints)) {
+                return s.stream;
+            }
+        }
+        return null;
+    }
+    
+    function removeStream(theConstraints) {
+        var toRemoveIndex;
+        for(var i = 0; i < respoke.streams.length; i++) {
+            var s = respoke.streams[i];
+            if(respoke.isEqual(s.constraints, theConstraints)) {
+                toRemoveIndex = i;
+                break;
+            }
+        }
+        if (toRemoveIndex) {
+            respoke.streams.slice(toRemoveIndex, 1);
+        }
+    }
 
     /**
      * Save the local stream. Kick off SDP creation.
@@ -187,8 +211,9 @@ module.exports = function (params) {
         // will be needed. The first one passed back will contain media and the others will fake it. Media
         // will still be sent with every peer connection. Also need to study the use of getLocalElement
         // and the implications of passing back a video element with no media attached.
-        if (respoke.streams[that.constraints]) {
-            respoke.streams[that.constraints].numPc += 1;
+        var aStream = getStream(that.constraints);
+        if (aStream) {
+            aStream.numPc += 1;
             /**
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
@@ -203,8 +228,8 @@ module.exports = function (params) {
             });
         } else {
             stream.numPc = 1;
-            respoke.streams[that.constraints] = stream;
-
+            respoke.streams.push({stream: stream, constraints: that.constraints});
+            
             stream.id = client.endpointId;
             attachMediaStream(that.element, stream);
             // We won't want our local video outputting audio.
@@ -240,16 +265,16 @@ module.exports = function (params) {
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
-
-        if (respoke.streams[that.constraints]) {
+        var theStream = getStream(that.constraints);
+        if (theStream) {
             log.debug('using old stream');
-            onReceiveUserMedia(respoke.streams[that.constraints]);
+            onReceiveUserMedia(theStream);
             return;
         }
 
         try {
             log.debug("Running getUserMedia with constraints", that.constraints);
-            // TODO set respoke.streams[that.constraints] = true as a flag that we are already
+            // TODO set getStream(that.constraints) = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
             allowTimer = setTimeout(function allowTimer() {
@@ -428,7 +453,7 @@ module.exports = function (params) {
         stream.numPc -= 1;
         if (stream.numPc === 0) {
             stream.stop();
-            delete respoke.streams[that.constraints];
+            removeStream(that.constraints);
         }
         stream = null;
         /**
