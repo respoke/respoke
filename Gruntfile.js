@@ -161,7 +161,7 @@ module.exports = function (grunt) {
         'start-webhook-service',
         'liftSails',
         'karma:functionalChrome',
-        //'karma:functionalFirefox',
+        'karma:functionalFirefox',
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'

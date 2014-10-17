@@ -197,7 +197,7 @@ module.exports = function (params) {
             return;
         }
 
-        that.element = params.element || that.element || document.createElement('video');
+        that.element = that.element || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
         // back to the App. This is because we assume at the moment that only one local media video element
@@ -207,6 +207,12 @@ module.exports = function (params) {
         var aStream = getStream(that.constraints);
         if (aStream) {
             aStream.numPc += 1;
+
+            attachMediaStream(that.element, stream);
+            // We won't want our local video outputting audio.
+            that.element.muted = true;
+            that.element.autoplay = true;
+
             /**
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
