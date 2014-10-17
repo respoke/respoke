@@ -83,6 +83,9 @@ var EventEmitter = module.exports = function (params) {
      * the library, only by developers who are working on the library itself.
      */
     that.listen = function (eventType, listener, isInternal) {
+        if (listener === undefined) {
+            return;
+        }
         var invalidEventType = typeof eventType !== 'string' || !eventType;
         var invalidListener = typeof listener !== 'function';
         if (invalidEventType || invalidListener) {
