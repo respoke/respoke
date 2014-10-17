@@ -61,36 +61,61 @@ var EventEmitter = module.exports = function (params) {
     };
 
     /**
-     * Add a listener to an object.  This method adds the given listener to the given event in the case that the same
-     * listener is not already registered to this even and the listener is a function.  The third argument 'isInternal'
-     * is used only internally by the library to indicate that this listener is a library-used listener and should not
-     * count when we are trying to determine if an event has listeners placed by the developer.
+     * Add a `listener` function to an object.
+     * 
+     * This method adds the `listener` to the event `eventName`.
+     * 
+     * If an identical listener already registered to this event, it will **not** be added.
+     * 
+     * The third argument 'isInternal' is used by the respoke library to indicate that this
+     * listener must not count when we are trying to determine if an event has listeners
+     * placed by the library end user. In short, do not use this unless you really know 
+     * what you're doing.
+     * 
+     * ##### Example of adding an event listener.
      *
      *     client.listen('connect', function (evt) {
-     *         console.log("We've connected!");
+     *         console.log("We've connected!", evt);
      *     });
      *
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.listen
-     * @param {string} eventType - A developer-specified string identifying the event.
-     * @param {respoke.EventEmitter.eventListener} listener - A function to call when the event is fire.
-     * @param {boolean} [isInternal] - A flag to indicate this listener was added by the library. This parameter should
-     * not be used by developers who are using the library, only by developers who are working on the library itself.
+     * @param {string} eventType - The name of the event.
+     * @param {respoke.EventEmitter.eventListener} listener - A function to call when the 
+     * event is fired.
+     * @param {boolean} isInternal - Internal use only. A flag to indicate this listener was 
+     * added by the library. This parameter should not be used by developers who are using
+     * the library, only by developers who are working on the library itself.
      */
     that.listen = function (eventType, listener, isInternal) {
-        if (listener === undefined) {
+        var invalidEventType = typeof eventType !== 'string' || !eventType;
+        var invalidListener = typeof listener !== 'function';
+        if (invalidEventType || invalidListener) {
+            log.error("Invalid request to add event listener to", eventType, listener);
             return;
         }
 
         eventList[eventType] = eventList[eventType] || [];
         listener.isInternal = !!isInternal; // boolify
 
-        if (typeof listener === 'function' && eventList[eventType].map(function eachListener(a) {
-            return a.toString();
-        }).indexOf(listener.toString()) === -1) {
+        var toString = function (fn) {
+            return fn.toString();
+        };
+        var isNotAlreadyAdded = eventList[eventType].map(toString).indexOf(listener.toString()) === -1;
+        // !!!
+        // what is this actually testing for?
+        // !!!
+        var isDuplicateListenerByName = eventList[eventType].indexOf(listener) !== -1;
+
+        if (isNotAlreadyAdded) {
             eventList[eventType].push(listener);
-        } else if (eventList[eventType].indexOf(listener) !== -1) {
-            log.warn("not adding duplicate listener.");
+        }
+        else if (isDuplicateListenerByName) {
+            log.warn("Not adding duplicate listener to", eventType, listener);
+        }
+        else {
+            // should not end up here
+            log.error("Not adding listener", eventType, listener);
         }
     };
 
