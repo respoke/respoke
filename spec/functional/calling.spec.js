@@ -85,9 +85,7 @@ describe("Respoke calling", function () {
             followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
             done();
         }, function (err) {
-            expect(err).to.be.defined;
-            expect(err.message).to.be.defined;
-            done(err);
+            done(new Error(JSON.stringify(err)));
         });
     });
 
@@ -806,7 +804,7 @@ describe("Respoke calling", function () {
                 it("is call debugs enabled and signalReport gets called", function (done) {
                     call.listen('hangup', function (evt) {
                         try {
-                            //expect(iSpy.calledOnce).to.equal(true);
+                            expect(iSpy.calledOnce).to.equal(true);
                             expect(call.callDebugReportEnabled).to.equal(true);
                             done();
                         } catch (err) {
@@ -1245,8 +1243,10 @@ describe("Respoke calling", function () {
 
     afterEach(function (done) {
         [follower, followee].forEach(function (client) {
-            for (var i = client.calls.length - 1; i >= 0; i -= 1) {
-                client.calls[i].hangup();
+            if (client.calls) {
+                for (var i = client.calls.length - 1; i >= 0; i -= 1) {
+                    client.calls[i].hangup();
+                }
             }
         });
 
