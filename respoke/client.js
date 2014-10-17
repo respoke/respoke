@@ -819,6 +819,132 @@ module.exports = function (params) {
     };
 
     /**
+     * Place an audio only call to an endpoint.
+     *
+     *     client.startAudioCall({
+     *         endpointId: 'erin',
+     *         onConnect: function (evt) { },
+     *         onLocalMedia: function (evt) { }
+     *     });
+     *
+     * @memberof! respoke.Client
+     * @method respoke.Client.startAudioCall
+     * @param {object} params
+     * @param {string} params.endpointId - The id of the endpoint that should be called.
+     * @param {RTCServers} [params.servers]
+     * @param {string} [params.connectionId]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 element
+     * with the local audio and/or video attached.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 element
+     * with the remote audio and/or video attached.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
+     * up.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local
+     * video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
+     * video attached to it.
+     * @return {respoke.Call}
+     */
+    that.startAudioCall = function (params) {
+        params = params || {};
+        params.constraints = {
+            video : false,
+            audio : true,
+            optional: [],
+            mandatory: {}
+        };
+        return that.startCall(params);
+    };
+
+    /**
+     * Place a video call to an endpoint.
+     *
+     *     client.startVideoCall({
+     *         endpointId: 'erin',
+     *         onConnect: function (evt) { },
+     *         onLocalMedia: function (evt) { }
+     *     });
+     *
+     * @memberof! respoke.Client
+     * @method respoke.Client.startVideoCall
+     * @param {object} params
+     * @param {string} params.endpointId - The id of the endpoint that should be called.
+     * @param {RTCServers} [params.servers]
+     * @param {string} [params.connectionId]
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
+     * with the local audio and/or video attached.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
+     * with the remote audio and/or video attached.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
+     * up.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
+     * wants to perform an action between local media becoming available and calling approve().
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local
+     * video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
+     * video attached to it.
+     * @return {respoke.Call}
+     */
+    that.startVideoCall = function (params) {
+        params = params || {};
+        params.constraints = {
+            video : true,
+            audio : true,
+            optional: [],
+            mandatory: {}
+        };
+        return that.startCall(params);
+    };
+
+    /**
      * Place an audio call with a phone number.
      * @memberof! respoke.Client
      * @method respoke.Client.startPhoneCall
