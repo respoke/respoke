@@ -67,11 +67,6 @@ var EventEmitter = module.exports = function (params) {
      * 
      * If an identical listener already registered to this event, it will **not** be added.
      * 
-     * The third argument 'isInternal' is used by the respoke library to indicate that this
-     * listener must not count when we are trying to determine if an event has listeners
-     * placed by the library end user. In short, do not use this unless you really know 
-     * what you're doing.
-     * 
      * ##### Example of adding an event listener.
      *
      *     client.listen('connect', function (evt) {
@@ -81,9 +76,9 @@ var EventEmitter = module.exports = function (params) {
      * @memberof! respoke.EventEmitter
      * @method respoke.EventEmitter.listen
      * @param {string} eventType - The name of the event.
-     * @param {respoke.EventEmitter.eventListener} listener - A function to call when the 
-     * event is fired.
-     * @param {boolean} isInternal - Internal use only. A flag to indicate this listener was 
+     * @param {respoke.EventEmitter.eventListener} listener - A function to call when the event is
+     * fired.
+     * @arg {boolean} isInternal - Internal use only. A flag to indicate this listener was 
      * added by the library. This parameter should not be used by developers who are using
      * the library, only by developers who are working on the library itself.
      */
@@ -102,18 +97,11 @@ var EventEmitter = module.exports = function (params) {
             return fn.toString();
         };
         var isNotAlreadyAdded = eventList[eventType].map(toString).indexOf(listener.toString()) === -1;
-        // !!!
-        // what is this actually testing for?
-        // !!!
-        var isDuplicateListenerByName = eventList[eventType].indexOf(listener) !== -1;
 
         if (isNotAlreadyAdded) {
             eventList[eventType].push(listener);
-        } else if (isDuplicateListenerByName) {
-            log.warn("Not adding duplicate listener to", eventType, listener);
         } else {
-            // should not end up here
-            log.error("Not adding listener", eventType, listener);
+            log.warn("Not adding duplicate listener to", eventType, listener);
         }
     };
 
