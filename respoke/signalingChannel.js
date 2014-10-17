@@ -1302,7 +1302,7 @@ module.exports = function (params) {
 
 
             // Handle presence not associated with a channel
-            if (message.header.channel.indexOf('system') > -1 || !connection) {
+            if (!connection) {
                 endpoint.setPresence({
                     connectionId: message.connectionId
                 });
@@ -1310,10 +1310,6 @@ module.exports = function (params) {
                     connectionId: message.connectionId,
                     endpointId: message.endpointId
                 });
-                if (message.header.channel.indexOf('system') > -1) {
-                    log.error("Still getting these weird join presence messages.", message);
-                    return;
-                }
             }
 
             group = client.getGroup({id: message.header.channel});
