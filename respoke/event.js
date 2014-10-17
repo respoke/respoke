@@ -109,11 +109,9 @@ var EventEmitter = module.exports = function (params) {
 
         if (isNotAlreadyAdded) {
             eventList[eventType].push(listener);
-        }
-        else if (isDuplicateListenerByName) {
+        } else if (isDuplicateListenerByName) {
             log.warn("Not adding duplicate listener to", eventType, listener);
-        }
-        else {
+        } else {
             // should not end up here
             log.error("Not adding listener", eventType, listener);
         }
