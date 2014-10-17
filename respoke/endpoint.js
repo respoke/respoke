@@ -286,12 +286,10 @@ module.exports = function (params) {
      */
     that.startCall = function (params) {
         var call = null;
-        var combinedCallSettings = respoke.clone(client.callSettings);
         params = params || {};
 
         log.debug('Endpoint.call');
         client.verifyConnected();
-        log.debug('Default callSettings is', combinedCallSettings);
         if (params.caller === undefined) {
             params.caller = true;
         }
@@ -301,12 +299,7 @@ module.exports = function (params) {
             return;
         }
 
-        // Apply call-specific callSettings to the app's defaults
-        combinedCallSettings.constraints = respoke.clone(params.constraints) || combinedCallSettings.constraints;
-        combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
-        log.debug('Final callSettings is', combinedCallSettings);
-
-        params.callSettings = combinedCallSettings;
+        params.servers = client.servers || params.servers;
         params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
@@ -418,7 +411,6 @@ module.exports = function (params) {
      */
     that.startDirectConnection = function (params) {
         params = params || {};
-        var combinedConnectionSettings = respoke.clone(client.callSettings);
         var deferred = Q.defer();
         var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var call;
@@ -445,11 +437,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        // Apply connection-specific connectionSettings to the app's defaults
-        combinedConnectionSettings.constraints = params.constraints || combinedConnectionSettings.constraints;
-        combinedConnectionSettings.servers = params.servers || combinedConnectionSettings.servers;
-
-        params.callSettings = combinedConnectionSettings;
+        params.servers = params.servers || client.servers;
         params.instanceId = instanceId;
         params.remoteEndpoint = that;
 

@@ -172,7 +172,12 @@ module.exports = function (params) {
     that.outgoingMedia = respoke.LocalMedia({
         instanceId: instanceId,
         callId: that.id,
-        constraints: params.constraints || client.callSettings.constraints
+        constraints: params.constraints || {
+            video: true,
+            audio: true,
+            optional: [],
+            mandatory: {}
+        }
     });
 
     /**
@@ -183,7 +188,7 @@ module.exports = function (params) {
     that.incomingMedia = respoke.RemoteMedia({
         instanceId: instanceId,
         callId: that.id,
-        constraints: params.constraints || client.callSettings.constraints
+        constraints: params.constraints
     });
 
     /**
@@ -362,9 +367,7 @@ module.exports = function (params) {
         pc.disableTurn = params.disableTurn || pc.disableTurn;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
 
-        console.log('constraints was', that.outgoingMedia.constraints);
         that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;
-        console.log('constraints is now', that.outgoingMedia.constraints);
         that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
         if (pc.state.caller === true) {
             // Only the person who initiated this round of media negotiation needs to estimate remote
@@ -1137,6 +1140,15 @@ module.exports = function (params) {
             }
         });
 
+        /*
+         * Always overwrite constraints for callee on every offer, since answer() and accept() will
+         * always be called after parsing the SDP.
+         */
+        that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
+        that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
+
+        log.info("Setting outgoingMedia constraints to", that.outgoingMedia.constraints);
+
         if (pc.state.isModifying()) {
             if (pc.state.needDirectConnection === true) {
                 info.directConnection = directConnection;
@@ -1423,7 +1435,7 @@ module.exports = function (params) {
                 iceServers: []
             };
         } else {
-            pc.servers = client.callSettings.servers;
+            pc.servers = client.servers;
             pc.servers.iceServers = result;
         }
     }).fin(function () {

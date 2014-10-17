@@ -180,8 +180,6 @@ if (!window.skipBugsnag) {
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.token]
- * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
- * different parameters than the built-in defaults.
  * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
  * different parameters than the built-in defaults.
  * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
@@ -454,6 +452,9 @@ respoke.isEqual = function (a, b) {
  */
 respoke.sdpHasAudio = function (sdp) {
     "use strict";
+    if (!sdp) {
+        throw new Error("respoke.sdpHasAudio called with no parameters.");
+    }
     return sdp.indexOf('m=audio') !== -1;
 };
 
@@ -466,6 +467,9 @@ respoke.sdpHasAudio = function (sdp) {
  */
 respoke.sdpHasVideo = function (sdp) {
     "use strict";
+    if (!sdp) {
+        throw new Error("respoke.sdpHasVideo called with no parameters.");
+    }
     return sdp.indexOf('m=video') !== -1;
 };
 
@@ -478,6 +482,9 @@ respoke.sdpHasVideo = function (sdp) {
  */
 respoke.sdpHasDataChannel = function (sdp) {
     "use strict";
+    if (!sdp) {
+        throw new Error("respoke.sdpHasDataChannel called with no parameters.");
+    }
     return sdp.indexOf('m=application') !== -1;
 };
 
@@ -490,6 +497,9 @@ respoke.sdpHasDataChannel = function (sdp) {
  */
 respoke.constraintsHasAudio = function (constraints) {
     "use strict";
+    if (!constraints) {
+        throw new Error("respoke.constraintsHasAudio called with no parameters.");
+    }
     return (constraints.audio === true);
 };
 
@@ -502,5 +512,8 @@ respoke.constraintsHasAudio = function (constraints) {
  */
 respoke.constraintsHasVideo = function (constraints) {
     "use strict";
+    if (!constraints) {
+        throw new Error("respoke.constraintsHasVideo called with no parameters.");
+    }
     return (constraints.video === true || typeof constraints.video === 'object');
 };

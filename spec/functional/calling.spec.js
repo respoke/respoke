@@ -1,5 +1,4 @@
 var expect = chai.expect;
-respoke.log.setLevel('silent');
 
 describe("Respoke calling", function () {
     this.timeout(30000);
@@ -462,7 +461,7 @@ describe("Respoke calling", function () {
                     });
                 });
 
-                it("only receives video and not audio", function (done) {
+                xit("only receives video and not audio", function (done) {
                     var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
@@ -976,7 +975,7 @@ describe("Respoke calling", function () {
         });
     });
 
-    describe.only("when receiving a call", function () {
+    describe("when receiving a call", function () {
         describe("with call listener specified", function () {
             beforeEach(function () {
                 followeeEndpoint.startCall();

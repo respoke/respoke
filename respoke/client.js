@@ -41,8 +41,6 @@ var respoke = require('./respoke');
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
  * respoke.connect, respoke.createClient, or to client.connect.
  * @param {string} [params.token] - The endpoint's authentication token.
- * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
- * different parameters than the built-in defaults.
  * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
  * different parameters than the built-in defaults.
  * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
@@ -177,35 +175,6 @@ module.exports = function (params) {
     log.debug("Client ID is ", instanceId);
 
     /**
-     * Default call settings:
-     *
-     *      constraints: {
-     *          video : true,
-     *          audio : true,
-     *          optional: [],
-     *          mandatory: {}
-     *      },
-     *      servers: {
-     *          iceServers: []
-     *      }
-     *
-     * @memberof! respoke.Client
-     * @name callSettings
-     * @type {object}
-     */
-    that.callSettings = {
-        constraints: params.constraints || {
-            video : true,
-            audio : true,
-            optional: [],
-            mandatory: {}
-        },
-        servers: params.servers || {
-            iceServers: []
-        }
-    };
-
-    /**
      * @memberof! respoke.Client
      * @name signalingChannel
      * @type {respoke.SignalingChannel}
@@ -228,8 +197,6 @@ module.exports = function (params) {
      * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
      * respoke.connect, respoke.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
-     * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
-     * different parameters than the built-in defaults.
      * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
      * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
@@ -258,11 +225,12 @@ module.exports = function (params) {
      */
     function saveParameters(params) {
         Object.keys(params).forEach(function eachParam(key) {
-            if (['onSuccess', 'onError', 'reconnect'].indexOf(key) === -1 && params[key] !== undefined) {
+            if (['onSuccess', 'onError', 'reconnect', 'servers'].indexOf(key) === -1 && params[key] !== undefined) {
                 clientSettings[key] = params[key];
             }
         });
 
+        that.servers = params.servers || that.servers;
         clientSettings.developmentMode = !!clientSettings.developmentMode;
         clientSettings.enableCallDebugReport = typeof clientSettings.enableCallDebugReport === 'boolean' ?
             clientSettings.enableCallDebugReport : true;
@@ -327,8 +295,6 @@ module.exports = function (params) {
      * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
      * respoke.connect, respoke.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
-     * @param {RTCConstraints} [params.constraints] - A set of default WebRTC call constraints if you wish to use
-     * different parameters than the built-in defaults.
      * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
      * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
@@ -923,7 +889,6 @@ module.exports = function (params) {
         var retVal;
         var call = null;
         var recipient = {};
-        var combinedCallSettings = respoke.clone(that.callSettings);
         params = params || {};
 
         try {
@@ -947,15 +912,6 @@ module.exports = function (params) {
 
         recipient.id = params.number;
 
-        // Apply call-specific callSettings to the app's defaults
-        combinedCallSettings.constraints = respoke.clone(params.constraints) || combinedCallSettings.constraints;
-        combinedCallSettings.servers = params.servers || combinedCallSettings.servers;
-        // Audio only phone calls allowed
-        combinedCallSettings.constraints.audio = true;
-        combinedCallSettings.constraints.video = false;
-        log.debug('Final callSettings is', combinedCallSettings);
-
-        params.callSettings = combinedCallSettings;
         params.instanceId = instanceId;
         params.remoteEndpoint = recipient;
 

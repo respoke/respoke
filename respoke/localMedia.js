@@ -127,7 +127,7 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     var stream;
-    
+
     function getStream(theConstraints) {
         for(var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
@@ -137,7 +137,7 @@ module.exports = function (params) {
         }
         return null;
     }
-    
+
     function removeStream(theConstraints) {
         var toRemoveIndex;
         for(var i = 0; i < respoke.streams.length; i++) {
@@ -222,7 +222,7 @@ module.exports = function (params) {
         } else {
             stream.numPc = 1;
             respoke.streams.push({stream: stream, constraints: that.constraints});
-            
+
             stream.id = client.endpointId;
             attachMediaStream(that.element, stream);
             // We won't want our local video outputting audio.
@@ -256,6 +256,7 @@ module.exports = function (params) {
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
+
         var theStream = getStream(that.constraints);
         if (theStream) {
             log.debug('using old stream');
@@ -492,7 +493,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Save and parse the SDP
+     * Save and parse the SDP.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.setSDP
      * @param {RTCSessionDescription} oSession

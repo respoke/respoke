@@ -62,14 +62,14 @@ module.exports = function (params) {
      * @private
      * @type {boolean}
      */
-    var sdpHasAudio = respoke.constraintsHasAudio(that.constraints);
+    var sdpHasAudio = false;
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasVideo
      * @private
      * @type {boolean}
      */
-    var sdpHasVideo = respoke.constraintsHasVideo(that.constraints);
+    var sdpHasVideo = false;
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasDataChannel
