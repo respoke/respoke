@@ -18,6 +18,8 @@ var respoke = require('./respoke');
  * @param {string} params.instanceId - client id
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
  * candidates.
+ * @param {boolean} [params.disableTurn] - If true, delete all 'relay' candidates and send only 'host' and 'srvflx'
+ * candidates.
  * @param {respoke.Call} params.call
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
@@ -532,6 +534,9 @@ module.exports = function (params) {
 
         if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
             log.debug("Dropping candidate because forceTurn is on.");
+            return;
+        } else if (that.disableTurn === true && candidate.candidate.indexOf("typ relay") !== -1) {
+            log.debug("Dropping candidate because disableTurn is on.");
             return;
         }
 
