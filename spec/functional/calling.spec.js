@@ -461,7 +461,7 @@ describe("Respoke calling", function () {
                     });
                 });
 
-                it("only receives video and not audio", function (done) {
+                xit("only receives video and not audio", function (done) {
                     var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
@@ -1005,7 +1005,7 @@ describe("Respoke calling", function () {
                 });
 
                 // broke
-                xit("only sends audio and not video", function (done) {
+                it("only sends audio and not video", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
@@ -1103,7 +1103,7 @@ describe("Respoke calling", function () {
                 });
 
                 // broke
-                xit("only sends video and not audio", function (done) {
+                it("only sends video and not audio", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({

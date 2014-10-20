@@ -18,6 +18,8 @@ var respoke = require('./respoke');
  * @param {string} params.instanceId - client id
  * @param {boolean} [params.forceTurn] - If true, delete all 'host' and 'srvflx' candidates and send only 'relay'
  * candidates.
+ * @param {boolean} [params.disableTurn] - If true, delete all 'relay' candidates and send only 'host' and 'srvflx'
+ * candidates.
  * @param {respoke.Call} params.call
  * @param {string} params.connectionId - The connection ID of the remoteEndpoint.
  * @param {function} params.signalOffer - Signaling action from SignalingChannel.
@@ -30,7 +32,6 @@ var respoke = require('./respoke');
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
  * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for the developer to receive
  * statistics about the call. This is only used if call.getStats() is called and the stats module is loaded.
- * @param {object} [params.callSettings]
  * @param {object} [params.pcOptions]
  * @param {object} [params.offerOptions]
  * @returns {respoke.PeerConnection}
@@ -113,14 +114,6 @@ module.exports = function (params) {
      * @type {respoke.Client}
      */
     var client = respoke.getClient(instanceId);
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name callSettings
-     * @private
-     * @type {object}
-     * @desc A container for constraints and servers.
-     */
-    var callSettings = params.callSettings || {};
     /**
      * @memberof! respoke.PeerConnection
      * @name signalOffer
@@ -410,16 +403,8 @@ module.exports = function (params) {
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.init
-     * @param {object} params
-     * @param {object} params.constraints
-     * @param {array} params.servers
-     * @param {boolean} params.disableTurn
      */
-    that.init = function init(params) {
-        params = params || {};
-        callSettings.servers = params.servers || callSettings.servers;
-        callSettings.disableTurn = params.disableTurn || callSettings.disableTurn;
-
+    that.init = function init() {
         log.debug('PC.init');
 
         if (pc) {
@@ -428,7 +413,7 @@ module.exports = function (params) {
 
         that.report.callStarted = new Date().getTime();
 
-        pc = new RTCPeerConnection(callSettings.servers, pcOptions);
+        pc = new RTCPeerConnection(that.servers, pcOptions);
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
         pc.onaddstream = function onaddstream(evt) {
@@ -549,6 +534,9 @@ module.exports = function (params) {
 
         if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
             log.debug("Dropping candidate because forceTurn is on.");
+            return;
+        } else if (that.disableTurn === true && candidate.candidate.indexOf("typ relay") !== -1) {
+            log.debug("Dropping candidate because disableTurn is on.");
             return;
         }
 

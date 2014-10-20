@@ -36,8 +36,6 @@ describe("Respoke presence", function () {
             })]).spread(function (token1, token2) {
                 followerToken = token1;
                 followeeToken = token2;
-                console.log('followerToken', token1);
-                console.log('followeeToken', token2);
 
                 return Q.all([follower.connect({
                     appId: Object.keys(testEnv.allApps)[0],

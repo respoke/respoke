@@ -13,7 +13,8 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @param {object} params.callSettings
+ * @param {string} params.callId - call id
+ * @param {object} [params.constraints]
  * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local video attached to it.
  * @returns {respoke.LocalMedia}
  */
@@ -101,14 +102,6 @@ module.exports = function (params) {
     var allowTimer = 0;
     /**
      * @memberof! respoke.LocalMedia
-     * @name callSettings
-     * @private
-     * @type {object}
-     */
-    var callSettings = params.callSettings || {};
-    callSettings.constraints = params.constraints || callSettings.constraints;
-    /**
-     * @memberof! respoke.LocalMedia
      * @name mediaOptions
      * @private
      * @type {object}
@@ -134,7 +127,7 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     var stream;
-    
+
     function getStream(theConstraints) {
         for(var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
@@ -144,7 +137,7 @@ module.exports = function (params) {
         }
         return null;
     }
-    
+
     function removeStream(theConstraints) {
         var toRemoveIndex;
         for(var i = 0; i < respoke.streams.length; i++) {
@@ -204,7 +197,7 @@ module.exports = function (params) {
             return;
         }
 
-        that.element = params.element || that.element || document.createElement('video');
+        that.element = that.element || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
         // back to the App. This is because we assume at the moment that only one local media video element
@@ -214,6 +207,12 @@ module.exports = function (params) {
         var aStream = getStream(that.constraints);
         if (aStream) {
             aStream.numPc += 1;
+
+            attachMediaStream(that.element, stream);
+            // We won't want our local video outputting audio.
+            that.element.muted = true;
+            that.element.autoplay = true;
+
             /**
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
@@ -229,7 +228,7 @@ module.exports = function (params) {
         } else {
             stream.numPc = 1;
             respoke.streams.push({stream: stream, constraints: that.constraints});
-            
+
             stream.id = client.endpointId;
             attachMediaStream(that.element, stream);
             // We won't want our local video outputting audio.
@@ -260,11 +259,10 @@ module.exports = function (params) {
     function requestMedia() {
         log.debug('requestMedia');
 
-        that.constraints = callSettings.constraints;
-
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
+
         var theStream = getStream(that.constraints);
         if (theStream) {
             log.debug('using old stream');
@@ -289,7 +287,7 @@ module.exports = function (params) {
                  */
                 that.fire('requesting-media');
             }, 500);
-            getUserMedia(callSettings.constraints, onReceiveUserMedia, onUserMediaError);
+            getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
             log.error("Couldn't get user media: " + e.message);
         }
@@ -501,7 +499,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Save and parse the SDP
+     * Save and parse the SDP.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.setSDP
      * @param {RTCSessionDescription} oSession
@@ -511,19 +509,6 @@ module.exports = function (params) {
         sdpHasVideo = respoke.sdpHasVideo(oSession.sdp);
         sdpHasAudio = respoke.sdpHasAudio(oSession.sdp);
         sdpHasDataChannel = respoke.sdpHasDataChannel(oSession.sdp);
-    };
-
-    /**
-     * Parse the constraints
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.setConstraints
-     * @param {MediaConstraints} constraints
-     * @private
-     */
-    that.setConstraints = function (constraints) {
-        that.constraints = constraints;
-        sdpHasVideo = respoke.constraintsHasVideo(constraints);
-        sdpHasAudio = respoke.constraintsHasAudio(constraints);
     };
 
     /**

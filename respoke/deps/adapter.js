@@ -123,12 +123,12 @@ if (navigator.mozGetUserMedia) {
 
   // Attach a media stream to an element.
   attachMediaStream = function(element, stream) {
-    console.log('Attaching media stream');
+    //console.log('Attaching media stream');
     element.mozSrcObject = stream;
   };
 
   reattachMediaStream = function(to, from) {
-    console.log('Reattaching media stream');
+    //console.log('Reattaching media stream');
     to.mozSrcObject = from.mozSrcObject;
   };
 
