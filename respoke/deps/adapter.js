@@ -125,9 +125,6 @@ if (navigator.mozGetUserMedia) {
   attachMediaStream = function(element, stream) {
     //console.log('Attaching media stream');
     element.mozSrcObject = stream;
-    setTimeout(function () {
-      element.play();
-    }, 100);
   };
 
   reattachMediaStream = function(to, from) {
