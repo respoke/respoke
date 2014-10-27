@@ -1,8 +1,8 @@
 {
-  "name": "transporter",
+  "name": "respoke",
   "version": "1.9.0",
-  "description": "Client-side JavaScript library for Collective.",
-  "main": "index.js",
+  "description": "Client-side JavaScript library for Respoke.",
+  "main": "respoke/respoke.js",
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch",
