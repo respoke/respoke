@@ -42,6 +42,8 @@ describe("respoke.Client", function () {
             expect(typeof client.setOnline).to.equal('function');
             expect(typeof client.setPresence).to.equal('function');
             expect(typeof client.startCall).to.equal('function');
+            expect(typeof client.startAudioCall).to.equal('function');
+            expect(typeof client.startVideoCall).to.equal('function');
             expect(typeof client.startPhoneCall).to.equal('function');
         });
 
@@ -55,13 +57,6 @@ describe("respoke.Client", function () {
             Object.keys(client).forEach(function (key) {
                 expect(key).to.not.contain('signal');
             });
-        });
-
-        it("has default getUserMedia constraints", function () {
-            expect(client.callSettings).to.be.an.Object;
-            expect(client.callSettings.constraints).to.be.an.Object;
-            expect(client.callSettings.constraints.video).to.be.true;
-            expect(client.callSettings.constraints.audio).to.be.true;
         });
     });
 
