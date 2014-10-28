@@ -7,7 +7,9 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * Class for managing the remote media stream.
+ * Class for managing the remote media stream, 
+ * which is attached to a call at `call.outgoingMedia`.
+ * 
  * @class respoke.RemoteMedia
  * @constructor
  * @augments respoke.EventEmitter
@@ -37,6 +39,7 @@ module.exports = function (params) {
      */
     that.className = 'respoke.RemoteMedia';
     /**
+     * Respoke media ID (different from a `MediaStream.id`).
      * @memberof! respoke.RemoteMedia
      * @name id
      * @type {string}
@@ -51,9 +54,10 @@ module.exports = function (params) {
      */
     var client = respoke.getClient(instanceId);
     /**
+     * The HTML element with attached video.
      * @memberof! respoke.RemoteMedia
      * @name element
-     * @type {Video}
+     * @type {HTMLVideoElement}
      */
     that.element = params.videoRemoteElement;
     /**
@@ -77,20 +81,6 @@ module.exports = function (params) {
      * @type {boolean}
      */
     var sdpHasDataChannel = false;
-    /**
-     * @memberof! respoke.RemoteMedia
-     * @name videoIsMuted
-     * @private
-     * @type {boolean}
-     */
-    var videoIsMuted = false;
-    /**
-     * @memberof! respoke.RemoteMedia
-     * @name audioIsMuted
-     * @private
-     * @type {boolean}
-     */
-    var audioIsMuted = false;
     /**
      * A timer to make sure we only fire {respoke.RemoteMedia#requesting-media} if the browser doesn't
      * automatically grant permission on behalf of the user. Timer is canceled in onReceiveUserMedia.
@@ -121,124 +111,12 @@ module.exports = function (params) {
     var pc = params.pc;
     delete that.pc;
     /**
+     * The remote `MediaStream`.
      * @memberof! respoke.RemoteMedia
      * @name stream
-     * @private
      * @type {RTCMediaStream}
      */
-    var stream;
-
-    /**
-     * Mute remote video stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.muteVideo
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.muteVideo = function () {
-        if (videoIsMuted) {
-            return;
-        }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
-            track.enabled = false;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: true
-        });
-        videoIsMuted = true;
-    };
-
-    /**
-     * Unmute remote video stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.unmuteVideo
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.unmuteVideo = function () {
-        if (!videoIsMuted) {
-            return;
-        }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
-            track.enabled = true;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'video',
-            muted: false
-        });
-        videoIsMuted = false;
-    };
-
-    /**
-     * Mute remote audio stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.muteAudio
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.muteAudio = function () {
-        if (audioIsMuted) {
-            return;
-        }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
-            track.enabled = false;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: true
-        });
-        audioIsMuted = true;
-    };
-
-    /**
-     * Unmute remote audio stream.
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.unmuteAudio
-     * @fires respoke.RemoteMedia#mute
-     */
-    that.unmuteAudio = function () {
-        if (!audioIsMuted) {
-            return;
-        }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
-            track.enabled = true;
-        });
-        /**
-         * @event respoke.RemoteMedia#mute
-         * @property {string} name - the event name.
-         * @property {respoke.RemoteMedia} target
-         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-         * has been changed.
-         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
-         */
-        that.fire('mute', {
-            type: 'audio',
-            muted: false
-        });
-        audioIsMuted = false;
-    };
+    that.stream = null;
 
     /**
      * Indicate whether we are receiving video.
@@ -247,8 +125,8 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.hasVideo = function () {
-        if (stream) {
-            return (stream.getVideoTracks().length > 0);
+        if (that.stream) {
+            return (that.stream.getVideoTracks().length > 0);
         }
         return sdpHasVideo;
     };
@@ -260,8 +138,8 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.hasAudio = function () {
-        if (stream) {
-            return (stream.getAudioTracks().length > 0);
+        if (that.stream) {
+            return (that.stream.getAudioTracks().length > 0);
         }
         return sdpHasAudio;
     };
@@ -273,7 +151,7 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.hasMedia = function () {
-        return !!stream;
+        return !!that.stream;
     };
 
     /**
@@ -311,9 +189,17 @@ module.exports = function (params) {
      */
     that.setStream = function (str) {
         if (str) {
-            stream = str;
+            that.stream = str;
+            /**
+             * Expose getAudioTracks.
+             */
+            that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
+            /**
+             * Expose getVideoTracks.
+             */
+            that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
             that.element = that.element || document.createElement('video');
-            attachMediaStream(that.element, stream);
+            attachMediaStream(that.element, that.stream);
             that.element.autoplay = true;
             setTimeout(that.element.play.bind(that.element));
         }
@@ -326,16 +212,16 @@ module.exports = function (params) {
      * @fires respoke.RemoteMedia#stop
      */
     that.stop = function () {
-        if (!stream) {
+        if (!that.stream) {
             return;
         }
 
-        stream.numPc -= 1;
-        if (stream.numPc === 0) {
-            stream.stop();
+        that.stream.numPc -= 1;
+        if (that.stream.numPc === 0) {
+            that.stream.stop();
             delete respoke.streams[that.constraints];
         }
-        stream = null;
+        that.stream = null;
         /**
          * @event respoke.RemoteMedia#stop
          * @property {string} name - the event name.
@@ -345,16 +231,31 @@ module.exports = function (params) {
     };
 
     /**
-     * Mute local video stream.
+     * Whether the video stream is muted.
+     * 
+     * All video tracks must be muted for this to return `false`.
+     * @returns boolean
+     */
+    that.isVideoMuted = function () {
+        if (!that.stream) {
+            return false;
+        }
+        return that.stream.getVideoTracks().every(function (track) {
+            return !track.enabled;
+        });
+    };
+
+    /**
+     * Mute remote video stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.muteVideo
      * @fires respoke.RemoteMedia#mute
      */
     that.muteVideo = function () {
-        if (videoIsMuted) {
+        if (that.isVideoMuted()) {
             return;
         }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
+        that.stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -369,20 +270,19 @@ module.exports = function (params) {
             type: 'video',
             muted: true
         });
-        videoIsMuted = true;
     };
 
     /**
-     * Unmute local video stream.
+     * Unmute remote video stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.unmuteVideo
      * @fires respoke.RemoteMedia#mute
      */
     that.unmuteVideo = function () {
-        if (!videoIsMuted) {
+        if (!that.isVideoMuted()) {
             return;
         }
-        stream.getVideoTracks().forEach(function eachTrack(track) {
+        that.stream.getVideoTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
@@ -397,20 +297,34 @@ module.exports = function (params) {
             type: 'video',
             muted: false
         });
-        videoIsMuted = false;
     };
 
     /**
-     * Mute local audio stream.
+     * Whether the audio stream is muted.
+     * 
+     * All audio tracks must be muted for this to return `false`.
+     * @returns boolean
+     */
+    that.isAudioMuted = function () {
+        if (!that.stream) {
+            return false;
+        }
+        return that.stream.getAudioTracks().every(function (track) {
+            return !track.enabled;
+        });
+    };
+
+    /**
+     * Mute remote audio stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.muteAudio
      * @fires respoke.RemoteMedia#mute
      */
     that.muteAudio = function () {
-        if (audioIsMuted) {
+        if (that.isAudioMuted()) {
             return;
         }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
+        that.stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = false;
         });
         /**
@@ -425,20 +339,19 @@ module.exports = function (params) {
             type: 'audio',
             muted: true
         });
-        audioIsMuted = true;
     };
 
     /**
-     * Unmute local audio stream.
+     * Unmute remote audio stream.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.unmuteAudio
      * @fires respoke.RemoteMedia#mute
      */
     that.unmuteAudio = function () {
-        if (!audioIsMuted) {
+        if (!that.isAudioMuted()) {
             return;
         }
-        stream.getAudioTracks().forEach(function eachTrack(track) {
+        that.stream.getAudioTracks().forEach(function eachTrack(track) {
             track.enabled = true;
         });
         /**
@@ -453,7 +366,6 @@ module.exports = function (params) {
             type: 'audio',
             muted: false
         });
-        audioIsMuted = false;
     };
 
     return that;

@@ -1,3 +1,4 @@
+'use strict';
 /**
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
  * @private
@@ -18,7 +19,7 @@ var respoke = require('./respoke');
  * @private
  */
 var now;
-
+var performance;
 if (performance && performance.now) {
     now = performance.now.bind(performance);
 } else if (Date.now) {
@@ -26,7 +27,7 @@ if (performance && performance.now) {
 } else {
     now = function () {
         return new Date().getTime();
-    }
+    };
 }
 
 /**
@@ -59,7 +60,8 @@ var PendingRequests = function () {
      */
     that.add = function (obj) {
         contents[counter] = obj;
-        return counter++;
+        counter++;
+        return counter;
     };
 
     /**
@@ -100,7 +102,6 @@ var PendingRequests = function () {
  * @returns {respoke.SignalingChannel}
  */
 module.exports = function (params) {
-    "use strict";
     params = params || {};
     /**
      * @memberof! respoke.SignalingChannel
