@@ -7,7 +7,7 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * A wrapper around the stream from `getUserMedia`, 
+ * A wrapper around the stream from `getUserMedia`,
  * which is attached to a call at `call.outgoingMedia`.
  *
  * @class respoke.LocalMedia
@@ -198,7 +198,7 @@ module.exports = function (params) {
         if (aStream) {
             aStream.numPc += 1;
 
-            attachMediaStream(that.element, stream);
+            attachMediaStream(that.element, that.stream);
             // We won't want our local video outputting audio.
             that.element.muted = true;
             that.element.autoplay = true;
@@ -317,7 +317,7 @@ module.exports = function (params) {
 
     /**
      * Whether the video stream is muted.
-     * 
+     *
      * All video tracks must be muted for this to return `false`.
      * @returns boolean
      */
@@ -386,7 +386,7 @@ module.exports = function (params) {
 
     /**
      * Whether the audio stream is muted.
-     * 
+     *
      * All audio tracks must be muted for this to return `false`.
      * @returns boolean
      */
