@@ -974,7 +974,6 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.number - The phone number that should be called.
      * @param {RTCServers} [params.servers]
-     * @param {RTCConstraints} [params.constraints]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -1009,6 +1008,12 @@ module.exports = function (params) {
         var call = null;
         var recipient = {};
         params = params || {};
+        params.constraints = {
+            video: false,
+            audio: true,
+            mandatory: {},
+            optional: []
+        };
 
         try {
             that.verifyConnected();
