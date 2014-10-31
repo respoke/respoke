@@ -137,8 +137,8 @@ module.exports = function (params) {
                 break;
             }
         }
-        if (toRemoveIndex) {
-            respoke.streams.slice(toRemoveIndex, 1);
+        if (toRemoveIndex !== undefined) {
+            respoke.streams.splice(toRemoveIndex, 1);
         }
     }
 
