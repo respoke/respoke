@@ -407,7 +407,9 @@
                         if (interestingStats[side + mediaType]) {
                             // fill in the value of the respective 'match'
                             // build the name of the stat from parts
-                            interestingStats[side + mediaType].match.value = ssrc;
+                            if (interestingStats[side + mediaType].match.value.length === 0){
+                                interestingStats[side + mediaType].match.value = ssrc;
+                            }
                         }
                     }
                 });
