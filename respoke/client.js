@@ -230,7 +230,9 @@ module.exports = function (params) {
             }
         });
 
-        that.servers = params.servers || that.servers;
+        that.servers = params.servers || that.servers || {
+            iceServers: []
+        };
         clientSettings.developmentMode = !!clientSettings.developmentMode;
         clientSettings.enableCallDebugReport = typeof clientSettings.enableCallDebugReport === 'boolean' ?
             clientSettings.enableCallDebugReport : true;

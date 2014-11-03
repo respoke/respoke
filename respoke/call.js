@@ -1444,7 +1444,7 @@ module.exports = function (params) {
             caller: that.caller
         });
     }).done(null, function (err) {
-        // who cares
+        log.debug('Unexpected exception', err);
     });
 
     return that;
