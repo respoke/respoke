@@ -1258,7 +1258,10 @@ module.exports = function (params) {
 
         newGroup.listen('leave', function leaveHandler(evt) {
             newGroup.removeMember({connectionId: evt.connection.id});
-            checkEndpointForRemoval(evt.connection.getEndpoint());
+            var endpt = evt.connection.getEndpoint();
+            if (!endpt.hasListeners('presence')) {
+                checkEndpointForRemoval(endpt);
+            }
         }, true);
 
         groups.push(newGroup);
