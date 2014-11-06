@@ -139,7 +139,6 @@ module.exports = function (params) {
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startAudioCall
      * @param {object} params
-     * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -195,7 +194,6 @@ module.exports = function (params) {
      * @memberof! respoke.Endpoint
      * @method respoke.Endpoint.startVideoCall
      * @param {object} params
-     * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -274,7 +272,6 @@ module.exports = function (params) {
      * information.
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -304,7 +301,6 @@ module.exports = function (params) {
             return;
         }
 
-        params.servers = client.servers || params.servers;
         params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
@@ -407,7 +403,6 @@ module.exports = function (params) {
      * request for a direct connection and setup begins.
      * @param {respoke.DirectConnection.onMessage} [params.onMessage] - A callback for receiving messages sent
      * through the DirectConnection.
-     * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
      * @param {string} [params.connectionId] - An optional connection ID to use for this connection. This allows
      * the connection to be made to a specific instance of an endpoint in the case that the same endpoint is logged
      * in from multiple locations.
@@ -442,7 +437,6 @@ module.exports = function (params) {
             return retVal;
         }
 
-        params.servers = params.servers || client.servers;
         params.instanceId = instanceId;
         params.remoteEndpoint = that;
 
