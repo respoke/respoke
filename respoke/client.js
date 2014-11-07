@@ -47,8 +47,6 @@ var respoke = require('./respoke');
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
  * respoke.connect, respoke.createClient, or to client.connect.
  * @param {string} [params.token] - The endpoint's authentication token.
- * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
- * different parameters than the built-in defaults.
  * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
  * endpoint. This is only used when `developmentMode` is set to `true`.
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
@@ -203,8 +201,6 @@ module.exports = function (params) {
      * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
      * respoke.connect, respoke.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
-     * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
-     * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
@@ -231,14 +227,11 @@ module.exports = function (params) {
      */
     function saveParameters(params) {
         Object.keys(params).forEach(function eachParam(key) {
-            if (['onSuccess', 'onError', 'reconnect', 'servers'].indexOf(key) === -1 && params[key] !== undefined) {
+            if (['onSuccess', 'onError', 'reconnect'].indexOf(key) === -1 && params[key] !== undefined) {
                 clientSettings[key] = params[key];
             }
         });
 
-        that.servers = params.servers || that.servers || {
-            iceServers: []
-        };
         clientSettings.developmentMode = !!clientSettings.developmentMode;
         clientSettings.enableCallDebugReport = typeof clientSettings.enableCallDebugReport === 'boolean' ?
             clientSettings.enableCallDebugReport : true;
@@ -303,8 +296,6 @@ module.exports = function (params) {
      * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
      * respoke.connect, respoke.createClient, or to client.connect.
      * @param {string} [params.token] - The endpoint's authentication token.
-     * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
-     * different parameters than the built-in defaults.
      * @param {string} [params.endpointId] - An identifier to use when creating an authentication token for this
      * endpoint. This is only used when `developmentMode` is set to `true`.
      * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
@@ -793,7 +784,6 @@ module.exports = function (params) {
      * @method respoke.Client.startCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
-     * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
@@ -862,7 +852,6 @@ module.exports = function (params) {
      * @method respoke.Client.startAudioCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
-     * @param {RTCServers} [params.servers]
      * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 element
      * with the local audio and/or video attached.
@@ -925,7 +914,6 @@ module.exports = function (params) {
      * @method respoke.Client.startVideoCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
-     * @param {RTCServers} [params.servers]
      * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
@@ -981,7 +969,6 @@ module.exports = function (params) {
      * @method respoke.Client.startPhoneCall
      * @param {object} params
      * @param {string} params.number - The phone number that should be called.
-     * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or

@@ -137,8 +137,6 @@ module.exports = function (params) {
      * connection.
      * @param {respoke.DirectConnection.onStart} [params.onStart] - Callback for when the direct connection
      * is being set up. The direct connection will not be open yet.
-     * @param {array} [params.servers] - Additional resources for determining network connectivity between two
-     * endpoints.
      * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
      * it to flow peer-to-peer. The relay acts like a blind proxy.
      * @private

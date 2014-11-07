@@ -182,8 +182,6 @@ if (!window.skipBugsnag) {
  * @param {string} [params.appId]
  * @param {string} [params.baseURL]
  * @param {string} [params.token]
- * @param {RTCICEServers} [params.servers] - A set of default WebRTC ICE/STUN/TURN servers if you wish to use
- * different parameters than the built-in defaults.
  * @param {string|number|object|Array} [params.presence] The initial presence to set once connected.
  * @param {boolean} [params.developmentMode=false] - Indication to obtain an authentication token from the service.
  * Note: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of

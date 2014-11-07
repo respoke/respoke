@@ -264,7 +264,6 @@ module.exports = function (params) {
         }),
         forceTurn: !!params.forceTurn,
         call: that,
-        servers: params.servers,
         pcOptions: {
             optional: [
                 { DtlsSrtpKeyAgreement: true },
@@ -332,7 +331,6 @@ module.exports = function (params) {
      * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
      * granted by the browser without asking the user to approve it.
      * @param {object} [params.constraints]
-     * @param {array} [params.servers]
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
@@ -368,7 +366,6 @@ module.exports = function (params) {
         pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
         pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ?
             params.needDirectConnection : pc.state.needDirectConnection;
-        pc.servers = params.servers || pc.servers;
         pc.disableTurn = params.disableTurn || pc.disableTurn;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
 
@@ -441,7 +438,6 @@ module.exports = function (params) {
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
      * @param {object} [params.constraints] - Information about the media for this call.
-     * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
      * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
      */
@@ -496,7 +492,6 @@ module.exports = function (params) {
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
      * @param {object} [params.constraints] - Information about the media for this call.
-     * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      */
     that.accept = that.answer;
 
@@ -659,7 +654,6 @@ module.exports = function (params) {
      * after answer() so we cannot use this method to set up the DirectConnection.
      * @memberof! respoke.Call
      * @method respoke.Call.doAddVideo
-     * @todo Find out when we can stop deleting TURN servers
      * @private
      * @param {object} params
      * @param {object} [params.constraints] - getUserMedia constraints
