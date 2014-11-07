@@ -15,8 +15,38 @@
     "type": "git",
     "url": "https://stash.digium.com/stash/scm/stratos/transporter.git"
   },
-  "author": "Erin Spiceland",
-  "license": "Proprietary",
+  "contributors": [{
+      "name": "Erin Spiceland",
+      "email": "erin@respoke.io"
+  }, {
+      "name": "Dan Jenkins",
+      "email": "dan@respoke.io"
+  }, {
+      "name": "Jeff Parrish",
+      "email": "jparrish@respoke.io"
+  }, {
+      "name": "PJ Davis",
+      "email": "pdavis@respoke.io"
+  }, {
+      "name": "David Lee",
+      "email": "dlee@respoke.io"
+  }, {
+      "name": "Matt Smith",
+      "email": "msmith@respoke.io"
+  }, {
+      "name": "Chad McElligott",
+      "email": "cmcelligott@respoke.io"
+  }, {
+      "name": "Matthew Fredrickson",
+      "email": "mfredrickson@respoke.io"
+  }, {
+      "name": "Ken Hunt",
+      "email": "khunt@respoke.io"
+  }, {
+      "name": "Matt Turney",
+      "email": "mturney@respoke.io"
+  }],
+  "license": "MIT",
   "dependencies": {
     "loglevel": "^0.3.1",
     "q": "^1.0.1",
