@@ -1,7 +1,7 @@
 
 var expect = chai.expect;
 
-describe("respoke.CallState for direct connections as the callee", function () {
+xdescribe("respoke.CallState for direct connections as the callee", function () {
     var caller = false;
     var state;
     var fake = {hasMedia: false};
@@ -69,10 +69,10 @@ describe("respoke.CallState for direct connections as the callee", function () {
                 },
                 needDirectConnection: true,
                 caller: caller,
-                answerTimeout: 200,
-                receiveAnswerTimeout: 200,
-                connectionTimeout: 200,
-                modifyTimeout: 200
+                answerTimeout: 20,
+                receiveAnswerTimeout: 20,
+                connectionTimeout: 20,
+                modifyTimeout: 20
             });
         });
 

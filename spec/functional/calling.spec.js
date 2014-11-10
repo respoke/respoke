@@ -241,8 +241,11 @@ describe("Respoke calling", function () {
             });
 
             it("are received by both sides", function () {
-                expect(followerICE.length).to.be.above(1);
-                expect(followeeICE.length).to.be.above(1);
+                if (navigator.userAgent.toLowerCase().indexOf('firefox') === -1) {
+                    // No trickle-ICE in Firefox.
+                    expect(followerICE.length).to.be.above(1);
+                    expect(followeeICE.length).to.be.above(1);
+                }
             });
         });
 
