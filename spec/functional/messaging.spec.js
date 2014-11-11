@@ -247,6 +247,33 @@ describe("Respoke messaging", function () {
                     }, done);
             });
 
+            it("limits the messages when there are two many of them", function (done) {
+                this.timeout(30000);
+                var start = now();
+                /*
+                 * Test this by timing the success handler. If we get an error or all the messages
+                 * succeed too quickly, we're either not handling rate-limiting or not being
+                 * rate-limited.
+                 */
+                sendNumMessagesEach(50)
+                    .then(checkMessages(50))
+                    .done(function successHandler() {
+                        var time = now() - start;
+                        if (time < 1000) {
+                            done(new Error("Sending finished too quickly, we were not rate-limited"));
+                            return;
+                        }
+                        done();
+                    }, function (err) {
+                        if (err.message.indexOf("exceeded") > -1) {
+                            done();
+                            return;
+                        }
+                        done(new Error("Sending returned an error, we're not successfully handling rate-limiting. " +
+                                err.message));
+                    });
+            });
+
             describe('the message metadata is correct', function () {
                 var message;
 

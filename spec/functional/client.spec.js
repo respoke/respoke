@@ -15,6 +15,8 @@ describe("respoke.Client", function () {
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
         }).then(function (params) {
             // create 2 tokens
+            testEnv.app = params.app;
+            testEnv.role = params.role;
             return Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                 roleId: params.role.id,
                 appId: params.app.id
@@ -40,6 +42,12 @@ describe("respoke.Client", function () {
                 }, function onError(err) {
                     done(err);
                 });
+            });
+        });
+
+        // Couldn't get a test to fail.
+        xdescribe("over and over again with a valid token fast enough", function () {
+            it("eventually hits the rate limit", function (done) {
             });
         });
 
