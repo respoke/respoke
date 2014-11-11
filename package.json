@@ -6,14 +6,20 @@
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch",
-    "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
-    "doc": "jsdoc -c jsdoc.json",
-    "doc-markdown": "jsdoc -c jsdoc.json -t ${JSDOC_TEMPLATES:=..}/jsdoc-markdown-template -d markdown",
-    "doc-confluence": "jsdoc -c jsdoc.json -p -t ${JSDOC_TEMPLATES:=..}/confluence-jsdoc-template -d confluence"
+    "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative"
+  },
+  "keywords": [
+    "respoke",
+    "webrtc"
+  ],
+  "author": {
+    "name": "Respoke",
+    "email": "support@respoke.io",
+    "url": "https://www.respoke.io"
   },
   "repository": {
     "type": "git",
-    "url": "https://stash.digium.com/stash/scm/stratos/transporter.git"
+    "url": "https://github.com/respoke/respoke"
   },
   "contributors": [{
       "name": "Erin Spiceland",
