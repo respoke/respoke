@@ -1,6 +1,11 @@
-/**
- * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @private
+/*
+ * Copyright 2014, Digium, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under The MIT License found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * For all details and documentation:  https://www.respoke.io
  */
 
 var log = require('loglevel');
@@ -132,8 +137,6 @@ module.exports = function (params) {
      * connection.
      * @param {respoke.DirectConnection.onStart} [params.onStart] - Callback for when the direct connection
      * is being set up. The direct connection will not be open yet.
-     * @param {array} [params.servers] - Additional resources for determining network connectivity between two
-     * endpoints.
      * @param {boolean} [params.forceTurn] - If true, force the data to flow through relay servers instead of allowing
      * it to flow peer-to-peer. The relay acts like a blind proxy.
      * @private

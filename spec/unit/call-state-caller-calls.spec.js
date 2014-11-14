@@ -1,7 +1,7 @@
 
 var expect = chai.expect;
 
-describe("respoke.CallState for calls as the caller", function () {
+xdescribe("respoke.CallState for calls as the caller", function () {
     var caller = true;
     var state;
     var fake = {hasMedia: false};

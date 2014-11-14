@@ -23,6 +23,7 @@ module.exports = function (grunt) {
         env: {
             test: {
                 NODE_ENV: 'test',
+                API_TESTS: 'true',
                 CLEAR_DB: 'true'
             }
         },

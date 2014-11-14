@@ -2,8 +2,8 @@
  *  Copyright (c) 2014 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree.
+ *  that can be found in the LICENSE file in the same directory as
+ *  this source file.
  */
 
 /* More information about these options at jshint.com/docs/options */
@@ -125,6 +125,9 @@ if (navigator.mozGetUserMedia) {
   attachMediaStream = function(element, stream) {
     //console.log('Attaching media stream');
     element.mozSrcObject = stream;
+    setTimeout(function () {
+      element.play();
+    }, 100);
   };
 
   reattachMediaStream = function(to, from) {

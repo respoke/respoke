@@ -1,6 +1,11 @@
-/**
- * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @private
+/*
+ * Copyright 2014, Digium, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under The MIT License found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * For all details and documentation:  https://www.respoke.io
  */
 
 var respoke = require('./respoke');
@@ -118,7 +123,6 @@ module.exports = function (params) {
      * information.
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {RTCServers} [params.servers]
      * @param {RTCConstraints} [params.constraints]
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -147,7 +151,6 @@ module.exports = function (params) {
      * @memberof! respoke.Connection
      * @method respoke.Connection.startAudioCall
      * @param {object} params
-     * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -202,7 +205,6 @@ module.exports = function (params) {
      * @memberof! respoke.Connection
      * @method respoke.Connection.startVideoCall
      * @param {object} params
-     * @param {RTCServers} [params.servers]
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -268,7 +270,6 @@ module.exports = function (params) {
      * through the DirectConnection.
      * @param {respoke.DirectConnection.onAccept} [params.onAccept] - Callback for when the user accepts the
      * request for a direct connection and setup begins.
-     * @param {RTCServers} [params.servers] - Additional ICE/STUN/TURN servers to use in connecting.
      * @returns {respoke.DirectConnection} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */

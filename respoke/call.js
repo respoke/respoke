@@ -1,6 +1,11 @@
-/**
- * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @private
+/*
+ * Copyright 2014, Digium, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under The MIT License found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * For all details and documentation:  https://www.respoke.io
  */
 
 var Q = require('q');
@@ -259,7 +264,6 @@ module.exports = function (params) {
         }),
         forceTurn: !!params.forceTurn,
         call: that,
-        servers: params.servers,
         pcOptions: {
             optional: [
                 { DtlsSrtpKeyAgreement: true },
@@ -327,7 +331,6 @@ module.exports = function (params) {
      * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
      * granted by the browser without asking the user to approve it.
      * @param {object} [params.constraints]
-     * @param {array} [params.servers]
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
@@ -363,7 +366,6 @@ module.exports = function (params) {
         pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
         pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ?
             params.needDirectConnection : pc.state.needDirectConnection;
-        pc.servers = params.servers || pc.servers;
         pc.disableTurn = params.disableTurn || pc.disableTurn;
         pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
 
@@ -436,7 +438,6 @@ module.exports = function (params) {
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
      * @param {object} [params.constraints] - Information about the media for this call.
-     * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
      * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
      */
@@ -491,7 +492,6 @@ module.exports = function (params) {
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
      * @param {object} [params.constraints] - Information about the media for this call.
-     * @param {array} [params.servers] - A list of sources of network paths to help with negotiating the connection.
      */
     that.accept = that.answer;
 
@@ -566,8 +566,8 @@ module.exports = function (params) {
          * @event respoke.Call#connect
          * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
-         * @property {Element} element - The HTML5 Video element with the new stream attached.
-         * @property {MediaStream} stream - The media stream.
+         * @property {Element} element - The HTML5 Video element with the remote stream attached.
+         * @property {respoke.RemoteMedia} stream - The incomingMedia property on the call.
          * @property {string} name - The event name.
          * @property {respoke.Call} target
          */
@@ -654,7 +654,6 @@ module.exports = function (params) {
      * after answer() so we cannot use this method to set up the DirectConnection.
      * @memberof! respoke.Call
      * @method respoke.Call.doAddVideo
-     * @todo Find out when we can stop deleting TURN servers
      * @private
      * @param {object} params
      * @param {object} [params.constraints] - getUserMedia constraints
@@ -1444,7 +1443,7 @@ module.exports = function (params) {
             caller: that.caller
         });
     }).done(null, function (err) {
-        // who cares
+        log.debug('Unexpected exception', err);
     });
 
     return that;
@@ -1473,8 +1472,8 @@ module.exports = function (params) {
  * element with the local audio and/or video attached.
  * @param {respoke.Event} evt
  * @param {Element} evt.element
- * @param {respoke.LocalMedia} evt.stream
- * @param {string} evt.name - the event name.
+ * @param {respoke.LocalMedia} - The outgoingMedia property on the call.
+ * @param {string} evt.name - The event name.
  * @param {respoke.Call} evt.target
  */
 /**

@@ -1,6 +1,12 @@
-/**
- * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @private
+'use strict';
+/*
+ * Copyright 2014, Digium, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under The MIT License found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * For all details and documentation:  https://www.respoke.io
  */
 
 var log = require('loglevel');
@@ -18,7 +24,7 @@ var respoke = require('./respoke');
  * @private
  */
 var now;
-
+var performance;
 if (performance && performance.now) {
     now = performance.now.bind(performance);
 } else if (Date.now) {
@@ -26,7 +32,7 @@ if (performance && performance.now) {
 } else {
     now = function () {
         return new Date().getTime();
-    }
+    };
 }
 
 /**
@@ -59,7 +65,8 @@ var PendingRequests = function () {
      */
     that.add = function (obj) {
         contents[counter] = obj;
-        return counter++;
+        counter++;
+        return counter;
     };
 
     /**
@@ -100,7 +107,6 @@ var PendingRequests = function () {
  * @returns {respoke.SignalingChannel}
  */
 module.exports = function (params) {
-    "use strict";
     params = params || {};
     /**
      * @memberof! respoke.SignalingChannel
