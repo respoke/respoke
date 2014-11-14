@@ -1565,13 +1565,13 @@ module.exports = function (params) {
             port: port || '443',
             protocol: protocol,
             secure: (protocol === 'https'),
-            query: 'app-token=' + appToken
+            query: '__sails_io_sdk_version=0.10.0&app-token=' + appToken
         };
 
         if (that.isConnected() || isConnecting()) {
             return;
         }
-        socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
+        socket = io.connect(clientSettings.baseURL, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
             deferred.resolve();
@@ -1758,16 +1758,24 @@ module.exports = function (params) {
         request.id = pendingRequests.add(deferred);
 
         function handleResponse(response) {
+            /*
+             * Response:
+             *  {
+             *      body: {},
+             *      headers: {},
+             *      statusCode: 200
+             *  }
+             */
             try {
-                response = JSON.parse(response);
+                response.body = JSON.parse(response.body);
             } catch (e) {
-                if (typeof response !== 'object') {
-                    deferred.reject(new Error("Server response could not be parsed!" + response));
+                if (typeof response.body !== 'object') {
+                    deferred.reject(new Error("Server response could not be parsed!" + response.body));
                     return;
                 }
             }
 
-            if (response && response.error === "Too Many Requests") {
+            if (response.statusCode === 429) {
                 if (request.tries < 3 && deferred.promise.isPending()) {
                     setTimeout(function () {
                         start = now();
@@ -1776,7 +1784,8 @@ module.exports = function (params) {
                 } else {
                     request.durationMillis = now() - start;
                     pendingRequests.remove(request.id);
-                    failWebsocketRequest(request, response, "Too many retries after rate limit exceeded.", deferred);
+                    failWebsocketRequest(request, response.body,
+                            "Too many retries after rate limit exceeded.", deferred);
                 }
                 return;
             }
@@ -1784,10 +1793,10 @@ module.exports = function (params) {
             request.durationMillis = now() - start;
             pendingRequests.remove(request.id);
 
-            if (response && response.error) {
-                failWebsocketRequest(request, response, response.error, deferred);
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) === -1) {
+                failWebsocketRequest(request, response.body, response.body.error || "Unknown error", deferred);
             } else {
-                deferred.resolve(response);
+                deferred.resolve(response.body);
             }
 
             if (logRequest) {
@@ -1795,7 +1804,7 @@ module.exports = function (params) {
                     method: request.method,
                     path: request.path,
                     durationMillis: request.durationMillis,
-                    response: response
+                    response: response.body
                 });
             }
         }
