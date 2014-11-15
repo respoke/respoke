@@ -33,16 +33,6 @@ describe("Respoke calling", function () {
     var appId;
     var roleId;
 
-    function doneOnceBuilder(done) {
-        var called = false;
-        return function (err) {
-            if (!called) {
-                called = true;
-                done(err);
-            }
-        };
-    };
-
     beforeEach(function (done) {
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;

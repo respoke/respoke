@@ -1,27 +1,6 @@
 var expect = chai.expect;
 
 // Call a function only if there's a error or on the $num attempt
-function doneCountBuilder(num, done) {
-   return (function () {
-        var called = false;
-        var count = 0;
-        if (!num || num < 0) {
-            throw new Error('First argument must be a positive integer.');
-        }
-
-        return function (err) {
-            if (called === true) {
-                return;
-            }
-
-            count += 1;
-            if (count === num || err) {
-                called = true;
-                done(err);
-            }
-        };
-    })();
-};
 
 xdescribe("doneCountBuilder", function () {
     var builderSpy;
