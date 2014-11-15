@@ -357,7 +357,7 @@ module.exports = function (params) {
             }
             deferred.reject(new Error("Couldn't get a developer mode token: " + response.error));
         }, function (err) {
-            deferred.reject(new Error("Couldn't get a developer mode token: " + err.message));
+            deferred.reject(new Error("Couldn't get a developer mode token: " + err));
         });
         return deferred.promise;
     };
@@ -1794,7 +1794,8 @@ module.exports = function (params) {
             pendingRequests.remove(request.id);
 
             if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) === -1) {
-                failWebsocketRequest(request, response.body, response.body.error || "Unknown error", deferred);
+                failWebsocketRequest(request, response.body,
+                        response.body.error || errors[this.status] || "Unknown error", deferred);
             } else {
                 deferred.resolve(response.body);
             }
@@ -1925,6 +1926,7 @@ module.exports = function (params) {
                 response.code = this.status;
                 response.uri = uri;
                 response.params = params.parameters;
+                response.error = errors[this.status];
                 if (this.response) {
                     try {
                         response.result = JSON.parse(this.response);
