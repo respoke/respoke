@@ -24,39 +24,39 @@ require('./deps/adapter');
 
 /**
  * `respoke` is a global static class.
- * 
- * 
- * Include the [latest version](https://cdn.respoke.io/respoke.min.js) or 
+ *
+ *
+ * Include the [latest version](https://cdn.respoke.io/respoke.min.js) or
  * [choose a previous release](http://cdn.respoke.io/list.html).
- * 
+ *
  * Interact with Respoke primarily via [`respoke.Client`](respoke.Client.html):
- * 
+ *
  *      var client = respoke.createClient();
  *
- * 
+ *
  * **Development mode without brokered auth**
- * 
+ *
  *      var client = respoke.createClient({
  *          appId: "XXXXXXX-my-app-id-XXXXXX",
  *          developmentMode: true,
  *          endpointId: "billy"
  *      });
- *      
+ *
  *      client.listen('connect', function () {
  *          console.log('connected to respoke!');
  *      });
- *      
+ *
  *      client.listen('error', function (err) {
  *          console.error('Connection to Respoke failed.', err);
  *      });
  *
  *      client.connect();
  *
- * 
+ *
  * **Production mode with brokered auth**
- * 
+ *
  *      var client = respoke.createClient();
- *      
+ *
  *      client.listen('connect', function () {
  *          console.log('connected to respoke!');
  *      });
@@ -65,7 +65,7 @@ require('./deps/adapter');
  *          console.error('Connection to Respoke failed.', err);
  *      });
  *
- *      // Respoke auth token obtained by your server. 
+ *      // Respoke auth token obtained by your server.
  *      // This is how you control who can connect to Respoke app.
  *      // See API docs for POST [base]/tokens
  *      var tokenId = "XXXX-XXXX-brokered-auth-token-XXXXX";
@@ -83,30 +83,30 @@ require('./deps/adapter');
  *              token: newTokenId
  *          });
  *      });
- * 
  *
- * 
+ *
+ *
  * ### Event listeners vs callback handlers
  *
- * There are two ways to attach listeners. It is highly recommended that you choose one pattern 
+ * There are two ways to attach listeners. It is highly recommended that you choose one pattern
  * and stick to it throughout your app.
- * 
+ *
  * For every `event-name`, there is a corresponding callback `onEventName`.
  *
  * **With a listener**
  *
  *      var client = respoke.createClient();
  *      client.listen('connect', function () { });
- * 
+ *
  * **or with a callback**
  *
  *      var client = respoke.createClient({
  *          // other options go here
- *          
+ *
  *          onConnect: function () { }
  *      });
- * 
- * 
+ *
+ *
  * @namespace respoke
  * @class respoke
  * @global
@@ -120,9 +120,9 @@ var respoke = module.exports = {
 
 /**
  * `"v0.0.0"`
- * 
+ *
  * The respoke.min.js version.
- * 
+ *
  * Past versions can be found at [cdn.respoke.io/list.html](http://cdn.respoke.io/list.html)
  * @type {string}
  */
@@ -169,13 +169,13 @@ if (!window.skipBugsnag) {
 }
 
 /**
- * This is one of two possible entry points for interating with the library. 
- * 
+ * This is one of two possible entry points for interating with the library.
+ *
  * This method creates a new Client object
- * which represents your user's connection to your Respoke app. 
- * 
+ * which represents your user's connection to your Respoke app.
+ *
  * This method **automatically calls client.connect(params)** after the client is created.
- * 
+ *
  * @static
  * @memberof respoke
  * @param {object} params Parameters to the respoke.Client constructor.
@@ -212,7 +212,7 @@ respoke.connect = function (params) {
 /**
  * Getter for the respoke client.
  *
- * You can have more than one active client, so this method provides a way to retrieve a specific instance. 
+ * You can have more than one active client, so this method provides a way to retrieve a specific instance.
  *
  * @static
  * @memberof respoke
@@ -231,14 +231,14 @@ respoke.getClient = function (id) {
 };
 
 /**
- * This is one of two possible entry points for interating with the library. 
- * 
+ * This is one of two possible entry points for interating with the library.
+ *
  * This method creates a new Client object which represents your user's connection to your Respoke app.
- * 
- * It **does NOT automatically call the client.connect() method** after the client is created. 
- * 
+ *
+ * It **does NOT automatically call the client.connect() method** after the client is created.
+ *
  * The `params` argument is the same as `respoke.connect(params)`.
- * 
+ *
  * @static
  * @memberof respoke
  * @param {object} params Parameters to respoke.Client - same as respoke.connect()

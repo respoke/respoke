@@ -194,6 +194,13 @@ module.exports = function (params) {
      */
     var maxReconnectTimeout = 5 * 60 * 1000;
     /**
+     * @memberof! respoke.signalingChannel
+     * @name bodySizeLimit
+     * @private
+     * @type {number}
+     */
+    var bodySizeLimit = 10000;
+    /**
      * @memberof! respoke.SignalingChannel
      * @name appId
      * @private
@@ -1734,6 +1741,11 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
+        if (params.parameters && JSON.stringify(params.parameters).length > bodySizeLimit) {
+            deferred.reject(new Error('Request body too big.'))
+            return deferred.promise;
+        }
+
         params.httpMethod = (params.httpMethod || 'get').toLowerCase();
 
         if (params.objectId) {
@@ -1843,6 +1855,10 @@ module.exports = function (params) {
         }
         if (['POST', 'PUT'].indexOf(params.httpMethod) > -1) {
             paramString = JSON.stringify(params.parameters);
+            if (paramString.length > bodySizeLimit) {
+                deferred.reject(new Error('Request body too big.'));
+                return;
+            }
             xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         } else if (['GET', 'DELETE'].indexOf(params.httpMethod) === -1) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
