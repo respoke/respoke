@@ -194,6 +194,8 @@ module.exports = function (params) {
      */
     var maxReconnectTimeout = 5 * 60 * 1000;
     /**
+     * Rejects a message if the body size is greater than this. It is enforced servcer side, so changing this
+     * won't make the bodySizeLimit any bigger, this just gives you a senseable error if it's too big.
      * @memberof! respoke.signalingChannel
      * @name bodySizeLimit
      * @private
