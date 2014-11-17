@@ -1742,7 +1742,7 @@ module.exports = function (params) {
         }
 
         if (params.parameters && JSON.stringify(params.parameters).length > bodySizeLimit) {
-            deferred.reject(new Error('Request body too big.'))
+            deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'))
             return deferred.promise;
         }
 
@@ -1856,7 +1856,7 @@ module.exports = function (params) {
         if (['POST', 'PUT'].indexOf(params.httpMethod) > -1) {
             paramString = JSON.stringify(params.parameters);
             if (paramString.length > bodySizeLimit) {
-                deferred.reject(new Error('Request body too big.'));
+                deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'));
                 return;
             }
             xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
