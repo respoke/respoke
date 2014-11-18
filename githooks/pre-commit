@@ -1,6 +1,6 @@
 #!/bin/bash
 
-JSHINT_OUTPUT=`jshint`
+JSHINT_OUTPUT=`jshint respoke/*.js`
 if [ "$JSHINT_OUTPUT" != "" ]; then
     echo There were some errors.
 	echo JSHINT_OUTPUT is $JSHINT_OUTPUT

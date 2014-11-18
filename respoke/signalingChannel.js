@@ -1903,7 +1903,8 @@ module.exports = function (params) {
                 log.debug('response', {
                     method: params.httpMethod,
                     durationMillis: durationMillis,
-                    response: response });
+                    response: response
+                });
                 deferred.resolve(response);
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));

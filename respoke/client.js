@@ -144,7 +144,6 @@ module.exports = function (params) {
      */
     var clientSettings = {};
 
-    saveParameters(params);
     delete that.appId;
     delete that.baseURL;
     delete that.developmentMode;
@@ -242,6 +241,7 @@ module.exports = function (params) {
             clientSettings.reconnect = !!params.reconnect;
         }
     }
+    saveParameters(params);
 
     /**
      * Connect to the Respoke infrastructure and authenticate using `params.token`.

@@ -124,7 +124,7 @@ module.exports = function (params) {
     that.stream = null;
 
     function getStream(theConstraints) {
-        for(var i = 0; i < respoke.streams.length; i++) {
+        for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
             if (respoke.isEqual(s.constraints, theConstraints)) {
                 return s.stream;
@@ -135,9 +135,9 @@ module.exports = function (params) {
 
     function removeStream(theConstraints) {
         var toRemoveIndex;
-        for(var i = 0; i < respoke.streams.length; i++) {
+        for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
-            if(respoke.isEqual(s.constraints, theConstraints)) {
+            if (respoke.isEqual(s.constraints, theConstraints)) {
                 toRemoveIndex = i;
                 break;
             }
