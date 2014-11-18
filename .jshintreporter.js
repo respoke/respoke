@@ -1,7 +1,6 @@
 "use strict";
 /**
- * The default jshint reporter with slight modification.
- * https://github.com/jshint/jshint/blob/master/examples/reporter.js
+ * Console output reporter for jshint.
  */
 module.exports = {
     reporter: function (res, files) {
