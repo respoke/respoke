@@ -77,6 +77,8 @@
     "chai": "^1.8.1",
     "chokidar": "^0.8.4",
     "grunt": "~0.4.2",
+    "grunt-contrib-clean": "^0.6.0",
+    "grunt-contrib-copy": "^0.7.0",
     "grunt-contrib-uglify": "~0.4.0",
     "grunt-contrib-watch": "^0.6.1",
     "grunt-env": "~0.4.1",
@@ -102,6 +104,6 @@
     "webpack-dev-server": "^1.4.3"
   },
   "optionalDependencies": {
-      "grunt-stratos": "git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git"
+    "grunt-stratos": "git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git"
   }
 }

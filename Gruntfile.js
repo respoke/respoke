@@ -115,6 +115,20 @@ module.exports = function (grunt) {
                 dest: '.docs/site/'
             }
         },
+        copy: {
+            docs: {
+                files: {
+                    '.docs/site/index.html': '.docs/site/respoke.html'
+                }
+            }
+        },
+        clean: {
+            'post-docs': {
+                files: {
+                    src: ['.docs/site/respoke.html']
+                }
+            }
+        },
         'gh-pages': {
             options: {
                 base: '.docs/site',
@@ -131,6 +145,9 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-env');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-gh-pages');
     grunt.loadNpmTasks('jsdoxy');
 
     grunt.registerTask('dist', [
@@ -219,6 +236,8 @@ module.exports = function (grunt) {
 
     grunt.registerTask('docs', 'Build the documentation and publish to respoke.github.io', [
         'jsdoxy',
+        'copy:docs',
+        'clean:post-docs',
         // 'gh-pages'
     ]);
 };
