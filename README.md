@@ -1,39 +1,26 @@
-# transporter
+# Respoke.js
 
-Client Side Library for connecting to the Respoke API.
+Browser/Client Library for [Respoke](https://www.respoke.io). Use this library in a JavaScript web app to add individual and group messaging, contact discovery, and voice and video calling to web apps. If you want to *use* this library in your app, you probably want to reference it via [this link on our CDN](https://cdn.respoke.io/respoke.min.js).
 
-## Dependencies
+## Documentation
 
-This project utilises the power of [Grunt](http://gruntjs.com) and [Node.js](http://nodejs.org/)
+The documentation for this library resides [on the Respoke website](https://docs.respoke.io/js-library/respoke.html). Also check out the [quickstart guide](https://docs.respoke.io/) and other tutorials.
 
-You'll need to install [Node.js](http://nodejs.org/download/) and then [grunt](http://gruntjs.com)
+## Development Dependencies
 
-Once you have Node and grunt, install the dependencies via `npm`
+We welcome [discussion on our community](http://community.respoke.io/) and contributions from the community. To get started contributing back, you'll need to clone this repo and run the following commands.
 
 ```
+brew install node
+# or
+# apt-get install nodejs
+npm install -g grunt
 npm install
 ```
 
 ## Tests
-Tests currently require the library to be checked out in a specific hierarchy relative to the collective project:
 
-```
-collective/
-mercury/
-  javascript/
-    transporter/
-```
-
-As you can see from this hierarchy, the best way to ensure the tests work is to check out the transporter project inside the javascript directory of the mercury project. Then, to run unit tests:
-
-```
-grunt unit
-```
-
-to run functional tests:
-```
-grunt functional
-```
+Tests currently cannot run outside of our internal development infrastructure.
 
 ### Compilation
 Transporter uses CommonJS to manage its dependencies, and the [Webpack](http://webpack.github.io/) module bundler to bundle the library. To create the bundled and minified library suitable for distribution, you can run
@@ -79,4 +66,8 @@ npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stra
 npm WARN optional dep failed, continuing grunt-stratos@git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git
 ```
 
-This issue can be ignored and will be fixed by the Respoke dev team soon.
+This can be ignored and will be fixed by the Respoke dev team soon.
+
+# License
+
+Respoke.js is licensed under the [MIT license](LICENSE).

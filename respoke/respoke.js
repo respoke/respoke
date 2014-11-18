@@ -1,3 +1,4 @@
+"use strict";
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
 
@@ -159,7 +160,6 @@ if (!window.skipBugsnag) {
 
     airbrake.onload = function () {
         window.onerror = function (message, file, line) {
-            "use strict";
             //Only send errors from the respoke.js file to Airbrake
             if (file.match(/respoke/)) {
                 Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
@@ -203,7 +203,6 @@ if (!window.skipBugsnag) {
  * @returns {respoke.Client}
  */
 respoke.connect = function (params) {
-    "use strict";
     var client = respoke.Client(params);
     client.connect(params);
     return client;
@@ -220,7 +219,6 @@ respoke.connect = function (params) {
  * @returns {respoke.Client}
  */
 respoke.getClient = function (id) {
-    "use strict";
     if (id === undefined) {
         log.debug("Can't call getClient with no client ID.", new Error().stack);
     }
@@ -245,7 +243,6 @@ respoke.getClient = function (id) {
  * @returns {respoke.Client}
  */
 respoke.createClient = function (params) {
-    "use strict";
     var client;
     params = params || {};
     if (params.instanceId) {
@@ -266,7 +263,6 @@ respoke.createClient = function (params) {
  * @return {function}
  */
 respoke.once = function (func) {
-    "use strict";
     return (function () {
         var called = false;
         return function () {
@@ -285,7 +281,6 @@ respoke.once = function (func) {
  * @returns {number}
  */
 respoke.makeGUID = function () {
-    "use strict";
     var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
     var uuid = new Array(36);
     var rnd = 0;
@@ -319,7 +314,6 @@ respoke.makeGUID = function () {
  * @returns {Promise|undefined}
  */
 respoke.handlePromise = function (promise, onSuccess, onError) {
-    "use strict";
     var returnUndef = false;
     if (onSuccess || onError) {
         returnUndef = true;
@@ -340,7 +334,6 @@ respoke.handlePromise = function (promise, onSuccess, onError) {
  * @private
  */
 respoke.Class = function (params) {
-    "use strict";
     params = params || {};
     var that = params.that || {};
     var client = params.client;
@@ -363,7 +356,6 @@ respoke.Class = function (params) {
  * @returns {boolean}
  */
 respoke.hasUserMedia = function () {
-    "use strict";
     return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) instanceof Function;
 };
 
@@ -374,7 +366,6 @@ respoke.hasUserMedia = function () {
  * @returns {boolean}
  */
 respoke.hasRTCPeerConnection = function () {
-    "use strict";
     return (window.RTCPeerConnection || window.webkitRTCPeerConnection ||
             window.mozRTCPeerConnection) instanceof Function;
 };
@@ -386,7 +377,6 @@ respoke.hasRTCPeerConnection = function () {
  * @returns {boolean}
  */
 respoke.hasWebsocket = function () {
-    "use strict";
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
 };
 
@@ -438,7 +428,7 @@ respoke.isEqual = function (a, b) {
             }
         }
         return true;
-    };
+    }
 
     return a === b;
 };
@@ -451,7 +441,6 @@ respoke.isEqual = function (a, b) {
  * @returns {boolean}
  */
 respoke.sdpHasAudio = function (sdp) {
-    "use strict";
     if (!sdp) {
         throw new Error("respoke.sdpHasAudio called with no parameters.");
     }
@@ -466,7 +455,6 @@ respoke.sdpHasAudio = function (sdp) {
  * @returns {boolean}
  */
 respoke.sdpHasVideo = function (sdp) {
-    "use strict";
     if (!sdp) {
         throw new Error("respoke.sdpHasVideo called with no parameters.");
     }
@@ -481,7 +469,6 @@ respoke.sdpHasVideo = function (sdp) {
  * @returns {boolean}
  */
 respoke.sdpHasDataChannel = function (sdp) {
-    "use strict";
     if (!sdp) {
         throw new Error("respoke.sdpHasDataChannel called with no parameters.");
     }
@@ -496,7 +483,6 @@ respoke.sdpHasDataChannel = function (sdp) {
  * @returns {boolean}
  */
 respoke.constraintsHasAudio = function (constraints) {
-    "use strict";
     if (!constraints) {
         throw new Error("respoke.constraintsHasAudio called with no parameters.");
     }
@@ -511,7 +497,6 @@ respoke.constraintsHasAudio = function (constraints) {
  * @returns {boolean}
  */
 respoke.constraintsHasVideo = function (constraints) {
-    "use strict";
     if (!constraints) {
         throw new Error("respoke.constraintsHasVideo called with no parameters.");
     }

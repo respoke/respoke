@@ -22,7 +22,8 @@ var respoke = require('./respoke');
  * @param {string} params.instanceId - client id
  * @param {string} params.callId - call id
  * @param {object} [params.constraints]
- * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local video attached to it.
+ * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local
+ * video attached to it.
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {
@@ -124,7 +125,7 @@ module.exports = function (params) {
     that.stream = null;
 
     function getStream(theConstraints) {
-        for(var i = 0; i < respoke.streams.length; i++) {
+        for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
             if (respoke.isEqual(s.constraints, theConstraints)) {
                 return s.stream;
@@ -135,9 +136,9 @@ module.exports = function (params) {
 
     function removeStream(theConstraints) {
         var toRemoveIndex;
-        for(var i = 0; i < respoke.streams.length; i++) {
+        for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
-            if(respoke.isEqual(s.constraints, theConstraints)) {
+            if (respoke.isEqual(s.constraints, theConstraints)) {
                 toRemoveIndex = i;
                 break;
             }
