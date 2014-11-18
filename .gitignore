@@ -5,18 +5,11 @@ atlassian-ide-plugin.xml
 .dir-locals.el
 
 build/
-confluence/
-docs/
-markdown/
 node_modules/
-npm-debug.log
+*.log
 out/
 respoke-stats.combine.js
 respoke-stats.combine.map
-respoke-stats.min.js
-respoke-stats.min.map
 respoke.combine.js
 respoke.combine.map
 respoke.concat.js
-respoke.min.js
-respoke.min.map
