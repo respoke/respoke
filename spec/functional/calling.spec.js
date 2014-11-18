@@ -1007,7 +1007,6 @@ describe("Respoke calling", function () {
                     followeeEndpoint.startCall();
                 });
 
-                // broke
                 it("only sends audio and not video", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;
@@ -1105,7 +1104,6 @@ describe("Respoke calling", function () {
                     followeeEndpoint.startCall();
                 });
 
-                // broke
                 it("only sends video and not audio", function (done) {
                     followee.listen('call', function (evt) {
                         call = evt.call;

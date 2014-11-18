@@ -269,6 +269,44 @@ describe("Respoke messaging", function () {
                     setTimeout(done, 100);
             });
 
+            describe('metadata', function () {
+                var message;
+                var messageDef;
+
+                function groupListener(evt) {
+                    message = evt.message;
+                    messageDef.resolve();
+                }
+
+                beforeEach(function (done) {
+                    messageDef = Q.defer();
+                    followeeGroup.listen('message', groupListener);
+                    followerGroup.sendMessage({
+                        message: 'test'
+                    }).then(function () {
+                        return messageDef.promise;
+                    }).done(function () {
+                        done();
+                    }, done);
+                });
+
+                afterEach(function () {
+                    followeeGroup.ignore('message', groupListener);
+                });
+
+                it('has endpointId', function () {
+                    expect(message.endpointId).to.exist;
+                });
+
+                it('has message body', function () {
+                    expect(message.message).to.exist;
+                });
+
+                it('has timestamp', function() {
+                    expect(message.timestamp).to.exist;
+                });
+            });
+
             afterEach(function () {
                 followeeGroup.ignore('message', followerListener);
                 followerGroup.ignore('message', followeeListener);
