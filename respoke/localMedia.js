@@ -282,6 +282,9 @@ module.exports = function (params) {
                  */
                 that.fire('requesting-media');
             }, 500);
+            if (respoke.useFakeMedia === true) {
+                that.constraints.fake = true;
+            }
             getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
             log.error("Couldn't get user media: " + e.message);
