@@ -61,7 +61,7 @@ If you want the watch task to rebuild faster, you can comment out the uglify plu
 This project uses jshint.  The configuration for jshint can be found in the repo at `.jshintrc` and `.jshintignore`.
 
 ```
-jshint
+npm run jshint
 ```
 
 There is a pre commit hook in `githooks` which will run `jshint` global binary against all javascript files in the project that are not included in the `.jshintignore`. Please copy this file into your .git/hooks directory so that it runs before each commit. This will stop you commiting bad code which is against the [coding standards](http://wiki.digium.internal/wiki/display/MERCURY/Coding+Conventions).
