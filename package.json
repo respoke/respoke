@@ -81,7 +81,6 @@
     "grunt-env": "~0.4.1",
     "grunt-karma": "~0.8.3",
     "grunt-mocha-test": "~0.10.2",
-    "grunt-stratos": "git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git",
     "grunt-webpack": "^1.0.7",
     "jshint": "^2.5.1",
     "karma": "~0.12.16",
@@ -95,5 +94,8 @@
     "uglify-js": "~2.4.0",
     "webpack": "^1.3.1-beta4",
     "webpack-dev-server": "^1.4.3"
-  }
+    },
+    "optionalDependencies": {
+        "grunt-stratos": "git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git"
+    }
 }

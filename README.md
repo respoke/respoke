@@ -65,3 +65,18 @@ npm run jshint
 ```
 
 There is a pre commit hook in `githooks` which will run `jshint` global binary against all javascript files in the project that are not included in the `.jshintignore`. Please copy this file into your .git/hooks directory so that it runs before each commit. This will stop you commiting bad code which is against the [coding standards](http://wiki.digium.internal/wiki/display/MERCURY/Coding+Conventions).
+
+### Known Issues
+
+```bash
+$  npm install
+
+npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) Permission denied (publickey).
+npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) fatal: Could not read from remote repository.
+npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git)
+npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) Please make sure you have the correct access rights
+npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) and the repository exists.
+npm WARN optional dep failed, continuing grunt-stratos@git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git
+```
+
+This issue can be ignored and will be fixed by the Respoke dev team soon.
