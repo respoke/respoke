@@ -88,7 +88,7 @@ html
     #header.nav.navbar.navbar-default(role="navigation")
       .container-fluid
         .navbar-header
-          a.navbar-brand(href="/") Respoke.js
+          a.navbar-brand(href="/respoke") Respoke.js
           button#file-menu.navbar-toggle.collapsed(data-toggle="collapse" data-target="#navbar-links")
             span.icon-bar
             span.icon-bar
@@ -96,10 +96,10 @@ html
         #navbar-links.collapse.navbar-collapse
           ul.nav.navbar-nav
             each otherClass in allClasses
-              if (otherClass === className)
-                li.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
-              else if (otherClass === 'respoke')
+              if (otherClass === 'respoke')
                  //- do nothing
+              else if (otherClass === className)
+                li.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
               else
                 li: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
     
