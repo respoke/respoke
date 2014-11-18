@@ -1,15 +1,15 @@
-.idea
+# Dev and build
+node_modules/
+build/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
 *.iml
 atlassian-ide-plugin.xml
 *.sublime-*
 .dir-locals.el
-
-build/
-node_modules/
-*.log
-out/
-respoke-stats.combine.js
-respoke-stats.combine.map
-respoke.combine.js
-respoke.combine.map
-respoke.concat.js
