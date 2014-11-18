@@ -274,18 +274,29 @@ describe("Respoke messaging", function () {
                     });
             });
 
-            describe('the message metadata is correct', function () {
+            describe('metadata', function () {
                 var message;
+                var messageDef;
+
+                function groupListener(evt) {
+                    message = evt.message;
+                    messageDef.resolve();
+                }
 
                 beforeEach(function (done) {
-                    followerEndpoint.listen('message', function (evt) {
-                        followerEndpoint.ignore('message');
-                        message = evt.message;
-                        done();
-                    });
-                    followeeEndpoint.sendMessage({
+                    messageDef = Q.defer();
+                    followeeEndpoint.listen('message', groupListener);
+                    followerEndpoint.sendMessage({
                         message: 'test'
-                    }).done(null, done);
+                    }).then(function () {
+                        return messageDef.promise;
+                    }).done(function () {
+                        done();
+                    }, done);
+                });
+
+                afterEach(function () {
+                    followeeEndpoint.ignore('message', groupListener);
                 });
 
                 it('has endpointId', function () {
@@ -382,6 +393,7 @@ describe("Respoke messaging", function () {
                 followeeEndpoint.listen('message', followeeListener);
             });
 
+            // this one is bouncing
             it("all messages are received correctly", function (done) {
                 sendNumMessagesEach()
                     .then(checkMessages())
