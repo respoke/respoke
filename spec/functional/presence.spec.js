@@ -114,6 +114,19 @@ describe("Respoke presence", function () {
                 expect(follower.presence).to.equal('available');
                 expect(follower.getPresence()).to.equal('available');
             });
+
+            describe("and sets itself offline", function () {
+                beforeEach(function (done) {
+                    follower.setOffline().done(function() {
+                        done();
+                    }, done);
+                });
+
+                it("presence is set to 'unavailable'", function () {
+                    expect(follower.presence).to.equal('unavailable');
+                    expect(follower.getPresence()).to.equal('unavailable');
+                });
+            });
         });
 
         describe("and sets its presence to a string", function () {
