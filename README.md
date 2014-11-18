@@ -1,6 +1,9 @@
 # Respoke.js
 
-Browser/Client Library for [Respoke](https://www.respoke.io). Use this library in a JavaScript web app to add individual and group messaging, contact discovery, and voice and video calling to web apps. If you want to *use* this library in your app, you probably want to reference it via [this link on our CDN](https://cdn.respoke.io/respoke.min.js).
+Browser/Client Library for [Respoke](https://www.respoke.io). Use this library in a JavaScript web app to add individual and group messaging, contact discovery, and voice and video calling to web apps.
+
+If you want to *use* this library in your app, you probably want to reference it via [this link on our CDN](https://cdn.respoke.io/respoke.min.js). Older versions are
+[listed here](https://cdn.respoke.io/list.html).
 
 ## Documentation
 
