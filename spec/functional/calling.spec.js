@@ -2,6 +2,7 @@ var expect = chai.expect;
 
 describe("Respoke calling", function () {
     this.timeout(30000);
+    respoke.useFakeMedia = true;
 
     var testEnv;
     var call;
@@ -84,9 +85,7 @@ describe("Respoke calling", function () {
             followerEndpoint = followee.getEndpoint({id: follower.endpointId});
             followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
             done();
-        }, function (err) {
-            done(new Error(JSON.stringify(err)));
-        });
+        }, done);
     });
 
     describe("when placing a call", function () {
@@ -305,8 +304,8 @@ describe("Respoke calling", function () {
 
                     call = followeeEndpoint.startCall({
                         constraints: {
-                            video : false,
-                            audio : true,
+                            video: false,
+                            audio: true,
                             optional: [],
                             mandatory: {}
                         },
@@ -341,8 +340,8 @@ describe("Respoke calling", function () {
 
                     call = followeeEndpoint.startCall({
                         constraints: {
-                            video : false,
-                            audio : true,
+                            video: false,
+                            audio: true,
                             optional: [],
                             mandatory: {}
                         },
@@ -433,8 +432,8 @@ describe("Respoke calling", function () {
 
                     call = followeeEndpoint.startCall({
                         constraints: {
-                            video : true,
-                            audio : false,
+                            video: true,
+                            audio: false,
                             optional: [],
                             mandatory: {}
                         },
@@ -469,8 +468,8 @@ describe("Respoke calling", function () {
 
                     call = followeeEndpoint.startCall({
                         constraints: {
-                            video : true,
-                            audio : false,
+                            video: true,
+                            audio: false,
                             optional: [],
                             mandatory: {}
                         },
@@ -506,8 +505,8 @@ describe("Respoke calling", function () {
 
                     call = followeeEndpoint.startCall({
                         constraints: {
-                            video : true,
-                            audio : true,
+                            video: true,
+                            audio: true,
                             optional: [],
                             mandatory: {}
                         },
@@ -750,12 +749,14 @@ describe("Respoke calling", function () {
 
             beforeEach(function () {
                 followee.listen('call', callListener);
-                call = followeeEndpoint.startCall({ constraints: {
-                    video: true,
-                    audio: true,
-                    optional: [],
-                    mandatory: {}
-                }});
+                call = followeeEndpoint.startCall({
+                    constraints: {
+                        video: true,
+                        audio: true,
+                        optional: [],
+                        mandatory: {}
+                    }
+                });
             });
 
             afterEach(function () {
@@ -807,8 +808,8 @@ describe("Respoke calling", function () {
                 it("is call debugs enabled and signalReport gets called", function (done) {
                     call.listen('hangup', function (evt) {
                         try {
+                            expect(call.enableCallDebugReport).to.equal(true);
                             expect(iSpy.calledOnce).to.equal(true);
-                            expect(call.callDebugReportEnabled).to.equal(true);
                             done();
                         } catch (err) {
                             done(err);
@@ -817,7 +818,7 @@ describe("Respoke calling", function () {
                     call.hangup();
                 });
 
-                // This is really hard to test because of scope. Likely the best way to test this is to 
+                // This is really hard to test because of scope. Likely the best way to test this is to
                 // fire an event after sending the call debug report to the API.
                 it("sends call debugs");
             });
@@ -860,7 +861,7 @@ describe("Respoke calling", function () {
                     call.listen('hangup', function (evt) {
                         try {
                             expect(iSpy.called).to.equal(false);
-                            expect(call.callDebugReportEnabled).to.equal(false);
+                            expect(call.enableCallDebugReport).to.equal(false);
                             done();
                         } catch (err) {
                             done(err);
@@ -1243,22 +1244,19 @@ describe("Respoke calling", function () {
     });
 
     afterEach(function (done) {
+        var promises = [];
+
         [follower, followee].forEach(function (client) {
-            if (client.calls) {
+            if (client && client.calls) {
                 for (var i = client.calls.length - 1; i >= 0; i -= 1) {
                     client.calls[i].hangup();
                 }
+                promises.push(client.disconnect());
             }
         });
 
-        respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
-            testFixture.afterTest(function (err) {
-                if (err) {
-                    done(new Error(JSON.stringify(err)));
-                    return;
-                }
-                done();
-            });
+        respoke.Q.all(promises).fin(function () {
+            testFixture.afterTest(done);
         }).done();
     });
 });

@@ -60,7 +60,7 @@ module.exports = function(config) {
         customLaunchers: {
             ChromeAutoaccept: {
                 base: 'Chrome',
-                flags: ['--use-fake-ui-for-media-stream']
+                flags: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream']
             }
         },
 

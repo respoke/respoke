@@ -146,10 +146,10 @@ module.exports = function (params) {
     /**
      * Informational property. Whether call debugs were enabled on the client during creation.
      * Changing this value will do nothing.
-     * @name callDebugReportEnabled
+     * @name enableCallDebugReport
      * @type {boolean}
      */
-    that.callDebugReportEnabled = !!params.signalingChannel.callDebugReportEnabled;
+    that.enableCallDebugReport = params.signalingChannel.isSendingReport();
     /**
      * A flag indicating whether this call has audio.
      *
@@ -1428,22 +1428,29 @@ module.exports = function (params) {
     }, true);
 
     signalingChannel.getTurnCredentials().then(function (result) {
+        if (!pc) {
+            throw new Error("Already hung up.");
+            return;
+        }
         if (!result) {
             log.warn("Relay service not available.");
-            pc.servers = {
-                iceServers: []
-            };
+            pc.servers = {iceServers: []};
         } else {
-            pc.servers = client.servers;
-            pc.servers.iceServers = result;
+            pc.servers = {iceServers: result};
         }
     }).fin(function () {
+        if (!pc) {
+            throw new Error("Already hung up.");
+            return;
+        }
         pc.state.dispatch('initiate', {
             client: client,
             caller: that.caller
         });
     }).done(null, function (err) {
-        log.debug('Unexpected exception', err);
+        if (err.message !== "Already hung up.") {
+            log.debug('Unexpected exception', err);
+        }
     });
 
     return that;
