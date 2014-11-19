@@ -714,7 +714,6 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @returns {Promise|undefined}
-     * @private
      */
     that.setOnline = function (params) {
         var promise;
@@ -746,7 +745,6 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @returns {Promise|undefined}
-     * @private
      */
     that.setOffline = function (params) {
         var promise;
