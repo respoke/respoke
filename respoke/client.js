@@ -470,7 +470,7 @@ module.exports = function (params) {
             log.info('logged in as ' + that.endpointId, that);
             deferred.resolve();
         }, function errorHandler(err) {
-            deferred.reject("Couldn't create an endpoint.");
+            deferred.reject(err);
             log.error(err.message, err.stack);
         });
 

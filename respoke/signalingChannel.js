@@ -256,12 +256,12 @@ module.exports = function (params) {
      * @type {object}
      */
     var errors = {
-        // TODO convert this to strings
         400: "Can't perform this action: missing or invalid parameters.",
         401: "Can't perform this action: not authenticated.",
         403: "Can't perform this action: not authorized.",
         404: "Item not found.",
         409: "Can't perform this action: item in the wrong state.",
+        429: "API rate limit was exceeded.",
         500: "Can't perform this action: server problem."
     };
 
@@ -367,10 +367,9 @@ module.exports = function (params) {
                 deferred.resolve(response.result.tokenId);
                 return;
             }
-            deferred.reject(new Error("Couldn't get a developer mode token."));
+            deferred.reject(new Error("Couldn't get a developer mode token: " + response.error));
         }, function (err) {
-            log.error("Network call failed:", err.message);
-            deferred.reject(new Error("Couldn't get a developer mode token."));
+            deferred.reject(new Error("Couldn't get a developer mode token: " + err));
         });
         return deferred.promise;
     };
@@ -406,11 +405,11 @@ module.exports = function (params) {
                 deferred.resolve();
                 log.debug("Signaling connection open to", clientSettings.baseURL);
             } else {
-                deferred.reject(new Error("Couldn't authenticate app."));
+                deferred.reject(new Error("Couldn't authenticate app: " + response.error));
             }
         }, function (err) {
             log.error("Network call failed:", err.message);
-            deferred.reject(new Error("Couldn't authenticate app."));
+            deferred.reject(new Error("Couldn't authenticate app: " + err.message));
         });
 
         return deferred.promise;
@@ -1578,13 +1577,13 @@ module.exports = function (params) {
             port: port || '443',
             protocol: protocol,
             secure: (protocol === 'https'),
-            query: 'app-token=' + appToken
+            query: '__sails_io_sdk_version=0.10.0&app-token=' + appToken
         };
 
         if (that.isConnected() || isConnecting()) {
             return;
         }
-        socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
+        socket = io.connect(clientSettings.baseURL, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
             deferred.resolve();
@@ -1729,7 +1728,7 @@ module.exports = function (params) {
         var start = now();
         // Too many of these!
         var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
-        var pendingRequestsKey;
+        var request;
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -1765,39 +1764,89 @@ module.exports = function (params) {
             });
         }
 
-        pendingRequestsKey = pendingRequests.add(deferred);
-        socket.emit(params.httpMethod, JSON.stringify({
-            url: params.path,
-            data: params.parameters,
-            headers: {'App-Token': appToken}
-        }), function handleResponse(response) {
-            var durationMillis = now() - start;
-            pendingRequests.remove(pendingRequestsKey);
+        request = {
+            method: params.httpMethod,
+            path: params.path,
+            parameters: params.parameters,
+            tries: 0,
+            durationMillis: 0
+        };
 
+        request.id = pendingRequests.add(deferred);
+
+        function handleResponse(response) {
+            /*
+             * Response:
+             *  {
+             *      body: {},
+             *      headers: {},
+             *      statusCode: 200
+             *  }
+             */
             try {
-                response = JSON.parse(response);
+                response.body = JSON.parse(response.body);
             } catch (e) {
-                deferred.reject(new Error("Server response could not be parsed!"));
+                if (typeof response.body !== 'object') {
+                    deferred.reject(new Error("Server response could not be parsed!" + response.body));
+                    return;
+                }
+            }
+
+            if (response.statusCode === 429) {
+                if (request.tries < 3 && deferred.promise.isPending()) {
+                    setTimeout(function () {
+                        start = now();
+                        sendWebsocketRequest(request, handleResponse);
+                    }, 1000); // one day this will be response.interval or something
+                } else {
+                    request.durationMillis = now() - start;
+                    pendingRequests.remove(request.id);
+                    failWebsocketRequest(request, response.body,
+                            "Too many retries after rate limit exceeded.", deferred);
+                }
                 return;
+            }
+
+            request.durationMillis = now() - start;
+            pendingRequests.remove(request.id);
+
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) === -1) {
+                failWebsocketRequest(request, response.body,
+                        response.body.error || errors[this.status] || "Unknown error", deferred);
+            } else {
+                deferred.resolve(response.body);
             }
 
             if (logRequest) {
                 log.debug('socket response', {
-                    method: params.httpMethod,
-                    path: params.path,
-                    durationMillis: durationMillis,
-                    response: response
+                    method: request.method,
+                    path: request.path,
+                    durationMillis: request.durationMillis,
+                    response: response.body
                 });
             }
+        }
 
-            if (response && response.error) {
-                deferred.reject(new Error(response.error + '(' + params.httpMethod + ' ' + params.path + ')'));
-            } else {
-                deferred.resolve(response);
-            }
-        });
-
+        start = now();
+        sendWebsocketRequest(request, handleResponse);
         return deferred.promise;
+    }
+
+    function failWebsocketRequest(request, response, error, deferred) {
+        if (response && response.error) {
+            deferred.reject(new Error(error + '(' + request.method + ' ' + params.path + ')'));
+        } else {
+            deferred.resolve(response);
+        }
+    }
+
+    function sendWebsocketRequest(request, handleResponse) {
+        request.tries += 1;
+        socket.emit(request.method, JSON.stringify({
+            url: request.path,
+            data: request.parameters,
+            headers: {'App-Token': appToken}
+        }), handleResponse);
     }
 
     /**
@@ -1827,7 +1876,7 @@ module.exports = function (params) {
             'result': null,
             'code': null
         };
-        var start = now();
+        var start;
 
         uri = clientSettings.baseURL + params.path;
 
@@ -1884,6 +1933,9 @@ module.exports = function (params) {
 
         xhr.onreadystatechange = function () {
             var durationMillis = now() - start;
+            var limit;
+            var unit;
+
             if (this.readyState !== 4) {
                 return;
             }
@@ -1895,6 +1947,7 @@ module.exports = function (params) {
                 response.code = this.status;
                 response.uri = uri;
                 response.params = params.parameters;
+                response.error = errors[this.status];
                 if (this.response) {
                     try {
                         response.result = JSON.parse(this.response);
@@ -1909,6 +1962,12 @@ module.exports = function (params) {
                     response: response
                 });
                 deferred.resolve(response);
+            } else if (this.status === 429) {
+                unit = this.getResponseHeader('RateLimit-Time-Units');
+                limit = this.getResponseHeader('RateLimit-Limit');
+                deferred.reject(new Error("Rate limit of " + limit + "/" + unit +
+                    " exceeded. Try again in 1 " + unit + "."));
+                return;
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
                 return;

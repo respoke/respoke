@@ -3,6 +3,9 @@ var expect = chai.expect;
 describe("Respoke messaging", function () {
     this.timeout(30000);
 
+    var now = function () {
+        return new Date().getTime();
+    };
     var Q = respoke.Q;
     var testEnv;
     var follower = {};
@@ -45,10 +48,11 @@ describe("Respoke messaging", function () {
         messagesFollowerReceived.push(evt.message);
     }
 
-    function sendFiveGroupMessagesEach() {
+    function sendNumGroupMessagesEach(num) {
         var message;
         var promises = [];
-        for (var i = 1; i <= 5; i += 1) {
+        num = num || 5;
+        for (var i = 1; i <= num; i += 1) {
             message = {
                 message: respoke.makeGUID()
             };
@@ -78,11 +82,12 @@ describe("Respoke messaging", function () {
         return promises;
     }
 
-    function sendFiveMessagesEach() {
+    function sendNumMessagesEach(num) {
         var flatPromises = [];
         var promises = [];
+        num = num || 5;
 
-        for (var i = 1; i <= 5; i += 1) {
+        for (var i = 1; i <= num; i += 1) {
             promises.push(sendMessage());
         }
         flatPromises = flatPromises.concat.apply(flatPromises, promises);
@@ -94,49 +99,61 @@ describe("Respoke messaging", function () {
         return Q.all(sendMessage());
     }
 
-    function checkMessages() {
-        var foundIndex;
-        var i;
-        var deferred = Q.defer();
+    function checkMessages(num) {
+        num = num || 5;
+        return function () {
+            var foundIndex;
+            var i;
+            var deferred = Q.defer();
+            var tries = 0;
+            var timer = setInterval(function () {
+                tries += 1;
+                // abort waiting for all messages after 7 seconds (test timeout is 10)
+                if ((messagesFollowerReceived.length >= num && messagesFolloweeReceived.length >= num) || tries > 60) {
+                    clearInterval(timer);
+                    check();
+                }
+            }, 100);
 
-        setTimeout(function check() {
-            for (i = messagesFollowerReceived.length - 1; i >= 0; i -= 1) {
-                messagesFolloweeSent.every(function (item, index) {
-                    if (messagesFollowerReceived[i].message === item) {
-                        messagesFollowerReceived.splice(i, 1);
-                        messagesFolloweeSent.splice(index, 1);
-                        return false;
-                    }
-                    return true;
-                });
+            function check() {
+                for (i = messagesFollowerReceived.length - 1; i >= 0; i -= 1) {
+                    messagesFolloweeSent.every(function (item, index) {
+                        if (messagesFollowerReceived[i].message === item) {
+                            messagesFollowerReceived.splice(i, 1);
+                            messagesFolloweeSent.splice(index, 1);
+                            return false;
+                        }
+                        return true;
+                    });
+                }
+
+                for (i = messagesFolloweeReceived.length - 1; i >= 0; i -= 1) {
+                    messagesFollowerSent.every(function (item, index) {
+                        if (messagesFolloweeReceived[i].message === item) {
+                            messagesFolloweeReceived.splice(i, 1);
+                            messagesFollowerSent.splice(index, 1);
+                            return false;
+                        }
+                        return true;
+                    });
+                }
+
+                try {
+                    expect(messagesFollowerReceived.length).to.equal(0);
+                    expect(messagesFolloweeReceived.length).to.equal(0);
+                    expect(messagesFollowerSent.length).to.equal(0);
+                    expect(messagesFolloweeSent.length).to.equal(0);
+                    deferred.resolve();
+                } catch (err) {
+                    deferred.reject(err);
+                }
             }
 
-            for (i = messagesFolloweeReceived.length - 1; i >= 0; i -= 1) {
-                messagesFollowerSent.every(function (item, index) {
-                    if (messagesFolloweeReceived[i].message === item) {
-                        messagesFolloweeReceived.splice(i, 1);
-                        messagesFollowerSent.splice(index, 1);
-                        return false;
-                    }
-                    return true;
-                });
-            }
-
-            try {
-                expect(messagesFollowerReceived.length).to.equal(0);
-                expect(messagesFolloweeReceived.length).to.equal(0);
-                expect(messagesFollowerSent.length).to.equal(0);
-                expect(messagesFolloweeSent.length).to.equal(0);
-                deferred.resolve();
-            } catch (err) {
-                deferred.reject(err);
-            }
-        }, 500);
-
-        return deferred.promise;
+            return deferred.promise;
+        }
     }
 
-    before(function (done) {
+    beforeEach(function (done) {
         Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 
@@ -188,7 +205,7 @@ describe("Respoke messaging", function () {
 
         describe("point-to-point messaging", function () {
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach()
+                sendNumMessagesEach()
                     .then(checkMessages)
                     .done(function successHandler() {
                         done();
@@ -217,25 +234,58 @@ describe("Respoke messaging", function () {
                 followeeEndpoint.listen('message', followeeListener);
             });
 
+            afterEach(function () {
+                followerEndpoint.ignore('message', followerListener);
+                followeeEndpoint.ignore('message', followeeListener);
+            });
+
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach()
-                    .then(checkMessages)
+                sendNumMessagesEach()
+                    .then(checkMessages())
                     .done(function successHandler() {
                         done();
                     }, done);
+            });
+
+            it("limits the messages when there are two many of them", function (done) {
+                this.timeout(30000);
+                var start = now();
+                /*
+                 * Test this by timing the success handler. If we get an error or all the messages
+                 * succeed too quickly, we're either not handling rate-limiting or not being
+                 * rate-limited.
+                 */
+                sendNumMessagesEach(50)
+                    .then(checkMessages(50))
+                    .done(function successHandler() {
+                        var time = now() - start;
+                        if (time < 1000) {
+                            done(new Error("Sending finished too quickly, we were not rate-limited"));
+                            return;
+                        }
+                        done();
+                    }, function (err) {
+                        if (err.message.indexOf("exceeded") > -1) {
+                            done();
+                            return;
+                        }
+                        done(new Error("Sending returned an error, we're not successfully handling rate-limiting. " +
+                                err.message));
+                    });
             });
 
             describe('the message metadata is correct', function () {
                 var message;
 
                 beforeEach(function (done) {
-                    return sendOneMessage()
-                        .then(function () {
-                            setTimeout(function () {
-                                message = messagesFolloweeReceived[0];
-                                done();
-                            }, 50);
-                        });
+                    followerEndpoint.listen('message', function (evt) {
+                        followerEndpoint.ignore('message');
+                        message = evt.message;
+                        done();
+                    });
+                    followeeEndpoint.sendMessage({
+                        message: 'test'
+                    }).done(null, done);
                 });
 
                 it('has endpointId', function () {
@@ -250,11 +300,6 @@ describe("Respoke messaging", function () {
                     expect(message.timestamp).to.exist;
                 });
             });
-
-            afterEach(function () {
-                followerEndpoint.ignore('message', followerListener);
-                followeeEndpoint.ignore('message', followeeListener);
-            });
         });
 
         describe("group messaging", function () {
@@ -264,9 +309,10 @@ describe("Respoke messaging", function () {
             });
 
             it("all group messages are received correctly", function (done) {
-                sendFiveGroupMessagesEach()
-                    .done(checkMessages);
-                    setTimeout(done, 100);
+                sendNumGroupMessagesEach()
+                    .then(checkMessages()).done(function () {
+                        done();
+                    }, done);
             });
 
             describe('metadata', function () {
@@ -337,8 +383,8 @@ describe("Respoke messaging", function () {
             });
 
             it("all messages are received correctly", function (done) {
-                sendFiveMessagesEach()
-                    .then(checkMessages)
+                sendNumMessagesEach()
+                    .then(checkMessages())
                     .done(function successHandler() {
                         done();
                     }, done);
@@ -357,8 +403,8 @@ describe("Respoke messaging", function () {
             });
 
             it("no group messages are received", function (done) {
-                sendFiveGroupMessagesEach()
-                    .then(checkMessages)
+                sendNumGroupMessagesEach()
+                    .then(checkMessages())
                     .done(function successHandler() {
                         done(new Error("Not supposed to succeed"));
                     }, function (err) {
@@ -404,8 +450,8 @@ describe("Respoke messaging", function () {
             it("no messages are received", function (done) {
                 expect(follower.isConnected()).to.be.false;
                 expect(followee.isConnected()).to.be.false;
-                sendFiveMessagesEach()
-                    .then(checkMessages).done(function successHandler() {
+                sendNumMessagesEach()
+                    .then(checkMessages()).done(function successHandler() {
                         done(new Error("Not supposed to succeed"));
                     }, function (err) {
                         expect(err).to.be.an.Error;
@@ -426,8 +472,8 @@ describe("Respoke messaging", function () {
             });
 
             it("no group messages are received", function (done) {
-                sendFiveGroupMessagesEach()
-                    .then(checkMessages)
+                sendNumGroupMessagesEach()
+                    .then(checkMessages())
                     .done(function successHandler() {
                         done(new Error("Not supposed to succeed"));
                     }, function (err) {
@@ -475,16 +521,13 @@ describe("Respoke messaging", function () {
         });
     });
 
-    afterEach(function () {
-        messagesFollowerReceived = [];
-        messagesFolloweeReceived = [];
-        messagesFollowerSent = [];
-        messagesFolloweeSent = [];
-    });
-
-    after(function (done) {
+    afterEach(function (done) {
         Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
+            messagesFollowerReceived = [];
+            messagesFolloweeReceived = [];
+            messagesFollowerSent = [];
+            messagesFolloweeSent = [];
                 if (err) {
                     return done(new Error(JSON.stringify(err)));
                 }
