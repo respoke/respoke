@@ -1,6 +1,6 @@
 var expect = chai.expect;
 
-describe("Respoke messaging", function () {
+xdescribe("Respoke messaging", function () {
     this.timeout(30000);
 
     var now = function () {
