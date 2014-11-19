@@ -181,7 +181,7 @@ describe("A Direct Connection", function () {
         respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {
-                    done(new Error(JSON.stringify(err)));
+                    done(err);
                     return;
                 }
                 done();

@@ -127,7 +127,7 @@ describe("respoke.Client", function () {
     after(function (done) {
         testFixture.afterTest(function (err) {
             if (err) {
-                return done(new Error(JSON.stringify(err)));
+                return done(err);
             }
             done();
         });

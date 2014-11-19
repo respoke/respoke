@@ -529,7 +529,7 @@ describe("Respoke messaging", function () {
             messagesFollowerSent = [];
             messagesFolloweeSent = [];
                 if (err) {
-                    return done(new Error(JSON.stringify(err)));
+                    return done(err);
                 }
                 done();
             });
