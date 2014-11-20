@@ -67,6 +67,10 @@ npm run jshint
 Point your editor to `.jscsrc` to follow the project's
 [JavaScript Code Style (JSCS)](https://github.com/jscs-dev/node-jscs) rules.
 
+```
+npm run jscs
+```
+
 ### Known Issues
 
 ```bash
