@@ -1,4 +1,7 @@
 {
+  "additionalRules": [
+      "node_modules/jscs-trailing-whitespace-in-source/rules/*.js"
+  ],
   "requireCurlyBraces": [
       "if",
       "else",
@@ -36,7 +39,6 @@
   "disallowMultipleVarDecl": true,
   "disallowMultipleLineBreaks": true,
   "requireBlocksOnNewline": 1,
-  "disallowQuotedKeysInObjects": "allButReserved",
   "disallowSpaceAfterObjectKeys": true,
   "requireSpaceBeforeObjectValues": true,
   "requireCommaBeforeLineBreak": true,
@@ -44,7 +46,7 @@
   "requireSpaceBeforeBinaryOperators": true,
   "requireSpaceAfterBinaryOperators": true,
   "disallowMixedSpacesAndTabs": true,
-  "disallowTrailingWhitespace": true,
+  "disallowTrailingWhitespaceInSource": true,
   "disallowTrailingComma": true,
   "requireLineFeedAtFileEnd": true,
   "requireCapitalizedConstructors": true,
@@ -52,6 +54,7 @@
   "validateParameterSeparator": ", ",
   "validateIndentation": 4,
   "excludeFiles": [
+      "respoke/deps/adapter.js",
       "node_modules/**",
       "coverage/**",
       "build/**",
@@ -59,6 +62,7 @@
       ".docs",
       ".tmp/**",
       ".idea",
-      "*.min.js"
+      "*.min.js",
+      "spec/**"
   ]
 }

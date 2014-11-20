@@ -1315,7 +1315,6 @@ module.exports = function (params) {
                 name: message.endpointId
             });
 
-
             // Handle presence not associated with a channel
             if (!connection) {
                 endpoint.setPresence({

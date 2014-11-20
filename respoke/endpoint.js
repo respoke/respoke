@@ -90,10 +90,8 @@ module.exports = function (params) {
         that.connections = [];
     });
 
-
     var resolveEndpointPresence = params.resolveEndpointPresence;
     delete that.resolveEndpointPresence;
-
 
     /**
      * Send a message to the endpoint through the infrastructure.
@@ -176,8 +174,8 @@ module.exports = function (params) {
     that.startAudioCall = function (params) {
         params = params || {};
         params.constraints = {
-            video : false,
-            audio : true,
+            video: false,
+            audio: true,
             optional: [],
             mandatory: {}
         };
@@ -231,8 +229,8 @@ module.exports = function (params) {
     that.startVideoCall = function (params) {
         params = params || {};
         params.constraints = {
-            video : true,
-            audio : true,
+            video: true,
+            audio: true,
             optional: [],
             mandatory: {}
         };

@@ -85,7 +85,7 @@ module.exports = function (grunt) {
         },
         watch: {
             scripts: {
-                files: ['respoke/**/*.js','plugins/**/*.js'],
+                files: ['respoke/**/*.js', 'plugins/**/*.js'],
                 tasks: ['dist']
             }
         }
@@ -116,7 +116,7 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('webhookService.dir'))) {
             throw grunt.util.error('webhook-service dir not available.  Please setup webhook-service.');
         }
-        process.on('exit', function() {
+        process.on('exit', function () {
             //ensure webhook-service child process is dead
             killWebhookService();
         });
@@ -138,9 +138,9 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('saucerSection.dir'))) {
             throw grunt.util.error('saucer-section dir not available.  Please setup saucer-section.');
         }
-        process.on('exit', function() {
+        process.on('exit', function () {
             //ensure saucer-section child process is dead
-             killSaucerSection();
+            killSaucerSection();
         });
         saucerSection = grunt.util.spawn({
             grunt: true,
