@@ -1317,7 +1317,6 @@ module.exports = function (params) {
                 name: message.endpointId
             });
 
-
             // Handle presence not associated with a channel
             if (!connection) {
                 endpoint.setPresence({
@@ -1746,7 +1745,7 @@ module.exports = function (params) {
         }
 
         if (params.parameters && JSON.stringify(params.parameters).length > bodySizeLimit) {
-            deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'))
+            deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'));
             return deferred.promise;
         }
 

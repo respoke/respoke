@@ -33,7 +33,7 @@ module.exports = function (grunt) {
                     compress: true,
                     sourceMap: true,
                     sourceMapIncludeSources: true,
-                    banner: '/*! Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software. */'
+                    banner: '/*! Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For all details and documentation: https://www.respoke.io */'
                 },
                 files: {
                     'respoke-stats.min.js': 'plugins/respoke-stats/respoke-stats.js'
@@ -68,24 +68,24 @@ module.exports = function (grunt) {
         karma: {
             unitChrome: {
                 singleRun: true,
-                configFile: './karma-unit-chrome.conf.js'
+                configFile: './spec/karma-unit-chrome.conf.js'
             },
             unitFirefox: {
                 singleRun: true,
-                configFile: './karma-unit-firefox.conf.js'
+                configFile: './spec/karma-unit-firefox.conf.js'
             },
             functionalChrome: {
                 singleRun: true,
-                configFile: './karma-functional-chrome.conf.js'
+                configFile: './spec/karma-functional-chrome.conf.js'
             },
             functionalFirefox: {
                 singleRun: true,
-                configFile: './karma-functional-firefox.conf.js'
+                configFile: './spec/karma-functional-firefox.conf.js'
             }
         },
         watch: {
             scripts: {
-                files: ['respoke/**/*.js','plugins/**/*.js'],
+                files: ['respoke/**/*.js', 'plugins/**/*.js'],
                 tasks: ['dist']
             }
         }
@@ -116,7 +116,7 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('webhookService.dir'))) {
             throw grunt.util.error('webhook-service dir not available.  Please setup webhook-service.');
         }
-        process.on('exit', function() {
+        process.on('exit', function () {
             //ensure webhook-service child process is dead
             killWebhookService();
         });
@@ -138,9 +138,9 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('saucerSection.dir'))) {
             throw grunt.util.error('saucer-section dir not available.  Please setup saucer-section.');
         }
-        process.on('exit', function() {
+        process.on('exit', function () {
             //ensure saucer-section child process is dead
-             killSaucerSection();
+            killSaucerSection();
         });
         saucerSection = grunt.util.spawn({
             grunt: true,

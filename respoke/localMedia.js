@@ -22,7 +22,8 @@ var respoke = require('./respoke');
  * @param {string} params.instanceId - client id
  * @param {string} params.callId - call id
  * @param {object} [params.constraints]
- * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local video attached to it.
+ * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local
+ * video attached to it.
  * @returns {respoke.LocalMedia}
  */
 module.exports = function (params) {

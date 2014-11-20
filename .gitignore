@@ -1,22 +1,21 @@
-.idea
+# Dev and build
+node_modules/
+build/
+*.log
+.docs/
+.grunt/
+respoke.min.js
+respoke.min.map
+respoke-stats.min.js
+respoke-stats.min.map
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
 *.iml
 atlassian-ide-plugin.xml
 *.sublime-*
 .dir-locals.el
-
-build/
-confluence/
-docs/
-markdown/
-node_modules/
-npm-debug.log
-out/
-respoke-stats.combine.js
-respoke-stats.combine.map
-respoke-stats.min.js
-respoke-stats.min.map
-respoke.combine.js
-respoke.combine.map
-respoke.concat.js
-respoke.min.js
-respoke.min.map

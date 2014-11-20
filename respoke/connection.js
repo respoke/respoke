@@ -187,8 +187,8 @@ module.exports = function (params) {
         params = params || {};
         params.connectionId = that.id;
         params.constraints = {
-            video : false,
-            audio : true,
+            video: false,
+            audio: true,
             optional: [],
             mandatory: {}
         };
