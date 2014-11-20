@@ -10,18 +10,18 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-          'node_modules/chai/chai.js',
-          'node_modules/sinon/pkg/sinon.js',
-          'respoke.min.js',
-          'respoke-stats.min.js',
-          'spec/unit/*.spec.js'
+          '../node_modules/chai/chai.js',
+          '../node_modules/sinon/pkg/sinon.js',
+          '../respoke.min.js',
+          '../respoke-stats.min.js',
+          'unit/*.spec.js'
         ],
 
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit'
         reporters: ['spec', 'junit'],
         junitReporter: {
-            outputFile: 'build/unit-test-results.xml'
+            outputFile: '../build/unit-test-results.xml'
         },
 
         hostname: 'localhost',
@@ -56,7 +56,7 @@ module.exports = function(config) {
         // - Safari (only Mac)
         // - PhantomJS
         // - IE (only Windows)
-        browsers: ['Firefox'],
+        browsers: ['Chrome'],
 
         // If browser does not capture in given timeout [ms], kill it
         captureTimeout: 60000

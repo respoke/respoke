@@ -68,19 +68,19 @@ module.exports = function (grunt) {
         karma: {
             unitChrome: {
                 singleRun: true,
-                configFile: './karma-unit-chrome.conf.js'
+                configFile: './spec/karma-unit-chrome.conf.js'
             },
             unitFirefox: {
                 singleRun: true,
-                configFile: './karma-unit-firefox.conf.js'
+                configFile: './spec/karma-unit-firefox.conf.js'
             },
             functionalChrome: {
                 singleRun: true,
-                configFile: './karma-functional-chrome.conf.js'
+                configFile: './spec/karma-functional-chrome.conf.js'
             },
             functionalFirefox: {
                 singleRun: true,
-                configFile: './karma-functional-firefox.conf.js'
+                configFile: './spec/karma-functional-firefox.conf.js'
             }
         },
         watch: {

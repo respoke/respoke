@@ -10,25 +10,25 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-          'node_modules/chai/chai.js',
-          'node_modules/sinon/pkg/sinon.js',
-          'node_modules/async/lib/async.js',
-          'respoke.min.js',
-          'respoke-stats.min.js',
-          'spec/util/config.js',
-          'spec/util/mock_module.js', // Must be loaded after loglevel.js b/c of `module` check.
-          '../../../collective/lib/seeds_data.js',
-          '../../../collective/assets/js/jquery.js',
-          '../../../collective/spec/util/api_client.js',
-          '../../../collective/spec/util/fixture.js',
-          'spec/functional/*.spec.js'
+          '../node_modules/chai/chai.js',
+          '../node_modules/sinon/pkg/sinon.js',
+          '../node_modules/async/lib/async.js',
+          '../respoke.min.js',
+          '../respoke-stats.min.js',
+          'util/config.js',
+          'util/mock_module.js', // Must be loaded after loglevel.js b/c of `module` check.
+          '../../../../collective/lib/seeds_data.js',
+          '../../../../collective/assets/js/jquery.js',
+          '../../../../collective/spec/util/api_client.js',
+          '../../../../collective/spec/util/fixture.js',
+          'functional/*.spec.js'
         ],
 
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit'
         reporters: ['spec','junit'],
         junitReporter: {
-            outputFile: 'build/functional-test-results.xml'
+            outputFile: '../build/functional-test-results.xml'
         },
 
         hostname: 'localhost',
