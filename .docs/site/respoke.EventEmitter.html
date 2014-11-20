@@ -1,0 +1,56 @@
+<!-- Copyright 2014, Digium, Inc.--><!-- All rights reserved.--><!----><!-- This source code is licensed under The MIT License found in the--><!-- LICENSE file in the root directory of this source tree.--><!----><!-- For all details and documentation:  https://www.respoke.io--><!DOCTYPE html><html><head><title>respoke/event.js - respoke.EventEmitter</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"><link rel="stylesheet" href="https://highlightjs.org/static/styles/github.css"><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script><script src="https://highlightjs.org/static/highlight.pack.js"></script><style type="text/css">#navi { z-index: 1000; max-height: 99%; overflow-y: auto; overflow-x: hidden; }
+#navi .nav>li>a { padding: 3px 15px; display: inline-block; }
+#navi.show { max-height: 400px; }
+#navi.show #menu { background: #fff; border: 1px solid #ccc; border-radius: 5px; padding: 8px; display: block!important; }
+.wrap { word-break: break-all; }</style></head><body style="position:relative" data-spy="scroll" data-target="#navi"><div id="navi" class="affix col-sm-3"><button onclick="$('#navi').toggleClass('show')" class="btn btn-default visible-xs">Menu</button><div id="menu" class="hidden-xs"><br class="hidden-xs"><ul role="tablist" class="nav nav-pills nav-stacked"><li>Properties &amp; Methods</li><li><a href="#respoke-EventEmitter">respoke.EventEmitter</a></li><li><a href="#once">once</a></li><li><a href="#listen">listen</a></li><li><a href="#ignore">ignore</a></li><li><a href="#hasListeners">hasListeners</a></li><li><a href="#Q">Q</a></li></ul></div></div><div id="header" role="navigation" class="nav navbar navbar-default"><div class="container-fluid"><div class="navbar-header"><a href="/respoke" class="navbar-brand">Respoke.js</a><button id="file-menu" data-toggle="collapse" data-target="#navbar-links" class="navbar-toggle collapsed"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button></div><div id="navbar-links" class="collapse navbar-collapse"><ul class="nav navbar-nav"><li><a href="respoke.Call.html">Call</a></li><li><a href="respoke.Client.html">Client</a></li><li><a href="respoke.Connection.html">Connection</a></li><li><a href="respoke.DirectConnection.html">DirectConnection</a></li><li><a href="respoke.Endpoint.html">Endpoint</a></li><li class="active"><a href="respoke.EventEmitter.html">EventEmitter</a></li><li><a href="respoke.Group.html">Group</a></li><li><a href="respoke.LocalMedia.html">LocalMedia</a></li><li><a href="respoke.Presentable.html">Presentable</a></li><li><a href="respoke.RemoteMedia.html">RemoteMedia</a></li><li><a href="respoke.MediaStats.html">MediaStats</a></li></ul></div></div></div><div class="col-sm-9 col-sm-offset-3"><br class="visible-xs"><h1>respoke.EventEmitter</h1><h5 class="help-block">from respoke/event.js</h5><div id="respoke-EventEmitter" class="comment"><div><p>A generic class for emitting and listening to events.</p>
+</div><br><h4>Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>params</code></div><div class="col-sm-3 wrap"><small><strong>object</strong></small></div><div class="col-sm-5"></div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>params.instanceId</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5"></div></div><br class="visible-xs"><br><br><h2>Properties and Methods</h2></div><div id="once" class="comment"><h3><a href="#once"><span class="bold">once(eventType, listener)</span></a></h3><div><p>Add a listener that will only be called once to an object.  This method adds the given listener to the given
+event in the case that the same
+listener is not already registered to this event and the listener is a function.  The third argument &#39;isInternal&#39;
+is used only internally by the library to indicate that this listener is a library-used listener and should not
+count when we are trying to determine if an event has listeners placed by the developer.</p>
+<pre><code>client.once(&#39;connect&#39;, function (evt) {
+    console.log(&quot;This is the first time we connected.&quot;);
+});
+</code></pre></div><br><h4>Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>eventType</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5">A developer-specified string identifying the event.</div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>listener</code></div><div class="col-sm-3 wrap"><small><strong>respoke.EventEmitter.eventListener</strong></small></div><div class="col-sm-5">A function to call when the event is fire.</div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>[isInternal]</code></div><div class="col-sm-3 wrap"><small><strong>boolean</strong></small></div><div class="col-sm-5">A flag to indicate this listener was added by the library. This parameter should
+not be used by developers who are using the library, only by developers who are working on the library itself.</div></div><br class="visible-xs"><br><br></div><div id="listen" class="comment"><h3><a href="#listen"><span class="bold">listen(eventType, listener)</span></a></h3><div><p>Add a <code>listener</code> function to an object.</p>
+<p>This method adds the <code>listener</code> to the event <code>eventName</code>.</p>
+<p>If an identical listener already registered to this event, it will <strong>not</strong> be added.</p>
+<h5 id="example-of-adding-an-event-listener-">Example of adding an event listener.</h5>
+<pre><code>client.listen(&#39;connect&#39;, function (evt) {
+    console.log(&quot;We&#39;ve connected!&quot;, evt);
+});
+</code></pre></div><br><h4>Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>eventType</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5">The name of the event.</div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>listener</code></div><div class="col-sm-3 wrap"><small><strong>respoke.EventEmitter.eventListener</strong></small></div><div class="col-sm-5">A function to call when the event is
+fired.</div></div><br class="visible-xs"><br><br></div><div id="ignore" class="comment"><h3><a href="#ignore"><span class="bold">ignore()</span></a></h3><div><p>Remove a listener from an object. If no eventType is specified, all eventTypes will be
+cleared. If an eventType is specified but no listener is specified, all listeners will be
+removed from the specified eventType.  If a listener is also specified, only that listener
+will be removed.</p>
+<pre><code>client.ignore(&#39;connect&#39;, connectHandler);
+</code></pre></div><br><h4>Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>[eventType]</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5">An optional developer-specified string identifying the event.</div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>[listener]</code></div><div class="col-sm-3 wrap"><small><strong>function</strong></small></div><div class="col-sm-5">An optional function to remove from the specified event.</div></div><br class="visible-xs"><br><br></div><div id="hasListeners" class="comment"><h3><a href="#hasListeners"><span class="bold">hasListeners(eventType)</span></a></h3><p><strong>returns<code>boolean</code></strong></p><div><p>Determine if an object has had any listeners registered for a given event outside the library. This method
+checks for the isInternal flag on each listener and doesn&#39;t count it toward an event being listened to. This
+method is used in the library to handle situations where an action is needed if an event won&#39;t be acted on.
+For instance, if a call comes in for the logged-in user, but the developer isn&#39;t listening to
+{respoke.Client#call}, we&#39;ll need to reject the call immediately.</p>
+<pre><code>if (client.hasListeners(&#39;call&#39;)) {
+    // already handled!
+}
+</code></pre></div><br><h4>Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>eventType</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5">The name of the event</div></div><br class="visible-xs"><br><br></div><div id="Q" class="comment"><h3><a href="#Q"><span class="bold">Q()</span></a></h3><div><p>Copyright 2014, Digium, Inc.
+All rights reserved.</p>
+<p>This source code is licensed under The MIT License found in the
+LICENSE file in the root directory of this source tree.</p>
+<p>For all details and documentation:  <a href="https://www.respoke.io">https://www.respoke.io</a></p>
+</div><br><br></div></div><script>hljs.initHighlightingOnLoad();
+$(document).on('scroll', setSidebarPosition);
+$(window).on('resize', setSidebarPosition);
+$('#file-menu').on('click', function () {
+  setTimeout(setSidebarPosition, 350);
+});
+function setSidebarPosition() {
+  var s = $(document).scrollTop();
+  var h = $('#header').height();
+  if (s < h) {
+      $('#navi').css('top', ((h - s) + 8) + 'px');
+  } else {
+      $('#navi').css('top', '0');
+  }
+}
+setSidebarPosition();</script></body></html>

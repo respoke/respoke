@@ -1,0 +1,965 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>lobal Bugsnag: true</p>\n",
+            "summary": "<p>lobal Bugsnag: true</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>shint bitwise: false</p>\n",
+            "summary": "<p>shint bitwise: false</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n",
+            "summary": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n",
+            "body": "<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var log = require('loglevel');\nlog.setLevel('warn');\n\nvar Q = require('q');\nQ.longStackSupport = true;\nQ.stackJumpLimit = 5;\nQ.longStackJumpLimit = 20;\nQ.stopUnhandledRejectionTracking();\n\nrequire('./deps/adapter');",
+        "ctx": {
+            "type": "declaration",
+            "name": "log",
+            "value": "require('loglevel')",
+            "string": "log",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "namespace",
+                "string": "respoke"
+            },
+            {
+                "type": "class",
+                "string": "respoke"
+            },
+            {
+                "type": "global",
+                "string": ""
+            },
+            {
+                "type": "link",
+                "string": "https://cdn.respoke.io/respoke.min.js"
+            }
+        ],
+        "description": {
+            "full": "<p><code>respoke</code> is a global static class.</p>\n<p>Include the <a href=\"https://cdn.respoke.io/respoke.min.js\">latest version</a> or\n<a href=\"http://cdn.respoke.io/list.html\">choose a previous release</a>.</p>\n<p>Or use <code>npm install --save respoke</code>.</p>\n<p>Interact with Respoke primarily via <a href=\"respoke.Client.html\"><code>respoke.Client</code></a>:</p>\n<pre><code> var client = respoke.createClient();\n</code></pre><p><strong>Development mode without brokered auth</strong></p>\n<pre><code> var client = respoke.createClient({\n     appId: &quot;XXXXXXX-my-app-id-XXXXXX&quot;,\n     developmentMode: true,\n     endpointId: &quot;billy&quot;\n });\n\n client.listen(&#39;connect&#39;, function () {\n     console.log(&#39;connected to respoke!&#39;);\n });\n\n client.listen(&#39;error&#39;, function (err) {\n     console.error(&#39;Connection to Respoke failed.&#39;, err);\n });\n\n client.connect();\n</code></pre><p><strong>Production mode with brokered auth</strong></p>\n<pre><code> var client = respoke.createClient();\n\n client.listen(&#39;connect&#39;, function () {\n     console.log(&#39;connected to respoke!&#39;);\n });\n\n client.listen(&#39;error&#39;, function (err) {\n     console.error(&#39;Connection to Respoke failed.&#39;, err);\n });\n\n // Respoke auth token obtained by your server.\n // This is how you control who can connect to Respoke app.\n // See API docs for POST [base]/tokens\n var tokenId = &quot;XXXX-XXXX-brokered-auth-token-XXXXX&quot;;\n\n // connect to respoke with the token\n client.connect({\n     token: tokenId\n });\n\n // fetch a new token from your server if it expires\n client.listen(&#39;disconnect&#39;, function (evt) {\n     // fetch another token from your server.\n     var newTokenId = &quot;XXXX-XXXX-brokered-auth-token2-XXXXX&quot;;\n     client.connect({\n         token: newTokenId\n     });\n });\n</code></pre><h3 id=\"event-listeners-vs-callback-handlers\">Event listeners vs callback handlers</h3>\n<p>There are two ways to attach listeners. It is highly recommended that you choose one pattern\nand stick to it throughout your app.</p>\n<p>For every <code>event-name</code>, there is a corresponding callback <code>onEventName</code>.</p>\n<p><strong>With a listener</strong></p>\n<pre><code> var client = respoke.createClient();\n client.listen(&#39;connect&#39;, function () { });\n</code></pre><p><strong>or with a callback</strong></p>\n<pre><code> var client = respoke.createClient({\n     // other options go here\n\n     onConnect: function () { }\n });\n</code></pre>",
+            "summary": "<p><code>respoke</code> is a global static class.</p>\n",
+            "body": "<p>Include the <a href=\"https://cdn.respoke.io/respoke.min.js\">latest version</a> or\n<a href=\"http://cdn.respoke.io/list.html\">choose a previous release</a>.</p>\n<p>Or use <code>npm install --save respoke</code>.</p>\n<p>Interact with Respoke primarily via <a href=\"respoke.Client.html\"><code>respoke.Client</code></a>:</p>\n<pre><code> var client = respoke.createClient();\n</code></pre><p><strong>Development mode without brokered auth</strong></p>\n<pre><code> var client = respoke.createClient({\n     appId: &quot;XXXXXXX-my-app-id-XXXXXX&quot;,\n     developmentMode: true,\n     endpointId: &quot;billy&quot;\n });\n\n client.listen(&#39;connect&#39;, function () {\n     console.log(&#39;connected to respoke!&#39;);\n });\n\n client.listen(&#39;error&#39;, function (err) {\n     console.error(&#39;Connection to Respoke failed.&#39;, err);\n });\n\n client.connect();\n</code></pre><p><strong>Production mode with brokered auth</strong></p>\n<pre><code> var client = respoke.createClient();\n\n client.listen(&#39;connect&#39;, function () {\n     console.log(&#39;connected to respoke!&#39;);\n });\n\n client.listen(&#39;error&#39;, function (err) {\n     console.error(&#39;Connection to Respoke failed.&#39;, err);\n });\n\n // Respoke auth token obtained by your server.\n // This is how you control who can connect to Respoke app.\n // See API docs for POST [base]/tokens\n var tokenId = &quot;XXXX-XXXX-brokered-auth-token-XXXXX&quot;;\n\n // connect to respoke with the token\n client.connect({\n     token: tokenId\n });\n\n // fetch a new token from your server if it expires\n client.listen(&#39;disconnect&#39;, function (evt) {\n     // fetch another token from your server.\n     var newTokenId = &quot;XXXX-XXXX-brokered-auth-token2-XXXXX&quot;;\n     client.connect({\n         token: newTokenId\n     });\n });\n</code></pre><h3 id=\"event-listeners-vs-callback-handlers\">Event listeners vs callback handlers</h3>\n<p>There are two ways to attach listeners. It is highly recommended that you choose one pattern\nand stick to it throughout your app.</p>\n<p>For every <code>event-name</code>, there is a corresponding callback <code>onEventName</code>.</p>\n<p><strong>With a listener</strong></p>\n<pre><code> var client = respoke.createClient();\n client.listen(&#39;connect&#39;, function () { });\n</code></pre><p><strong>or with a callback</strong></p>\n<pre><code> var client = respoke.createClient({\n     // other options go here\n\n     onConnect: function () { }\n });\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var respoke = module.exports = {\n    buildNumber: 'NO BUILD NUMBER',\n    streams: [],\n    instances: {}\n};",
+        "ctx": {
+            "type": "declaration",
+            "name": "respoke",
+            "value": "module.exports = {",
+            "string": "respoke",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p><code>&quot;v0.0.0&quot;</code></p>\n<p>The respoke.min.js version.</p>\n<p>Past versions can be found at <a href=\"http://cdn.respoke.io/list.html\">cdn.respoke.io/list.html</a></p>\n",
+            "summary": "<p><code>&quot;v0.0.0&quot;</code></p>\n",
+            "body": "<p>The respoke.min.js version.</p>\n<p>Past versions can be found at <a href=\"http://cdn.respoke.io/list.html\">cdn.respoke.io/list.html</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.version = respoke.buildNumber + \"\";\n\nrespoke.EventEmitter = require('./event');\nrespoke.Client = require('./client');\nrespoke.Presentable = require('./presentable');\nrespoke.Connection = require('./connection');\nrespoke.Endpoint = require('./endpoint');\nrespoke.TextMessage = require('./textMessage');\nrespoke.SignalingMessage = require('./signalingMessage');\nrespoke.Group = require('./group');\nrespoke.SignalingChannel = require('./signalingChannel');\nrespoke.DirectConnection = require('./directConnection');\nrespoke.PeerConnection = require('./peerConnection');\nrespoke.CallState = require('./callState');\nrespoke.Call = require('./call');\nrespoke.LocalMedia = require('./localMedia');\nrespoke.RemoteMedia = require('./remoteMedia');\nrespoke.log = log;\nrespoke.Q = Q;\n\nif (!window.skipBugsnag) {\n    // Use airbrake.\n    var airbrake = document.createElement('script');\n    var first = document.getElementsByTagName('script')[0];\n    first.parentNode.insertBefore(airbrake, first);\n\n    airbrake.src = \"https://ssljscdn.airbrake.io/0.3/airbrake.min.js\";\n    airbrake.setAttribute('data-airbrake-project-id', '98133');\n    airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');\n    airbrake.setAttribute('data-airbrake-project-environment-name', 'production');\n\n    airbrake.onload = function () {\n        window.onerror = function (message, file, line) {\n            //Only send errors from the respoke.js file to Airbrake\n            if (file.match(/respoke/)) {\n                Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});\n            }\n        };\n    };\n}",
+        "ctx": {
+            "type": "property",
+            "receiver": "respoke",
+            "name": "version",
+            "value": "respoke.buildNumber + \"\"",
+            "string": "respoke.version",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": "Parameters to the respoke.Client constructor."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.appId]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.baseURL]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.token]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence]",
+                "description": "The initial presence to set once connected."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.developmentMode=false]",
+                "description": "- Indication to obtain an authentication token from the service.\nNote: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of\noperation and will limit the services you will be able to use."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.reconnect=false]",
+                "description": "- Whether or not to automatically reconnect to the Respoke service\nwhen a disconnect occurs."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Callback for when this client's endpoint joins a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Callback for when this client's endpoint leaves a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Callback for when any message is received from anywhere on the system."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onDisconnect]",
+                "description": "- Callback for Client disconnect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onReconnect]",
+                "description": "- Callback for Client reconnect. Not Implemented."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onCall]",
+                "description": "- Callback for when this client's user receives a call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "[params.onDirectConnection]",
+                "description": "- Callback for when this client's user receives a request for a\ndirect connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.enableCallDebugReport=true]",
+                "description": "- Optional flag defaulting to true which allows sending\ndebugging information."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Client}"
+            }
+        ],
+        "description": {
+            "full": "<p>This is one of two possible entry points for interating with the library.</p>\n<p>This method creates a new Client object\nwhich represents your user&#39;s connection to your Respoke app.</p>\n<p>This method <strong>automatically calls client.connect(params)</strong> after the client is created.</p>\n",
+            "summary": "<p>This is one of two possible entry points for interating with the library.</p>\n",
+            "body": "<p>This method creates a new Client object\nwhich represents your user&#39;s connection to your Respoke app.</p>\n<p>This method <strong>automatically calls client.connect(params)</strong> after the client is created.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.connect = function (params) {\n    var client = respoke.Client(params);\n    client.connect(params);\n    return client;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "connect",
+            "string": "respoke.connect()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "number"
+                ],
+                "name": "id",
+                "description": "The Client ID."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Client}"
+            }
+        ],
+        "description": {
+            "full": "<p>Getter for the respoke client.</p>\n<p>You can have more than one active client, so this method provides a way to retrieve a specific instance.</p>\n",
+            "summary": "<p>Getter for the respoke client.</p>\n",
+            "body": "<p>You can have more than one active client, so this method provides a way to retrieve a specific instance.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.getClient = function (id) {\n    if (id === undefined) {\n        log.debug(\"Can't call getClient with no client ID.\", new Error().stack);\n    }\n    if (!respoke.instances[id]) {\n        log.debug(\"No client instance with id\", id);\n    }\n    return respoke.instances[id];\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "getClient",
+            "string": "respoke.getClient()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": "Parameters to respoke.Client - same as respoke.connect()"
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Client}"
+            }
+        ],
+        "description": {
+            "full": "<p>This is one of two possible entry points for interating with the library.</p>\n<p>This method creates a new Client object which represents your user&#39;s connection to your Respoke app.</p>\n<p>It <strong>does NOT automatically call the client.connect() method</strong> after the client is created.</p>\n<p>The <code>params</code> argument is the same as <code>respoke.connect(params)</code>.</p>\n",
+            "summary": "<p>This is one of two possible entry points for interating with the library.</p>\n",
+            "body": "<p>This method creates a new Client object which represents your user&#39;s connection to your Respoke app.</p>\n<p>It <strong>does NOT automatically call the client.connect() method</strong> after the client is created.</p>\n<p>The <code>params</code> argument is the same as <code>respoke.connect(params)</code>.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.createClient = function (params) {\n    var client;\n    params = params || {};\n    if (params.instanceId) {\n        client = respoke.getClient(params.instanceId);\n        if (client) {\n            return client;\n        }\n    }\n    return respoke.Client(params);\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "createClient",
+            "string": "respoke.createClient()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "func",
+                "description": ""
+            },
+            {
+                "type": "return",
+                "string": "{function}"
+            }
+        ],
+        "description": {
+            "full": "<p>Build a closure from a listener that will ensure the listener can only be called once.</p>\n",
+            "summary": "<p>Build a closure from a listener that will ensure the listener can only be called once.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.once = function (func) {\n    return (function () {\n        var called = false;\n        return function () {\n            if (called === false) {\n                func.apply(null, arguments);\n                called = true;\n            }\n        };\n    })();\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "once",
+            "string": "respoke.once()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "returns",
+                "string": "{number}"
+            }
+        ],
+        "description": {
+            "full": "<p>@static</p>\n",
+            "summary": "<p>@static</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.makeGUID = function () {\n    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');\n    var uuid = new Array(36);\n    var rnd = 0;\n    var r;\n    for (var i = 0; i < 36; i += 1) {\n        if (i === 8 || i === 13 ||  i === 18 || i === 23) {\n            uuid[i] = '-';\n        } else if (i === 14) {\n            uuid[i] = '4';\n        } else {\n            if (rnd <= 0x02) {\n                rnd = 0x2000000 + (Math.random() * 0x1000000) | 0;\n            }\n            r = rnd & 0xf;\n            rnd = rnd >> 4;\n            uuid[i] = chars[(i === 19) ? (r & 0x3) | 0x8 : r];\n        }\n    }\n    return uuid.join('');\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "makeGUID",
+            "string": "respoke.makeGUID()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Promise"
+                ],
+                "name": "promise",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "onSuccess",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "onError",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            }
+        ],
+        "description": {
+            "full": "<p>This method is used internally to attach handlers to promises that are returned by many methods in the library.\nIt&#39;s not recommended that this method be used by developers and apps.</p>\n",
+            "summary": "<p>This method is used internally to attach handlers to promises that are returned by many methods in the library.\nIt&#39;s not recommended that this method be used by developers and apps.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.handlePromise = function (promise, onSuccess, onError) {\n    var returnUndef = false;\n    if (onSuccess || onError) {\n        returnUndef = true;\n    }\n\n    onSuccess = typeof onSuccess === 'function' ? onSuccess : function () {};\n    onError = typeof onError === 'function' ? onError : function () {};\n    promise.done(onSuccess, onError);\n    return (returnUndef ? undefined : promise);\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "handlePromise",
+            "string": "respoke.handlePromise()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.Class"
+            },
+            {
+                "type": "classdesc",
+                "string": "Empty base class."
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all\nparams that were passed in onto the base object. Add the class name.</p>\n",
+            "summary": "<p>Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all\nparams that were passed in onto the base object. Add the class name.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.Class = function (params) {\n    params = params || {};\n    var that = params.that || {};\n    var client = params.client;\n\n    that.className = 'respoke.Class';\n    delete params.that;\n    delete that.client;\n\n    Object.keys(params).forEach(function copyParam(name) {\n        that[name] = params[name];\n    });\n\n    return that;\n}; // end of respoke.Class",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "Class",
+            "string": "respoke.Class()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the browser support <code>UserMedia</code>?</p>\n",
+            "summary": "<p>Does the browser support <code>UserMedia</code>?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.hasUserMedia = function () {\n    return (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) instanceof Function;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "hasUserMedia",
+            "string": "respoke.hasUserMedia()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the browser support <code>RTCPeerConnection</code>?</p>\n",
+            "summary": "<p>Does the browser support <code>RTCPeerConnection</code>?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.hasRTCPeerConnection = function () {\n    return (window.RTCPeerConnection || window.webkitRTCPeerConnection ||\n            window.mozRTCPeerConnection) instanceof Function;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "hasRTCPeerConnection",
+            "string": "respoke.hasRTCPeerConnection()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the browser support <code>WebSocket</code>?</p>\n",
+            "summary": "<p>Does the browser support <code>WebSocket</code>?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.hasWebsocket = function () {\n    return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "hasWebsocket",
+            "string": "respoke.hasWebsocket()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Object"
+                ],
+                "name": "source",
+                "description": "- The object to clone"
+            },
+            {
+                "type": "returns",
+                "string": "{Object}"
+            }
+        ],
+        "description": {
+            "full": "<p>Clone an object.</p>\n",
+            "summary": "<p>Clone an object.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.clone = function (source) {\n    if (source) {\n        return JSON.parse(JSON.stringify(source));\n    }\n    return source;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "clone",
+            "string": "respoke.clone()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Object"
+                ],
+                "name": "a",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Object"
+                ],
+                "name": "b",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Compares two objects for equality</p>\n",
+            "summary": "<p>Compares two objects for equality</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.isEqual = function (a, b) {\n    var aKeys;\n\n    //check if arrays\n    if (a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {\n        if (a.length !== b.length) {\n            //short circuit if arrays are different length\n            return false;\n        }\n\n        for (var i = 0; i < a.length; i += 1) {\n            if (!respoke.isEqual(a[i], b[i])) {\n                return false;\n            }\n        }\n        return true;\n    }\n\n    if (typeof a === 'object' && typeof b === 'object') {\n        aKeys = Object.keys(a);\n        for (var i = 0; i < aKeys.length; i += 1) {\n            if (!respoke.isEqual(a[aKeys[i]], b[aKeys[i]])) {\n                return false;\n            }\n        }\n        return true;\n    }\n\n    return a === b;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "isEqual",
+            "string": "respoke.isEqual()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "params",
+                "string": "{RTCSessionDescription}"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the sdp indicate an audio stream?</p>\n",
+            "summary": "<p>Does the sdp indicate an audio stream?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.sdpHasAudio = function (sdp) {\n    if (!sdp) {\n        throw new Error(\"respoke.sdpHasAudio called with no parameters.\");\n    }\n    return sdp.indexOf('m=audio') !== -1;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "sdpHasAudio",
+            "string": "respoke.sdpHasAudio()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "params",
+                "string": "{RTCSessionDescription}"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the sdp indicate a video stream?</p>\n",
+            "summary": "<p>Does the sdp indicate a video stream?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.sdpHasVideo = function (sdp) {\n    if (!sdp) {\n        throw new Error(\"respoke.sdpHasVideo called with no parameters.\");\n    }\n    return sdp.indexOf('m=video') !== -1;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "sdpHasVideo",
+            "string": "respoke.sdpHasVideo()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "params",
+                "string": "{RTCSessionDescription}"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the sdp indicate a data channel?</p>\n",
+            "summary": "<p>Does the sdp indicate a data channel?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.sdpHasDataChannel = function (sdp) {\n    if (!sdp) {\n        throw new Error(\"respoke.sdpHasDataChannel called with no parameters.\");\n    }\n    return sdp.indexOf('m=application') !== -1;\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "sdpHasDataChannel",
+            "string": "respoke.sdpHasDataChannel()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "params",
+                "string": "{MediaConstraints}"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the sdp indicate an audio stream?</p>\n",
+            "summary": "<p>Does the sdp indicate an audio stream?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.constraintsHasAudio = function (constraints) {\n    if (!constraints) {\n        throw new Error(\"respoke.constraintsHasAudio called with no parameters.\");\n    }\n    return (constraints.audio === true);\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "constraintsHasAudio",
+            "string": "respoke.constraintsHasAudio()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "static",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke"
+            },
+            {
+                "type": "params",
+                "string": "{MediaConstraints}"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Does the constraints indicate a video stream?</p>\n",
+            "summary": "<p>Does the constraints indicate a video stream?</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.constraintsHasVideo = function (constraints) {\n    if (!constraints) {\n        throw new Error(\"respoke.constraintsHasVideo called with no parameters.\");\n    }\n    return (constraints.video === true || typeof constraints.video === 'object');\n};",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "constraintsHasVideo",
+            "string": "respoke.constraintsHasVideo()",
+            "file": {
+                "input": "respoke/respoke.js",
+                "output": ".docs/site/respoke/respoke.js.json"
+            }
+        }
+    }
+]

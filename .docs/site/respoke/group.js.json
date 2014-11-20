@@ -1,0 +1,1146 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n",
+            "summary": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n",
+            "body": "<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var Q = require('q');\nvar respoke = require('./respoke');",
+        "ctx": {
+            "type": "declaration",
+            "name": "Q",
+            "value": "require('q')",
+            "string": "Q",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "augments",
+                "otherClass": "respoke.EventEmitter"
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.instanceId",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onJoin"
+                ],
+                "name": "params.onJoin",
+                "description": "- A callback to receive notifications every time a new\nendpoint has joined the group. This callback does not get called when the client joins the group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onMessage"
+                ],
+                "name": "params.onMessage",
+                "description": "- A callback to receive messages sent to the group from\nremote endpoints."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onLeave"
+                ],
+                "name": "params.onLeave",
+                "description": "- A callback to receive notifications every time a new\nendpoint has left the group. This callback does not get called when the client leaves the group."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Group}"
+            }
+        ],
+        "description": {
+            "full": "<p>A <code>respoke.Group</code> represents a collection of endpoints.</p>\n<p>There are methods to communicate with the endpoints at the group level and track\ntheir presence in the group.</p>\n",
+            "summary": "<p>A <code>respoke.Group</code> represents a collection of endpoints.</p>\n",
+            "body": "<p>There are methods to communicate with the endpoints at the group level and track\ntheir presence in the group.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "module.exports = function (params) {\n    \"use strict\";\n    params = params || {};\n\n    var that = respoke.EventEmitter(params);",
+        "ctx": {
+            "type": "method",
+            "receiver": "module",
+            "name": "exports",
+            "string": "module.exports()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "instanceId"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Group</p>\n",
+            "summary": "<p>@memberof! respoke.Group</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var instanceId = params.instanceId;\n    var client = respoke.getClient(instanceId);\n\n    if (!that.id) {\n        throw new Error(\"Can't create a group without an ID.\");\n    }",
+        "ctx": {
+            "type": "declaration",
+            "name": "instanceId",
+            "value": "params.instanceId",
+            "string": "instanceId",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "name",
+                "string": "signalingChannel"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.SignalingChannel"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Internal reference to the api signaling channel.</p>\n",
+            "summary": "<p>Internal reference to the api signaling channel.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var signalingChannel = params.signalingChannel;\n    delete params.signalingChannel;",
+        "ctx": {
+            "type": "declaration",
+            "name": "signalingChannel",
+            "value": "params.signalingChannel",
+            "string": "signalingChannel",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "name",
+                "string": "endpoints"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "array<respoke.Connection>"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>The connections to members of this group.</p>\n",
+            "summary": "<p>The connections to members of this group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.connections = [];",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "connections",
+            "value": "[]",
+            "string": "that.connections",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "name",
+                "string": "className"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A name to identify the type of this object.</p>\n",
+            "summary": "<p>A name to identify the type of this object.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.className = 'respoke.Group';\n    that.listen('join', params.onJoin);",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "className",
+            "value": "'respoke.Group'",
+            "string": "that.className",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Group#message"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.TextMessage"
+                ],
+                "name": "message",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Indicates that a message has been sent to this group.</p>\n",
+            "summary": "<p>Indicates that a message has been sent to this group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('message', params.onMessage);\n    that.listen('leave', params.onLeave);\n    client.listen('disconnect', function disconnectHandler() {\n        that.connections = [];\n    });\n\n    delete that.instanceId;\n    delete that.onMessage;\n    delete that.onPresence;\n    delete that.onJoin;\n    delete that.onLeave;",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Group#message",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.join"
+            },
+            {
+                "type": "return",
+                "string": "{Promise|undefined}"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.joinHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#join"
+            }
+        ],
+        "description": {
+            "full": "<p>Join this group.</p>\n<pre><code>group.join().done(function () {\n    group.sendMessage({\n        message: &quot;Hey, ppl! I&#39;m here!&quot;\n    });\n}, function (err) {\n    // Couldn&#39;t join the group, possibly permissions error\n});\n</code></pre><p><strong>Using callbacks</strong> will disable promises.</p>\n",
+            "summary": "<p>Join this group.</p>\n",
+            "body": "<pre><code>group.join().done(function () {\n    group.sendMessage({\n        message: &quot;Hey, ppl! I&#39;m here!&quot;\n    });\n}, function (err) {\n    // Couldn&#39;t join the group, possibly permissions error\n});\n</code></pre><p><strong>Using callbacks</strong> will disable promises.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Client#join"
+        ],
+        "ignore": false,
+        "code": "that.join = function () {\n        var params = {\n            id: that.id\n        };\n        var promise;\n        var deferred;\n        var retVal;\n\n        try {\n            validateConnection();\n        } catch (err) {\n            deferred = Q.defer();\n            retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);\n            deferred.reject(err);\n            return retVal;\n        }\n\n        promise = client.join(params);\n        retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n        return retVal;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "join",
+            "string": "that.join()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.leave"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.joinHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "return",
+                "string": "{Promise|undefined}"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#leave"
+            }
+        ],
+        "description": {
+            "full": "<p>Leave this group.</p>\n<pre><code>group.leave({\n    onSuccess: function () {\n        // good riddance\n    },\n    onError: function (err) {\n        // Couldn&#39;t leave the group, possibly a permissions error\n    }\n});\n</code></pre>",
+            "summary": "<p>Leave this group.</p>\n",
+            "body": "<pre><code>group.leave({\n    onSuccess: function () {\n        // good riddance\n    },\n    onError: function (err) {\n        // Couldn&#39;t leave the group, possibly a permissions error\n    }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Client#leave"
+        ],
+        "ignore": false,
+        "code": "that.leave = function (params) {\n        params = params || {};\n        var deferred = Q.defer();\n        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);\n\n        try {\n            validateConnection();\n            validateMembership();\n        } catch (err) {\n            deferred.reject(err);\n            return retVal;\n        }\n\n        signalingChannel.leaveGroup({\n            id: that.id\n        }).done(function successHandler() {",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "leave",
+            "string": "that.leave()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#leave"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "group",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when the client leaves a group.</p>\n",
+            "summary": "<p>This event is fired when the client leaves a group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "client.fire('leave', {\n                group: that\n            });\n            that.connections = [];\n            deferred.resolve();\n        }, function errorHandler(err) {\n            deferred.reject();\n        });\n        return retVal;\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#leave",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.removeMember"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": "- Endpoint's connection id"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Group#leave"
+            }
+        ],
+        "description": {
+            "full": "<p>Remove a Connection from a Group. This does not change the status of the remote Endpoint, it only changes the\ninternal representation of the Group membership. This method should only be used internally.</p>\n",
+            "summary": "<p>Remove a Connection from a Group. This does not change the status of the remote Endpoint, it only changes the\ninternal representation of the Group membership. This method should only be used internally.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Group#leave"
+        ],
+        "ignore": false,
+        "code": "that.removeMember = function (params) {\n        params = params || {};\n\n        try {\n            validateConnection();\n            validateMembership();\n        } catch (err) {\n            return;\n        }\n\n        if (!params.connectionId) {\n            throw new Error(\"Can't remove a member to the group without it's Connection id.\");\n        }\n\n        that.connections.every(function eachConnection(conn, index) {\n            if (conn.id === params.connectionId) {\n                that.connections.splice(index, 1);",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "removeMember",
+            "string": "that.removeMember()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Group#leave"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Connection"
+                ],
+                "name": "connection",
+                "description": "- The connection that left the group."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when a member leaves a group the client is a member of.</p>\n",
+            "summary": "<p>This event is fired when a member leaves a group the client is a member of.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('leave', {\n                    connection: conn\n                });\n                return false;\n            }\n            return true;\n        });\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Group#leave",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.isJoined"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Return true if the logged-in user is a member of this group and false if not.</p>\n<pre><code>if (group.isJoined()) {\n    // I&#39;m a member!\n} else {\n    // Maybe join here\n}\n</code></pre>",
+            "summary": "<p>Return true if the logged-in user is a member of this group and false if not.</p>\n",
+            "body": "<pre><code>if (group.isJoined()) {\n    // I&#39;m a member!\n} else {\n    // Maybe join here\n}\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.isJoined = function () {\n        // connections array contains some connections and ours is among them.\n        return (that.connections.length > 0 && !that.connections.every(function (conn) {\n            return conn.id !== client.connectionId;\n        }));\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "isJoined",
+            "string": "that.isJoined()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.addMember"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Connection"
+                ],
+                "name": "params.connection",
+                "description": ""
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Group#join"
+            }
+        ],
+        "description": {
+            "full": "<p>Add a Connection to a group. This does not change the status of the remote Endpoint, it only changes the\ninternal representation of the Group membership. This method should only be used internally.</p>\n",
+            "summary": "<p>Add a Connection to a group. This does not change the status of the remote Endpoint, it only changes the\ninternal representation of the Group membership. This method should only be used internally.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Group#join"
+        ],
+        "ignore": false,
+        "code": "that.addMember = function (params) {\n        params = params || {};\n        var absent;\n\n        validateConnection();\n\n        if (!params.connection) {\n            throw new Error(\"Can't add a member to the group without it's Connection object.\");\n        }\n\n        absent = that.connections.every(function eachConnection(conn) {\n            return (conn.id !== params.connection.id);\n        });\n\n        if (absent) {\n            that.connections.push(params.connection);\n            if (params.skipEvent) {\n                return;\n            }",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "addMember",
+            "string": "that.addMember()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Group#join"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Connection"
+                ],
+                "name": "connection",
+                "description": "- The connection that joined the group."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when a member joins a Group that the currently logged-in endpoint is a member\nof.</p>\n",
+            "summary": "<p>This event is fired when a member joins a Group that the currently logged-in endpoint is a member\nof.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('join', {\n                connection: params.connection\n            });\n        }\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Group#join",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.validateConnection"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Validate that the client is connected to the Respoke infrastructure.</p>\n",
+            "summary": "<p>Validate that the client is connected to the Respoke infrastructure.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function validateConnection() {\n        if (!signalingChannel || !signalingChannel.isConnected()) {\n            throw new Error(\"Can't complete request when not connected. Please reconnect!\");\n        }\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "validateConnection",
+            "string": "validateConnection()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.validateMembership"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Validate that the client is a member of this group.</p>\n",
+            "summary": "<p>Validate that the client is a member of this group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function validateMembership() {\n        if (!that.isJoined()) {\n            throw new Error(\"Not a member of this group anymore.\");\n        }\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "validateMembership",
+            "string": "validateMembership()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.sendMessage"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.message",
+                "description": "- The message."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.onSuccess",
+                "description": "- Success handler indicating that the message was delivered."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.onError",
+                "description": "- Error handler indicating that the message was not delivered."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise}"
+            }
+        ],
+        "description": {
+            "full": "<p>Send a message to all of the endpoints in the group.</p>\n<pre><code> var group = client.getGroup({ id: &#39;js-enthusiasts&#39;});\n\n group.sendMessage({\n     message: &quot;Cat on keyboard&quot;,\n     onSuccess: function (evt) {\n         console.log(&#39;Message was sent&#39;);\n     }\n });\n</code></pre>",
+            "summary": "<p>Send a message to all of the endpoints in the group.</p>\n",
+            "body": "<pre><code> var group = client.getGroup({ id: &#39;js-enthusiasts&#39;});\n\n group.sendMessage({\n     message: &quot;Cat on keyboard&quot;,\n     onSuccess: function (evt) {\n         console.log(&#39;Message was sent&#39;);\n     }\n });\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.sendMessage = function (params) {\n        params = params || {};\n        params.id = that.id;\n        var promise;\n\n        try {\n            validateConnection();\n            validateMembership();\n        } catch (err) {\n            promise = Q.reject(err);\n        }\n\n        return respoke.handlePromise(promise ? promise : signalingChannel.publish(params),\n                params.onSuccess, params.onError);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "sendMessage",
+            "string": "that.sendMessage()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Group"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Group.getMembers"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.joinHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Success handler for this invocation of this method only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<Array>} A promise to an array of Connections."
+            }
+        ],
+        "description": {
+            "full": "<p>Get group members</p>\n<p>Get an array containing the members of the group. Accepts <code>onSuccess</code> or <code>onError</code> parameters,\nor a promise.</p>\n<pre><code>group.getMembers({\n    onSuccess: function (members) {\n        members.forEach(function (member) {\n            // do something\n        });\n    }\n});\n</code></pre>",
+            "summary": "<p>Get group members</p>\n",
+            "body": "<p>Get an array containing the members of the group. Accepts <code>onSuccess</code> or <code>onError</code> parameters,\nor a promise.</p>\n<pre><code>group.getMembers({\n    onSuccess: function (members) {\n        members.forEach(function (member) {\n            // do something\n        });\n    }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getMembers = function (params) {\n        params = params || {};\n        var deferred = Q.defer();\n        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);\n\n        try {\n            validateConnection();\n            validateMembership();\n        } catch (err) {\n            deferred.reject(err);\n            return retVal;\n        }\n\n        signalingChannel.getGroupMembers({\n            id: that.id\n        }).done(function successHandler(list) {\n            var endpointList = [];\n            list.forEach(function eachMember(params) {\n                var connection = client.getConnection({\n                    endpointId: params.endpointId,\n                    connectionId: params.connectionId,\n                    skipCreate: true\n                });\n\n                if (!connection) {\n                    // Create the connection\n                    connection = client.getConnection({\n                        endpointId: params.endpointId,\n                        connectionId: params.connectionId\n                    });\n                }\n\n                if (endpointList.indexOf(params.endpointId) === -1) {\n                    endpointList.push(params.endpointId);\n                }\n                that.addMember({\n                    connection: connection,\n                    skipEvent: true\n                });\n            });\n\n            deferred.resolve(that.connections);\n        }, function errorHandler(err) {\n            deferred.reject(err);\n        });\n        return retVal;\n    };\n\n    return that;\n}; // End respoke.Group",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getMembers",
+            "string": "that.getMembers()",
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Group.onJoin"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Connection"
+                ],
+                "name": "evt.connection",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that an endpoint has joined this group. This callback is called everytime\nrespoke.Group#join is fired.</p>\n",
+            "summary": "<p>Receive notification that an endpoint has joined this group. This callback is called everytime\nrespoke.Group#join is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Group.onLeave"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Connection"
+                ],
+                "name": "evt.connection",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that an endpoint has left this group. This callback is called everytime\nrespoke.Group#leave is fired.</p>\n",
+            "summary": "<p>Receive notification that an endpoint has left this group. This callback is called everytime\nrespoke.Group#leave is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Group.onMessage"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.TextMessage"
+                ],
+                "name": "evt.message",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that a message has been received to a group. This callback is called every time\nrespoke.Group#message is fired.</p>\n",
+            "summary": "<p>Receive notification that a message has been received to a group. This callback is called every time\nrespoke.Group#message is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Group.connectionsHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Array<respoke.Connection>"
+                ],
+                "name": "connections",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Get a list of the Connections which are members of this Group.</p>\n",
+            "summary": "<p>Get a list of the Connections which are members of this Group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/group.js",
+                "output": ".docs/site/respoke/group.js.json"
+            }
+        }
+    }
+]

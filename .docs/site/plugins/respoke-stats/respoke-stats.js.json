@@ -1,0 +1,1336 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>global define: false, respoke: false</p>\n",
+            "summary": "<p>global define: false, respoke: false</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "ignore",
+                "string": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.</p>\n",
+            "summary": "<p>Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "// UMD wrapper to provide support for CommonJS, AMD, and browser globals\n(function (factory) {\n    \"use strict\";\n    if (typeof define === 'function' && define.amd) {\n        // AMD. Register as an anonymous module.\n        define(['respoke'], factory);\n    } else if (typeof exports === 'object') {\n        // Node/CommonJS\n        factory(require('respoke'));\n    } else {\n        // Browser globals\n        factory(respoke);\n    }\n}(function (respoke) {\n    \"use strict\";",
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "link",
+                "string": "https://cdn.respoke.io/respoke-stats.min.js"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>A report containing statistical information about the flow of media with the latest live statistics.</p>\n<p>This is a <strong>plugin</strong> for respoke. To leverage it, include <code>&lt;script src=&quot;https://cdn.respoke.io/respoke-stats.min.js&quot;&gt;&lt;/script&gt;</code>.</p>\n<p>The plugin adds the methods <code>getStats()</code> and <code>stopStats()</code> to <code>respoke.Call</code>.</p>\n<h2 id=\"usage\">Usage</h2>\n<p>Once you have a <code>Call</code> instance after <code>endpoint.startCall()</code> or in the <code>client.on(&#39;call&#39;)</code> / <code>new Client({ onCall: yourCallHandler })</code> event listener:</p>\n<p><strong>using callbacks</strong></p>\n<pre><code> call.getStats({\n     onStats: function continualStatsHandler(evt) { . . . },\n     onSuccess: yourOnSuccessHandler,\n     onError: yourOnErrorHandler \n });\n</code></pre><p><strong>or using a promise</strong></p>\n<pre><code> call.getStats({\n     onStats: function continualStatsHandler(evt) { . . . },\n }).done(onSuccess, onFailure);\n</code></pre>",
+            "summary": "<p>A report containing statistical information about the flow of media with the latest live statistics.</p>\n",
+            "body": "<p>This is a <strong>plugin</strong> for respoke. To leverage it, include <code>&lt;script src=&quot;https://cdn.respoke.io/respoke-stats.min.js&quot;&gt;&lt;/script&gt;</code>.</p>\n<p>The plugin adds the methods <code>getStats()</code> and <code>stopStats()</code> to <code>respoke.Call</code>.</p>\n<h2 id=\"usage\">Usage</h2>\n<p>Once you have a <code>Call</code> instance after <code>endpoint.startCall()</code> or in the <code>client.on(&#39;call&#39;)</code> / <code>new Client({ onCall: yourCallHandler })</code> event listener:</p>\n<p><strong>using callbacks</strong></p>\n<pre><code> call.getStats({\n     onStats: function continualStatsHandler(evt) { . . . },\n     onSuccess: yourOnSuccessHandler,\n     onError: yourOnErrorHandler \n });\n</code></pre><p><strong>or using a promise</strong></p>\n<pre><code> call.getStats({\n     onStats: function continualStatsHandler(evt) { . . . },\n }).done(onSuccess, onFailure);\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.MediaStats = function (params) {\n        params = JSON.parse(JSON.stringify(params || {}));",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "MediaStats",
+            "string": "respoke.MediaStats()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "name",
+                "string": "connection"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "channelId",
+                "description": "- A string which identifies this media stream (which may contain several\nmedia stream tracks) to the browser."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "foundIncomingNetworkPaths",
+                "description": "- Whether or not the ICE hole-punching process has found\na suitable network path from the remote party to this client."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "foundOutgoingNetworkPaths",
+                "description": "- Whether or not the ICE hole-punching process has found\na suitable network path from this client to the remote party."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "localHost",
+                "description": "- The local IP and port number of the media connection."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "remoteHost",
+                "description": "- The remote IP and port number of the media connection."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "localMediaPath",
+                "description": "- The type of network path the local media is taking to the remote\nparty, one of \"local\", \"srflx\", \"prflx\", \"relay\"."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "remoteMediaPath",
+                "description": "- The type of network path the local media is taking to the remote\nparty, one of \"local\", \"srflx\", \"prflx\", \"relay\"."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "roundTripTime",
+                "description": "- How long it takes media packets to traverse the network path."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "transport",
+                "description": "- Whether the media is flowing via UDP or TCP"
+            }
+        ],
+        "description": {
+            "full": "<p>Information about the connection.</p>\n",
+            "summary": "<p>Information about the connection.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "name",
+                "string": "localaudio"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "audioInputLevel",
+                "description": "- Microphone volume."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "codec",
+                "description": "- Audio codec in use."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalBytesSent",
+                "description": "- Total number of bytes sent since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodBytesSent",
+                "description": "- Number of bytes sent since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalPacketsSent",
+                "description": "- Total number of packets sent since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodPacketsSent",
+                "description": "- Number of packets sent since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "transportId",
+                "description": "- The identifer of the media stream to which this media stream track belongs."
+            }
+        ],
+        "description": {
+            "full": "<p>Information about the local audio stream track.</p>\n",
+            "summary": "<p>Information about the local audio stream track.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "name",
+                "string": "localvideo"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "codec",
+                "description": "- Video codec in use."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalBytesSent",
+                "description": "- Total number of bytes sent since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodBytesSent",
+                "description": "- Number of bytes sent since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalPacketsSent",
+                "description": "- Total number of packets sent since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodPacketsSent",
+                "description": "- Number of packets sent since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "transportId",
+                "description": "- The identifer of the media stream to which this media stream track belongs."
+            }
+        ],
+        "description": {
+            "full": "<p>Information about the local video stream track.</p>\n",
+            "summary": "<p>Information about the local video stream track.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "name",
+                "string": "remoteaudio"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "audioOutputLevel",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalBytesReceived",
+                "description": "- Total number of bytes received since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodBytesReceived",
+                "description": "- Number of bytes received since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "packetsLost",
+                "description": "- Total number of packets lost."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalPacketsReceived",
+                "description": "- Total number of packets received since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodPacketsReceived",
+                "description": "- Number of packets received since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "transportId",
+                "description": "- The identifer of the media stream to which this media stream track\nbelongs."
+            }
+        ],
+        "description": {
+            "full": "<p>Information about the remote audio stream track.</p>\n",
+            "summary": "<p>Information about the remote audio stream track.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "name",
+                "string": "remotevideo"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalBytesReceived",
+                "description": "- Total number of bytes received since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodBytesReceived",
+                "description": "- Number of bytes received since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "packetsLost",
+                "description": "- Total number of packets lost."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "totalPacketsReceived",
+                "description": "- Total number of packets received since media first began flowing."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "periodPacketsReceived",
+                "description": "- Number of packets received since the last stats event."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "transportId",
+                "description": "- The identifer of the media stream to which this media stream track belongs."
+            }
+        ],
+        "description": {
+            "full": "<p>Information about the remote video stream track.</p>\n",
+            "summary": "<p>Information about the remote video stream track.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "name",
+                "string": "state"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "iceConnectionState",
+                "description": "- Indicates where we are in terms of ICE network negotiation -- \"hole\npunching.\""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "iceGatheringState",
+                "description": "- Indicates whether we have started or finished gathering ICE\ncandidates from the browser."
+            }
+        ],
+        "description": {
+            "full": "<p>Information about connection state.</p>\n",
+            "summary": "<p>Information about connection state.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "name",
+                "string": "timestamp"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "date"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>The date and time at which this stats snapshot was taken.</p>\n",
+            "summary": "<p>The date and time at which this stats snapshot was taken.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "name",
+                "string": "periodLength"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "number"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>The time that has passed since the last stats snapshot was taken.</p>\n",
+            "summary": "<p>The time that has passed since the last stats snapshot was taken.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "aliases"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>These aliases define what things should be renamed before report is sent.</p>\n",
+            "summary": "<p>These aliases define what things should be renamed before report is sent.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var aliases = {\n            cons: {\n                newname: 'connection',\n                members: {\n                    googChannelId: 'channelId',\n                    googLocalAddress: 'localHost',\n                    googRemoteAddress: 'remoteHost',\n                    googLocalCandidateType: 'localMediaPath',\n                    googRemoteCandidateType: 'remoteMediaPath',\n                    googReadable: 'foundIncomingNetworkPaths',\n                    googRtt: 'roundTripTime',\n                    googTransportType: 'transport',\n                    googWritable: 'foundOutgoingNetworkPaths'\n                }\n            },\n            localaudio: {\n                members: {\n                    googCodecName: 'codec',\n                    bytesSent: 'totalBytesSent',\n                    packetsSent: 'totalPacketsSent'\n                }\n            },\n            localvideo: {\n                members: {\n                    googCodecName: 'codec',\n                    bytesSent: 'totalBytesSent',\n                    packetsSent: 'totalPacketsSent'\n                }\n            },\n            remoteaudio: {\n                members: {\n                    googCodecName: 'codec',\n                    bytesReceived: 'totalBytesReceived',\n                    packetsReceived: 'totalPacketsReceived'\n                }\n            },\n            remotevideo: {\n                members: {\n                    googCodecName: 'codec',\n                    bytesReceived: 'totalBytesReceived',\n                    packetsReceived: 'totalPacketsReceived'\n                }\n            }\n        };",
+        "ctx": {
+            "type": "declaration",
+            "name": "aliases",
+            "value": "{",
+            "string": "aliases",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStats"
+            },
+            {
+                "type": "method",
+                "string": "respoke.MediaStats.format"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "report",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "aliases",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{object}"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Rename report attributes to have more readable, understandable names.</p>\n",
+            "summary": "<p>Rename report attributes to have more readable, understandable names.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function format(report, aliases) {\n            Object.keys(aliases).forEach(function eachAttr(oldName) {\n                var name;\n                if (typeof aliases[oldName] === 'string') {\n                    report[aliases[oldName]] = report[oldName];\n                    delete report[oldName];\n                } else if (typeof aliases[oldName] === 'object') {\n                    name = oldName;\n                    if (aliases[oldName].newname) {\n                        report[aliases[oldName].newname] = report[oldName];\n                        name = aliases[oldName].newname;\n                        delete report[oldName];\n                    }\n                    if (aliases[oldName].members) {\n                        format(report[name], aliases[oldName].members);\n                    }\n                }\n            });\n\n            if (report.connection) {\n                report.connection.foundIncomingNetworkPaths = ('true' === report.connection.foundIncomingNetworkPaths);\n                report.connection.foundOutgoingNetworkPaths = ('true' === report.connection.foundOutgoingNetworkPaths);\n            }\n            return report;\n        }\n        return format(params, aliases);\n    }; // End respoke.MediaStats",
+        "ctx": {
+            "type": "function",
+            "name": "format",
+            "string": "format()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.MediaStatsParser"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "augments",
+                "otherClass": "respoke.Class"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "RTCPeerConnection"
+                ],
+                "name": "peerConnection",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>A handler for WebRTC statistics. This class takes an <code>onStats</code> callback which it calls every <code>interval</code> seconds\nwith the latest live statistics.</p>\n",
+            "summary": "<p>A handler for WebRTC statistics. This class takes an <code>onStats</code> callback which it calls every <code>interval</code> seconds\nwith the latest live statistics.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "respoke.MediaStatsParser = function (params) {\n        params = params || {};\n        var that = respoke.Class(params);",
+        "ctx": {
+            "type": "method",
+            "receiver": "respoke",
+            "name": "MediaStatsParser",
+            "string": "respoke.MediaStatsParser()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "className"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.className = 'respoke.MediaStatsParser';",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "className",
+            "value": "'respoke.MediaStatsParser'",
+            "string": "that.className",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "oldStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var oldStats = false;",
+        "ctx": {
+            "type": "declaration",
+            "name": "oldStats",
+            "value": "false",
+            "string": "oldStats",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "pc"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "RTCPeerConnection"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var pc = params.peerConnection;\n        delete params.peerConnection;",
+        "ctx": {
+            "type": "declaration",
+            "name": "pc",
+            "value": "params.peerConnection",
+            "string": "pc",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "timer"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "number"
+                ]
+            },
+            {
+                "type": "desc",
+                "string": "The timer for calling the onStats callback; the output of setInterval."
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var timer = 0;",
+        "ctx": {
+            "type": "declaration",
+            "name": "timer",
+            "value": "0",
+            "string": "timer",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "statsInterval"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "number"
+                ]
+            },
+            {
+                "type": "desc",
+                "string": "The millisecond interval on which we call the onStats callback."
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var statsInterval = params.interval || 5000;",
+        "ctx": {
+            "type": "declaration",
+            "name": "statsInterval",
+            "value": "params.interval || 5000",
+            "string": "statsInterval",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>The data you get out of getStats needs some pruning and a tidy up\nso I define some things I think are &#39;interesting&#39; and how to find them.</p>\n<p>getStats gives you an array of results each of which has a type.\nEach result contains a list of keys and a dictionary of values that can\nbe retrieved by key. (no ,they aren&#39;t properties)</p>\n<p>The interesting stats object is a list of objects, each describing the\ntype of result that contains the stats, the names of the relevant stats\nand a way to filter out the irrelevant results objects of the same type.</p>\n<p>An added complication is that the standards are in flux so google add\ndata in chrome (some of it useful) that isn;t in the draft standard.</p>\n",
+            "summary": "<p>The data you get out of getStats needs some pruning and a tidy up\nso I define some things I think are &#39;interesting&#39; and how to find them.</p>\n",
+            "body": "<p>getStats gives you an array of results each of which has a type.\nEach result contains a list of keys and a dictionary of values that can\nbe retrieved by key. (no ,they aren&#39;t properties)</p>\n<p>The interesting stats object is a list of objects, each describing the\ntype of result that contains the stats, the names of the relevant stats\nand a way to filter out the irrelevant results objects of the same type.</p>\n<p>An added complication is that the standards are in flux so google add\ndata in chrome (some of it useful) that isn;t in the draft standard.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "interestingStats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var interestingStats = {\n            cons: {\n                type: \"googCandidatePair\",\n                match: {key: \"googActiveConnection\", value: \"true\"},\n                keys: [\n                    \"googWritable\", \"googReadable\", \"googTransportType\", \"googLocalCandidateType\",\n                    \"googRemoteCandidateType\", \"googRemoteAddress\", \"googLocalAddress\", \"googRtt\", \"googChannelId\"\n                ]\n            },\n            // the next 4 property names _matter_ they have to finish with the value of an m= line\n            // if you change them things won't work.\n            localaudio: {\n                type: \"ssrc\",\n                match: {key: \"ssrc\", value: \"\"},\n                keys: [\"audioInputLevel\", \"packetsSent\", \"bytesSent\", \"transportId\", \"googCodecName\"]\n            },\n            remoteaudio: {\n                type: \"ssrc\",\n                match: {key: \"ssrc\", value: \"\"},\n                keys: [\"audioOutputLevel\", \"packetsReceived\", \"packetsLost\", \"bytesReceived\", \"transportId\"]\n            },\n            remotevideo: {\n                type: \"ssrc\",\n                match: {key: \"ssrc\", value: \"\"},\n                keys: [\"packetsReceived\", \"packetsLost\", \"bytesReceived\", \"transportId\"]\n            },\n            localvideo: {\n                type: \"ssrc\",\n                match: {key: \"ssrc\", value: \"\"},\n                keys: [\"packetsSent\", \"bytesSent\", \"transportId\", \"googCodecName\"]\n            }\n        };",
+        "ctx": {
+            "type": "declaration",
+            "name": "interestingStats",
+            "value": "{",
+            "string": "interestingStats",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "name",
+                "string": "deltas"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "summary": "<p>@memberof! respoke.MediaStatsParser</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var deltas = {\n            packetsSent: true,\n            bytesSent: true,\n            packetsReceived: true,\n            bytesReceived: true\n        };",
+        "ctx": {
+            "type": "declaration",
+            "name": "deltas",
+            "value": "{",
+            "string": "deltas",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStatsParser"
+            },
+            {
+                "type": "method",
+                "string": "respoke.MediaStatsParser.startsWith"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "string",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "value",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Determine if a string starts with the given value.</p>\n",
+            "summary": "<p>Determine if a string starts with the given value.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function startsWith(string, value) {\n            return (string && string.slice && (string.slice(0, value.length) === value));\n        }",
+        "ctx": {
+            "type": "function",
+            "name": "startsWith",
+            "string": "startsWith()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStatsParser"
+            },
+            {
+                "type": "method",
+                "string": "respoke.MediaStatsParser.initStats"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Parse the SDPs. Kick off continuous calling of getStats() every <code>interval</code> milliseconds.</p>\n",
+            "summary": "<p>Parse the SDPs. Kick off continuous calling of getStats() every <code>interval</code> milliseconds.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function initStats() {\n            var sdp = {};\n            if (!pc || !pc.remoteDescription || !pc.remoteDescription.sdp ||\n                !pc.localDescription || !pc.localDescription.sdp) {\n                respoke.log.warn(\"missing info.\");\n                return;\n            }\n\n            sdp = {\n                remote: pc.remoteDescription.sdp,\n                local: pc.localDescription.sdp\n            };",
+        "ctx": {
+            "type": "function",
+            "name": "initStats",
+            "string": "initStats()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>extract the ssrcs from the sdp, because it isn&#39;t anwhere else.\nwe will use them to map results to audio/video etc</p>\n",
+            "summary": "<p>extract the ssrcs from the sdp, because it isn&#39;t anwhere else.\nwe will use them to map results to audio/video etc</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "Object.keys(sdp).forEach(function eachKey(side) {\n                var rsdp = sdp[side];\n                // filet the sdp\n                var lines = rsdp.split(\"\\r\\n\");\n                var mediaType = null;\n\n                Object.keys(lines).forEach(function lineNum(lineIndex) {\n                    var line = lines[lineIndex];\n                    var lbits = null;\n                    var ssrc = null;\n\n                    if (startsWith(line, \"m=\")) { // take a note of the sort of media we are looking at\n                        mediaType = line.substring(2, 7); // should be either 'audio' or 'video'\n                    } else if (startsWith(line, \"a=ssrc:\")) {\n                        lbits = line.split(\" \");\n                        ssrc = lbits[0].substring(\"a=ssrc:\".length);\n\n                        if (interestingStats[side + mediaType]) {\n                            // fill in the value of the respective 'match'\n                            // build the name of the stat from parts\n                            if (interestingStats[side + mediaType].match.value.length === 0){\n                                interestingStats[side + mediaType].match.value = ssrc;\n                            }\n                        }\n                    }\n                });\n            });\n\n            if (params.onStats) {\n                timer = setInterval(function statsTimerHandler() {\n                    that.getStats().done(params.onStats, function errorHandler(err) {\n                        respoke.log.error(\"error in getStats\", err.message, err.stack);\n                    });\n                }, statsInterval);\n            } else {\n                respoke.log.warn(\"Not starting stats, no onStats callback provided.\");\n            }\n        }",
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStatsParser"
+            },
+            {
+                "type": "method",
+                "string": "respoke.MediaStatsParser.getStats"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this\ninvocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback accepting a single `event` argument."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<object>|undefined}"
+            }
+        ],
+        "description": {
+            "full": "<p>Get one snapshot of stats from the call&#39;s PeerConnection.</p>\n",
+            "summary": "<p>Get one snapshot of stats from the call&#39;s PeerConnection.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getStats = function (params) {\n            params = params || {};\n            var deferred = respoke.Q.defer();\n            var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);\n            var args = [];\n\n            if (!pc.getStats) {\n                deferred.reject(new Error(\"no peer connection getStats()\"));\n                return retVal;\n            }\n\n            if (navigator.mozGetUserMedia) {\n                args.push(null);\n            }\n\n            args.push(function successHandler(stats) {\n                deferred.resolve(respoke.MediaStats(buildStats(stats)));\n            });\n            args.push(function errorHandler(err) {\n                respoke.log.error(err);\n                deferred.reject(new Error(\"Can't get stats.\"));\n            });\n            pc.getStats.apply(pc, args);\n            return retVal;\n        };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getStats",
+            "string": "that.getStats()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStatsParser"
+            },
+            {
+                "type": "method",
+                "string": "respoke.MediaStatsParser.stopStats"
+            }
+        ],
+        "description": {
+            "full": "<p>Stop fetching and processing of call stats.</p>\n",
+            "summary": "<p>Stop fetching and processing of call stats.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.stopStats = function () {\n            clearInterval(timer);\n        };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "stopStats",
+            "string": "that.stopStats()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.MediaStatsParser"
+            },
+            {
+                "type": "method",
+                "string": "respoke.MediaStatsParser.buildStats"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "rawStats",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Receive raw stats and parse them.</p>\n",
+            "summary": "<p>Receive raw stats and parse them.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function buildStats(rawStats) {\n            // extract and repackage 'interesting' stats using the rules above\n            var stats = rawStats; // might need to re-instate some sort of wrapper here\n            var results = stats.result();\n\n            var allStats = {\n                state: {\n                    iceGatheringState: pc.icegatheringState,\n                    iceConnectionState: pc.iceConnectionState\n                }\n            };\n\n            Object.keys(interestingStats).forEach(function eachStatType(statType) {\n                var eachStat = {};\n                var rule = interestingStats[statType];\n                var report = results.filter(function eachResult(result) {\n                    var typeMatch = (result.type === rule.type);\n                    var keyMatch = (result.stat(rule.match.key) === rule.match.value);\n                    return (typeMatch && keyMatch);\n                });\n\n                if (report.length > 0) {\n                    if (report[0].timestamp) {\n                        allStats.timestamp = report[0].timestamp;\n                        allStats.periodLength = allStats.timestamp - oldStats.timestamp;\n                    }\n                    rule.keys.forEach(function eachKey(key) {\n                        var testInt = parseInt(report[0].stat(key), 10);\n                        if (!isNaN(testInt)) {\n                            eachStat[key] = testInt;\n                        } else {\n                            eachStat[key] = report[0].stat(key);\n                        }\n\n                        if (deltas[key] && oldStats && oldStats[statType] &&\n                            [null, undefined].indexOf(oldStats[statType][key]) === -1) {\n                            eachStat[\"period\" + key.charAt(0).toUpperCase() + key.slice(1)] =\n                                (eachStat[key] - oldStats[statType][key]);\n                        }\n                    });\n                }\n                allStats[statType] = eachStat;\n            });\n            oldStats = allStats;\n            return allStats;\n        }\n\n        initStats();\n\n        return that;\n    }; // End respoke.MediaStatsParser\n}));",
+        "ctx": {
+            "type": "function",
+            "name": "buildStats",
+            "string": "buildStats()",
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.MediaStatsParser.statsHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStats"
+                ],
+                "name": "",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Success handler for methods that generate stats.</p>\n",
+            "summary": "<p>Success handler for methods that generate stats.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "plugins/respoke-stats/respoke-stats.js",
+                "output": ".docs/site/plugins/respoke-stats/respoke-stats.js.json"
+            }
+        }
+    }
+]

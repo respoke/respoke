@@ -1,0 +1,35 @@
+<!-- Copyright 2014, Digium, Inc.--><!-- All rights reserved.--><!----><!-- This source code is licensed under The MIT License found in the--><!-- LICENSE file in the root directory of this source tree.--><!----><!-- For all details and documentation:  https://www.respoke.io--><!DOCTYPE html><html><head><title>respoke/presentable.js - respoke.Presentable</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"><link rel="stylesheet" href="https://highlightjs.org/static/styles/github.css"><script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script><script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script><script src="https://highlightjs.org/static/highlight.pack.js"></script><style type="text/css">#navi { z-index: 1000; max-height: 99%; overflow-y: auto; overflow-x: hidden; }
+#navi .nav>li>a { padding: 3px 15px; display: inline-block; }
+#navi.show { max-height: 400px; }
+#navi.show #menu { background: #fff; border: 1px solid #ccc; border-radius: 5px; padding: 8px; display: block!important; }
+.wrap { word-break: break-all; }</style></head><body style="position:relative" data-spy="scroll" data-target="#navi"><div id="navi" class="affix col-sm-3"><button onclick="$('#navi').toggleClass('show')" class="btn btn-default visible-xs">Menu</button><div id="menu" class="hidden-xs"><br class="hidden-xs"><ul role="tablist" class="nav nav-pills nav-stacked"><li>Properties &amp; Methods</li><li><a href="#respoke-Presentable">respoke.Presentable</a></li><li><a href="#getPresence">getPresence</a></li><li><a href="#log">log</a></li><li>Events</li><li><a href="#event-respoke-Presentable-presence">presence</a></li></ul></div></div><div id="header" role="navigation" class="nav navbar navbar-default"><div class="container-fluid"><div class="navbar-header"><a href="/respoke" class="navbar-brand">Respoke.js</a><button id="file-menu" data-toggle="collapse" data-target="#navbar-links" class="navbar-toggle collapsed"><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button></div><div id="navbar-links" class="collapse navbar-collapse"><ul class="nav navbar-nav"><li><a href="respoke.Call.html">Call</a></li><li><a href="respoke.Client.html">Client</a></li><li><a href="respoke.Connection.html">Connection</a></li><li><a href="respoke.DirectConnection.html">DirectConnection</a></li><li><a href="respoke.Endpoint.html">Endpoint</a></li><li><a href="respoke.EventEmitter.html">EventEmitter</a></li><li><a href="respoke.Group.html">Group</a></li><li><a href="respoke.LocalMedia.html">LocalMedia</a></li><li class="active"><a href="respoke.Presentable.html">Presentable</a></li><li><a href="respoke.RemoteMedia.html">RemoteMedia</a></li><li><a href="respoke.MediaStats.html">MediaStats</a></li></ul></div></div></div><div class="col-sm-9 col-sm-offset-3"><br class="visible-xs"><h1>respoke.Presentable</h1><h5 class="help-block">from respoke/presentable.js</h5><div id="respoke-Presentable" class="comment"><p><strong>extends&nbsp;<a href="respoke.EventEmitter.html"><code>respoke.EventEmitter</code></a></strong></p><div><p>The purpose of the class is to allow multiple types of entities to expose presence functionality.</p>
+<p>Setting the presence on a client is provided via <code>client.setPresence({ presence: &quot;At lunch&quot; })</code>.</p>
+</div><br><h4>Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>params</code></div><div class="col-sm-3 wrap"><small><strong>object</strong></small></div><div class="col-sm-5"></div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>params.instanceId</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5"></div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>params.id</code></div><div class="col-sm-3 wrap"><small><strong>string</strong></small></div><div class="col-sm-5"></div></div><br class="visible-xs"><br><br><h2>Properties and Methods</h2></div><div id="getPresence" class="comment"><h3><a href="#getPresence"><span class="bold">getPresence()</span></a></h3><p><strong>returns<code>string|number|object|array</code></strong></p><div><p>Get the presence of a Presentable instance.</p>
+<pre><code> var billy = client.getEndpoint({ id: &quot;billychia&quot; });
+ var pres = billy.getPresence();
+ console.log(&#39;Billy is&#39;, pres); // &quot;Billy is available&quot;
+</code></pre></div><br><br></div><div id="log" class="comment"><h3><a href="#log"><span class="bold">log()</span></a></h3><div><p>Copyright 2014, Digium, Inc.
+All rights reserved.</p>
+<p>This source code is licensed under The MIT License found in the
+LICENSE file in the root directory of this source tree.</p>
+<p>For all details and documentation:  <a href="https://www.respoke.io">https://www.respoke.io</a></p>
+</div><br><br></div><br><br><h2>Events</h2><p>Listen for events on an instance of this class.</p><pre><code>Presentable
+.listen(&quot;event-name&quot;, function (evt) {
+
+})</code></pre><br><div id="event-respoke-Presentable-presence"><h3><code>event</code> <a href="#event-respoke-Presentable-presence" class="bold">presence</a></h3><div><p>This event indicates that the presence for this endpoint has been updated.</p>
+</div><br><h4>Callback Arguments</h4><div class="row hidden-xs param"><div class="col-sm-4">Name</div><div class="col-sm-3">Type</div><div class="col-sm-5"></div></div><div class="row param"><div class="col-sm-4 wrap"><code>presence</code></div><div class="col-sm-3 wrap"><strong>string</strong></div><div class="col-sm-5"></div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>name</code></div><div class="col-sm-3 wrap"><strong>string</strong></div><div class="col-sm-5">the event name.</div></div><br class="visible-xs"><div class="row param"><div class="col-sm-4 wrap"><code>target</code></div><div class="col-sm-3 wrap"><strong>respoke.Presentable</strong></div><div class="col-sm-5"></div></div><br class="visible-xs"><br><br></div><br><br><br><br><br><br><br><br><br><br><br></div><script>hljs.initHighlightingOnLoad();
+$(document).on('scroll', setSidebarPosition);
+$(window).on('resize', setSidebarPosition);
+$('#file-menu').on('click', function () {
+  setTimeout(setSidebarPosition, 350);
+});
+function setSidebarPosition() {
+  var s = $(document).scrollTop();
+  var h = $('#header').height();
+  if (s < h) {
+      $('#navi').css('top', ((h - s) + 8) + 'px');
+  } else {
+      $('#navi').css('top', '0');
+  }
+}
+setSidebarPosition();</script></body></html>

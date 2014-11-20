@@ -1,0 +1,405 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n",
+            "summary": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n",
+            "body": "<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var respoke = require('./respoke');",
+        "ctx": {
+            "type": "declaration",
+            "name": "respoke",
+            "value": "require('./respoke')",
+            "string": "respoke",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.Presentable"
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "augments",
+                "otherClass": "respoke.EventEmitter"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.instanceId",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.id",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Presentable}"
+            }
+        ],
+        "description": {
+            "full": "<p>The purpose of the class is to allow multiple types of entities to expose presence functionality.</p>\n<p>Setting the presence on a client is provided via <code>client.setPresence({ presence: &quot;At lunch&quot; })</code>.</p>\n",
+            "summary": "<p>The purpose of the class is to allow multiple types of entities to expose presence functionality.</p>\n",
+            "body": "<p>Setting the presence on a client is provided via <code>client.setPresence({ presence: &quot;At lunch&quot; })</code>.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "module.exports = function (params) {\n    \"use strict\";\n    params = params || {};",
+        "ctx": {
+            "type": "method",
+            "receiver": "module",
+            "name": "exports",
+            "string": "module.exports()",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "instanceId"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Presentable</p>\n",
+            "summary": "<p>@memberof! respoke.Presentable</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var instanceId = params.instanceId;\n    var that = respoke.EventEmitter(params);\n    delete that.instanceId;",
+        "ctx": {
+            "type": "declaration",
+            "name": "instanceId",
+            "value": "params.instanceId",
+            "string": "instanceId",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Presentable"
+            },
+            {
+                "type": "name",
+                "string": "className"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A name to identify the type of this object.</p>\n",
+            "summary": "<p>A name to identify the type of this object.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.className = 'respoke.Presentable';",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "className",
+            "value": "'respoke.Presentable'",
+            "string": "that.className",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Presentable"
+            },
+            {
+                "type": "name",
+                "string": "presence"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Represents the presence status. Typically a string, but other types are supported.\nDefaults to <code>&#39;unavailable&#39;</code>.</p>\n<p><strong>Do not modify this directly</strong> - it won&#39;t update presence with Respoke. Use <code>setPresence()</code>.</p>\n",
+            "summary": "<p>Represents the presence status. Typically a string, but other types are supported.\nDefaults to <code>&#39;unavailable&#39;</code>.</p>\n",
+            "body": "<p><strong>Do not modify this directly</strong> - it won&#39;t update presence with Respoke. Use <code>setPresence()</code>.</p>\n"
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.presence = 'unavailable';",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "presence",
+            "value": "'unavailable'",
+            "string": "that.presence",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "client"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Client"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.DirectConnection</p>\n",
+            "summary": "<p>@memberof! respoke.DirectConnection</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var client = respoke.getClient(instanceId);",
+        "ctx": {
+            "type": "declaration",
+            "name": "client",
+            "value": "respoke.getClient(instanceId)",
+            "string": "client",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Presentable"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Presentable.setPresence"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence=available]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.connectionId",
+                "description": ""
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Presentable#presence"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Set the presence on the object for this session.</p>\n",
+            "summary": "<p>Set the presence on the object for this session.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Presentable#presence"
+        ],
+        "ignore": false,
+        "code": "that.setPresence = function (params) {\n        var connection;\n        params = params || {};\n        params.presence = params.presence || 'available';\n        params.connectionId = params.connectionId || that.connectionId;\n\n        if (that.className === 'respoke.Client' || that.className === 'respoke.Connection') {\n            that.presence = params.presence;\n            if (that.className === 'respoke.Connection') {\n                that.getEndpoint().resolvePresence();\n            }\n        } else if (that.className === 'respoke.Endpoint') {\n            if (!params.connectionId) {\n                throw new Error(\"Can't set Endpoint presence without a connectionId.\");\n            }\n\n            connection = that.getConnection({connectionId: params.connectionId}) || client.getConnection({\n                connectionId: params.connectionId,\n                skipCreate: false,\n                endpointId: that.id\n            });\n\n            connection.presence = params.presence;\n            that.resolvePresence();\n        }",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "setPresence",
+            "string": "that.setPresence()",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Presentable#presence"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "presence",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Presentable"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event indicates that the presence for this endpoint has been updated.</p>\n",
+            "summary": "<p>This event indicates that the presence for this endpoint has been updated.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('presence', {\n            presence: that.presence\n        });\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Presentable#presence",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Presentable"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Presentable.getPresence"
+            },
+            {
+                "type": "returns",
+                "string": "{string|number|object|array} the current presence of this endpoint."
+            }
+        ],
+        "description": {
+            "full": "<p>Get the presence of a Presentable instance.</p>\n<pre><code> var billy = client.getEndpoint({ id: &quot;billychia&quot; });\n var pres = billy.getPresence();\n console.log(&#39;Billy is&#39;, pres); // &quot;Billy is available&quot;\n</code></pre>",
+            "summary": "<p>Get the presence of a Presentable instance.</p>\n",
+            "body": "<pre><code> var billy = client.getEndpoint({ id: &quot;billychia&quot; });\n var pres = billy.getPresence();\n console.log(&#39;Billy is&#39;, pres); // &quot;Billy is available&quot;\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getPresence = function () {\n        return that.presence;\n    };\n\n    return that;\n}; // End respoke.Presentable",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getPresence",
+            "string": "that.getPresence()",
+            "file": {
+                "input": "respoke/presentable.js",
+                "output": ".docs/site/respoke/presentable.js.json"
+            }
+        }
+    }
+]

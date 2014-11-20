@@ -33,7 +33,7 @@ module.exports = function (grunt) {
                     compress: true,
                     sourceMap: true,
                     sourceMapIncludeSources: true,
-                    banner: '/*! Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software. */'
+                    banner: '/*! Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For all details and documentation: https://www.respoke.io */'
                 },
                 files: {
                     'respoke-stats.min.js': 'plugins/respoke-stats/respoke-stats.js'

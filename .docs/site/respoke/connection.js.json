@@ -1,0 +1,967 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n",
+            "summary": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n",
+            "body": "<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var respoke = require('./respoke');",
+        "ctx": {
+            "type": "declaration",
+            "name": "respoke",
+            "value": "require('./respoke')",
+            "string": "respoke",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "class",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "augments",
+                "otherClass": "respoke.Presentable"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.id",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Connection}"
+            }
+        ],
+        "description": {
+            "full": "<p>A <code>respoke.Connection</code> always belongs to an Endpoint.</p>\n<p>There is a distinction between Endpoint and Connection because an Endpoint can be authenticated\nfrom multiple devices, browsers, or browser tabs. Each of these separate authentications is a Connection.\nA Client can choose to interact with connections of the same endpoint in different ways.</p>\n",
+            "summary": "<p>A <code>respoke.Connection</code> always belongs to an Endpoint.</p>\n",
+            "body": "<p>There is a distinction between Endpoint and Connection because an Endpoint can be authenticated\nfrom multiple devices, browsers, or browser tabs. Each of these separate authentications is a Connection.\nA Client can choose to interact with connections of the same endpoint in different ways.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "module.exports = function (params) {\n    \"use strict\";\n    params = params || {};",
+        "ctx": {
+            "type": "method",
+            "receiver": "module",
+            "name": "exports",
+            "string": "module.exports()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "instanceId"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Connection</p>\n",
+            "summary": "<p>@memberof! respoke.Connection</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var instanceId = params.instanceId;\n    var that = respoke.Presentable(params);",
+        "ctx": {
+            "type": "declaration",
+            "name": "instanceId",
+            "value": "params.instanceId",
+            "string": "instanceId",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "client"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Client"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.DirectConnection</p>\n",
+            "summary": "<p>@memberof! respoke.DirectConnection</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var client = respoke.getClient(instanceId);",
+        "ctx": {
+            "type": "declaration",
+            "name": "client",
+            "value": "respoke.getClient(instanceId)",
+            "string": "client",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "name",
+                "string": "id"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>The connection id.</p>\n",
+            "summary": "<p>The connection id.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.id = that.id || that.connectionId;\n    if (!that.id) {\n        throw new Error(\"Can't make a connection without an id.\");\n    }\n    delete that.instanceId;\n    delete that.connectionId;",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "id",
+            "value": "that.id || that.connectionId",
+            "string": "that.id",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "name",
+                "string": "className"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A name to identify the type of this object.</p>\n",
+            "summary": "<p>A name to identify the type of this object.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.className = 'respoke.Connection';",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "className",
+            "value": "'respoke.Connection'",
+            "string": "that.className",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Connection.sendMessage"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.message",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.successHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation\nof this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            }
+        ],
+        "description": {
+            "full": "<p>Send a message to this connection of an endpoint. If the endpoint has multiple connections,\nit will only receive the message at this connection.</p>\n<pre><code>connection.sendMessage({\n    message: &quot;PJ, put that PBR down!&quot;\n});\n</code></pre><p><strong>Using callbacks</strong> will disable promises.</p>\n",
+            "summary": "<p>Send a message to this connection of an endpoint. If the endpoint has multiple connections,\nit will only receive the message at this connection.</p>\n",
+            "body": "<pre><code>connection.sendMessage({\n    message: &quot;PJ, put that PBR down!&quot;\n});\n</code></pre><p><strong>Using callbacks</strong> will disable promises.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.sendMessage = function (params) {\n        params = params || {};\n        params.connectionId = that.id;\n        return that.getEndpoint().sendMessage(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "sendMessage",
+            "string": "that.sendMessage()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Connection.startCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the remote\naudio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has been\nhung up."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "RTCConstraints"
+                ],
+                "name": "[params.constraints]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoLocalElement]",
+                "description": "- Pass in an optional html video element to have local video attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoRemoteElement]",
+                "description": "- Pass in an optional html video element to have remote video attached to it."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered\nby another connection of this Endpoint.</p>\n<pre><code>connection.startCall({\n    onConnect: function (evt) {}\n});\n</code></pre>",
+            "summary": "<p>Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered\nby another connection of this Endpoint.</p>\n",
+            "body": "<pre><code>connection.startCall({\n    onConnect: function (evt) {}\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startCall = function (params) {\n        params = params || {};\n        params.connectionId = that.id;\n        return that.getEndpoint().startCall(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startCall",
+            "string": "that.startCall()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Connection.startAudioCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the remote\naudio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has been\nhung up."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Create a new audio-only call.</p>\n<pre><code>connection.startAudioCall({\n    onConnect: function (evt) {}\n});\n</code></pre>",
+            "summary": "<p>Create a new audio-only call.</p>\n",
+            "body": "<pre><code>connection.startAudioCall({\n    onConnect: function (evt) {}\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startAudioCall = function (params) {\n        params = params || {};\n        params.connectionId = that.id;\n        params.constraints = {\n            video : false,\n            audio : true,\n            optional: [],\n            mandatory: {}\n        };\n        return that.startCall(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startAudioCall",
+            "string": "that.startAudioCall()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Connection.startVideoCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the remote\naudio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has\nbeen hung up."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Create a new call with audio and video.</p>\n<pre><code>connection.startVideoCall({\n    onConnect: function (evt) {}\n});\n</code></pre>",
+            "summary": "<p>Create a new call with audio and video.</p>\n",
+            "body": "<pre><code>connection.startVideoCall({\n    onConnect: function (evt) {}\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startVideoCall = function (params) {\n        params = params || {};\n        params.connectionId = that.id;\n        return that.getEndpoint().startCall(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startVideoCall",
+            "string": "that.startVideoCall()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Connection.startDirectConnection"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.directConnectionSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this\ninvocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onStart"
+                ],
+                "name": "[params.onStart]",
+                "description": "- A callback for when setup of the direct\nconnection begins. The direct connection will not be open yet."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onOpen"
+                ],
+                "name": "[params.onOpen]",
+                "description": "- A callback for receiving notification of when\nthe DirectConnection is open and ready to be used."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors setting up the direct\nconnection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onClose"
+                ],
+                "name": "[params.onClose]",
+                "description": "- A callback for receiving notification of\nwhen the DirectConnection is closed and the two Endpoints are disconnected."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- A callback for receiving messages sent\nthrough the DirectConnection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onAccept"
+                ],
+                "name": "[params.onAccept]",
+                "description": "- Callback for when the user accepts the\nrequest for a direct connection and setup begins."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.DirectConnection} The DirectConnection which can be used to send data and messages\ndirectly to the other endpoint."
+            }
+        ],
+        "description": {
+            "full": "<p>Create a new DirectConnection with this particular connection, only. The DirectConnection cannot be answered\nby another connection of this Endpoint.  This method creates a new Call as well, attaching this\nDirectConnection to it for the purposes of creating a peer-to-peer link for sending data such as messages to\nthe other endpoint. Information sent through a DirectConnection is not handled by the cloud infrastructure.</p>\n<pre><code>connection.startDirectConnection({\n    onOpen: function (evt) {}\n});\n</code></pre>",
+            "summary": "<p>Create a new DirectConnection with this particular connection, only. The DirectConnection cannot be answered\nby another connection of this Endpoint.  This method creates a new Call as well, attaching this\nDirectConnection to it for the purposes of creating a peer-to-peer link for sending data such as messages to\nthe other endpoint. Information sent through a DirectConnection is not handled by the cloud infrastructure.</p>\n",
+            "body": "<pre><code>connection.startDirectConnection({\n    onOpen: function (evt) {}\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startDirectConnection = function (params) {\n        params = params || {};\n        params.connectionId = that.id;\n        return that.getEndpoint().startDirectConnection(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startDirectConnection",
+            "string": "that.startDirectConnection()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Connection"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Connection.getEndpoint"
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Endpoint}"
+            }
+        ],
+        "description": {
+            "full": "<p>Get the Endpoint that this Connection belongs to.</p>\n",
+            "summary": "<p>Get the Endpoint that this Connection belongs to.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getEndpoint = function () {\n        return client.getEndpoint({id: that.endpointId});\n    };\n\n    return that;\n}; // End respoke.Connection",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getEndpoint",
+            "string": "that.getEndpoint()",
+            "file": {
+                "input": "respoke/connection.js",
+                "output": ".docs/site/respoke/connection.js.json"
+            }
+        }
+    }
+]

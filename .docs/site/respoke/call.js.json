@@ -1,0 +1,4451 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n",
+            "summary": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n",
+            "body": "<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var Q = require('q');\nvar log = require('loglevel');\nvar respoke = require('./respoke');",
+        "ctx": {
+            "type": "declaration",
+            "name": "Q",
+            "value": "require('q')",
+            "string": "Q",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "augments",
+                "otherClass": "respoke.EventEmitter"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.instanceId",
+                "description": "- client id"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "params.caller",
+                "description": "- whether or not we initiated the call"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "params.remoteEndpoint",
+                "description": "- The endpoint who is being called."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": "- The connection ID of the remoteEndpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.signalOffer",
+                "description": "- Signaling action from SignalingChannel."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.signalConnected",
+                "description": "- Signaling action from SignalingChannel."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.signalAnswer",
+                "description": "- Signaling action from SignalingChannel."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.signalHangup",
+                "description": "- Signaling action from SignalingChannel."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.signalReport",
+                "description": "- Signaling action from SignalingChannel."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "function"
+                ],
+                "name": "params.signalCandidate",
+                "description": "- Signaling action from SignalingChannel."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for the remote video element."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for when the call is ended, whether or not\nit was ended in a graceful manner. TODO: add the hangup reason to the Event."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- Callback for when the browser gives us access to the\nuser's media. This event gets called even if the allow process is automatic, i. e., permission and media is\ngranted by the browser without asking the user to approve it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "params.videoLocalElement",
+                "description": "- Pass in an optional html video element to have local video attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "params.videoRemoteElement",
+                "description": "- Pass in an optional html video element to have remote video attached to it."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>A <code>respoke.Call</code> is Respoke&#39;s interface into a WebRTC call, including getUserMedia, path and codec negotation,\nand call state.</p>\n<p>There are several methods on an instance of <code>respoke.Client</code> which return a <code>respoke.Call</code>.</p>\n",
+            "summary": "<p>A <code>respoke.Call</code> is Respoke&#39;s interface into a WebRTC call, including getUserMedia, path and codec negotation,\nand call state.</p>\n",
+            "body": "<p>There are several methods on an instance of <code>respoke.Client</code> which return a <code>respoke.Call</code>.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "module.exports = function (params) {\n    \"use strict\";\n    params = params || {};",
+        "ctx": {
+            "type": "method",
+            "receiver": "module",
+            "name": "exports",
+            "string": "module.exports()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "instanceId"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var instanceId = params.instanceId;\n    var that = respoke.EventEmitter(params);\n    delete that.instanceId;",
+        "ctx": {
+            "type": "declaration",
+            "name": "instanceId",
+            "value": "params.instanceId",
+            "string": "instanceId",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "name",
+                "string": "className"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A name to identify the type of object.</p>\n",
+            "summary": "<p>A name to identify the type of object.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.className = 'respoke.Call';",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "className",
+            "value": "'respoke.Call'",
+            "string": "that.className",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "name",
+                "string": "caller"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Whether or not the client is the caller of the call.</p>\n",
+            "summary": "<p>Whether or not the client is the caller of the call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.caller = !!that.caller;",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "caller",
+            "value": "!!that.caller",
+            "string": "that.caller",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "name",
+                "string": "id"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>The call ID.</p>\n",
+            "summary": "<p>The call ID.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.id = that.caller ? respoke.makeGUID() : that.id;\n\n    if (!that.id) {\n        throw new Error(\"Can't start a new call without a call id.\");\n    }",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "id",
+            "value": "that.caller ? respoke.makeGUID() : that.id",
+            "string": "that.id",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "name",
+                "string": "defMedia"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "Promise"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Promise used to trigger actions dependant upon having received media or a datachannel.</p>\n",
+            "summary": "<p>Promise used to trigger actions dependant upon having received media or a datachannel.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var defMedia = Q.defer();",
+        "ctx": {
+            "type": "declaration",
+            "name": "defMedia",
+            "value": "Q.defer()",
+            "string": "defMedia",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "name",
+                "string": "defModify"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "Promise"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Promise used to trigger notification of a request for renegotiating media. For the caller of the\nrenegotiation (which doesn&#39;t have to be the same as the caller of the call), this is resolved\nor rejected as soon as the &#39;accept&#39; or &#39;reject&#39; signal is received. For the callee, it is\nresolved or rejected only after the developer or user approves or rejects the modify.</p>\n",
+            "summary": "<p>Promise used to trigger notification of a request for renegotiating media. For the caller of the\nrenegotiation (which doesn&#39;t have to be the same as the caller of the call), this is resolved\nor rejected as soon as the &#39;accept&#39; or &#39;reject&#39; signal is received. For the callee, it is\nresolved or rejected only after the developer or user approves or rejects the modify.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var defModify;",
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "previewLocalMedia"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var previewLocalMedia = params.previewLocalMedia;",
+        "ctx": {
+            "type": "declaration",
+            "name": "previewLocalMedia",
+            "value": "params.previewLocalMedia",
+            "string": "previewLocalMedia",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "client"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.getClient"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var client = respoke.getClient(instanceId);",
+        "ctx": {
+            "type": "declaration",
+            "name": "client",
+            "value": "respoke.getClient(instanceId)",
+            "string": "client",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "signalingChannel"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.signalingChannel"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var signalingChannel = params.signalingChannel;",
+        "ctx": {
+            "type": "declaration",
+            "name": "signalingChannel",
+            "value": "params.signalingChannel",
+            "string": "signalingChannel",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "callDebugReportEnabled"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Informational property. Whether call debugs were enabled on the client during creation.\nChanging this value will do nothing.</p>\n",
+            "summary": "<p>Informational property. Whether call debugs were enabled on the client during creation.\nChanging this value will do nothing.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.callDebugReportEnabled = !!params.signalingChannel.callDebugReportEnabled;",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "callDebugReportEnabled",
+            "value": "!!params.signalingChannel.callDebugReportEnabled",
+            "string": "that.callDebugReportEnabled",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "hasAudio"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A flag indicating whether this call has audio.</p>\n<p>This becomes available after the call is accepted, for the client being called only.</p>\n",
+            "summary": "<p>A flag indicating whether this call has audio.</p>\n",
+            "body": "<p>This becomes available after the call is accepted, for the client being called only.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.hasAudio = undefined;",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "hasAudio",
+            "value": "undefined",
+            "string": "that.hasAudio",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "hasVideo"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A flag indicating whether this call has video.</p>\n<p>This becomes available after the call is accepted, for the client being called only.</p>\n",
+            "summary": "<p>A flag indicating whether this call has video.</p>\n",
+            "body": "<p>This becomes available after the call is accepted, for the client being called only.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.hasVideo = undefined;",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "hasVideo",
+            "value": "undefined",
+            "string": "that.hasVideo",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "outgoingMedia"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.LocalMedia"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Local media that we are sending to the remote party.</p>\n",
+            "summary": "<p>Local media that we are sending to the remote party.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.outgoingMedia = respoke.LocalMedia({\n        instanceId: instanceId,\n        callId: that.id,\n        constraints: params.constraints || {\n            video: true,\n            audio: true,\n            optional: [],\n            mandatory: {}\n        }\n    });",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "outgoingMedia",
+            "value": "respoke.LocalMedia({",
+            "string": "that.outgoingMedia",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "incomingMedia"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.RemoteMedia"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Remote media that we are receiving from the remote party.</p>\n",
+            "summary": "<p>Remote media that we are receiving from the remote party.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.incomingMedia = respoke.RemoteMedia({\n        instanceId: instanceId,\n        callId: that.id,\n        constraints: params.constraints\n    });",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "incomingMedia",
+            "value": "respoke.RemoteMedia({",
+            "string": "that.incomingMedia",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#mute"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "type",
+                "description": "- Either \"audio\" or \"video\" to specify the type of stream whose muted state\nhas been changed."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "muted",
+                "description": "- Whether the stream is now muted. Will be set to false if mute was turned off."
+            }
+        ],
+        "description": {
+            "full": "<p>This event indicates that local video has been unmuted.</p>\n",
+            "summary": "<p>This event indicates that local video has been unmuted.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.outgoingMedia.listen('mute', function (evt) {\n        that.fire('mute', {\n            type: evt.type,\n            muted: evt.muted\n        });\n    });\n\n    delete params.signalingChannel;\n    delete that.signalingChannel;",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#mute",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "videoIsMuted"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var videoIsMuted = false;",
+        "ctx": {
+            "type": "declaration",
+            "name": "videoIsMuted",
+            "value": "false",
+            "string": "videoIsMuted",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "audioIsMuted"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var audioIsMuted = false;",
+        "ctx": {
+            "type": "declaration",
+            "name": "audioIsMuted",
+            "value": "false",
+            "string": "audioIsMuted",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "directConnection"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.DirectConnection"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var directConnection = null;",
+        "ctx": {
+            "type": "declaration",
+            "name": "directConnection",
+            "value": "null",
+            "string": "directConnection",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "toSendHangup"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "boolean"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var toSendHangup = null;",
+        "ctx": {
+            "type": "declaration",
+            "name": "toSendHangup",
+            "value": "null",
+            "string": "toSendHangup",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "pc"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.PeerConnection"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Call</p>\n",
+            "summary": "<p>@memberof! respoke.Call</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var pc = respoke.PeerConnection({\n        instanceId: instanceId,\n        state: respoke.CallState({\n            caller: that.caller,\n            needDirectConnection: params.needDirectConnection,\n            sendOnly: params.sendOnly,\n            receiveOnly: params.receiveOnly,\n            // hasMedia is not defined yet.\n            hasMedia: function () {\n                return that.hasMedia();\n            }\n        }),\n        forceTurn: !!params.forceTurn,\n        call: that,\n        pcOptions: {\n            optional: [\n                { DtlsSrtpKeyAgreement: true },\n                { RtpDataChannels: false }\n            ]\n        },\n        offerOptions: params.offerOptions || null,\n        signalOffer: function (args) {\n            if (!pc) {\n                return;\n            }\n\n            params.signalOffer(args);\n            pc.state.dispatch('sentOffer');\n        },\n        signalConnected: params.signalConnected,\n        signalAnswer: params.signalAnswer,\n        signalModify: params.signalModify,\n        signalHangup: params.signalHangup,\n        signalReport: params.signalReport,\n        signalCandidate: params.signalCandidate\n    });",
+        "ctx": {
+            "type": "declaration",
+            "name": "pc",
+            "value": "respoke.PeerConnection({",
+            "string": "pc",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "method",
+                "string": "respoke.Call.init"
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#call"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Set up promises. If we&#39;re not the caller, we need to listen for approval AND the remote SDP to come in\nbefore we can act on the call. Save parameters sent in with the constructor, then delete them off the call.\nIf this call was initiated with a DirectConnection, set it up so answer() will be the approval mechanism.</p>\n",
+            "summary": "<p>Set up promises. If we&#39;re not the caller, we need to listen for approval AND the remote SDP to come in\nbefore we can act on the call. Save parameters sent in with the constructor, then delete them off the call.\nIf this call was initiated with a DirectConnection, set it up so answer() will be the approval mechanism.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Client#call"
+        ],
+        "ignore": false,
+        "code": "function init() {\n        log.debug('Call.init');\n\n        if (defModify !== undefined) {\n            defMedia = Q.defer();\n        }\n\n        pc.init(); // instantiates RTCPeerConnection, can't call on modify\n        if (defModify === undefined && pc.state.needDirectConnection === true) {\n            actuallyAddDirectConnection(params);\n        }\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "init",
+            "string": "init()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.saveParameters"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for the remote video element."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for when the call is ended, whether or not\nit was ended in a graceful manner. TODO: add the hangup reason to the Event."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will fire even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- Callback for when the browser gives us access to the\nuser's media. This event gets fired even if the allow process is automatic, i. e., permission and media is\ngranted by the browser without asking the user to approve it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params.constraints]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "params.videoLocalElement",
+                "description": "- Pass in an optional html video element to have local video attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "params.videoRemoteElement",
+                "description": "- Pass in an optional html video element to have remote video attached to it."
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#stats"
+            }
+        ],
+        "description": {
+            "full": "<p>Register any event listeners passed in as callbacks, save other params to answer() and accept().</p>\n",
+            "summary": "<p>Register any event listeners passed in as callbacks, save other params to answer() and accept().</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Call#stats"
+        ],
+        "ignore": false,
+        "code": "function saveParameters(params) {",
+        "ctx": {
+            "type": "function",
+            "name": "saveParameters",
+            "string": "saveParameters()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>This happens when the call is hung up automatically, for instance due to the lack of an onCall\nhandler. In this case, pc has been set to null in hangup. The call has already failed, and the\ninvocation of this function is an artifact of async code not being finished yet, so we can just\nskip all of this setup.</p>\n",
+            "summary": "<p>This happens when the call is hung up automatically, for instance due to the lack of an onCall\nhandler. In this case, pc has been set to null in hangup. The call has already failed, and the\ninvocation of this function is an artifact of async code not being finished yet, so we can just\nskip all of this setup.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "if (!pc) {\n            return;\n        }\n\n        that.listen('local-stream-received', params.onLocalMedia);\n        that.listen('connect', params.onConnect);\n        that.listen('hangup', params.onHangup);\n        that.listen('allow', params.onAllow);\n        that.listen('answer', params.onAnswer);\n        that.listen('approve', params.onApprove);\n        that.listen('mute', params.onMute);\n        that.listen('requesting-media', params.onRequestingMedia);\n\n        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?\n            params.previewLocalMedia : previewLocalMedia;\n\n        pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;\n        pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;\n        pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ?\n            params.needDirectConnection : pc.state.needDirectConnection;\n        pc.disableTurn = params.disableTurn || pc.disableTurn;\n        pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;\n\n        that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;\n        that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;\n        if (pc.state.caller === true) {\n            // Only the person who initiated this round of media negotiation needs to estimate remote\n            // media based on what constraints local media is using.\n            that.incomingMedia.setConstraints(that.outgoingMedia.constraints);\n        }\n        that.incomingMedia.element = params.videoRemoteElement || that.incomingMedia.element;\n\n        pc.listen('stats', function fireStats(evt) {",
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#stats"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.MediaStats"
+                ],
+                "name": "stats",
+                "description": "- an object with stats in it."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired every time statistical information about audio and/or video on a call\nbecomes available.</p>\n",
+            "summary": "<p>This event is fired every time statistical information about audio and/or video on a call\nbecomes available.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('stats', {stats: evt.stats});\n        }, true);\n\n        delete that.signalOffer;\n        delete that.signalConnected;\n        delete that.signalAnswer;\n        delete that.signalHangup;\n        delete that.signalReport;\n        delete that.signalCandidate;\n    }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#stats",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.answer"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#answer"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for the remote video element."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for when the call is ended, whether or not\nit was ended in a graceful manner. TODO: add the hangup reason to the Event."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- Callback for when the browser gives us access to the\nuser's media. This event gets called even if the allow process is automatic, i. e., permission and media is\ngranted by the browser without asking the user to approve it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- Whether or not we accept media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- Whether or not we send media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params.constraints]",
+                "description": "- Information about the media for this call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "params.videoLocalElement",
+                "description": "- Pass in an optional html video element to have local video attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "params.videoRemoteElement",
+                "description": "- Pass in an optional html video element to have remote video attached to it."
+            }
+        ],
+        "description": {
+            "full": "<p>Answer the call and start the process of obtaining media. This method is called automatically on the caller&#39;s\nside. This method must be called on the callee&#39;s side to indicate that the endpoint does wish to accept the\ncall. The app will have a later opportunity, by passing a callback named previewLocalMedia, to approve or\nreject the call based on whether audio and/or video is working and is working at an acceptable level.</p>\n<pre><code>client.listen(&#39;call&#39;, function (evt) {\n    if (!evt.call.caller) {\n        evt.call.answer();\n    }\n});\n</code></pre>",
+            "summary": "<p>Answer the call and start the process of obtaining media. This method is called automatically on the caller&#39;s\nside. This method must be called on the callee&#39;s side to indicate that the endpoint does wish to accept the\ncall. The app will have a later opportunity, by passing a callback named previewLocalMedia, to approve or\nreject the call based on whether audio and/or video is working and is working at an acceptable level.</p>\n",
+            "body": "<pre><code>client.listen(&#39;call&#39;, function (evt) {\n    if (!evt.call.caller) {\n        evt.call.answer();\n    }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#answer"
+        ],
+        "ignore": false,
+        "code": "that.answer = function (params) {\n        params = params || {};\n        log.debug('Call.answer');\n\n        saveParameters(params);\n\n        pc.listen('connect', onRemoteStreamAdded, true);\n        pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);\n\n        pc.state.once('approving-device-access:entry', function (evt) {\n            doAddVideo(params);\n        });\n        pc.state.dispatch('answer', {\n            previewLocalMedia: previewLocalMedia,\n            approve: that.approve\n        });",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "answer",
+            "string": "that.answer()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#answer"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>The call was answered.</p>\n",
+            "summary": "<p>The call was answered.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('answer');\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#answer",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.accept"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#accept"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for the developer to receive the\nremote video element."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for the developer to be notified about hangup."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- Whether or not we accept media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- Whether or not we send media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params.constraints]",
+                "description": "- Information about the media for this call."
+            }
+        ],
+        "description": {
+            "full": "<p>Accept a request to modify the media on the call. This method should be called within the Call#modify\nevent listener, which gives the developer or website user a chance to see what changes are proposed and\nto accept or reject them.</p>\n<pre><code>call.listen(&#39;modify&#39;, function (evt) {\n    evt.call.accept();\n});\n</code></pre>",
+            "summary": "<p>Accept a request to modify the media on the call. This method should be called within the Call#modify\nevent listener, which gives the developer or website user a chance to see what changes are proposed and\nto accept or reject them.</p>\n",
+            "body": "<pre><code>call.listen(&#39;modify&#39;, function (evt) {\n    evt.call.accept();\n});\n</code></pre>"
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Call#accept"
+        ],
+        "ignore": false,
+        "code": "that.accept = that.answer;",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "accept",
+            "value": "that.answer",
+            "string": "that.accept",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.approve"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#approve"
+            }
+        ],
+        "description": {
+            "full": "<p>Start the process of network and media negotiation. If the app passes in a callback named previewLocalMedia\nin order to allow the logged-in person a chance to base their decision to continue the call on whether\naudio and/or video is working correctly,\nthis method must be called on both sides in order to begin the call. If call.approve() is called, the call\nwill progress as expected. If call.reject() is called, the call will be aborted.</p>\n<pre><code>call.listen(&#39;local-stream-received&#39;, function (evt) {\n    if (userLikesVideo()) {\n        evt.call.approve();\n    }\n});\n</code></pre>",
+            "summary": "<p>Start the process of network and media negotiation. If the app passes in a callback named previewLocalMedia\nin order to allow the logged-in person a chance to base their decision to continue the call on whether\naudio and/or video is working correctly,\nthis method must be called on both sides in order to begin the call. If call.approve() is called, the call\nwill progress as expected. If call.reject() is called, the call will be aborted.</p>\n",
+            "body": "<pre><code>call.listen(&#39;local-stream-received&#39;, function (evt) {\n    if (userLikesVideo()) {\n        evt.call.approve();\n    }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#approve"
+        ],
+        "ignore": false,
+        "code": "that.approve = function () {\n        log.debug('Call.approve');",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "approve",
+            "string": "that.approve()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#approve"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Fired when the local media access is approved.</p>\n",
+            "summary": "<p>Fired when the local media access is approved.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('approve');\n        pc.state.dispatch('approve', {\n            previewLocalMedia: previewLocalMedia\n        });\n\n        if (defModify && defModify.promise.isPending()) {\n            defModify.resolve(true);\n            defModify = undefined;\n        }\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#approve",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.onRemoteStreamRemoved"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Listen for the remote side to remove media in the middle of the call.</p>\n",
+            "summary": "<p>Listen for the remote side to remove media in the middle of the call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function onRemoteStreamRemoved(evt) {\n        log.debug('pc event: remote stream removed');\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "onRemoteStreamRemoved",
+            "string": "onRemoteStreamRemoved()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.onRemoteStreamAdded"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "",
+                "description": ""
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#connect"
+            }
+        ],
+        "description": {
+            "full": "<p>Listen for the remote side to add additional media in the middle of the call.</p>\n",
+            "summary": "<p>Listen for the remote side to add additional media in the middle of the call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Call#connect"
+        ],
+        "ignore": false,
+        "code": "function onRemoteStreamAdded(evt) {\n        if (!pc) {\n            return;\n        }\n        log.debug('received remote media', evt);\n\n        that.incomingMedia.setStream(evt.stream);",
+        "ctx": {
+            "type": "function",
+            "name": "onRemoteStreamAdded",
+            "string": "onRemoteStreamAdded()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#connect"
+            },
+            {
+                "type": "event",
+                "string": "respoke.LocalMedia#connect"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "Element"
+                ],
+                "name": "element",
+                "description": "- The HTML5 Video element with the remote stream attached."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.RemoteMedia"
+                ],
+                "name": "stream",
+                "description": "- The incomingMedia property on the call."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Indicates that a remote media stream has been added to the call.</p>\n",
+            "summary": "<p>Indicates that a remote media stream has been added to the call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "pc.state.dispatch('receiveRemoteMedia');\n        that.fire('connect', {\n            stream: evt.stream,\n            element: that.incomingMedia.element\n        });\n    }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#connect",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.getStats"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "number"
+                ],
+                "name": "[params.interval=5000]",
+                "description": "- How often in milliseconds to fetch statistics."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- An optional callback to receive\nthe stats. If no callback is provided, the call's report will contain stats but the developer will not\nreceive them on the client-side."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.statsSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this method only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<object>|null}"
+            }
+        ],
+        "description": {
+            "full": "<h2 id=\"the-plugin-respoke-mediastats-must-be-loaded-before-using-this-method-\">The plugin <code>respoke.MediaStats</code> must be loaded before using this method.</h2>\n<p>Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.\nSince we have to wait for both the answer and offer to be available before starting\nstatistics, the library returns a promise for the stats object. The statistics object does not contain the\nstatistics; rather it contains methods of interacting with the actions of obtaining statistics. To obtain\nthe actual statistics one time, use stats.getStats(); use the onStats callback to obtain a continuous\nstream of statistics every <code>interval</code> seconds.  Returns null if stats module is not loaded.</p>\n<pre><code>call.getStats({\n    onStats: function (evt) {\n        console.log(&#39;Stats&#39;, evt.stats);\n    }\n}).done(function () {\n    console.log(&#39;Stats started&#39;);\n}, function (err) {\n    console.log(&#39;Call is already hung up.&#39;);\n});\n</code></pre>",
+            "summary": "<h2 id=\"the-plugin-respoke-mediastats-must-be-loaded-before-using-this-method-\">The plugin <code>respoke.MediaStats</code> must be loaded before using this method.</h2>\n",
+            "body": "<p>Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.\nSince we have to wait for both the answer and offer to be available before starting\nstatistics, the library returns a promise for the stats object. The statistics object does not contain the\nstatistics; rather it contains methods of interacting with the actions of obtaining statistics. To obtain\nthe actual statistics one time, use stats.getStats(); use the onStats callback to obtain a continuous\nstream of statistics every <code>interval</code> seconds.  Returns null if stats module is not loaded.</p>\n<pre><code>call.getStats({\n    onStats: function (evt) {\n        console.log(&#39;Stats&#39;, evt.stats);\n    }\n}).done(function () {\n    console.log(&#39;Stats started&#39;);\n}, function (err) {\n    console.log(&#39;Call is already hung up.&#39;);\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "function getStats(params) {\n        if (pc && pc.getStats) {\n            that.listen('stats', params.onStats);\n            return pc.getStats(params);\n        }\n        return null;\n    }\n    if (respoke.MediaStats) {\n        that.getStats = getStats;\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "getStats",
+            "string": "getStats()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.getLocalElement"
+            },
+            {
+                "type": "returns",
+                "string": "{Video} An HTML5 video element."
+            }
+        ],
+        "description": {
+            "full": "<p>Return local video element with the logged-in endpoint&#39;s audio and/or video streams attached to it.</p>\n<pre><code>var el = call.getLocalElement();\ncontainer.append(el);\n</code></pre>",
+            "summary": "<p>Return local video element with the logged-in endpoint&#39;s audio and/or video streams attached to it.</p>\n",
+            "body": "<pre><code>var el = call.getLocalElement();\ncontainer.append(el);\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getLocalElement = function () {\n        return that.outgoingMedia.element;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getLocalElement",
+            "string": "that.getLocalElement()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.getRemoteElement"
+            },
+            {
+                "type": "returns",
+                "string": "{Video} An HTML5 video element."
+            }
+        ],
+        "description": {
+            "full": "<p>Return remote video element with the remote endpoint&#39;s audio and/or video streams attached to it.</p>\n<pre><code>var el = call.getRemoteElement();\ncontainer.append(el);\n</code></pre>",
+            "summary": "<p>Return remote video element with the remote endpoint&#39;s audio and/or video streams attached to it.</p>\n",
+            "body": "<pre><code>var el = call.getRemoteElement();\ncontainer.append(el);\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getRemoteElement = function () {\n        return that.incomingMedia.element;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getRemoteElement",
+            "string": "that.getRemoteElement()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.doAddVideo"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params.constraints]",
+                "description": "- getUserMedia constraints"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": ""
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#requesting-media"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#allow"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#local-stream-received"
+            }
+        ],
+        "description": {
+            "full": "<p>Create the RTCPeerConnection and add handlers. Process any offer we have already received. This method is called\nafter answer() so we cannot use this method to set up the DirectConnection.</p>\n",
+            "summary": "<p>Create the RTCPeerConnection and add handlers. Process any offer we have already received. This method is called\nafter answer() so we cannot use this method to set up the DirectConnection.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Call#requesting-media",
+            "respoke.Call#allow",
+            "respoke.Call#local-stream-received"
+        ],
+        "ignore": false,
+        "code": "function doAddVideo(params) {\n        log.debug('Call.doAddVideo');\n        saveParameters(params);\n        that.outgoingMedia.listen('requesting-media', function waitAllowHandler(evt) {\n            if (!pc) {\n                return;\n            }",
+        "ctx": {
+            "type": "function",
+            "name": "doAddVideo",
+            "string": "doAddVideo()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#requesting-media"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>The browser is asking for permission to access the User&#39;s media. This would be an ideal time\nto modify the UI of the application so that the user notices the request for permissions\nand approves it.</p>\n",
+            "summary": "<p>The browser is asking for permission to access the User&#39;s media. This would be an ideal time\nto modify the UI of the application so that the user notices the request for permissions\nand approves it.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('requesting-media');\n        }, true);\n        that.outgoingMedia.listen('allow', function allowHandler(evt) {\n            if (!pc) {\n                return;\n            }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#requesting-media",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#allow"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>The user has approved the request for media. Any UI changes made to remind the user to click Allow\nshould be canceled now. This event is the same as the <code>onAllow</code> callback.  This event gets fired\neven if the allow process is automatic, i. e., permission and media is granted by the browser\nwithout asking the user to approve it.</p>\n",
+            "summary": "<p>The user has approved the request for media. Any UI changes made to remind the user to click Allow\nshould be canceled now. This event is the same as the <code>onAllow</code> callback.  This event gets fired\neven if the allow process is automatic, i. e., permission and media is granted by the browser\nwithout asking the user to approve it.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('allow');\n            pc.state.dispatch('approve', {\n                previewLocalMedia: previewLocalMedia\n            });\n        }, true);\n        that.outgoingMedia.listen('stream-received', function streamReceivedHandler(evt) {\n            if (!pc) {\n                return;\n            }\n\n            defMedia.resolve(that.outgoingMedia);\n            pc.addStream(evt.stream);\n            pc.state.dispatch('receiveLocalMedia');\n            if (typeof previewLocalMedia === 'function') {\n                previewLocalMedia(evt.element, that);\n            }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#allow",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "Element"
+                ],
+                "name": "element",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.LocalMedia"
+                ],
+                "name": "stream",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>@event respoke.Call#local-stream-received</p>\n",
+            "summary": "<p>@event respoke.Call#local-stream-received</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('local-stream-received', {\n                element: evt.element,\n                stream: that.outgoingMedia\n            });\n        }, true);\n        that.outgoingMedia.listen('error', function errorHandler(evt) {\n            pc.state.dispatch('reject', {reason: 'media stream error'});\n            pc.report.callStoppedReason = evt.reason;",
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#error"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "reason",
+                "description": "- A human readable description about the error."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired on errors that occur during call setup or media negotiation.</p>\n",
+            "summary": "<p>This event is fired on errors that occur during call setup or media negotiation.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('error', {\n                reason: evt.reason\n            });\n        });\n\n        that.outgoingMedia.start();\n        return that.outgoingMedia;\n    }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#error",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.addVideo"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.audio=true]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.video=true]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params.constraints]",
+                "description": "- getUserMedia constraints, indicating the media being requested is\nan audio and/or video stream."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.mediaSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<respoke.LocalMedia>}"
+            }
+        ],
+        "description": {
+            "full": "<p>Add a video and audio stream to the existing call. By default, this method adds both video AND audio.\nIf audio is not desired, pass {audio: false}.</p>\n",
+            "summary": "<p>Add a video and audio stream to the existing call. By default, this method adds both video AND audio.\nIf audio is not desired, pass {audio: false}.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.addVideo = function (params) {\n        log.debug('Call.addVideo');\n        params = params || {};\n        params.constraints = params.constraints || {video: true, audio: true};\n        params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;\n        params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;\n        params.instanceId = instanceId;\n\n        if (!defMedia.promise.isFulfilled()) { // we're the callee & have just accepted to modify\n            doAddVideo(params);\n        } else { // we're the caller and need to see if we can modify\n            pc.startModify({\n                constraints: params.constraints\n            });\n            defModify = Q.defer();\n            defModify.promise.then(function modifyAccepted() {\n                doAddVideo(params);\n            });\n        }\n        return defModify.promise;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "addVideo",
+            "string": "that.addVideo()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.addAudio"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.audio=true]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.video=false]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "[params.constraints]",
+                "description": "- getUserMedia constraints, indicating the media being requested is\nan audio and/or video stream."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.mediaSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<respoke.LocalMedia>}"
+            }
+        ],
+        "description": {
+            "full": "<p>Add an audio stream to the existing call.</p>\n",
+            "summary": "<p>Add an audio stream to the existing call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.addAudio = function (params) {\n        params = params || {};\n        params.constraints = params.constraints || {video: false, audio: true};\n        params.constraints.video = typeof params.constraints.video === 'boolean' ?\n            params.constraints.video : false;\n        params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;\n        params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;\n        return that.addVideo(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "addAudio",
+            "string": "that.addAudio()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.getDirectConnection"
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.DirectConnection}"
+            }
+        ],
+        "description": {
+            "full": "<p>Get the direct connection on this call, if it exists.</p>\n<pre><code>var dc = call.getDirectConnection();\nif (!dc) {\n    console.log(&quot;No direct connection has been started.&quot;);\n} else {\n    dc.sendMessage({message: &#39;hi&#39;});\n}\n</code></pre>",
+            "summary": "<p>Get the direct connection on this call, if it exists.</p>\n",
+            "body": "<pre><code>var dc = call.getDirectConnection();\nif (!dc) {\n    console.log(&quot;No direct connection has been started.&quot;);\n} else {\n    dc.sendMessage({message: &#39;hi&#39;});\n}\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getDirectConnection = function () {\n        return directConnection || null;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getDirectConnection",
+            "string": "that.getDirectConnection()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.removeDirectConnection"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "arg",
+                "string": "{boolean} [params.skipModify] Do not restart media negotiation."
+            }
+        ],
+        "description": {
+            "full": "<p>Remove a direct connection from the existing call. If there is no other media, this will hang up the call.</p>\n",
+            "summary": "<p>Remove a direct connection from the existing call. If there is no other media, this will hang up the call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.removeDirectConnection = function (params) {\n        params = params || {};\n        log.debug('Call.removeDirectConnection');\n\n        if (directConnection && directConnection.isActive()) {\n            directConnection.close({skipRemove: true});\n        }\n\n        if (!that.hasMedia()) {\n            log.debug('Hanging up because there are no local streams.');\n            that.hangup();\n            return;\n        }\n\n        if (params.skipModify === true) {\n            return;\n        }\n\n        pc.startModify({\n            directConnection: false\n        });\n        defModify = Q.defer();\n        defModify.promise.done(function onModifySuccess() {\n            defMedia.resolve();\n            defModify = undefined;\n        });\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "removeDirectConnection",
+            "string": "that.removeDirectConnection()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.addDirectConnection"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onClose"
+                ],
+                "name": "[params.onClose]",
+                "description": "- Callback for the developer to be notified about\nclosing the connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onOpen"
+                ],
+                "name": "[params.onOpen]",
+                "description": "- Callback for the developer to be notified about\nopening the connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Callback for the developer to be notified\nabout incoming messages. Not usually necessary to listen to this event if you are already listening to\nrespoke.Endpoint#message."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.directConnectionSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<respoke.DirectConnection>}"
+            }
+        ],
+        "description": {
+            "full": "<p>Add a direct connection to the existing call.</p>\n<pre><code>call.addDirectConnection({\n    onOpen: function (evt) {\n        console.log(&quot;Direct connection open!&quot;);\n    }\n});\n</code></pre>",
+            "summary": "<p>Add a direct connection to the existing call.</p>\n",
+            "body": "<pre><code>call.addDirectConnection({\n    onOpen: function (evt) {\n        console.log(&quot;Direct connection open!&quot;);\n    }\n});\n</code></pre>"
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.addDirectConnection = function (params) {\n        log.debug('Call.addDirectConnection');\n        pc.startModify({\n            directConnection: true\n        });\n        defModify = Q.defer();\n        return defModify.promise.then(function onModifySuccess() {\n            return actuallyAddDirectConnection(params);\n        }, function onModifyError(err) {\n            throw err;\n        });\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "addDirectConnection",
+            "string": "that.addDirectConnection()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.actuallyAddDirectConnection"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onClose"
+                ],
+                "name": "[params.onClose]",
+                "description": "- Callback for the developer to be notified about\nclosing the connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onOpen"
+                ],
+                "name": "[params.onOpen]",
+                "description": "- Callback for the developer to be notified about\nopening the connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Callback for the developer to be notified\nabout incoming messages. Not usually necessary to listen to this event if you are already listening to\nrespoke.Endpoint#message."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.directConnectionSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": ""
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<respoke.DirectConnection>}"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#direct-connection"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#direct-connection"
+            }
+        ],
+        "description": {
+            "full": "<p>Add a direct connection to the existing call.</p>\n",
+            "summary": "<p>Add a direct connection to the existing call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Client#direct-connection",
+            "respoke.Call#direct-connection"
+        ],
+        "ignore": false,
+        "code": "function actuallyAddDirectConnection(params) {\n        log.debug('Call.actuallyAddDirectConnection', params);\n        params = params || {};\n        defMedia.promise.then(params.onSuccess, params.onError);\n\n        if (directConnection && directConnection.isActive()) {\n            if (defMedia.promise.isPending()) {\n                defMedia.resolve(directConnection);\n            } else {\n                log.warn(\"Not creating a new direct connection.\");\n            }\n            return defMedia.promise;\n        }\n\n        params.instanceId = instanceId;\n        params.pc = pc;\n        params.call = that;\n\n        directConnection = respoke.DirectConnection(params);\n\n        directConnection.listen('close', function closeHandler() {\n            if (!that.hasMedia()) {\n                log.debug('Hanging up because there are no local streams.');\n                that.hangup();\n            } else {\n                if (directConnection && directConnection.isActive()) {\n                    that.removeDirectConnection({skipModify: true});\n                }\n            }\n        }, true);\n\n        directConnection.listen('accept', function acceptHandler() {\n            if (pc.state.caller === false) {\n                log.debug('Answering as a result of approval.');\n            } else {\n                defMedia.resolve(directConnection);\n            }\n        }, true);\n\n        directConnection.listen('open', function openHandler() {\n            pc.state.dispatch('receiveRemoteMedia');\n        }, true);\n\n        directConnection.listen('error', function errorHandler(err) {\n            defMedia.reject(new Error(err));\n        }, true);\n\n        that.remoteEndpoint.directConnection = directConnection;",
+        "ctx": {
+            "type": "function",
+            "name": "actuallyAddDirectConnection",
+            "string": "actuallyAddDirectConnection()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#direct-connection"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.DirectConnection"
+                ],
+                "name": "directConnection",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "endpoint",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when the local end of the directConnection is available. It still will not be\nready to send and receive messages until the &#39;open&#39; event fires.</p>\n",
+            "summary": "<p>This event is fired when the local end of the directConnection is available. It still will not be\nready to send and receive messages until the &#39;open&#39; event fires.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('direct-connection', {\n            directConnection: directConnection,\n            endpoint: that.remoteEndpoint\n        });",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#direct-connection",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#direct-connection"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.DirectConnection"
+                ],
+                "name": "directConnection",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "endpoint",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when the logged-in endpoint is receiving a request to open a direct connection\nto another endpoint.  If the user wishes to allow the direct connection, calling\nevt.directConnection.accept() will allow the connection to be set up.</p>\n",
+            "summary": "<p>This event is fired when the logged-in endpoint is receiving a request to open a direct connection\nto another endpoint.  If the user wishes to allow the direct connection, calling\nevt.directConnection.accept() will allow the connection to be set up.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "client.fire('direct-connection', {\n            directConnection: directConnection,\n            endpoint: that.remoteEndpoint\n        });\n\n        if (pc.state.caller === true) {\n            directConnection.accept();\n        }\n\n        return defMedia.promise;\n    }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#direct-connection",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.closeDirectConnection"
+            }
+        ],
+        "description": {
+            "full": "<p>Close the direct connection.</p>\n",
+            "summary": "<p>Close the direct connection.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.closeDirectConnection = function () {\n        if (directConnection) {\n            directConnection.close();\n            directConnection = null;\n        }\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "closeDirectConnection",
+            "string": "that.closeDirectConnection()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.hangup"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#hangup"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "arg",
+                "string": "{boolean} params.signal Optional flag to indicate whether to send or suppress sending\na hangup signal to the remote side."
+            }
+        ],
+        "description": {
+            "full": "<p>Tear down the call, release user media.  Send a hangup signal to the remote party if\nsignal is not false and we have not received a hangup signal from the remote party.</p>\n",
+            "summary": "<p>Tear down the call, release user media.  Send a hangup signal to the remote party if\nsignal is not false and we have not received a hangup signal from the remote party.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#hangup"
+        ],
+        "ignore": false,
+        "code": "that.hangup = function (params) {\n        if (!pc) {\n            return;\n        }\n        params = params || {};\n        params.reason = params.reason || \"hangup method called.\";\n        pc.state.dispatch('hangup', params);\n    };\n    that.hangup = respoke.once(that.hangup);",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "hangup",
+            "string": "that.hangup()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.hangup"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#hangup"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Tear down the call, release user media.  Send a hangup signal to the remote party if\nsignal is not false and we have not received a hangup signal from the remote party. This is an event\nhandler added to the state machine via <code>once</code>.</p>\n",
+            "summary": "<p>Tear down the call, release user media.  Send a hangup signal to the remote party if\nsignal is not false and we have not received a hangup signal from the remote party. This is an event\nhandler added to the state machine via <code>once</code>.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Call#hangup"
+        ],
+        "ignore": false,
+        "code": "var doHangup = function () {\n        log.debug('hangup', that.caller);\n\n        that.outgoingMedia.stop();\n\n        if (directConnection && directConnection.isActive()) {\n            directConnection.close();\n            that.remoteEndpoint.directConnection = null;\n            directConnection.ignore();\n            directConnection = null;\n        }\n\n        if (pc) {\n            pc.close({signal: (pc.state.receivedBye ? false : pc.state.signalBye)});\n        }",
+        "ctx": {
+            "type": "function",
+            "name": "doHangup",
+            "string": "doHangup()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#hangup"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "sentSignal",
+                "description": "- Whether or not we sent a 'hangup' signal to the other party."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when the call has hung up.</p>\n",
+            "summary": "<p>This event is fired when the call has hung up.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('hangup', {\n            reason: pc.state.hangupReason || \"No reason specified.\"\n        });\n\n        pc.state.ignore();\n        pc.ignore();\n        that.ignore();\n        pc = null;\n    };\n    doHangup = respoke.once(doHangup);",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#hangup",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.reject"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Expose hangup as reject for approve/reject workflow.</p>\n",
+            "summary": "<p>Expose hangup as reject for approve/reject workflow.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.reject = function () {\n        if (!pc) {\n            return;\n        }\n        pc.state.dispatch('reject', {reason: 'call.reject() called'});\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "reject",
+            "string": "that.reject()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.isActive"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Indicate whether a call is being setup or is in progress.</p>\n",
+            "summary": "<p>Indicate whether a call is being setup or is in progress.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.isActive = function () {\n        // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.\n        return !!(pc && pc.isActive() && (\n            (that.outgoingMedia.hasMedia()) ||\n            (directConnection && directConnection.isActive())\n        ));\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "isActive",
+            "string": "that.isActive()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.listenOffer"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "evt.signal",
+                "description": "- The offer signal including the sdp"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#modify"
+            }
+        ],
+        "description": {
+            "full": "<p>Save the offer so we can tell the browser about it after the PeerConnection is ready.</p>\n",
+            "summary": "<p>Save the offer so we can tell the browser about it after the PeerConnection is ready.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [
+            "respoke.Call#modify"
+        ],
+        "ignore": false,
+        "code": "function listenOffer(evt) {\n        log.debug('listenOffer', evt.signal);\n        var info = {};\n\n        that.sessionId = evt.signal.sessionId;\n        pc.state.listen('connecting:entry', function () {\n            if (!pc.state.caller) {\n                pc.processOffer(evt.signal.sessionDescription);\n            }\n        });",
+        "ctx": {
+            "type": "function",
+            "name": "listenOffer",
+            "string": "listenOffer()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Always overwrite constraints for callee on every offer, since answer() and accept() will\nalways be called after parsing the SDP.</p>\n",
+            "summary": "<p>Always overwrite constraints for callee on every offer, since answer() and accept() will\nalways be called after parsing the SDP.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);\n        that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);\n\n        log.info(\"Setting outgoingMedia constraints to\", that.outgoingMedia.constraints);\n\n        if (pc.state.isModifying()) {\n            if (pc.state.needDirectConnection === true) {\n                info.directConnection = directConnection;\n            } else if (pc.state.needDirectConnection === false) {\n                // Nothing\n            } else {\n                info.call = that;\n            }",
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Call#modify"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "object"
+                ],
+                "name": "[constraints]",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[directConnection]",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Indicates a request to add something to an existing call. If &#39;constraints&#39; is set, evt.constraints\ndescribes the media the other side has added. In this case, call.approve() must be called in order\nto approve the new media and send the same type of media.  If directConnection exists, the other side\nwishes to to open a direct connection. In order to approve, call directConnection.accept(). In either\ncase, call.reject() and directConnection.reject() can be called to decline the request to add to the\ncall.</p>\n",
+            "summary": "<p>Indicates a request to add something to an existing call. If &#39;constraints&#39; is set, evt.constraints\ndescribes the media the other side has added. In this case, call.approve() must be called in order\nto approve the new media and send the same type of media.  If directConnection exists, the other side\nwishes to to open a direct connection. In order to approve, call directConnection.accept(). In either\ncase, call.reject() and directConnection.reject() can be called to decline the request to add to the\ncall.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('modify', info);\n        }\n\n        pc.state.dispatch('receiveOffer', {\n            previewLocalMedia: previewLocalMedia,\n            approve: that.approve\n        });\n    }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Call#modify",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.listenModify"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Save the answer and tell the browser about it.</p>\n",
+            "summary": "<p>Save the answer and tell the browser about it.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function listenModify(evt) {\n        log.debug('Call.listenModify', evt);\n        if (evt.signal.action === 'initiate') {\n            defModify = Q.defer();\n            pc.state.dispatch('modify', {receive: true});\n        }\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "listenModify",
+            "string": "listenModify()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.onModifyAccept"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Set up state and media for the modify.</p>\n",
+            "summary": "<p>Set up state and media for the modify.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function onModifyAccept(evt) {\n        pc.state.dispatch('accept');\n\n        if (evt.signal.action !== 'initiate') {\n            defModify.resolve(); // resolved later for callee\n            defModify = undefined;\n            return;\n        }\n\n        // callee only from here down\n\n        // init the directConnection if necessary. We don't need to do anything with\n        // audio or video right now.\n        if (evt.signal.directConnection === true) {\n            actuallyAddDirectConnection().done(function successHandler(dc) {\n                directConnection = dc;\n                directConnection.accept();\n            });\n        } else if (evt.signal.directConnection === false) {\n            if (directConnection) {\n                that.removeDirectConnection({skipModify: true});\n                defMedia.resolve(false);\n            }\n        }\n        pc.state.needDirectConnection = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;\n        that.outgoingMedia.constraints = evt.signal.constraints || that.outgoingMedia.constraints;\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "onModifyAccept",
+            "string": "onModifyAccept()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.onModifyReject"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Error"
+                ],
+                "name": "evt.err",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Ignore the modify.</p>\n",
+            "summary": "<p>Ignore the modify.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function onModifyReject(evt) {\n        if (evt.signal.action !== 'initiate') {\n            defMedia.reject(evt.err);\n            defModify.reject(evt.err);\n            defModify = undefined;\n        }\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "onModifyReject",
+            "string": "onModifyReject()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "deprecated",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.toggleVideo"
+            }
+        ],
+        "description": {
+            "full": "<p>If video is muted, unmute. If not muted, mute.</p>\n",
+            "summary": "<p>If video is muted, unmute. If not muted, mute.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.toggleVideo = function () {\n        if (that.isActive()) {\n            if (!videoIsMuted) {\n                that.muteVideo();\n            } else {\n                that.unmuteVideo();\n            }\n        }\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "toggleVideo",
+            "string": "that.toggleVideo()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "deprecated",
+                "string": ""
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.toggleAudio"
+            }
+        ],
+        "description": {
+            "full": "<p>If audio is muted, unmute. If not muted, mute.</p>\n",
+            "summary": "<p>If audio is muted, unmute. If not muted, mute.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.toggleAudio = function () {\n        if (that.isActive()) {\n            if (!audioIsMuted) {\n                that.muteAudio();\n            } else {\n                that.unmuteAudio();\n            }\n        }\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "toggleAudio",
+            "string": "that.toggleAudio()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.hasMedia"
+            },
+            {
+                "type": "returns",
+                "string": "{boolean}"
+            }
+        ],
+        "description": {
+            "full": "<p>Indicate whether the call has media flowing.</p>\n",
+            "summary": "<p>Indicate whether the call has media flowing.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.hasMedia = function () {\n        var local;\n        var remote;\n\n        if (!pc || !pc.getLocalStreams) {\n            // PeerConnection.init() has not been called yet\n            return false;\n        }\n\n        local = pc.getLocalStreams();\n        remote = pc.getRemoteStreams();\n\n        if (directConnection && directConnection.isActive()) {\n            return true;\n        }\n\n        return (local.length > 0 || remote.length > 0);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "hasMedia",
+            "string": "that.hasMedia()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.muteVideo"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#mute"
+            }
+        ],
+        "description": {
+            "full": "<p>Mute all local video streams.</p>\n",
+            "summary": "<p>Mute all local video streams.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#mute"
+        ],
+        "ignore": false,
+        "code": "that.muteVideo = function () {\n        if (videoIsMuted) {\n            return;\n        }\n        that.outgoingMedia.muteVideo();\n        videoIsMuted = true;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "muteVideo",
+            "string": "that.muteVideo()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.unmuteVideo"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#mute"
+            }
+        ],
+        "description": {
+            "full": "<p>Unmute all local video streams.</p>\n",
+            "summary": "<p>Unmute all local video streams.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#mute"
+        ],
+        "ignore": false,
+        "code": "that.unmuteVideo = function () {\n        if (!videoIsMuted) {\n            return;\n        }\n        that.outgoingMedia.unmuteVideo();\n        videoIsMuted = false;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "unmuteVideo",
+            "string": "that.unmuteVideo()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.muteAudio"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#mute"
+            }
+        ],
+        "description": {
+            "full": "<p>Mute all local audio streams.</p>\n",
+            "summary": "<p>Mute all local audio streams.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#mute"
+        ],
+        "ignore": false,
+        "code": "that.muteAudio = function () {\n        if (audioIsMuted) {\n            return;\n        }\n        that.outgoingMedia.muteAudio();\n        audioIsMuted = true;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "muteAudio",
+            "string": "that.muteAudio()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.unmuteAudio"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Call#mute"
+            }
+        ],
+        "description": {
+            "full": "<p>Unmute all local audio streams.</p>\n",
+            "summary": "<p>Unmute all local audio streams.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Call#mute"
+        ],
+        "ignore": false,
+        "code": "that.unmuteAudio = function () {\n        if (!audioIsMuted) {\n            return;\n        }\n\n        that.outgoingMedia.unmuteAudio();\n        audioIsMuted = false;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "unmuteAudio",
+            "string": "that.unmuteAudio()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Call"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Call.listenHangup"
+            },
+            {
+                "type": "params",
+                "string": "{object} evt"
+            },
+            {
+                "type": "params",
+                "string": "{object} evt.signal - The hangup signal, including an optional hangup reason."
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Save the hangup reason and hang up.</p>\n",
+            "summary": "<p>Save the hangup reason and hang up.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function listenHangup(evt) {\n        if (!pc) {\n            return;\n        }\n        pc.report.callStoppedReason = evt.signal.reason || \"Remote side hung up\";\n        pc.state.receivedBye = true;\n        pc.state.dispatch('hangup', {signal: false, reason: pc.report.callStoppedReason});\n    }\n\n    pc.state.once('terminated:entry', function (evt) {\n        doHangup();\n    }, true);\n\n    that.listen('signal-offer', listenOffer, true);\n    that.listen('signal-hangup', listenHangup, true);\n    that.listen('signal-modify', listenModify, true);\n    pc.listen('modify-reject', onModifyReject, true);\n    pc.listen('modify-accept', onModifyAccept, true);\n    that.listen('signal-icecandidates', function onCandidateSignal(evt) {\n        if (!pc || !evt.signal.iceCandidates || !evt.signal.iceCandidates.length) {\n            return;\n        }\n        evt.signal.iceCandidates.forEach(function processCandidate(candidate) {\n            if (!pc) {\n                return;\n            }\n            pc.addRemoteCandidate({candidate: candidate});\n        });\n    }, true);\n\n    if (pc.state.needDirectConnection !== true) {\n        pc.state.once('preparing:entry', function () {",
+        "ctx": {
+            "type": "function",
+            "name": "listenHangup",
+            "string": "listenHangup()",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#call"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "call",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "endpoint",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event provides notification for when an incoming call is being received.  If the user wishes\nto allow the call, the app should call evt.call.answer() to answer the call.</p>\n",
+            "summary": "<p>This event provides notification for when an incoming call is being received.  If the user wishes\nto allow the call, the app should call evt.call.answer() to answer the call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "client.fire('call', {\n                endpoint: that.remoteEndpoint,\n                call: that\n            });\n        }, true);\n    }\n\n    pc.state.listen('idle:exit', function (evt) {\n        saveParameters(params);\n    });\n\n    pc.state.listen('preparing:entry', function (evt) {\n        init();\n\n        if (pc.state.caller === true) {\n            that.answer();\n        }\n    }, true);\n\n    signalingChannel.getTurnCredentials().then(function (result) {\n        if (!result) {\n            log.warn(\"Relay service not available.\");\n            pc.servers = {\n                iceServers: []\n            };\n        } else {\n            pc.servers = client.servers;\n            pc.servers.iceServers = result;\n        }\n    }).fin(function () {\n        pc.state.dispatch('initiate', {\n            client: client,\n            caller: that.caller\n        });\n    }).done(null, function (err) {\n        log.debug('Unexpected exception', err);\n    });\n\n    return that;\n}; // End respoke.Call",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#call",
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.errorHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Error"
+                ],
+                "name": "err",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Handle an error that resulted from a method call.</p>\n",
+            "summary": "<p>Handle an error that resulted from a method call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.statsSuccessHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser"
+                ],
+                "name": "statsParser",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Handle the successful kick-off of stats on a call.</p>\n",
+            "summary": "<p>Handle the successful kick-off of stats on a call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.mediaSuccessHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.LocalMedia"
+                ],
+                "name": "localMedia",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Handle obtaining media successfully.</p>\n",
+            "summary": "<p>Handle obtaining media successfully.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onLocalMedia Callback for receiving an HTML5 Video\nelement with the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Element"
+                ],
+                "name": "evt.element",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.LocalMedia"
+                ],
+                "name": "-",
+                "description": "The outgoingMedia property on the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- The event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When on a call, receive local media when it becomes available. This is what you will need to provide if you want\nto show the user their own video during a call. This callback is called every time\nrespoke.Call#local-stream-received is fired.</p>\n",
+            "summary": "<p>When on a call, receive local media when it becomes available. This is what you will need to provide if you want\nto show the user their own video during a call. This callback is called every time\nrespoke.Call#local-stream-received is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onConnect"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "Element"
+                ],
+                "name": "evt.element",
+                "description": "- the HTML5 Video element with the new stream attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When on a call, receive remote media when it becomes available. This is what you will need to provide if you want\nto show the user the other party&#39;s video during a call. This callback is called every time\nrespoke.Call#connect is fired.</p>\n",
+            "summary": "<p>When on a call, receive remote media when it becomes available. This is what you will need to provide if you want\nto show the user the other party&#39;s video during a call. This callback is called every time\nrespoke.Call#connect is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onError"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "evt.reason",
+                "description": "- A human-readable description of the error."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When a call is in setup or media renegotiation happens. This callback will be called every time\nrespoke.Call#error.</p>\n",
+            "summary": "<p>When a call is in setup or media renegotiation happens. This callback will be called every time\nrespoke.Call#error.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onHangup"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "evt.sentSignal",
+                "description": "- Whether or not we sent a 'hangup' signal to the other party."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When on a call, receive notification the call has been hung up. This callback is called every time\nrespoke.Call#hangup is fired.</p>\n",
+            "summary": "<p>When on a call, receive notification the call has been hung up. This callback is called every time\nrespoke.Call#hangup is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onMute"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Called when changing the mute state on any type of media. This callback will be called when media is muted or\nunmuted. This callback is called every time respoke.Call#mute is fired.</p>\n",
+            "summary": "<p>Called when changing the mute state on any type of media. This callback will be called when media is muted or\nunmuted. This callback is called every time respoke.Call#mute is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onAnswer"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Called when the callee answers the call. This callback is called every time respoke.Call#answer is fired.</p>\n",
+            "summary": "<p>Called when the callee answers the call. This callback is called every time respoke.Call#answer is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onApprove"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Called when the user approves local media. This callback will be called whether or not the approval was based\non user feedback. I. e., it will be called even if the approval was automatic. This callback is called every time\nrespoke.Call#approve is fired.</p>\n",
+            "summary": "<p>Called when the user approves local media. This callback will be called whether or not the approval was based\non user feedback. I. e., it will be called even if the approval was automatic. This callback is called every time\nrespoke.Call#approve is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onAllow"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When setting up a call, receive notification that the browser has granted access to media.  This callback is\ncalled every time respoke.Call#allow is fired.</p>\n",
+            "summary": "<p>When setting up a call, receive notification that the browser has granted access to media.  This callback is\ncalled every time respoke.Call#allow is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.onRequestingMedia"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When setting up a call, receive notification that the app has asked the browser for permission to get audio or\nvideo and is waiting on the browser to grant or reject permission. This callback will be called every time\nrespoke.Call#requesting-media is fired.</p>\n",
+            "summary": "<p>When setting up a call, receive notification that the app has asked the browser for permission to get audio or\nvideo and is waiting on the browser to grant or reject permission. This callback will be called every time\nrespoke.Call#requesting-media is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.MediaStatsParser.statsHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStats"
+                ],
+                "name": "evt.stats",
+                "description": "- an object with stats in it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>The use of stats requires an additional module to Respoke. When on a call, receive periodic statistical\ninformation about the call, including the codec, lost packets, and bandwidth being consumed. This callback is\ncalled every time respoke.Call#stats is fired.</p>\n",
+            "summary": "<p>The use of stats requires an additional module to Respoke. When on a call, receive periodic statistical\ninformation about the call, including the codec, lost packets, and bandwidth being consumed. This callback is\ncalled every time respoke.Call#stats is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.previewLocalMedia"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "element",
+                "description": "- the HTML5 Video element with the new stream attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "call",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>When on a call, receive local media when it becomes available. This is what you will need to provide if you want\nto allow the user to preview and approve or reject their own video before a call. If this callback is provided,\nRespoke will wait for call.answer() to be called before proceeding. If this callback is not provided,\nRespoke will proceed without waiting for user input. This callback is called every time\nrespoke.Call#local-stream-received is fired.</p>\n",
+            "summary": "<p>When on a call, receive local media when it becomes available. This is what you will need to provide if you want\nto allow the user to preview and approve or reject their own video before a call. If this callback is provided,\nRespoke will wait for call.answer() to be called before proceeding. If this callback is not provided,\nRespoke will proceed without waiting for user input. This callback is called every time\nrespoke.Call#local-stream-received is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Call.directConnectionSuccessHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection"
+                ],
+                "name": "directConnection",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive the DirectConnection.</p>\n",
+            "summary": "<p>Receive the DirectConnection.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/call.js",
+                "output": ".docs/site/respoke/call.js.json"
+            }
+        }
+    }
+]

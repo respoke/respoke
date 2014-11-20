@@ -1,0 +1,4139 @@
+[
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n",
+            "summary": "<p>Copyright 2014, Digium, Inc.\nAll rights reserved.</p>\n",
+            "body": "<p>This source code is licensed under The MIT License found in the\nLICENSE file in the root directory of this source tree.</p>\n<p>For all details and documentation:  <a href=\"https://www.respoke.io\">https://www.respoke.io</a></p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "var log = require('loglevel');\nvar Q = require('q');\nvar respoke = require('./respoke');",
+        "ctx": {
+            "type": "declaration",
+            "name": "log",
+            "value": "require('loglevel')",
+            "string": "log",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "class",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "constructor",
+                "string": ""
+            },
+            {
+                "type": "augments",
+                "otherClass": "respoke.Presentable"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.appId]",
+                "description": "- The ID of your Respoke app. This must be passed either to\nrespoke.connect, respoke.createClient, or to client.connect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.token]",
+                "description": "- The endpoint's authentication token."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.endpointId]",
+                "description": "- An identifier to use when creating an authentication token for this\nendpoint. This is only used when `developmentMode` is set to `true`."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.developmentMode=false]",
+                "description": "- Indication to obtain an authentication token from the service.\nNote: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of\noperation and will limit the services you will be able to use."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence=unavailable]",
+                "description": "The initial presence to set once connected."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.reconnect=true]",
+                "description": "- Whether or not to automatically reconnect to the Respoke service\nwhen a disconnect occurs."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onJoin"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Callback for when this client's endpoint joins a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onLeave"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Callback for when this client's endpoint leaves a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onClientMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Callback for when any message is received\nfrom anywhere on the system."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for Client connect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onDisconnect"
+                ],
+                "name": "[params.onDisconnect]",
+                "description": "- Callback for Client disconnect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onReconnect"
+                ],
+                "name": "[params.onReconnect]",
+                "description": "- Callback for Client reconnect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onCall"
+                ],
+                "name": "[params.onCall]",
+                "description": "- Callback for when this client's user receives a call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onDirectConnection"
+                ],
+                "name": "[params.onDirectConnection]",
+                "description": "- Callback for when this client's user\nreceives a request for a direct connection."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Client}"
+            }
+        ],
+        "description": {
+            "full": "<p><code>respoke.Client</code> is the top-level interface to the API. Interacting with Respoke should be done using\na <code>respoke.Client</code> instance.</p>\n<p>There are two ways to get a client:</p>\n<pre><code> var client = respoke.createClient(clientParams);\n // . . . set stuff up, then . . .\n client.connect(connectParams);\n</code></pre><p>or</p>\n<pre><code> // creates client and connects to Respoke all at once\n var client = respoke.connect(allParams);\n</code></pre><p>A client does the following things:</p>\n<ol>\n<li>authentication with the Respoke API</li>\n<li>receives server-side app-specific information</li>\n<li>tracks connections and presence</li>\n<li>provides methods to get and interact with tracked entities (like groups and endpoints)</li>\n<li>stores default settings for calls and direct connections</li>\n<li>automatically reconnects to the API when network activity is lost*</li>\n</ol>\n<p>*If <code>developmentMode</code> is set to true. If not using <code>developmentMode</code>, disable automatic\nreconnect by sending <code>reconnect: false</code> and listening to the Client&#39;s disconnect event\nto fetch a new brokered auth token, then call <code>client.connect()</code> with the new token.</p>\n",
+            "summary": "<p><code>respoke.Client</code> is the top-level interface to the API. Interacting with Respoke should be done using\na <code>respoke.Client</code> instance.</p>\n",
+            "body": "<p>There are two ways to get a client:</p>\n<pre><code> var client = respoke.createClient(clientParams);\n // . . . set stuff up, then . . .\n client.connect(connectParams);\n</code></pre><p>or</p>\n<pre><code> // creates client and connects to Respoke all at once\n var client = respoke.connect(allParams);\n</code></pre><p>A client does the following things:</p>\n<ol>\n<li>authentication with the Respoke API</li>\n<li>receives server-side app-specific information</li>\n<li>tracks connections and presence</li>\n<li>provides methods to get and interact with tracked entities (like groups and endpoints)</li>\n<li>stores default settings for calls and direct connections</li>\n<li>automatically reconnects to the API when network activity is lost*</li>\n</ol>\n<p>*If <code>developmentMode</code> is set to true. If not using <code>developmentMode</code>, disable automatic\nreconnect by sending <code>reconnect: false</code> and listening to the Client&#39;s disconnect event\nto fetch a new brokered auth token, then call <code>client.connect()</code> with the new token.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "module.exports = function (params) {\n    \"use strict\";\n    params = params || {};",
+        "ctx": {
+            "type": "method",
+            "receiver": "module",
+            "name": "exports",
+            "string": "module.exports()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "instanceId"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Client</p>\n",
+            "summary": "<p>@memberof! respoke.Client</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var instanceId = params.instanceId || respoke.makeGUID();\n    params.instanceId = instanceId;\n    var that = respoke.Presentable(params);\n    respoke.instances[instanceId] = that;\n    delete that.instanceId;\n    that.connectTries = 0;",
+        "ctx": {
+            "type": "declaration",
+            "name": "instanceId",
+            "value": "params.instanceId || respoke.makeGUID()",
+            "string": "instanceId",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "name",
+                "string": "className"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A name to identify this class</p>\n",
+            "summary": "<p>A name to identify this class</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.className = 'respoke.Client';",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "className",
+            "value": "'respoke.Client'",
+            "string": "that.className",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "host"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "string"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Client</p>\n",
+            "summary": "<p>@memberof! respoke.Client</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var host = window.location.hostname;",
+        "ctx": {
+            "type": "declaration",
+            "name": "host",
+            "value": "window.location.hostname",
+            "string": "host",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "port"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "number"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Client</p>\n",
+            "summary": "<p>@memberof! respoke.Client</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var port = window.location.port;",
+        "ctx": {
+            "type": "declaration",
+            "name": "port",
+            "value": "window.location.port",
+            "string": "port",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "name",
+                "string": "superClass"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>A simple POJO to store some methods we will want to override but reference later.</p>\n",
+            "summary": "<p>A simple POJO to store some methods we will want to override but reference later.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var superClass = {\n        setPresence: that.setPresence\n    };",
+        "ctx": {
+            "type": "declaration",
+            "name": "superClass",
+            "value": "{",
+            "string": "superClass",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "name",
+                "string": "clientSettings"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "object"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "[baseURL]",
+                "description": "- the URL of the cloud infrastructure's REST API."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "[token]",
+                "description": "- The endpoint's authentication token."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "[appId]",
+                "description": "- The id of your Respoke app."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "[endpointId]",
+                "description": "- An identifier to use when creating an authentication token for this\nendpoint. This is only used when `developmentMode` is set to `true`."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[developmentMode=false]",
+                "description": "- Indication to obtain an authentication token from the service.\nNote: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of\noperation and will limit the services you will be able to use."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[reconnect=false]",
+                "description": "- Whether or not to automatically reconnect to the Respoke service\nwhen a disconnect occurs."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onJoin"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Callback for when this client's endpoint joins a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onLeave"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Callback for when this client's endpoint leaves a group."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client.onClientMessage"
+                ],
+                "name": "[onMessage]",
+                "description": "- Callback for when any message is received\nfrom anywhere on the system."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client.onConnect"
+                ],
+                "name": "[onConnect]",
+                "description": "- Callback for Client connect."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client.onDisconnect"
+                ],
+                "name": "[onDisconnect]",
+                "description": "- Callback for Client disconnect."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client.onReconnect"
+                ],
+                "name": "[onReconnect]",
+                "description": "- Callback for Client reconnect. Not Implemented."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client.onCall"
+                ],
+                "name": "[onCall]",
+                "description": "- Callback for when this client receives a call."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client.onDirectConnection"
+                ],
+                "name": "[onDirectConnection]",
+                "description": "- Callback for when this client\nreceives a request for a direct connection."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "boolean"
+                ],
+                "name": "enableCallDebugReport=true",
+                "description": "- Upon finishing a call, should the client send debugging\ninformation to the API? Defaults to `true`."
+            }
+        ],
+        "description": {
+            "full": "<p>A container for baseURL, token, and appId so they won&#39;t be accidentally viewable in any JavaScript debugger.</p>\n",
+            "summary": "<p>A container for baseURL, token, and appId so they won&#39;t be accidentally viewable in any JavaScript debugger.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var clientSettings = {};\n\n    delete that.appId;\n    delete that.baseURL;\n    delete that.developmentMode;\n    delete that.token;\n    delete that.resolveEndpointPresence;",
+        "ctx": {
+            "type": "declaration",
+            "name": "clientSettings",
+            "value": "{}",
+            "string": "clientSettings",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "name",
+                "string": "groups"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "Array<respoke.Group>"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Internal list of known groups.</p>\n",
+            "summary": "<p>Internal list of known groups.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var groups = [];",
+        "ctx": {
+            "type": "declaration",
+            "name": "groups",
+            "value": "[]",
+            "string": "groups",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "name",
+                "string": "endpoints"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "Array<respoke.Endpoint>"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Internal list of known endpoints.</p>\n",
+            "summary": "<p>Internal list of known endpoints.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var endpoints = [];",
+        "ctx": {
+            "type": "declaration",
+            "name": "endpoints",
+            "value": "[]",
+            "string": "endpoints",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "name",
+                "string": "calls"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "array"
+                ]
+            }
+        ],
+        "description": {
+            "full": "<p>Array of calls in progress, made accessible for informational purposes only.\n<strong>Never modify this array directly.</strong></p>\n",
+            "summary": "<p>Array of calls in progress, made accessible for informational purposes only.\n<strong>Never modify this array directly.</strong></p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.calls = [];\n    log.debug(\"Client ID is \", instanceId);",
+        "ctx": {
+            "type": "property",
+            "receiver": "that",
+            "name": "calls",
+            "value": "[]",
+            "string": "that.calls",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "name",
+                "string": "signalingChannel"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.SignalingChannel"
+                ]
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>@memberof! respoke.Client</p>\n",
+            "summary": "<p>@memberof! respoke.Client</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "var signalingChannel = respoke.SignalingChannel({\n        instanceId: instanceId,\n        clientSettings: clientSettings\n    });",
+        "ctx": {
+            "type": "declaration",
+            "name": "signalingChannel",
+            "value": "respoke.SignalingChannel({",
+            "string": "signalingChannel",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.saveParameters"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.connectSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation\nof this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.appId]",
+                "description": "- The ID of your Respoke app. This must be passed either to\nrespoke.connect, respoke.createClient, or to client.connect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.token]",
+                "description": "- The endpoint's authentication token."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.endpointId]",
+                "description": "- An identifier to use when creating an authentication token for this\nendpoint. This is only used when `developmentMode` is set to `true`."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence]",
+                "description": "The initial presence to set once connected."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.client.resolveEndpointPresence"
+                ],
+                "name": "[params.resolveEndpointPresence]",
+                "description": "An optional function for\nresolving presence for an endpoint. An endpoint can have multiple Connections this function will be used\nto decide which Connection's presence gets precedence for the Endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.developmentMode=false]",
+                "description": "- Indication to obtain an authentication token from the service.\nNote: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of\noperation and will limit the services you will be able to use."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.reconnect=true]",
+                "description": "- Whether or not to automatically reconnect to the Respoke service\nwhen a disconnect occurs."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onJoin"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Callback for when this client's endpoint joins a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onLeave"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Callback for when this client's endpoint leaves\na group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onClientMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Callback for when any message is\nreceived from anywhere on the system."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for Client connect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onDisconnect"
+                ],
+                "name": "[params.onDisconnect]",
+                "description": "- Callback for Client disconnect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onReconnect"
+                ],
+                "name": "[params.onReconnect]",
+                "description": "- Callback for Client reconnect. Not Implemented."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onCall"
+                ],
+                "name": "[params.onCall]",
+                "description": "- Callback for when this client receives a call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onDirectConnection"
+                ],
+                "name": "[params.onDirectConnection]",
+                "description": "- Callback for when this\nclient receives a request for a direct connection."
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Save parameters of the constructor or client.connect() onto the clientSettings object</p>\n",
+            "summary": "<p>Save parameters of the constructor or client.connect() onto the clientSettings object</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function saveParameters(params) {\n        Object.keys(params).forEach(function eachParam(key) {\n            if (['onSuccess', 'onError', 'reconnect'].indexOf(key) === -1 && params[key] !== undefined) {\n                clientSettings[key] = params[key];\n            }\n        });\n\n        clientSettings.developmentMode = !!clientSettings.developmentMode;\n        clientSettings.enableCallDebugReport = typeof clientSettings.enableCallDebugReport === 'boolean' ?\n            clientSettings.enableCallDebugReport : true;\n\n        if (typeof params.reconnect !== 'boolean') {\n            clientSettings.reconnect = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;\n        } else {\n            clientSettings.reconnect = !!params.reconnect;\n        }\n    }\n    saveParameters(params);",
+        "ctx": {
+            "type": "function",
+            "name": "saveParameters",
+            "string": "saveParameters()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.connect"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.connectSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation\nof this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.appId]",
+                "description": "- The ID of your Respoke app. This must be passed either to\nrespoke.connect, respoke.createClient, or to client.connect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.token]",
+                "description": "- The endpoint's authentication token."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.endpointId]",
+                "description": "- An identifier to use when creating an authentication token for this\nendpoint. This is only used when `developmentMode` is set to `true`."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence]",
+                "description": "The initial presence to set once connected."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.client.resolveEndpointPresence"
+                ],
+                "name": "[params.resolveEndpointPresence]",
+                "description": "An optional function for\nresolving presence for an endpoint. An endpoint can have multiple Connections this function will be used\nto decide which Connection's presence gets precedence for the Endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.developmentMode=false]",
+                "description": "- Indication to obtain an authentication token from the service.\nNote: Your app must be in developer mode to use this feature. This is not intended as a long-term mode of\noperation and will limit the services you will be able to use."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.reconnect=true]",
+                "description": "- Whether or not to automatically reconnect to the Respoke service\nwhen a disconnect occurs."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onJoin"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Callback for when this client's endpoint joins a group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onLeave"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Callback for when this client's endpoint leaves\na group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onClientMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Callback for when any message is\nreceived from anywhere on the system."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for Client connect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onDisconnect"
+                ],
+                "name": "[params.onDisconnect]",
+                "description": "- Callback for Client disconnect."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onReconnect"
+                ],
+                "name": "[params.onReconnect]",
+                "description": "- Callback for Client reconnect. Not Implemented."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onCall"
+                ],
+                "name": "[params.onCall]",
+                "description": "- Callback for when this client receives a call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.onDirectConnection"
+                ],
+                "name": "[params.onDirectConnection]",
+                "description": "- Callback for when this\nclient receives a request for a direct connection."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#connect"
+            }
+        ],
+        "description": {
+            "full": "<p>Connect to the Respoke infrastructure and authenticate using <code>params.token</code>.</p>\n<p>After <code>connect</code>, the app auth session token is stored so it can be used in API requests.</p>\n<p>This method attaches quite a few event listeners for things like group joining and connection status changes.</p>\n<h4 id=\"usage\">Usage</h4>\n<pre><code> client.connect({\n     appId: &quot;XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX&quot;,\n     token: &quot;XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX&quot;, // if not developmentMode\n     developmentMode: false || true,\n     // if developmentMode, otherwise your server will set endpointId\n     endpointId: &quot;billy&quot;\n });\n client.listen(&quot;connect&quot;, function () { } );\n</code></pre><p>If no <code>params.token</code> is given and <code>developmentMode</code> is set to true, it will attempt to obtain a token\nautomatically. You must set an <code>endpointId</code>.</p>\n<h4 id=\"app-auth-session-token-expiration\">App auth session token expiration</h4>\n<p>If <code>params.reconnect</code> is set to true (which it is by default for <code>developmentMode</code>), the <code>client</code>\nwill attempt to keep reconnecting each time the app auth session expires.</p>\n<p>If not using <code>developmentMode</code>, automatic reconnect will be disabled. You will need to\nlisten to the Client&#39;s <code>disconnect</code> event to fetch a new brokered auth token and call\n<code>client.connect()</code> with the new token.</p>\n<pre><code> client.listen(&#39;disconnect&#39;, function () {\n\n     // example method you implemented to get a new token from your server\n     myServer.getNewRespokeAccessToken(function (newToken) {\n         // reconnect with respoke.Client\n         client.connect({ token: newToken });\n     });\n\n });\n</code></pre>",
+            "summary": "<p>Connect to the Respoke infrastructure and authenticate using <code>params.token</code>.</p>\n",
+            "body": "<p>After <code>connect</code>, the app auth session token is stored so it can be used in API requests.</p>\n<p>This method attaches quite a few event listeners for things like group joining and connection status changes.</p>\n<h4 id=\"usage\">Usage</h4>\n<pre><code> client.connect({\n     appId: &quot;XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX&quot;,\n     token: &quot;XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX&quot;, // if not developmentMode\n     developmentMode: false || true,\n     // if developmentMode, otherwise your server will set endpointId\n     endpointId: &quot;billy&quot;\n });\n client.listen(&quot;connect&quot;, function () { } );\n</code></pre><p>If no <code>params.token</code> is given and <code>developmentMode</code> is set to true, it will attempt to obtain a token\nautomatically. You must set an <code>endpointId</code>.</p>\n<h4 id=\"app-auth-session-token-expiration\">App auth session token expiration</h4>\n<p>If <code>params.reconnect</code> is set to true (which it is by default for <code>developmentMode</code>), the <code>client</code>\nwill attempt to keep reconnecting each time the app auth session expires.</p>\n<p>If not using <code>developmentMode</code>, automatic reconnect will be disabled. You will need to\nlisten to the Client&#39;s <code>disconnect</code> event to fetch a new brokered auth token and call\n<code>client.connect()</code> with the new token.</p>\n<pre><code> client.listen(&#39;disconnect&#39;, function () {\n\n     // example method you implemented to get a new token from your server\n     myServer.getNewRespokeAccessToken(function (newToken) {\n         // reconnect with respoke.Client\n         client.connect({ token: newToken });\n     });\n\n });\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Client#connect"
+        ],
+        "ignore": false,
+        "code": "that.connect = function (params) {\n        var promise;\n        var retVal;\n        params = params || {};\n        log.debug('Client.connect');\n        that.connectTries += 1;\n\n        saveParameters(params);\n\n        that.endpointId = clientSettings.endpointId;\n        promise = actuallyConnect(params);\n        retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n        promise.then(function successHandler() {",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "connect",
+            "string": "that.connect()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#connect"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired the first time the library connects to the cloud infrastructure.</p>\n",
+            "summary": "<p>This event is fired the first time the library connects to the cloud infrastructure.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('connect');",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#connect",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "ignore",
+                "string": "**This comment is for documentation purposes**, since #error bubbles\nup from other classes, but it should show on `respoke.Client` docs.\n"
+            },
+            {
+                "type": "event",
+                "string": "respoke.Client#error"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event fires only when the initial <code>connect</code> fails.</p>\n",
+            "summary": "<p>This event fires only when the initial <code>connect</code> fails.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "});\n        return retVal;\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#error",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.actuallyConnect"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "connectSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            }
+        ],
+        "description": {
+            "full": "<p>This function contains the meat of the connection, the portions which can be repeated again on reconnect.</p>\n<p>When <code>reconnect</code> is true, this function will be added in an event listener to the Client#disconnect event.</p>\n<p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "summary": "<p>This function contains the meat of the connection, the portions which can be repeated again on reconnect.</p>\n",
+            "body": "<p>When <code>reconnect</code> is true, this function will be added in an event listener to the Client#disconnect event.</p>\n<p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n"
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function actuallyConnect(params) {\n        params = params || {};\n        var deferred = Q.defer();\n\n        if (!clientSettings.token &&\n                (!clientSettings.appId || !clientSettings.endpointId || clientSettings.developmentMode !== true)) {\n            deferred.reject(new Error(\"Must pass either endpointID & appId & developmentMode=true, or a token, \" +\n                \"to client.connect().\"));\n            return deferred.promise;\n        }\n\n        signalingChannel.open({\n            actuallyConnect: actuallyConnect,\n            endpointId: that.endpointId,\n            token: clientSettings.token\n        }).then(function successHandler() {\n            return signalingChannel.authenticate();\n        }).done(function successHandler() {\n            // set initial presence for the connection\n            if (clientSettings.presence) {\n                that.setPresence({presence: clientSettings.presence});\n            }",
+        "ctx": {
+            "type": "function",
+            "name": "actuallyConnect",
+            "string": "actuallyConnect()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [],
+        "description": {
+            "full": "<p>These rely on the EventEmitter checking for duplicate event listeners in order for these\nnot to be duplicated on reconnect.</p>\n",
+            "summary": "<p>These rely on the EventEmitter checking for duplicate event listeners in order for these\nnot to be duplicated on reconnect.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#call"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "call",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "endpoint",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event provides notification for when an incoming call is being received.  If the user wishes\nto allow the call, <code>evt.call.answer()</code>.</p>\n",
+            "summary": "<p>This event provides notification for when an incoming call is being received.  If the user wishes\nto allow the call, <code>evt.call.answer()</code>.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('call', clientSettings.onCall);",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#call",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#direct-connection"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.DirectConnection"
+                ],
+                "name": "directConnection",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "endpoint",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when the local end of the directConnection is available. It still will not be\nready to send and receive messages until the &#39;open&#39; event fires.</p>\n",
+            "summary": "<p>This event is fired when the local end of the directConnection is available. It still will not be\nready to send and receive messages until the &#39;open&#39; event fires.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('direct-connection', clientSettings.onDirectConnection);\n            that.listen('join', clientSettings.onJoin);",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#direct-connection",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#leave"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "group",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired every time the client leaves a group.</p>\n",
+            "summary": "<p>This event is fired every time the client leaves a group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('leave', clientSettings.onLeave);",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#leave",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#message"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "endpoint",
+                "description": "- If the message was private, this is the Endpoint who sent it."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "group",
+                "description": "- If the message was to a group, this is the group."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.TextMessage"
+                ],
+                "name": "message",
+                "description": "- The generic message object."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "message.connectionId",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "message.endpointId",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "message.message",
+                "description": "- Message body text."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>A generic message handler when a message was received by the client.</p>\n",
+            "summary": "<p>A generic message handler when a message was received by the client.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('message', clientSettings.onMessage);\n            that.listen('connect', clientSettings.onConnect);",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#message",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#disconnect"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Client has disconnected from Respoke.</p>\n",
+            "summary": "<p>Client has disconnected from Respoke.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('disconnect', clientSettings.onDisconnect);",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#disconnect",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#reconnect"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- The event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Client has reconnected to Respoke.</p>\n",
+            "summary": "<p>Client has reconnected to Respoke.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.listen('reconnect', clientSettings.onReconnect);\n\n            log.info('logged in as ' + that.endpointId, that);\n            deferred.resolve();\n        }, function errorHandler(err) {\n            deferred.reject(\"Couldn't create an endpoint.\");\n            log.error(err.message, err.stack);\n        });\n\n        return deferred.promise;\n    }",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#reconnect",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.disconnect"
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "disconnectSuccessHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#disconnect"
+            }
+        ],
+        "description": {
+            "full": "<p>Disconnect from the Respoke infrastructure, leave all groups, invalidate the token, and disconnect the websocket.\n<strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "summary": "<p>Disconnect from the Respoke infrastructure, leave all groups, invalidate the token, and disconnect the websocket.\n<strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Client#disconnect"
+        ],
+        "ignore": false,
+        "code": "that.disconnect = function (params) {\n        // TODO: also call this on socket disconnect\n        params = params || {};\n        var deferred = Q.defer();\n        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);\n\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            deferred.reject(e);\n            return retVal;\n        }\n\n        var leaveGroups = groups.map(function eachGroup(group) {\n            group.leave();\n        });\n\n        Q.all(leaveGroups).fin(function successHandler() {\n            return signalingChannel.close();\n        }).fin(function finallyHandler() {\n            that.presence = 'unavailable';\n            endpoints = [];\n            groups = [];",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "disconnect",
+            "string": "that.disconnect()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#disconnect"
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired when the library has disconnected from the cloud infrastructure.</p>\n",
+            "summary": "<p>This event is fired when the library has disconnected from the cloud infrastructure.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('disconnect');\n            deferred.resolve();\n        }).done();\n\n        return retVal;\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#disconnect",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.setPresence"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "array"
+                ],
+                "name": "params.presence",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.successHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "overrides",
+                "string": "Presentable.setPresence"
+            },
+            {
+                "type": "return",
+                "string": "{Promise|undefined}"
+            }
+        ],
+        "description": {
+            "full": "<p>Set the presence for this client.</p>\n<p>The value of presence can be a string, number, object, or array - in any format -\ndepending on the needs of your application. The only requirement is that\n<code>JSON.stringify()</code> must work (no circular references).</p>\n<pre><code> var myPresence = &#39;At lunch&#39;\n                 || 4\n                 || { status: &#39;Away&#39;, message: &#39;At lunch&#39; }\n                 || [&#39;Away&#39;, &#39;At lunch&#39;];\n\n client.setPresence({\n     presence: myPresence,\n     onSuccess: function (evt) {\n         // successfully updated my presence\n     }\n });\n</code></pre><p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "summary": "<p>Set the presence for this client.</p>\n",
+            "body": "<p>The value of presence can be a string, number, object, or array - in any format -\ndepending on the needs of your application. The only requirement is that\n<code>JSON.stringify()</code> must work (no circular references).</p>\n<pre><code> var myPresence = &#39;At lunch&#39;\n                 || 4\n                 || { status: &#39;Away&#39;, message: &#39;At lunch&#39; }\n                 || [&#39;Away&#39;, &#39;At lunch&#39;];\n\n client.setPresence({\n     presence: myPresence,\n     onSuccess: function (evt) {\n         // successfully updated my presence\n     }\n });\n</code></pre><p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.setPresence = function (params) {\n        var promise;\n        var retVal;\n        params = params || {};\n\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            promise = Q.reject(e);\n            return respoke.handlePromise(promise, params.onSuccess, params.onError);\n        }\n\n        log.info('sending my presence update ' + params.presence);\n\n        promise = signalingChannel.sendPresence({\n            presence: params.presence\n        });\n\n        promise.then(function successHandler(p) {\n            superClass.setPresence(params);\n            clientSettings.presence = params.presence;\n        });\n        retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n        return retVal;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "setPresence",
+            "string": "that.setPresence()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.getCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.id]",
+                "description": "- Call ID."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.endpointId]",
+                "description": "- Endpoint ID. Warning: If you pass only the endpointId, this method\nwill just return the first call that matches. If you are placing multiple calls to the same endpoint,\npass in the call ID, too."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "params.create",
+                "description": "- whether or not to create a new call if the specified endpointId isn't found"
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Get the Call with the endpoint specified.</p>\n<pre><code>// hang up on chad\nvar call = client.getCall({\n    endpointId: &#39;chad&#39;\n});\n\nif (call) {\n    call.hangup()\n}\n</code></pre>",
+            "summary": "<p>Get the Call with the endpoint specified.</p>\n",
+            "body": "<pre><code>// hang up on chad\nvar call = client.getCall({\n    endpointId: &#39;chad&#39;\n});\n\nif (call) {\n    call.hangup()\n}\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getCall = function (params) {\n        var call = null;\n        var endpoint = null;\n\n        that.calls.every(function findCall(one) {\n            if (params.id && one.id === params.id) {\n                call = one;\n                return false;\n            }\n\n            if (!params.id && params.endpointId && one.remoteEndpoint.id === params.endpointId) {\n                call = one;\n                return false;\n            }\n            return true;\n        });\n\n        if (call === null && params.create === true) {\n            if (params.fromType === 'did') {\n                try {\n                    call = that.startPhoneCall({\n                        id: params.id,\n                        number: params.endpointId, //phone number\n                        caller: false,\n                        fromType: 'web',\n                        toType: 'did'\n                    });\n                } catch (e) {\n                    log.error(\"Couldn't create Call.\", e.message, e.stack);\n                }\n            } else {\n                endpoint = that.getEndpoint({id: params.endpointId});\n                try {\n                    call = endpoint.startCall({\n                        id: params.id,\n                        caller: false\n                    });\n                } catch (e) {\n                    log.error(\"Couldn't create Call.\", e.message, e.stack);\n                }\n            }\n        }\n        return call;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getCall",
+            "string": "that.getCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.addCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.call",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "evt.endpoint",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Add the call to internal record-keeping.</p>\n",
+            "summary": "<p>Add the call to internal record-keeping.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function addCall(evt) {\n        log.debug('addCall');\n        if (!evt.call) {\n            throw new Error(\"Can't add call without a call parameter.\");\n        }\n        if (that.calls.indexOf(evt.call) === -1) {\n            that.calls.push(evt.call);\n        }\n\n        evt.call.listen('hangup', function () {\n            removeCall({call: evt.call});\n        });\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "addCall",
+            "string": "addCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.removeCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Remove the call or direct connection from internal record-keeping.</p>\n",
+            "summary": "<p>Remove the call or direct connection from internal record-keeping.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function removeCall(evt) {\n        var match = 0;\n        if (!evt.call) {\n            throw new Error(\"Can't remove call without a call parameter.\");\n        }\n\n        // Loop backward since we're modifying the array in place.\n        for (var i = that.calls.length - 1; i >= 0; i -= 1) {\n            if (that.calls[i].id === evt.call.id) {\n                that.calls.splice(i, 1);\n                match += 1;\n            }\n        }\n\n        if (match !== 1) {\n            log.warn(\"Something went wrong.\", match, \"calls were removed!\");\n        }\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "removeCall",
+            "string": "removeCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.setOnline"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence=available]",
+                "description": "- The presence to set."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.successHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Convenience method for setting presence to <code>&quot;available&quot;</code>.</p>\n<p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "summary": "<p>Convenience method for setting presence to <code>&quot;available&quot;</code>.</p>\n",
+            "body": "<p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n"
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.setOnline = function (params) {\n        var promise;\n\n        params = params || {};\n        params.presence = params.presence || 'available';\n\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            promise = Q.reject(e);\n            return respoke.handlePromise(promise, params.onSuccess, params.onError);\n        }\n\n        return that.setPresence(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "setOnline",
+            "string": "that.setOnline()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.setOffline"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string",
+                    "number",
+                    "object",
+                    "Array"
+                ],
+                "name": "[params.presence=unavailable]",
+                "description": "- The presence to set."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.successHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Convenience method for setting presence to <code>&quot;unavailable&quot;</code>.</p>\n<p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "summary": "<p>Convenience method for setting presence to <code>&quot;unavailable&quot;</code>.</p>\n",
+            "body": "<p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n"
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.setOffline = function (params) {\n        var promise;\n\n        params = params || {};\n        params.presence = params.presence || 'unavailable';\n\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            promise = Q.reject(e);\n            return respoke.handlePromise(promise, params.onSuccess, params.onError);\n        }\n\n        return that.setPresence(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "setOffline",
+            "string": "that.setOffline()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.sendMessage"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.endpointId",
+                "description": "- The endpoint id of the recipient."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": "- The optional connection id of the receipient. If not set, message will be\nbroadcast to all connections for this endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.message",
+                "description": "- a string message."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "sendHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of this method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise|undefined}"
+            }
+        ],
+        "description": {
+            "full": "<p>Send a message to an endpoint.</p>\n<pre><code>client.sendMessage({\n    endpointId: &#39;dan&#39;,\n    message: &quot;Jolly good.&quot;\n});\n</code></pre><p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n",
+            "summary": "<p>Send a message to an endpoint.</p>\n",
+            "body": "<pre><code>client.sendMessage({\n    endpointId: &#39;dan&#39;,\n    message: &quot;Jolly good.&quot;\n});\n</code></pre><p><strong>Using callbacks</strong> by passing <code>params.onSuccess</code> or <code>params.onError</code> will disable promises.</p>\n"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.sendMessage = function (params) {\n        var promise;\n        var retVal;\n        var endpoint;\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            promise = Q.reject(e);\n            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n            return retVal;\n        }\n        endpoint = that.getEndpoint({id: params.endpointId});\n        delete params.endpointId;\n        return endpoint.sendMessage(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "sendMessage",
+            "string": "that.sendMessage()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.startCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.endpointId",
+                "description": "- The id of the endpoint that should be called."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "RTCConstraints"
+                ],
+                "name": "[params.constraints]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video element\nwith the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 Video element\nwith the remote audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has been hung\nup."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": "- The connection ID of the remoteEndpoint, if it is not desired to call\nall connections belonging to this endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoLocalElement]",
+                "description": "- Pass in an optional html video element to have local video attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoRemoteElement]",
+                "description": "- Pass in an optional html video element to have remote video attached to it."
+            },
+            {
+                "type": "return",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Place an audio and/or video call to an endpoint.</p>\n<pre><code>// defaults to video when no constraints are supplied\nclient.startCall({\n    endpointId: &#39;erin&#39;,\n    onConnect: function (evt) { },\n    onLocalMedia: function (evt) { }\n});\n</code></pre>",
+            "summary": "<p>Place an audio and/or video call to an endpoint.</p>\n",
+            "body": "<pre><code>// defaults to video when no constraints are supplied\nclient.startCall({\n    endpointId: &#39;erin&#39;,\n    onConnect: function (evt) { },\n    onLocalMedia: function (evt) { }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startCall = function (params) {\n        var promise;\n        var retVal;\n        var endpoint;\n\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            promise = Q.reject(e);\n            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n            return retVal;\n        }\n\n        endpoint = that.getEndpoint({id: params.endpointId});\n        delete params.endpointId;\n        return endpoint.startCall(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startCall",
+            "string": "that.startCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.startAudioCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.endpointId",
+                "description": "- The id of the endpoint that should be called."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 element\nwith the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 element\nwith the remote audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has been hung\nup."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": "- The connection ID of the remoteEndpoint, if it is not desired to call\nall connections belonging to this endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoLocalElement]",
+                "description": "- Pass in an optional html video element to have local\nvideo attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoRemoteElement]",
+                "description": "- Pass in an optional html video element to have remote\nvideo attached to it."
+            },
+            {
+                "type": "return",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Place an audio only call to an endpoint.</p>\n<pre><code>client.startAudioCall({\n    endpointId: &#39;erin&#39;,\n    onConnect: function (evt) { },\n    onLocalMedia: function (evt) { }\n});\n</code></pre>",
+            "summary": "<p>Place an audio only call to an endpoint.</p>\n",
+            "body": "<pre><code>client.startAudioCall({\n    endpointId: &#39;erin&#39;,\n    onConnect: function (evt) { },\n    onLocalMedia: function (evt) { }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startAudioCall = function (params) {\n        params = params || {};\n        params.constraints = {\n            video : false,\n            audio : true,\n            optional: [],\n            mandatory: {}\n        };\n        return that.startCall(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startAudioCall",
+            "string": "that.startAudioCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.startVideoCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.endpointId",
+                "description": "- The id of the endpoint that should be called."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video element\nwith the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 Video element\nwith the remote audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has been hung\nup."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio or video."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.needDirectConnection]",
+                "description": "- flag to enable skipping media & opening direct connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.previewLocalMedia"
+                ],
+                "name": "[params.previewLocalMedia]",
+                "description": "- A function to call if the developer\nwants to perform an action between local media becoming available and calling approve()."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.connectionId]",
+                "description": "- The connection ID of the remoteEndpoint, if it is not desired to call\nall connections belonging to this endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoLocalElement]",
+                "description": "- Pass in an optional html video element to have local\nvideo attached to it."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "HTMLVideoElement"
+                ],
+                "name": "[params.videoRemoteElement]",
+                "description": "- Pass in an optional html video element to have remote\nvideo attached to it."
+            },
+            {
+                "type": "return",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Place a video call to an endpoint.</p>\n<pre><code>client.startVideoCall({\n    endpointId: &#39;erin&#39;,\n    onConnect: function (evt) { },\n    onLocalMedia: function (evt) { }\n});\n</code></pre>",
+            "summary": "<p>Place a video call to an endpoint.</p>\n",
+            "body": "<pre><code>client.startVideoCall({\n    endpointId: &#39;erin&#39;,\n    onConnect: function (evt) { },\n    onLocalMedia: function (evt) { }\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startVideoCall = function (params) {\n        params = params || {};\n        params.constraints = {\n            video : true,\n            audio : true,\n            optional: [],\n            mandatory: {}\n        };\n        return that.startCall(params);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startVideoCall",
+            "string": "that.startVideoCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.startPhoneCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.number",
+                "description": "- The phone number that should be called."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onLocalMedia"
+                ],
+                "name": "[params.onLocalMedia]",
+                "description": "- Callback for receiving an HTML5 Video element\nwith the local audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onError"
+                ],
+                "name": "[params.onError]",
+                "description": "- Callback for errors that happen during call setup or\nmedia renegotiation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onConnect"
+                ],
+                "name": "[params.onConnect]",
+                "description": "- Callback for receiving an HTML5 Video element\nwith the remote audio and/or video attached."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAllow"
+                ],
+                "name": "[params.onAllow]",
+                "description": "- When setting up a call, receive notification that the\nbrowser has granted access to media."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onHangup"
+                ],
+                "name": "[params.onHangup]",
+                "description": "- Callback for being notified when the call has been hung\nup."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onMute"
+                ],
+                "name": "[params.onMute]",
+                "description": "- Callback for changing the mute state on any type of media.\nThis callback will be called when media is muted or unmuted."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onAnswer"
+                ],
+                "name": "[params.onAnswer]",
+                "description": "- Callback for when the callee answers the call."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onApprove"
+                ],
+                "name": "[params.onApprove]",
+                "description": "- Callback for when the user approves local media. This\ncallback will be called whether or not the approval was based on user feedback. I. e., it will be called even if\nthe approval was automatic."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call.onRequestingMedia"
+                ],
+                "name": "[params.onRequestingMedia]",
+                "description": "- Callback for when the app is waiting\nfor the user to give permission to start getting audio."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.MediaStatsParser.statsHandler"
+                ],
+                "name": "[params.onStats]",
+                "description": "- Callback for receiving statistical\ninformation."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.receiveOnly]",
+                "description": "- whether or not we accept media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.sendOnly]",
+                "description": "- whether or not we send media"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.forceTurn]",
+                "description": "- If true, media is not allowed to flow peer-to-peer and must flow through\nrelay servers. If it cannot flow through relay servers, the call will fail."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "boolean"
+                ],
+                "name": "[params.disableTurn]",
+                "description": "- If true, media is not allowed to flow through relay servers; it is\nrequired to flow peer-to-peer. If it cannot, the call will fail."
+            },
+            {
+                "type": "return",
+                "string": "{respoke.Call}"
+            }
+        ],
+        "description": {
+            "full": "<p>Place an audio call with a phone number.</p>\n",
+            "summary": "<p>Place an audio call with a phone number.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.startPhoneCall = function (params) {\n        var promise;\n        var retVal;\n        var call = null;\n        var recipient = {};\n        params = params || {};\n        params.constraints = {\n            video: false,\n            audio: true,\n            mandatory: {},\n            optional: []\n        };\n\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            promise = Q.reject(e);\n            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n            return retVal;\n        }\n\n        if (params.caller === undefined) {\n            params.caller = true;\n        }\n\n        if (!params.number) {\n            log.error(\"Can't start a phone call without a number.\");\n            promise = Q.reject(new Error(\"Can't start a phone call without a number.\"));\n            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);\n            return retVal;\n        }\n\n        recipient.id = params.number;\n\n        params.instanceId = instanceId;\n        params.remoteEndpoint = recipient;\n\n        params.toType = params.toType || 'did';\n        params.fromType = params.fromType || 'web';\n\n        params.signalOffer = function (signalParams) {\n            var onSuccess = signalParams.onSuccess;\n            var onError = signalParams.onError;\n            delete signalParams.onSuccess;\n            delete signalParams.onError;\n\n            signalParams.signalType = 'offer';\n            signalParams.target = 'call';\n            signalParams.recipient = recipient;\n            signalParams.toType = params.toType;\n            signalParams.fromType = params.fromType;\n            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);\n        };\n        params.signalAnswer = function (signalParams) {\n            signalParams.signalType = 'answer';\n            signalParams.target = 'call';\n            signalParams.recipient = recipient;\n            signalParams.toType = params.toType;\n            signalParams.fromType = params.fromType;\n            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {\n                log.error(\"Couldn't answer the call.\", err.message, err.stack);\n                signalParams.call.hangup({signal: false});\n            });\n        };\n        params.signalConnected = function (signalParams) {\n            signalParams.target = 'call';\n            signalParams.connectionId = signalParams.connectionId;\n            signalParams.recipient = recipient;\n            signalParams.toType = params.toType;\n            signalParams.fromType = params.fromType;\n            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {\n                log.error(\"Couldn't send connected.\", err.message, err.stack);\n                signalParams.call.hangup();\n            });\n        };\n        params.signalModify = function (signalParams) {\n            signalParams.target = 'call';\n            signalParams.recipient = recipient;\n            signalParams.toType = params.toType;\n            signalParams.fromType = params.fromType;\n            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {\n                log.error(\"Couldn't send modify.\", err.message, err.stack);\n            });\n        };\n        params.signalCandidate = function (signalParams) {\n            signalParams.target = 'call';\n            signalParams.recipient = recipient;\n            signalParams.toType = params.toType;\n            signalParams.fromType = params.fromType;\n            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {\n                log.error(\"Couldn't send candidate.\", err.message, err.stack);\n            });\n        };\n        params.signalHangup = function (signalParams) {\n            signalParams.target = 'call';\n            signalParams.recipient = recipient;\n            signalParams.toType = params.toType;\n            signalParams.fromType = params.fromType;\n            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {\n                log.error(\"Couldn't send hangup.\", err.message, err.stack);\n            });\n        };\n        params.signalReport = function (signalParams) {\n            log.debug(\"Sending debug report\", signalParams.report);\n            signalingChannel.sendReport(signalParams);\n        };\n\n        params.signalingChannel = signalingChannel;\n        call = respoke.Call(params);\n        addCall({call: call});\n        return call;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "startPhoneCall",
+            "string": "that.startPhoneCall()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.verifyConnected"
+            },
+            {
+                "type": "throws",
+                "types": [
+                    "Error"
+                ],
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Assert that we are connected to the backend infrastructure.</p>\n",
+            "summary": "<p>Assert that we are connected to the backend infrastructure.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.verifyConnected = function () {\n        if (!signalingChannel.isConnected()) {\n            throw new Error(\"Can't complete request when not connected. Please reconnect!\");\n        }\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "verifyConnected",
+            "string": "that.verifyConnected()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.isConnected"
+            },
+            {
+                "type": "returns",
+                "string": "boolean"
+            }
+        ],
+        "description": {
+            "full": "<p>Check whether this client is connected to the Respoke API.</p>\n",
+            "summary": "<p>Check whether this client is connected to the Respoke API.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.isConnected = function () {\n        return signalingChannel.isConnected();\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "isConnected",
+            "string": "that.isConnected()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.join"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.id",
+                "description": "- The name of the group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.joinHandler"
+                ],
+                "name": "[params.onSuccess]",
+                "description": "- Success handler for this invocation of\nthis method only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client.errorHandler"
+                ],
+                "name": "[params.onError]",
+                "description": "- Error handler for this invocation of this\nmethod only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Message handler for messages from this group only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onJoin"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Join event listener for endpoints who join this group only."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onLeave"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Leave event listener for endpoints who leave\nthis group only."
+            },
+            {
+                "type": "returns",
+                "string": "{Promise<respoke.Group>|undefined} The instance of the respoke.Group which the client joined."
+            },
+            {
+                "type": "fires",
+                "string": "respoke.Client#join"
+            }
+        ],
+        "description": {
+            "full": "<p>Join a group and begin keeping track of it.</p>\n<p>You can leave the group by calling <code>group.leave()</code>;</p>\n<h5 id=\"joining-and-leaving-a-group\">Joining and leaving a group</h5>\n<pre><code> var group;\n\n client.join({\n     id: &quot;book-club&quot;,\n     onSuccess: function (evt) {\n         console.log(&#39;I joined&#39;, evt.group.id);\n         // &quot;I joined book-club&quot;\n         group = evt.group;\n         group.sendMessage({\n             message: &#39;sup&#39;\n         });\n     }\n });\n\n // . . .\n // Some time later, leave the group.\n // . . .\n group.leave({\n     onSuccess: function (evt) {\n         console.log(&#39;I left&#39;, evt.group.id);\n         // &quot;I left book-club&quot;\n     }\n });\n</code></pre>",
+            "summary": "<p>Join a group and begin keeping track of it.</p>\n",
+            "body": "<p>You can leave the group by calling <code>group.leave()</code>;</p>\n<h5 id=\"joining-and-leaving-a-group\">Joining and leaving a group</h5>\n<pre><code> var group;\n\n client.join({\n     id: &quot;book-club&quot;,\n     onSuccess: function (evt) {\n         console.log(&#39;I joined&#39;, evt.group.id);\n         // &quot;I joined book-club&quot;\n         group = evt.group;\n         group.sendMessage({\n             message: &#39;sup&#39;\n         });\n     }\n });\n\n // . . .\n // Some time later, leave the group.\n // . . .\n group.leave({\n     onSuccess: function (evt) {\n         console.log(&#39;I left&#39;, evt.group.id);\n         // &quot;I left book-club&quot;\n     }\n });\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [
+            "respoke.Client#join"
+        ],
+        "ignore": false,
+        "code": "that.join = function (params) {\n        var deferred = Q.defer();\n        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);\n        try {\n            that.verifyConnected();\n        } catch (e) {\n            deferred.reject(e);\n            return retVal;\n        }\n\n        if (!params.id) {\n            deferred.reject(new Error(\"Can't join a group with no group id.\"));\n            return retVal;\n        }\n\n        signalingChannel.joinGroup({\n            id: params.id\n        }).done(function successHandler() {\n            var group;\n            params.signalingChannel = signalingChannel;\n            params.instanceId = instanceId;\n\n            group = that.getGroup({id: params.id});\n\n            if (!group) {\n                group = respoke.Group(params);\n                that.addGroup(group);\n            }\n\n            group.listen('join', params.onJoin);\n            group.listen('leave', params.onLeave);\n            group.listen('message', params.onMessage);\n\n            group.addMember({\n                connection: that.getConnection({\n                    endpointId: that.endpointId,\n                    connectionId: that.connectionId\n                })\n            });",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "join",
+            "string": "that.join()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "event",
+                "string": "respoke.Client#join"
+            },
+            {
+                "type": "type",
+                "types": [
+                    "respoke.Event"
+                ]
+            },
+            {
+                "type": "property",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "group",
+                "description": ""
+            },
+            {
+                "type": "property",
+                "types": [
+                    "string"
+                ],
+                "name": "name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>This event is fired every time the client joins a group. If the client leaves\na group, this event will be fired again on the next time the client joins the group.</p>\n",
+            "summary": "<p>This event is fired every time the client joins a group. If the client leaves\na group, this event will be fired again on the next time the client joins the group.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.fire('join', {\n                group: group\n            });\n            deferred.resolve(group);\n        }, function errorHandler(err) {\n            deferred.reject(err);\n        });\n        return retVal;\n    };",
+        "ctx": {
+            "type": "event",
+            "name": "respoke.Client#join",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.addGroup"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "",
+                "description": ""
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Add a Group. This is called when we join a group and need to begin keeping track of it.</p>\n",
+            "summary": "<p>Add a Group. This is called when we join a group and need to begin keeping track of it.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "that.addGroup = function (newGroup) {\n        if (!newGroup || newGroup.className !== 'respoke.Group') {\n            throw new Error(\"Can't add group to internal tracking without a group.\");\n        }\n\n        newGroup.listen('leave', function leaveHandler(evt) {\n            newGroup.removeMember({connectionId: evt.connection.id});\n            var endpt = evt.connection.getEndpoint();\n            if (!endpt.hasListeners('presence')) {\n                checkEndpointForRemoval(endpt);\n            }\n        }, true);\n\n        groups.push(newGroup);\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "addGroup",
+            "string": "that.addGroup()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.getGroups"
+            },
+            {
+                "type": "returns",
+                "string": "{Array<respoke.Group>} All of the groups the library is aware of."
+            }
+        ],
+        "description": {
+            "full": "<p>Get a list of all the groups the client is currently a member of.</p>\n",
+            "summary": "<p>Get a list of all the groups the client is currently a member of.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getGroups = function () {\n        return groups;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getGroups",
+            "string": "that.getGroups()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.getGroup"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.id",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onJoin"
+                ],
+                "name": "[params.onJoin]",
+                "description": "- Receive notification that an endpoint has joined this group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onLeave"
+                ],
+                "name": "[params.onLeave]",
+                "description": "- Receive notification that an endpoint has left this group."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Receive notification that a message has been\nreceived to a group."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Group|undefined} The group whose ID was specified."
+            }
+        ],
+        "description": {
+            "full": "<p>Find a group by id and return it.</p>\n<pre><code>var group = client.getGroup({\n    id: &quot;resistance&quot;\n});\n</code></pre>",
+            "summary": "<p>Find a group by id and return it.</p>\n",
+            "body": "<pre><code>var group = client.getGroup({\n    id: &quot;resistance&quot;\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getGroup = function (params) {\n        var group;\n        if (!params || !params.id) {\n            throw new Error(\"Can't get a group without group id.\");\n        }\n\n        groups.every(function eachGroup(grp) {\n            if (grp.id === params.id) {\n                group = grp;\n                return false;\n            }\n            return true;\n        });\n\n        if (group) {\n            group.listen('join', params.onJoin);\n            group.listen('leave', params.onLeave);\n            group.listen('message', params.onMessage);\n        }\n\n        return group;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getGroup",
+            "string": "that.getGroup()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "todo",
+                "string": "TODO Need to account for Endpoints not created as part of a group. These do not need to be\ndeleted based on group membership."
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.checkEndpointForRemoval"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.id",
+                "description": "- The ID of the Endpoint to check for removal."
+            },
+            {
+                "type": "private",
+                "visibility": "private"
+            }
+        ],
+        "description": {
+            "full": "<p>Remove an Endpoint. Since an endpoint can be a member of multiple groups, we can&#39;t just remove it from\nour list on respoke.Endpoint#leave. We must see if it&#39;s a member of any more groups. If it&#39;s not\na member of any other groups, we can stop keeping track of it.</p>\n",
+            "summary": "<p>Remove an Endpoint. Since an endpoint can be a member of multiple groups, we can&#39;t just remove it from\nour list on respoke.Endpoint#leave. We must see if it&#39;s a member of any more groups. If it&#39;s not\na member of any other groups, we can stop keeping track of it.</p>\n",
+            "body": ""
+        },
+        "isPrivate": true,
+        "fires": [],
+        "ignore": false,
+        "code": "function checkEndpointForRemoval(params) {\n        params = params || {};\n        if (!params.id) {\n            throw new Error(\"Can't remove endpoint from internal tracking without group id.\");\n        }\n\n        Q.all(groups.map(function eachGroup(group) {\n            return group.getMembers();\n        })).done(function successHandler(connectionsByGroup) {\n            // connectionsByGroup is a two-dimensional array where the first dimension is a group\n            // and the second dimension is a connection.\n            var absent = connectionsByGroup.every(function eachConnectionList(connectionList) {\n                return connectionList.every(function eachConnection(conn) {\n                    return (conn.endpointId !== params.id);\n                });\n            });\n            if (absent) {\n                endpoints.every(function eachEndpoint(ept, index) {\n                    if (ept.id === params.id) {\n                        endpoints.splice(index, 1);\n                        return false;\n                    }\n                    return true;\n                });\n            }\n        });\n    }",
+        "ctx": {
+            "type": "function",
+            "name": "checkEndpointForRemoval",
+            "string": "checkEndpointForRemoval()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "ignore",
+                "string": "If the endpoint is not found in the local cache of endpoint objects (see `client.getEndpoints()`),\nit will be created. This is useful, for example, in the case of dynamic endpoints where groups are\nnot in use. Override dynamic endpoint creation by setting `params.skipCreate = true`.\n"
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.getEndpoint"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.id",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Handle messages sent to the logged-in user\nfrom this one Endpoint."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint.onPresence"
+                ],
+                "name": "[params.onPresence]",
+                "description": "- Handle presence notifications from this one\nEndpoint."
+            },
+            {
+                "type": "arg",
+                "string": "{boolean} [params.skipCreate] - Skip the creation step and return undefined if we don't yet"
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Endpoint} The endpoint whose ID was specified."
+            }
+        ],
+        "description": {
+            "full": "<p>Find an endpoint by id and return the <code>respoke.Endpoint</code> object.</p>\n<p>If it is not already cached locally, will be added to the local cache of tracked endpoints,\nits presence will be determined, and will be available in <code>client.getEndpoints()</code>.</p>\n<pre><code>var endpoint = client.getEndpoint({\n    id: &quot;dlee&quot;\n});\n</code></pre>",
+            "summary": "<p>Find an endpoint by id and return the <code>respoke.Endpoint</code> object.</p>\n",
+            "body": "<p>If it is not already cached locally, will be added to the local cache of tracked endpoints,\nits presence will be determined, and will be available in <code>client.getEndpoints()</code>.</p>\n<pre><code>var endpoint = client.getEndpoint({\n    id: &quot;dlee&quot;\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getEndpoint = function (params) {\n        var endpoint;\n        if (!params || !params.id) {\n            throw new Error(\"Can't get an endpoint without endpoint id.\");\n        }\n\n        endpoints.every(function eachEndpoint(ept) {\n            if (ept.id === params.id) {\n                endpoint = ept;\n                return false;\n            }\n            return true;\n        });\n\n        if (!endpoint && params && !params.skipCreate) {\n            params.instanceId = instanceId;\n            params.signalingChannel = signalingChannel;\n            params.resolveEndpointPresence = clientSettings.resolveEndpointPresence;\n            params.addCall = addCall;\n\n            endpoint = respoke.Endpoint(params);\n            signalingChannel.registerPresence({\n                endpointList: [endpoint.id]\n            }).done(null, function (err) {\n                log.error(\"Couldn't register for presence on\", endpoint.id, err.message);\n            });\n            endpoints.push(endpoint);\n        }\n\n        if (endpoint) {\n            endpoint.listen('presence', params.onPresence);\n            endpoint.listen('message', params.onMessage);\n        }\n\n        return endpoint;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getEndpoint",
+            "string": "that.getEndpoint()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "ignore",
+                "string": "In most cases, if we don't find it we will create it. This is useful\nin the case of dynamic endpoints where groups are not in use. Set skipCreate=true\nto return undefined if the Connection is not already known.\n"
+            },
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.getConnection"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "object"
+                ],
+                "name": "params",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "params.connectionId",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "[params.endpointId]",
+                "description": "- An endpointId to use in the creation of this connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint.onMessage"
+                ],
+                "name": "[params.onMessage]",
+                "description": "- Handle messages sent to the logged-in user\nfrom this one Connection."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint.onPresence"
+                ],
+                "name": "[params.onPresence]",
+                "description": "- Handle presence notifications from this one\nConnection."
+            },
+            {
+                "type": "returns",
+                "string": "{respoke.Connection} The connection whose ID was specified."
+            }
+        ],
+        "description": {
+            "full": "<p>Find a Connection by id and return it.</p>\n<pre><code>var connection = client.getConnection({\n    id: &quot;XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX&quot;\n});\n</code></pre>",
+            "summary": "<p>Find a Connection by id and return it.</p>\n",
+            "body": "<pre><code>var connection = client.getConnection({\n    id: &quot;XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX&quot;\n});\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getConnection = function (params) {\n        var connection;\n        var endpoint;\n        var endpointsToSearch = endpoints;\n\n        params = params || {};\n        if (!params.connectionId) {\n            throw new Error(\"Can't get a connection without connection id.\");\n        }\n        if (!params.endpointId && !params.skipCreate) {\n            throw new Error(\"Can't create a connection without endpoint id.\");\n        }\n\n        if (params.endpointId) {\n            endpoint = that.getEndpoint({\n                id: params.endpointId,\n                skipCreate: params.skipCreate\n            });\n\n            endpointsToSearch = [];\n            if (endpoint) {\n                endpointsToSearch = [endpoint];\n            }\n        }\n\n        endpointsToSearch.every(function eachEndpoint(ept) {\n            connection = ept.getConnection(params);\n            return !connection;\n        });\n\n        if (!connection && !params.skipCreate) {\n            params.instanceId = instanceId;\n            connection = respoke.Connection(params);\n            endpoint.connections.push(connection);\n        }\n\n        return connection;\n    };",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getConnection",
+            "string": "that.getConnection()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "memberof",
+                "string": "respoke.Client"
+            },
+            {
+                "type": "method",
+                "string": "respoke.Client.getEndpoints"
+            },
+            {
+                "type": "returns",
+                "string": "{Array<respoke.Endpoint>}"
+            }
+        ],
+        "description": {
+            "full": "<p>Get the list of <strong>all endpoints</strong> that the library has knowledge of.\nThese are <code>respoke.Endpoint</code> objects, not just the endpointIds.</p>\n<p>The library gains knowledge of an endpoint in two ways:</p>\n<ol>\n<li>when an endpoint joins a group that the user (currently logged-in endpoint) is a member of (if group presence is enabled)</li>\n<li>when an endpoint that the user (currently logged-in endpoint) is watching*</li>\n</ol>\n<p>*If an endpoint that the library does not know about sends a message to the client, you\ncan immediately call the <code>client.getEndpoint()</code> method on the sender of the message to enable\nwatching of the sender&#39;s endpoint.</p>\n<pre><code> client.on(&#39;message&#39;, function (data) {\n     if (data.endpoint) {\n         // start tracking this endpoint.\n         client.getEndpoint({ id: data.endpoint.id });\n     }\n });\n</code></pre>",
+            "summary": "<p>Get the list of <strong>all endpoints</strong> that the library has knowledge of.\nThese are <code>respoke.Endpoint</code> objects, not just the endpointIds.</p>\n",
+            "body": "<p>The library gains knowledge of an endpoint in two ways:</p>\n<ol>\n<li>when an endpoint joins a group that the user (currently logged-in endpoint) is a member of (if group presence is enabled)</li>\n<li>when an endpoint that the user (currently logged-in endpoint) is watching*</li>\n</ol>\n<p>*If an endpoint that the library does not know about sends a message to the client, you\ncan immediately call the <code>client.getEndpoint()</code> method on the sender of the message to enable\nwatching of the sender&#39;s endpoint.</p>\n<pre><code> client.on(&#39;message&#39;, function (data) {\n     if (data.endpoint) {\n         // start tracking this endpoint.\n         client.getEndpoint({ id: data.endpoint.id });\n     }\n });\n</code></pre>"
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "code": "that.getEndpoints = function () {\n        return endpoints;\n    };\n\n    return that;\n}; // End respoke.Client",
+        "ctx": {
+            "type": "method",
+            "receiver": "that",
+            "name": "getEndpoints",
+            "string": "that.getEndpoints()",
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.successHandler"
+            }
+        ],
+        "description": {
+            "full": "<p>Handle sending successfully.</p>\n",
+            "summary": "<p>Handle sending successfully.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.joinHandler"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "group",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Handle joining a group successfully. This callback is called only once when Client.join() is called.</p>\n",
+            "summary": "<p>Handle joining a group successfully. This callback is called only once when Client.join() is called.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onJoin"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "evt.group",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that the client has joined a group. This callback is called everytime\nrespoke.Client#join is fired.</p>\n",
+            "summary": "<p>Receive notification that the client has joined a group. This callback is called everytime\nrespoke.Client#join is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onLeave"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "evt.group",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that the client has left a group. This callback is called everytime\nrespoke.Client#leave is fired.</p>\n",
+            "summary": "<p>Receive notification that the client has left a group. This callback is called everytime\nrespoke.Client#leave is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onClientMessage"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.TextMessage"
+                ],
+                "name": "evt.message",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Group"
+                ],
+                "name": "[evt.group]",
+                "description": "- If the message is to a group we already know about,\nthis will be set. If null, the developer can use client.join({id: evt.message.header.channel}) to join\nthe group. From that point forward, Group#message will fire when a message is received as well. If\ngroup is undefined instead of null, the message is not a group message at all."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that a message has been received. This callback is called every time\nrespoke.Client#message is fired.</p>\n",
+            "summary": "<p>Receive notification that a message has been received. This callback is called every time\nrespoke.Client#message is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onCall"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.call",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "evt.endpoint",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that the client is receiving a call from a remote party. This callback is called every\ntime respoke.Client#call is fired.</p>\n",
+            "summary": "<p>Receive notification that the client is receiving a call from a remote party. This callback is called every\ntime respoke.Client#call is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onDirectConnection"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.DirectConnection"
+                ],
+                "name": "evt.directConnection",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Endpoint"
+                ],
+                "name": "evt.endpoint",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Call"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification that the client is receiving a request for a direct connection from a remote party.\nThis callback is called every time respoke.Client#direct-connection is fired.</p>\n",
+            "summary": "<p>Receive notification that the client is receiving a request for a direct connection from a remote party.\nThis callback is called every time respoke.Client#direct-connection is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onConnect"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification Respoke has successfully connected to the cloud. This callback is called every time\nrespoke.Client#connect is fired.</p>\n",
+            "summary": "<p>Receive notification Respoke has successfully connected to the cloud. This callback is called every time\nrespoke.Client#connect is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onDisconnect"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification Respoke has successfully disconnected from the cloud. This callback is called every time\nrespoke.Client#disconnect is fired.</p>\n",
+            "summary": "<p>Receive notification Respoke has successfully disconnected from the cloud. This callback is called every time\nrespoke.Client#disconnect is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.onReconnect"
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Event"
+                ],
+                "name": "evt",
+                "description": ""
+            },
+            {
+                "type": "param",
+                "types": [
+                    "string"
+                ],
+                "name": "evt.name",
+                "description": "- the event name."
+            },
+            {
+                "type": "param",
+                "types": [
+                    "respoke.Client"
+                ],
+                "name": "evt.target",
+                "description": ""
+            }
+        ],
+        "description": {
+            "full": "<p>Receive notification Respoke has successfully reconnected to the cloud. This callback is called every time\nrespoke.Client#reconnect is fired.</p>\n",
+            "summary": "<p>Receive notification Respoke has successfully reconnected to the cloud. This callback is called every time\nrespoke.Client#reconnect is fired.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.disconnectSuccessHandler"
+            }
+        ],
+        "description": {
+            "full": "<p>Handle disconnection to the cloud successfully.</p>\n",
+            "summary": "<p>Handle disconnection to the cloud successfully.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.errorHandler"
+            },
+            {
+                "type": "params",
+                "string": "{Error} err"
+            }
+        ],
+        "description": {
+            "full": "<p>Handle an error that resulted from a method call.</p>\n",
+            "summary": "<p>Handle an error that resulted from a method call.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    },
+    {
+        "tags": [
+            {
+                "type": "callback",
+                "string": "respoke.Client.connectSuccessHandler"
+            }
+        ],
+        "description": {
+            "full": "<p>Handle connection to the cloud successfully.</p>\n",
+            "summary": "<p>Handle connection to the cloud successfully.</p>\n",
+            "body": ""
+        },
+        "isPrivate": false,
+        "fires": [],
+        "ignore": false,
+        "ctx": {
+            "file": {
+                "input": "respoke/client.js",
+                "output": ".docs/site/respoke/client.js.json"
+            }
+        }
+    }
+]
