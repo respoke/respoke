@@ -88,7 +88,6 @@
     "grunt-webpack": "^1.0.7",
     "jscs": "^1.7.3",
     "jscs-trailing-whitespace-in-source": "0.0.1",
-    "jsdoc": "^3.3.0-alpha5",
     "jsdoxy": "^0.7.4",
     "jshint": "^2.5.1",
     "karma": "~0.12.16",
