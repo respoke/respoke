@@ -30,6 +30,8 @@ require('./deps/adapter');
  * Include the [latest version](https://cdn.respoke.io/respoke.min.js) or
  * [choose a previous release](http://cdn.respoke.io/list.html).
  *
+ * Or use `npm install --save respoke`.
+ *
  * Interact with Respoke primarily via [`respoke.Client`](respoke.Client.html):
  *
  *      var client = respoke.createClient();

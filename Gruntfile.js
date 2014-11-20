@@ -88,6 +88,53 @@ module.exports = function (grunt) {
                 files: ['respoke/**/*.js', 'plugins/**/*.js'],
                 tasks: ['dist']
             }
+        },
+
+        // Generating Documentation
+        jsdoxy: {
+            options: {
+                jsonOutput: '.docs/jsdoxy-output.json',
+                outputPrivate: false,
+                template: './docs.jade'
+            },
+            files: {
+                src: [
+                    "respoke/call.js",
+                    "respoke/client.js",
+                    "respoke/connection.js",
+                    "respoke/directConnection.js",
+                    "respoke/endpoint.js",
+                    "respoke/event.js",
+                    "respoke/group.js",
+                    "respoke/localMedia.js",
+                    "respoke/presentable.js",
+                    "respoke/remoteMedia.js",
+                    "respoke/respoke.js",
+                    "plugins/respoke-stats/respoke-stats.js"
+                ],
+                dest: '.docs/site/'
+            }
+        },
+        copy: {
+            docs: {
+                files: {
+                    '.docs/site/index.html': '.docs/site/respoke.html'
+                }
+            }
+        },
+        clean: {
+            'post-docs': {
+                files: {
+                    src: ['.docs/site/respoke.html']
+                }
+            }
+        },
+        'gh-pages': {
+            options: {
+                base: '.docs/site',
+                repo: 'git@github.com:respoke/respoke.git'
+            },
+            src: ['**']
         }
     });
 
@@ -98,6 +145,10 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-env');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('jsdoxy');
 
     grunt.registerTask('dist', [
         'webpack',
@@ -181,5 +232,12 @@ module.exports = function (grunt) {
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'
+    ]);
+
+    grunt.registerTask('docs', 'Build the documentation and publish to respoke.github.io', [
+        'jsdoxy',
+        'copy:docs',
+        'clean:post-docs',
+        // 'gh-pages'
     ]);
 };
