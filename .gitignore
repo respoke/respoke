@@ -2,6 +2,7 @@
 node_modules/
 build/
 *.log
+.docs/
 
 # OS
 .DS_Store
