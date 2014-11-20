@@ -344,7 +344,7 @@ describe("Respoke presence", function () {
             fixtureCleanup: function (next) {
                 testFixture.afterTest(function (err) {
                     if (err) {
-                        next(new Error(JSON.stringify(err)));
+                        next(err);
                     }
                     next();
                 });

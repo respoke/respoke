@@ -66,6 +66,9 @@ module.exports = function(config) {
             }
         },
 
+        // The build machines are _really_ slow
+        browserNoActivityTimeout: 60000,
+
         // If browser does not capture in given timeout [ms], kill it
         captureTimeout: 60000
     });

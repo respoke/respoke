@@ -351,7 +351,7 @@ describe("Respoke groups", function () {
         Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {
-                    return done(new Error(JSON.stringify(err)));
+                    return done(err);
                 }
                 done();
             });
