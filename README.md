@@ -4,9 +4,19 @@ Browser/Client Library for [Respoke](https://www.respoke.io). Use this library i
 app to add individual and group messaging, contact discovery, and voice and video calling to web
 apps.
 
-If you want to *use* this library in your app, you probably want to reference it via
-[this link on our CDN](https://cdn.respoke.io/respoke.min.js). Older versions are
-[listed here](https://cdn.respoke.io/list.html).
+## Usage
+
+    npm install respoke
+
+then
+
+    require('respoke');
+
+Or grab a release from the CDN:
+
+* [Latest respoke.min.js](https://cdn.respoke.io/respoke.min.js)
+* [Latest respoke-stats.min.js](https://cdn.respoke.io/respoke-stats.min.js)
+* [List](https://cdn.respoke.io/list.html)
 
 ## Documentation
 
