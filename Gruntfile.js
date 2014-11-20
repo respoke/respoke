@@ -238,6 +238,6 @@ module.exports = function (grunt) {
         'jsdoxy',
         'copy:docs',
         'clean:post-docs',
-        'gh-pages'
+        // 'gh-pages'
     ]);
 };
