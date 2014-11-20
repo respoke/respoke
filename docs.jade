@@ -1,0 +1,192 @@
+// Copyright 2014, Digium, Inc.
+// All rights reserved.
+//
+// This source code is licensed under The MIT License found in the
+// LICENSE file in the root directory of this source tree.
+//
+// For all details and documentation:  https://www.respoke.io
+- var subTitle = comments[0].ctx.file.input;
+- var title = className;
+- var publicComments = [];
+- var publicEvents = [];
+- var classComment = null;
+
+doctype html
+html
+  head
+    title=subTitle + " - " + title
+    link(rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css")
+    link(rel="stylesheet" href="https://highlightjs.org/static/styles/github.css")
+    script(src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js")
+    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js")
+    script(src="https://highlightjs.org/static/highlight.pack.js")
+    script.
+      hljs.initHighlightingOnLoad();
+  body
+    .container
+      //- h1= title
+      //- h2.help-block= subTitle
+      each comment in comments
+        if !comment.isPrivate && comment.ctx && ['method','property','function','declaration','event'].indexOf(comment.ctx.type) !== -1 && comment.ctx.name !== "className"
+          - comment.methodParams = [];
+          - comment.argumentArray = [];
+          - comment.eventPropertyArray = [];
+          each tag in comment.tags
+
+            if (tag.type === "param")
+              - var tagParamName = tag.name;//.replace('[','').replace(']','');
+              - comment.methodParams.push({   name: tagParamName,   type: tag.types.join(', '),   desc: tag.description.replace('- ','')  });
+              - if (tagParamName.indexOf('.') === -1 && tagParamName.indexOf('[') === -1) comment.argumentArray.push(tagParamName);
+
+            else if (tag.type === "property")
+              - var tagParamName = tag.name.replace('[','').replace(']','');
+              - comment.eventPropertyArray.push({   name: tagParamName,   type: tag.types[0],   desc: tag.description.replace('- ','')  });
+
+            else if (tag.type === "type")
+              - comment.type = tag.types.join('|');
+            else if ( (tag.type === "returns" || tag.type === "return") && tag.string)
+              - var returnStringArray = tag.string.split( /\{|\}/g );
+              - if (!returnStringArray[0]) returnStringArray.shift();
+              - comment.returns = returnStringArray[0];
+            else if (tag.type === "augments" && tag.otherClass)
+              - comment.augments = tag.otherClass
+            else if (tag.type === "auth")
+              - comment.auth = tag.string.split(', ')
+
+          - if (comment.ctx.name == className) classComment = comment;
+          - else if (comment.ctx.type === 'event') publicEvents.push(comment);
+          - else
+            - if (comment.ctx.receiver && comment.ctx.receiver.indexOf('.') !== -1)
+              - var commentPrefix = comment.ctx.receiver.split('.');
+              - commentPrefix.shift()
+              - comment.ctx.name = commentPrefix.join('.') + '.' + comment.ctx.name;
+            - publicComments.push(comment);
+
+      - publicComments.unshift(classComment);
+
+
+      //- Properties and methods
+      each comment, indx in publicComments
+        .comment(id=comment.ctx.name.replace('.','-'))
+          if (indx === 0)
+            //- do nothing, the first comment is the class declaration
+          else if (comment.ctx.type === "property")
+            //- the title of the method or prop
+            h3
+              code= comment.type
+              a.bold(href="#"+comment.ctx.name)= " " + className + "." + comment.ctx.name
+          else if (comment.ctx.type === "function")
+            h3
+              code= "function"
+              a.bold(href="#"+comment.ctx.name)= " " + className + "." + comment.ctx.name
+          else
+            h3: a(href="#"+comment.ctx.name)
+              span.bold= " " + className + "." + comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
+            if (comment.returns)
+              p: strong returns
+                code= comment.returns || "undefined"
+
+
+          //- info about the method or prop
+          if (comment.augments)
+            p: strong extends&nbsp;
+              a(href="/js-library/" + comment.augments + ".html"): code= comment.augments
+
+          if (comment.fires && comment.fires.length)
+            p
+              strong fires
+              code= comment.fires.map(function(f){ return f.replace(className + '#','') }).join('|')
+
+          if (comment.auth)
+            p
+              each meth in comment.auth
+                span.label.label-default= meth
+                | &nbsp;
+
+          div!= comment.description.full
+
+          //- Arguments
+          if (comment.methodParams.length)
+            br
+            h4 Arguments
+
+            .row.hidden-xs.param
+              .col-sm-4 Name
+              .col-sm-3 Type
+              .col-sm-5
+
+            each param in comment.methodParams
+              .row.param
+                .col-sm-4: code= param.name
+                .col-sm-3: strong= param.type
+                .col-sm-5= param.desc
+              br.visible-xs
+          br
+          br
+          //- put a header at the end of the class declaration
+          if (indx === 0)
+            h2 Properties and Methods
+
+          //-
+          //- Uncomment for devving!!!
+          //-
+          //- a(href="javascript:void(0)" onclick="this.nextSibling.style.display = this.nextSibling.style.display == 'block' ? 'none' : 'block'") JSON
+          //- pre(style="display:none")
+          //-   code=JSON.stringify(comment, null, 4)
+      //- Events
+      if (publicEvents.length)
+
+        br
+        br
+        h2 Events
+
+        p Listen for events on an instance of this class.
+
+        pre
+          code
+            =className
+            //- | .listen('event-name', function (arg) {
+            //- |
+            //- | });
+
+        br
+
+        each comment, indx in publicEvents
+
+            - var eventLinkId = "event-" + comment.ctx.name.replace('.','-').replace('#','-');
+            div(id=eventLinkId)
+
+              h3
+                code= comment.ctx.type
+                = " "
+                a.bold(href="#" + eventLinkId)= comment.ctx.name
+
+              div!= comment.description.full
+
+              if (comment.eventPropertyArray.length)
+                br
+                h4 Callback Arguments
+
+                .row.hidden-xs.param
+                  .col-sm-4 Name
+                  .col-sm-3 Type
+                  .col-sm-5
+
+                each param in comment.eventPropertyArray
+                  .row.param
+                    .col-sm-4: code= param.name
+                    .col-sm-3: strong= param.type
+                    .col-sm-5= param.desc
+                  br.visible-xs
+
+              br
+              br
+
+              //-
+              //-
+              //- Uncomment for devving!!!
+              //-
+              //-
+              //- a(href="javascript:void(0)" onclick="this.nextSibling.style.display = this.nextSibling.style.display == 'block' ? 'none' : 'block'") JSON
+              //- pre(style="display:none")
+              //-   code=JSON.stringify(comment, null, 4)
