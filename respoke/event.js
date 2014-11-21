@@ -165,6 +165,7 @@ var EventEmitter = module.exports = function (params) {
     that.fire = function (eventType, evt) {
         var args = null;
         var count = 0;
+        var toRemove = [];
 
         evt = evt || {};
         evt.name = eventType;
@@ -179,17 +180,22 @@ var EventEmitter = module.exports = function (params) {
             return;
         }
 
-        for (var i = eventList[eventType].length; i > -1; i -= 1) {
+        for (var i = 0; i < eventList[eventType].length; i += 1) {
             var listener = eventList[eventType][i];
             if (typeof listener === 'function') {
                 setTimeout(listenerBuilder(listener, evt, eventType));
 
                 count += 1;
                 if (listener.once) {
-                    eventList[eventType].splice(i, 1);
+                    toRemove.push(i);
                 }
             }
         }
+
+        for (var i = toRemove.length; i > -1; i -= 1) {
+            eventList[eventType].splice(toRemove[i], 1);
+        }
+
         log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 

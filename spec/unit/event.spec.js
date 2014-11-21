@@ -1,7 +1,7 @@
 
 var expect = chai.expect;
 
-describe.only("A respoke.EventEmitter", function () {
+describe("A respoke.EventEmitter", function () {
     var results = [];
     var eventEmitter = respoke.EventEmitter({
         "gloveColor": "white"
@@ -120,6 +120,37 @@ describe.only("A respoke.EventEmitter", function () {
                 expect(results['5']).to.equal(1);
                 expect(results['6']).to.equal(1);
             });
+
+            describe("multiple events", function () {
+                var value;
+
+                beforeEach(function () {
+                    eventEmitter.listen('order', function () {
+                        value = 1;
+                    });
+                    eventEmitter.listen('order', function () {
+                        value = 2;
+                    });
+                    eventEmitter.listen('order', function () {
+                        value = 3;
+                    });
+                    eventEmitter.listen('order', function () {
+                        value = 4;
+                    });
+                });
+
+                it("should fire in the order in which they were added", function (done) {
+                    eventEmitter.listen('order', function () {
+                        try {
+                            expect(value).to.equal(4);
+                            done();
+                        } catch (err) {
+                            done(err);
+                        }
+                    });
+                    eventEmitter.fire('order');
+                });
+            });
         });
 
         describe("when ignored", function () {
@@ -175,13 +206,13 @@ describe.only("A respoke.EventEmitter", function () {
             beforeEach(function (done) {
                 eventEmitter.once('multiTest', function () {
                     thing1 = true;
-                    done();
                 });
                 eventEmitter.once('multiTest', function () {
                     thing2 = true;
                 });
                 eventEmitter.once('multiTest', function () {
                     thing3 = true;
+                    done();
                 });
                 eventEmitter.fire('multiTest');
             });
