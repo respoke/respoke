@@ -186,6 +186,15 @@ module.exports = function (params) {
     });
 
     /**
+     * extracted extra info from the sdp
+     * may be basis for call rejection/auto answer
+     *
+     * @name remoteFingerprint
+     * @type {string}
+     */
+    that.remoteSdpExtract = undefined;
+
+    /**
      * Remote media that we are receiving from the remote party.
      * @name incomingMedia
      * @type {respoke.RemoteMedia}
@@ -1145,6 +1154,11 @@ module.exports = function (params) {
          */
         that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
         that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
+
+        /*
+         * extra info for accept/reject choice
+         */
+        that.remoteSdpExtract = respoke.sdpExtract(evt.signal.sessionDescription.sdp);
 
         log.info("Setting outgoingMedia constraints to", that.outgoingMedia.constraints);
 

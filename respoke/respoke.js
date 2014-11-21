@@ -433,6 +433,17 @@ respoke.isEqual = function (a, b) {
     return a === b;
 };
 
+/*  
+ * extract something from the sdp
+ * set this method to glean extra info on an sdp param
+ * @static 
+ * @memberof respoke
+ * @params {RTCSessionDescription}
+ * @returns {boolean}
+ */
+respoke.sdpExtract = function(sdp){
+    return undefined;
+}
 /*
  * Does the sdp indicate an audio stream?
  * @static
