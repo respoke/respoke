@@ -736,7 +736,7 @@ module.exports = function (params) {
         }
         pc = null;
 
-        if (that.call.callDebugReportEnabled) {
+        if (that.call.enableCallDebugReport) {
             signalReport({
                 report: that.report
             });
