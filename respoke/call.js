@@ -189,7 +189,7 @@ module.exports = function (params) {
      * extracted extra info from the sdp
      * may be basis for call rejection/auto answer
      *
-     * @name remoteFingerprint
+     * @name remoteSdpExtract
      * @type {string}
      */
     that.remoteSdpExtract = undefined;
