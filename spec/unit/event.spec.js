@@ -1,7 +1,7 @@
 
 var expect = chai.expect;
 
-describe("A respoke.EventEmitter", function () {
+describe.only("A respoke.EventEmitter", function () {
     var results = [];
     var eventEmitter = respoke.EventEmitter({
         "gloveColor": "white"
@@ -165,6 +165,32 @@ describe("A respoke.EventEmitter", function () {
 
         it("removes the listener after it fires", function () {
             expect(eventEmitter.hasListeners('onceTest')).to.equal(false);
+        });
+
+        describe("called with different functions", function () {
+            var thing1;
+            var thing2;
+            var thing3;
+
+            beforeEach(function (done) {
+                eventEmitter.once('multiTest', function () {
+                    thing1 = true;
+                    done();
+                });
+                eventEmitter.once('multiTest', function () {
+                    thing2 = true;
+                });
+                eventEmitter.once('multiTest', function () {
+                    thing3 = true;
+                });
+                eventEmitter.fire('multiTest');
+            });
+
+            it("calls all the methods", function () {
+                expect(thing1).to.equal(true);
+                expect(thing2).to.equal(true);
+                expect(thing3).to.equal(true);
+            });
         });
     });
 });

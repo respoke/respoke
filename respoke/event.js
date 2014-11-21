@@ -61,7 +61,9 @@ var EventEmitter = module.exports = function (params) {
      * not be used by developers who are using the library, only by developers who are working on the library itself.
      */
     that.once = function (eventType, listener, isInternal) {
+        var string = listener.toString();
         listener = respoke.once(listener);
+        listener.toString = function () { return string; }
         listener.once = true;
         that.listen(eventType, listener, isInternal);
     };
