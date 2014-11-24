@@ -5,8 +5,8 @@ describe("A Direct Connection", function () {
 
     var testEnv;
     var directConnection;
-    var follower = {};
-    var followee = {};
+    var followerClient = {};
+    var followeeClient = {};
     var groupId = respoke.makeGUID();
     var groupRole = {
         name: 'fixturerole',
@@ -53,28 +53,28 @@ describe("A Direct Connection", function () {
             followerToken = token1;
             followeeToken = token2;
 
-            follower = respoke.createClient();
-            followee = respoke.createClient();
+            followerClient = respoke.createClient();
+            followeeClient = respoke.createClient();
 
-            return respoke.Q.all([follower.connect({
+            return respoke.Q.all([followerClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followerToken.tokenId
-            }), followee.connect({
+            }), followeeClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followeeToken.tokenId
             })]);
         }).then(function () {
-            expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(followerToken.endpointId);
-            expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(followeeToken.endpointId);
-            follower.listen('call', function () {});
-            followee.listen('call', function () {});
+            expect(followerClient.endpointId).not.to.be.undefined;
+            expect(followerClient.endpointId).to.equal(followerToken.endpointId);
+            expect(followeeClient.endpointId).not.to.be.undefined;
+            expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
+            followerClient.listen('call', function () {});
+            followeeClient.listen('call', function () {});
         }).done(function () {
-            followerEndpoint = followee.getEndpoint({id: follower.endpointId});
-            followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
+            followerEndpoint = followeeClient.getEndpoint({id: followerClient.endpointId});
+            followeeEndpoint = followerClient.getEndpoint({id: followeeClient.endpointId});
             done();
         }, function (err) {
             expect(err).to.be.defined;
@@ -97,7 +97,7 @@ describe("A Direct Connection", function () {
 
             beforeEach(function (done) {
                 done = doneCountBuilder(1, done);
-                followee.listen('direct-connection', callListener);
+                followeeClient.listen('direct-connection', callListener);
 
                 directConnection = followeeEndpoint.startDirectConnection({
                     onOpen: function (evt) {
@@ -112,7 +112,7 @@ describe("A Direct Connection", function () {
             });
 
             afterEach(function () {
-                followee.ignore('direct-connection', callListener);
+                followeeClient.ignore('direct-connection', callListener);
             });
 
             it("succeeds", function () {
@@ -127,7 +127,7 @@ describe("A Direct Connection", function () {
             directConnection.close();
         }
 
-        respoke.Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
+        respoke.Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {
                     done(err);
