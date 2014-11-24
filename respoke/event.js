@@ -186,13 +186,13 @@ var EventEmitter = module.exports = function (params) {
                 setTimeout(listenerBuilder(listener, evt, eventType));
 
                 count += 1;
-                if (listener.once) {
+                if (listener.once === true) {
                     toRemove.push(i);
                 }
             }
         }
 
-        for (var i = toRemove.length; i > -1; i -= 1) {
+        for (var i = (toRemove.length - 1); i >= 0; i -= 1) {
             eventList[eventType].splice(toRemove[i], 1);
         }
 
