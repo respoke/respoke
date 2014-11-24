@@ -1048,7 +1048,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (params.caller === undefined) {
+        if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
 
