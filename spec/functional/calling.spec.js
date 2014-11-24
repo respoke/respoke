@@ -6,8 +6,8 @@ describe("Respoke calling", function () {
 
     var testEnv;
     var call;
-    var follower = {};
-    var followee = {};
+    var followerClient = {};
+    var followeeClient = {};
     var groupId = respoke.makeGUID();
     var groupRole = {
         name: 'fixturerole',
@@ -54,26 +54,26 @@ describe("Respoke calling", function () {
             followerToken = token1;
             followeeToken = token2;
 
-            follower = respoke.createClient();
-            followee = respoke.createClient();
+            followerClient = respoke.createClient();
+            followeeClient = respoke.createClient();
 
-            return respoke.Q.all([follower.connect({
+            return respoke.Q.all([followerClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followerToken.tokenId
-            }), followee.connect({
+            }), followeeClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followeeToken.tokenId
             })]);
         }).then(function () {
-            expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(followerToken.endpointId);
-            expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(followeeToken.endpointId);
+            expect(followerClient.endpointId).not.to.be.undefined;
+            expect(followerClient.endpointId).to.equal(followerToken.endpointId);
+            expect(followeeClient.endpointId).not.to.be.undefined;
+            expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
         }).done(function () {
-            followerEndpoint = followee.getEndpoint({id: follower.endpointId});
-            followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
+            followerEndpoint = followeeClient.getEndpoint({id: followerClient.endpointId});
+            followeeEndpoint = followerClient.getEndpoint({id: followeeClient.endpointId});
             done();
         }, done);
     });
@@ -91,7 +91,7 @@ describe("Respoke calling", function () {
             var remoteElement
 
             beforeEach(function (done) {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
                 var doneOnce = doneOnceBuilder(done);
 
                 window.call = call = followeeEndpoint.startCall({
@@ -140,7 +140,7 @@ describe("Respoke calling", function () {
                 local.id = "my-local-video-element";
                 remote = document.createElement("VIDEO");
                 remote.id = "my-remote-video-element";
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
                 expect(local.src).not.to.be.ok;
                 expect(remote.src).not.to.be.ok;
             });
@@ -204,7 +204,7 @@ describe("Respoke calling", function () {
 
             beforeEach(function (done) {
                 var doneOnce = doneOnceBuilder(done);
-                followee.listen('call', function (evt) {
+                followeeClient.listen('call', function (evt) {
                     if (evt.call.caller !== true) {
                         evt.call.answer({
                             forceTurn: false
@@ -244,7 +244,7 @@ describe("Respoke calling", function () {
 
             beforeEach(function (done) {
                 var doneOnce = doneOnceBuilder(done);
-                followee.listen('call', function (evt) {
+                followeeClient.listen('call', function (evt) {
                     if (evt.call.caller !== true) {
                         evt.call.answer({
                             forceTurn: true
@@ -285,7 +285,7 @@ describe("Respoke calling", function () {
 
         describe("with only audio", function () {
             beforeEach(function () {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
             });
 
             describe("by constraints", function () {
@@ -413,7 +413,7 @@ describe("Respoke calling", function () {
 
         describe("with only video", function () {
             beforeEach(function () {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
             });
 
             describe("by constraints", function () {
@@ -486,7 +486,7 @@ describe("Respoke calling", function () {
 
         describe("with video and audio", function () {
             beforeEach(function () {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
             });
 
             describe("by constraints", function () {
@@ -614,7 +614,7 @@ describe("Respoke calling", function () {
 
         describe("when previewLocalMedia is specified", function () {
             beforeEach(function () {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
             });
 
             it("Call.approve is not called automatically", function (done) {
@@ -699,7 +699,7 @@ describe("Respoke calling", function () {
 
         describe("the onLocalMedia callback", function () {
             beforeEach(function () {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
             });
 
             it("gets called before onApprove", function (done) {
@@ -738,7 +738,7 @@ describe("Respoke calling", function () {
         describe("the hangup method", function () {
 
             beforeEach(function () {
-                followee.listen('call', callListener);
+                followeeClient.listen('call', callListener);
                 call = followeeEndpoint.startCall({
                     constraints: {
                         video: true,
@@ -750,7 +750,7 @@ describe("Respoke calling", function () {
             });
 
             afterEach(function () {
-                followee.ignore('call', callListener);
+                followeeClient.ignore('call', callListener);
             });
 
             it("causes the hangup event to fire", function (done) {
@@ -786,12 +786,12 @@ describe("Respoke calling", function () {
                         return original.call(this, params);
                     };
 
-                    followee.listen('call', callListener);
+                    followeeClient.listen('call', callListener);
                     call = followeeEndpoint.startCall();
                 });
 
                 afterEach(function () {
-                    followee.ignore('call', callListener);
+                    followeeClient.ignore('call', callListener);
                     respoke.Call = original;
                 });
 
@@ -833,8 +833,8 @@ describe("Respoke calling", function () {
                         baseURL: respokeTestConfig.baseURL,
                         token: followerToken.tokenId,
                         onConnect: function () {
-                            followeeEndpoint_nodebug = follower_nodebug.getEndpoint({id: followee.endpointId});
-                            followee.listen('call', callListener);
+                            followeeEndpoint_nodebug = follower_nodebug.getEndpoint({id: followeeClient.endpointId});
+                            followeeClient.listen('call', callListener);
                             call = followeeEndpoint_nodebug.startCall();
                             done();
                         }
@@ -843,7 +843,7 @@ describe("Respoke calling", function () {
                 });
 
                 afterEach(function () {
-                    followee.ignore('call', callListener);
+                    followeeClient.ignore('call', callListener);
                     respoke.Call = original;
                 });
 
@@ -873,7 +873,7 @@ describe("Respoke calling", function () {
                 var muteSpy2 = sinon.spy();
 
                 beforeEach(function (done) {
-                    followee.listen('call', callListener);
+                    followeeClient.listen('call', callListener);
                     call = followeeEndpoint.startCall({
                         onLocalMedia: function (evt) {
                             localStream = evt.stream;
@@ -924,7 +924,7 @@ describe("Respoke calling", function () {
                 var muteSpy = sinon.spy();
 
                 beforeEach(function (done) {
-                    followee.listen('call', callListener);
+                    followeeClient.listen('call', callListener);
                     call = followeeEndpoint.startCall({
                         onConnect: function (evt) {
                             remoteStream = evt.stream;
@@ -976,7 +976,7 @@ describe("Respoke calling", function () {
             });
 
             it("succeeds", function (done) {
-                followee.listen('call', function (evt) {
+                followeeClient.listen('call', function (evt) {
                     call = evt.call;
                     done();
                 });
@@ -999,7 +999,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only sends audio and not video", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
@@ -1018,7 +1018,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("receives both audio and video", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
@@ -1043,7 +1043,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only sends audio and not video", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             onLocalMedia: function (evt) {
@@ -1061,7 +1061,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only receives audio and not video", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             onConnect: function (evt) {
@@ -1096,7 +1096,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only sends video and not audio", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
@@ -1115,7 +1115,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("receives both audio and video", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
@@ -1142,7 +1142,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("only sends video and not audio", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
@@ -1161,7 +1161,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("receives both audio and video", function (done) {
-                    followee.listen('call', function (evt) {
+                    followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
@@ -1215,13 +1215,13 @@ describe("Respoke calling", function () {
                 local.id = "my-local-video-element";
                 remote = document.createElement("VIDEO");
                 remote.id = "my-remote-video-element";
-                followee.listen('call', listener);
+                followeeClient.listen('call', listener);
 
                 call = followeeEndpoint.startCall();
             });
 
             afterEach(function () {
-                followee.ignore('call', listener);
+                followeeClient.ignore('call', listener);
             });
 
             it("uses my video elements and doesn't create new ones", function () {
@@ -1236,7 +1236,7 @@ describe("Respoke calling", function () {
     afterEach(function (done) {
         var promises = [];
 
-        [follower, followee].forEach(function (client) {
+        [followerClient, followeeClient].forEach(function (client) {
             if (client && client.calls) {
                 for (var i = client.calls.length - 1; i >= 0; i -= 1) {
                     client.calls[i].hangup();
