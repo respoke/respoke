@@ -341,7 +341,7 @@ describe("Respoke groups", function () {
             });
         });
 
-        describe("when an admin administers groups for an endpoint", function () {
+        xdescribe("when an admin administers groups for an endpoint", function () {
             var groupName = respoke.makeGUID();
             var params;
             var client;
