@@ -283,9 +283,7 @@ describe("Respoke presence", function () {
                 describe("when the second user changes its presence", function () {
                     beforeEach(function (done) {
                         presenceListener = sinon.spy();
-                        endpoint.once('presence', function () {
-                            presenceListener();
-                        });
+                        endpoint.once('presence', presenceListener);
                         endpoint.once('presence', function (evt) {
                             done();
                         });
@@ -300,6 +298,7 @@ describe("Respoke presence", function () {
 
                 describe("when the second user disconnects", function () {
                     beforeEach(function (done) {
+                        presenceListener = sinon.spy();
                         endpoint.once('presence', presenceListener);
                         endpoint.once('presence', function (evt) {
                             done();
@@ -309,6 +308,7 @@ describe("Respoke presence", function () {
 
                     it("fires with presence 'unavailable'", function () {
                         expect(presenceListener.called).to.be.ok;
+                        expect(endpoint.presence).to.equal("unavailable");
                     });
                 });
             });
