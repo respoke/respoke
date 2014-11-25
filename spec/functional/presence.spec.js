@@ -276,7 +276,7 @@ describe("Respoke presence", function () {
                 });
             });
 
-            describe("a presence callback", function () {
+            xdescribe("a presence callback", function () {
                 var presenceListener;
                 var presence = respoke.makeGUID();
 
@@ -313,7 +313,7 @@ describe("Respoke presence", function () {
                 });
             });
 
-            describe("and then disconnects", function () {
+            xdescribe("and then disconnects", function () {
                 beforeEach(function (done) {
                     endpoint.once('presence', function (evt) {
                         done();
