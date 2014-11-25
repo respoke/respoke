@@ -290,7 +290,7 @@ module.exports = function (params) {
 
         log.debug('Endpoint.call');
         client.verifyConnected();
-        if (params.caller === undefined) {
+        if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
 
@@ -425,8 +425,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        log.debug('Endpoint.startDirectConnection', params);
-        if (params.caller === undefined) {
+        if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
 

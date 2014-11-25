@@ -1,16 +1,23 @@
 var expect = chai.expect;
 
-xdescribe("Respoke messaging", function () {
+describe("Messaging", function () {
     this.timeout(30000);
-
     var now = function () {
         return new Date().getTime();
     };
     var Q = respoke.Q;
     var testEnv;
-    var follower = {};
-    var followee = {};
+    var followerClient = {};
+    var followeeClient = {};
+    var followerEndpoint;
+    var followeeEndpoint;
+    var followerGroup;
+    var followeeGroup;
+    var followerToken;
+    var followeeToken;
     var groupId = respoke.makeGUID();
+    var appId;
+    var roleId;
     var groupRole = {
         name: 'fixturerole',
         groups: {
@@ -27,130 +34,35 @@ xdescribe("Respoke messaging", function () {
         roleParams: groupRole
     });
 
-    var followerEndpoint;
-    var followeeEndpoint;
-    var followerGroup;
-    var followeeGroup;
-    var followerToken;
-    var followeeToken;
-    var messagesFollowerReceived = [];
-    var messagesFolloweeReceived = [];
-    var messagesFollowerSent = [];
-    var messagesFolloweeSent = [];
-    var appId;
-    var roleId;
-
-    function followerListener(evt) {
-        messagesFolloweeReceived.push(evt.message);
-    }
-
-    function followeeListener(evt) {
-        messagesFollowerReceived.push(evt.message);
-    }
-
-    function sendNumGroupMessagesEach(num) {
+    function sendNumMessagesEach(num, thing1, thing2) {
         var message;
-        var promises = [];
-        num = num || 5;
-        for (var i = 1; i <= num; i += 1) {
-            message = {
-                message: respoke.makeGUID()
-            };
-
-            promises.push(followerGroup.sendMessage(message));
-            messagesFolloweeSent.push(message.message);
-
-            promises.push(followeeGroup.sendMessage(message));
-            messagesFollowerSent.push(message.message);
-        }
-
-        return Q.all(promises);
-    }
-
-    function sendMessage() {
-        var message = {
-            message: respoke.makeGUID()
-        };
-        var promises = [];
-
-        promises.push(followerEndpoint.sendMessage(message));
-        messagesFolloweeSent.push(message.message);
-
-        promises.push(followeeEndpoint.sendMessage(message));
-        messagesFollowerSent.push(message.message);
-
-        return promises;
-    }
-
-    function sendNumMessagesEach(num) {
-        var flatPromises = [];
-        var promises = [];
+        var sendPromises = [];
+        var receiveDeferreds = [];
         num = num || 5;
 
-        for (var i = 1; i <= num; i += 1) {
-            promises.push(sendMessage());
-        }
-        flatPromises = flatPromises.concat.apply(flatPromises, promises);
-
-        return Q.all(flatPromises);
-    }
-
-    function sendOneMessage() {
-        return Q.all(sendMessage());
-    }
-
-    function checkMessages(num) {
-        num = num || 5;
-        return function () {
-            var foundIndex;
-            var i;
-            var deferred = Q.defer();
-            var tries = 0;
-            var timer = setInterval(function () {
-                tries += 1;
-                // abort waiting for all messages after 7 seconds (test timeout is 10)
-                if ((messagesFollowerReceived.length >= num && messagesFolloweeReceived.length >= num) || tries > 60) {
-                    clearInterval(timer);
-                    check();
-                }
-            }, 100);
-
-            function check() {
-                for (i = messagesFollowerReceived.length - 1; i >= 0; i -= 1) {
-                    messagesFolloweeSent.every(function (item, index) {
-                        if (messagesFollowerReceived[i].message === item) {
-                            messagesFollowerReceived.splice(i, 1);
-                            messagesFolloweeSent.splice(index, 1);
-                            return false;
-                        }
-                        return true;
-                    });
-                }
-
-                for (i = messagesFolloweeReceived.length - 1; i >= 0; i -= 1) {
-                    messagesFollowerSent.every(function (item, index) {
-                        if (messagesFolloweeReceived[i].message === item) {
-                            messagesFolloweeReceived.splice(i, 1);
-                            messagesFollowerSent.splice(index, 1);
-                            return false;
-                        }
-                        return true;
-                    });
-                }
-
-                try {
-                    expect(messagesFollowerReceived.length).to.equal(0);
-                    expect(messagesFolloweeReceived.length).to.equal(0);
-                    expect(messagesFollowerSent.length).to.equal(0);
-                    expect(messagesFolloweeSent.length).to.equal(0);
-                    deferred.resolve();
-                } catch (err) {
-                    deferred.reject(err);
-                }
+        function listener(evt) {
+            if (receiveDeferreds.length) {
+                receiveDeferreds.pop().resolve(evt.message);
             }
-
-            return deferred.promise;
         }
+
+        thing1.listen('message', listener);
+        thing2.listen('message', listener);
+
+        for (var i = 1; i <= num; i += 1) {
+            sendPromises.push(thing1.sendMessage({message: "test"}));
+            receiveDeferreds.push(Q.defer());
+
+            sendPromises.push(thing2.sendMessage({message: "test"}));
+            receiveDeferreds.push(Q.defer());
+        }
+
+        return {
+            send: Q.all(sendPromises),
+            receive: Q.all(receiveDeferreds.map(function (def) {
+                return def.promise;
+            }))
+        };
     }
 
     beforeEach(function (done) {
@@ -173,368 +85,227 @@ xdescribe("Respoke messaging", function () {
             followerToken = token1;
             followeeToken = token2;
 
-            follower = respoke.createClient();
-            followee = respoke.createClient();
+            followerClient = respoke.createClient();
+            followeeClient = respoke.createClient();
 
-            return Q.all([follower.connect({
+            return Q.all([followerClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followerToken.tokenId
-            }), followee.connect({
+            }), followeeClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followeeToken.tokenId
             })]);
         }).then(function () {
-            expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(followerToken.endpointId);
-            expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(followeeToken.endpointId);
+            expect(followerClient.endpointId).to.equal(followerToken.endpointId);
+            expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
         }).then(function () {
-            followerEndpoint = followee.getEndpoint({id: follower.endpointId});
-            followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
+            followerEndpoint = followeeClient.getEndpoint({id: followerClient.endpointId});
+            followeeEndpoint = followerClient.getEndpoint({id: followeeClient.endpointId});
             done();
         }).done(null, done);
     });
 
-    describe("when two endpoints are logged in but not in groups", function () {
-        beforeEach(function () {
-            followerEndpoint.listen('message', followerListener);
-            followeeEndpoint.listen('message', followeeListener);
-        });
-
-        describe("point-to-point messaging", function () {
-            it("all messages are received correctly", function (done) {
-                sendNumMessagesEach()
-                    .then(checkMessages)
-                    .done(function successHandler() {
-                        done();
-                    }, done);
-            });
-        });
+    describe("two endpoints", function () {
+        var params;
 
         afterEach(function () {
-            followerEndpoint.ignore('message', followerListener);
-            followeeEndpoint.ignore('message', followeeListener);
+            followeeEndpoint.ignore();
+            followerEndpoint.ignore();
         });
-    });
 
-    describe("when two endpoints are logged in & in the same group", function () {
-        beforeEach(function (done) {
-            Q.all([follower.join({id: groupId}), followee.join({id: groupId})]).spread(function (group1, group2) {
-                followerGroup = group1;
-                followeeGroup = group2;
+        it("can send and receive messages", function (done) {
+            params = sendNumMessagesEach(5, followerEndpoint, followeeEndpoint);
+            params.send.then(function () {
+                return params.receive;
+            }).done(function (messages) {
+                expect(messages).to.exist();
+                expect(messages.length).to.equal(10);
                 done();
-            }, done).done();
+            }, done);
         });
 
-        describe("point-to-point messaging", function () {
-            beforeEach(function () {
-                followerEndpoint.listen('message', followerListener);
-                followeeEndpoint.listen('message', followeeListener);
-            });
-
-            afterEach(function () {
-                followerEndpoint.ignore('message', followerListener);
-                followeeEndpoint.ignore('message', followeeListener);
-            });
-
-            it("all messages are received correctly", function (done) {
-                sendNumMessagesEach()
-                    .then(checkMessages())
-                    .done(function successHandler() {
+        describe("message metadata", function () {
+            it("contains all the correct information", function (done) {
+                params = sendNumMessagesEach(1, followerEndpoint, followeeEndpoint);
+                params.send.then(function () {
+                    return params.receive;
+                }).done(function (messages) {
+                    try {
+                        expect(messages).to.exist();
+                        expect(messages.length).to.equal(2);
+                        expect(messages[0].message).to.be.ok;
+                        expect(messages[0].message).to.be.a.String;
+                        expect(messages[0].timestamp).to.be.a.Number;
+                        expect([
+                            followeeClient.endpointId,
+                            followerClient.endpointId
+                        ]).to.contain(messages[0].endpointId);
                         done();
-                    }, done);
+                    } catch (err) {
+                        done(err);
+                    }
+                }, done);
+            });
+        });
+
+        describe("in the same group", function () {
+            beforeEach(function (done) {
+                Q.all([
+                    followerClient.join({id: groupId}),
+                    followeeClient.join({id: groupId})
+                ]).spread(function (group1, group2) {
+                    followerGroup = group1;
+                    followeeGroup = group2;
+                    done();
+                }, done).done();
             });
 
-            it("limits the messages when there are two many of them", function (done) {
-                this.timeout(30000);
-                var start = now();
-                /*
-                 * Test this by timing the success handler. If we get an error or all the messages
-                 * succeed too quickly, we're either not handling rate-limiting or not being
-                 * rate-limited.
-                 */
-                sendNumMessagesEach(50)
-                    .then(checkMessages(50))
-                    .done(function successHandler() {
-                        var time = now() - start;
-                        if (time < 1000) {
-                            done(new Error("Sending finished too quickly, we were not rate-limited"));
-                            return;
-                        }
+            it("can send and receive messages directly", function (done) {
+                params = sendNumMessagesEach(5, followerEndpoint, followeeEndpoint);
+                params.send.then(function () {
+                    return params.receive;
+                }).done(function (messages) {
+                    try {
+                        expect(messages).to.exist();
+                        expect(messages.length).to.equal(10);
                         done();
-                    }, function (err) {
-                        if (err.message.indexOf("exceeded") > -1) {
+                    } catch (err) {
+                        done(err);
+                    }
+                }, done);
+            });
+
+            it("can send and receive messages via that group", function (done) {
+                params = sendNumMessagesEach(5, followerGroup, followeeGroup);
+                params.send.then(function () {
+                    return params.receive;
+                }).done(function (messages) {
+                    try {
+                        expect(messages).to.exist();
+                        expect(messages.length).to.equal(10);
+                        done();
+                    } catch (err) {
+                        done(err);
+                    }
+                }, done);
+            });
+
+            describe("group message metadata", function () {
+                it("contains all the correct information", function (done) {
+                    params = sendNumMessagesEach(1, followerGroup, followeeGroup);
+                    params.send.then(function () {
+                        return params.receive;
+                    }).done(function (messages) {
+                        try {
+                            expect(messages).to.exist();
+                            expect(messages.length).to.equal(2);
+                            expect(messages[0].message).to.be.ok;
+                            expect(messages[0].message).to.be.a.String;
+                            expect(messages[0].timestamp).to.be.a.Number;
+                            expect([
+                                followeeClient.endpointId,
+                                followerClient.endpointId
+                            ]).to.contain(messages[0].endpointId);
                             done();
-                            return;
+                        } catch (err) {
+                            done(err);
                         }
-                        done(new Error("Sending returned an error, we're not successfully handling rate-limiting. " +
-                                err.message));
-                    });
-            });
-
-            describe('metadata', function () {
-                var message;
-                var messageDef;
-
-                function groupListener(evt) {
-                    message = evt.message;
-                    messageDef.resolve();
-                }
-
-                beforeEach(function (done) {
-                    messageDef = Q.defer();
-                    followeeEndpoint.listen('message', groupListener);
-                    followerEndpoint.sendMessage({
-                        message: 'test'
-                    }).then(function () {
-                        return messageDef.promise;
-                    }).done(function () {
-                        done();
                     }, done);
-                });
-
-                afterEach(function () {
-                    followeeEndpoint.ignore('message', groupListener);
-                });
-
-                it('has endpointId', function () {
-                    expect(message.endpointId).to.exist;
-                });
-
-                it('has message body', function () {
-                    expect(message.message).to.exist;
-                });
-
-                it('has timestamp', function() {
-                    expect(message.timestamp).to.exist;
                 });
             });
         });
 
-        describe("group messaging", function () {
-            beforeEach(function () {
-                followeeGroup.listen('message', followerListener);
-                followerGroup.listen('message', followeeListener);
+        describe("in different groups", function () {
+            beforeEach(function (done) {
+                Q.all([
+                    followerClient.join({id: groupId}),
+                    followeeClient.join({id: "something different"})
+                ]).spread(function (group1, group2) {
+                    followerGroup = group1;
+                    followeeGroup = group2;
+                    done();
+                }, done).done();
             });
 
-            it("all group messages are received correctly", function (done) {
-                sendNumGroupMessagesEach()
-                    .then(checkMessages()).done(function () {
+            it("can send and receive messages directly", function (done) {
+                params = sendNumMessagesEach(5, followerEndpoint, followeeEndpoint);
+                params.send.then(function () {
+                    return params.receive;
+                }).done(function (messages) {
+                    try {
+                        expect(messages).to.exist();
+                        expect(messages.length).to.equal(10);
                         done();
-                    }, done);
+                    } catch (err) {
+                        done(err);
+                    }
+                }, done);
             });
 
-            describe('metadata', function () {
-                var message;
-                var messageDef;
+            it("can not send and receive messages via that group", function (done) {
+                this.timeout(4000);
+                setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
 
-                function groupListener(evt) {
-                    message = evt.message;
-                    messageDef.resolve();
-                }
-
-                beforeEach(function (done) {
-                    messageDef = Q.defer();
-                    followeeGroup.listen('message', groupListener);
-                    followerGroup.sendMessage({
-                        message: 'test'
-                    }).then(function () {
-                        return messageDef.promise;
-                    }).done(function () {
-                        done();
-                    }, done);
-                });
-
-                afterEach(function () {
-                    followeeGroup.ignore('message', groupListener);
-                });
-
-                it('has endpointId', function () {
-                    expect(message.endpointId).to.exist;
-                });
-
-                it('has message body', function () {
-                    expect(message.message).to.exist;
-                });
-
-                it('has timestamp', function() {
-                    expect(message.timestamp).to.exist;
+                params = sendNumMessagesEach(5, followerGroup, followeeGroup);
+                params.send.then(function () {
+                    return params.receive;
+                }).done(function (messages) {
+                    done(new Error("Something went wrong, wasn't supposed to receive any messages."));
+                }, function () {
+                    // who cares?
                 });
             });
-
-            afterEach(function () {
-                followeeGroup.ignore('message', followerListener);
-                followerGroup.ignore('message', followeeListener);
-            });
-        });
-
-        afterEach(function (done) {
-            Q.all([followerGroup.leave(), followeeGroup.leave()]).done(function () {
-                done();
-            }, done);
         });
     });
 
-    describe("when two endpoints are logged in & in different groups", function () {
-        beforeEach(function (done) {
-            var otherGroupId = respoke.makeGUID();
-            Q.all([follower.join({id: groupId}), followee.join({id: otherGroupId})]).spread(function (group1, group2) {
-                followerGroup = group1;
-                followeeGroup = group2;
-                done();
-            }, done).done();
-        });
-
-        describe("point-to-point messaging", function () {
-            beforeEach(function () {
-                followerEndpoint.listen('message', followerListener);
-                followeeEndpoint.listen('message', followeeListener);
+    describe("an endpoint", function () {
+        describe("that is disconnected and trying to send", function () {
+            beforeEach(function (done) {
+                followerClient.disconnect().done(function () {
+                    done();
+                }, done);
             });
 
-            // this one is bouncing
-            it("all messages are received correctly", function (done) {
-                sendNumMessagesEach()
-                    .then(checkMessages())
-                    .done(function successHandler() {
-                        done();
-                    }, done);
-            });
+            it("can not send messages to another endpoint", function (done) {
+                this.timeout(4000);
+                setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
 
-            afterEach(function () {
-                followerEndpoint.ignore('message', followerListener);
-                followeeEndpoint.ignore('message', followeeListener);
+                params = sendNumMessagesEach(1, followeeEndpoint, followerEndpoint);
+                params.send.done(function () {
+                    done(new Error("Something went wrong, wasn't supposed to send any messages."));
+                }, function () {
+                    // who cares?
+                });
             });
         });
 
-        describe("group messaging", function () {
-            beforeEach(function () {
-                followeeGroup.listen('message', followerListener);
-                followerGroup.listen('message', followeeListener);
+        describe("that is disconnected and trying to receive", function () {
+            beforeEach(function (done) {
+                followeeClient.disconnect().done(function () {
+                    done();
+                }, done);
             });
 
-            it("no group messages are received", function (done) {
-                sendNumGroupMessagesEach()
-                    .then(checkMessages())
-                    .done(function successHandler() {
-                        done(new Error("Not supposed to succeed"));
-                    }, function (err) {
-                        expect(err).to.be.an.Error;
-                        done();
-                    });
+            it("can not receive messages from another endpoint", function (done) {
+                this.timeout(4000);
+                setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
+
+                params = sendNumMessagesEach(1, followeeEndpoint, followerEndpoint);
+                params.send.then(function () {
+                    return params.receive;
+                }).done(function () {
+                    done(new Error("Something went wrong, wasn't supposed to receive any messages."));
+                }, function () {
+                    // who cares?
+                });
             });
-
-            afterEach(function () {
-                followeeGroup.ignore('message', followerListener);
-                followerGroup.ignore('message', followeeListener);
-            });
-        });
-
-        afterEach(function (done) {
-            Q.all([followerGroup.leave(), followeeGroup.leave()]).done(function () {
-                done();
-            }, done);
-        });
-    });
-
-    describe("when both endpoints are disconnected", function () {
-        this.timeout(30000);
-
-        beforeEach(function (done) {
-            Q.all([follower.join({id: groupId}), followee.join({id: groupId})]).spread(function (group1, group2) {
-                followerGroup = group1;
-                followeeGroup = group2;
-                return Q.all([follower.disconnect(), followee.disconnect()]);
-            }).fin(function () {
-                done();
-            }).done(null, function (err) {
-                // who cares
-            });
-        });
-
-        describe("point-to-point messaging", function () {
-            beforeEach(function () {
-                followerEndpoint.listen('message', followerListener);
-                followeeEndpoint.listen('message', followeeListener);
-            });
-
-            it("no messages are received", function (done) {
-                expect(follower.isConnected()).to.be.false;
-                expect(followee.isConnected()).to.be.false;
-                sendNumMessagesEach()
-                    .then(checkMessages()).done(function successHandler() {
-                        done(new Error("Not supposed to succeed"));
-                    }, function (err) {
-                        expect(err).to.be.an.Error;
-                        done();
-                    });
-            });
-
-            afterEach(function () {
-                followerEndpoint.ignore('message', followerListener);
-                followeeEndpoint.ignore('message', followeeListener);
-            });
-        });
-
-        describe("group messaging", function () {
-            beforeEach(function () {
-                followeeGroup.listen('message', followerListener);
-                followerGroup.listen('message', followeeListener);
-            });
-
-            it("no group messages are received", function (done) {
-                sendNumGroupMessagesEach()
-                    .then(checkMessages())
-                    .done(function successHandler() {
-                        done(new Error("Not supposed to succeed"));
-                    }, function (err) {
-                        expect(err).to.be.an.Error;
-                        done();
-                    });
-            });
-
-            afterEach(function () {
-                followeeGroup.ignore('message', followerListener);
-                followerGroup.ignore('message', followeeListener);
-            });
-        });
-
-        afterEach(function (done) {
-            Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            })]).spread(function (token1, token2) {
-                followerToken = token1;
-                followeeToken = token2;
-
-                return Q.all([follower.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
-                    token: followerToken.tokenId
-                }), followee.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
-                    token: followeeToken.tokenId
-                })]);
-            }).then(function () {
-                expect(follower.endpointId).not.to.be.undefined;
-                expect(follower.endpointId).to.equal(followerToken.endpointId);
-                expect(followee.endpointId).not.to.be.undefined;
-                expect(followee.endpointId).to.equal(followeeToken.endpointId);
-            }).done(function () {
-                followerEndpoint = followee.getEndpoint({id: follower.endpointId});
-                followeeEndpoint = follower.getEndpoint({id: followee.endpointId});
-                done();
-            }, done);
         });
     });
 
     afterEach(function (done) {
-        Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
+        Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
             messagesFollowerReceived = [];
             messagesFolloweeReceived = [];

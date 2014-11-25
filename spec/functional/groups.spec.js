@@ -1,12 +1,12 @@
 var expect = chai.expect;
 
 describe("Respoke groups", function () {
-    this.timeout(30000);
+    this.timeout(10000);
 
     var Q = respoke.Q;
     var testEnv;
-    var follower = {};
-    var followee = {};
+    var followerClient = {};
+    var followeeClient = {};
     var app;
     var role;
     var groupRole = {
@@ -46,23 +46,23 @@ describe("Respoke groups", function () {
             testEnv.tokens.push(token1);
             testEnv.tokens.push(token2);
 
-            follower = respoke.createClient();
-            followee = respoke.createClient();
+            followerClient = respoke.createClient();
+            followeeClient = respoke.createClient();
 
-            return Q.all([follower.connect({
+            return Q.all([followerClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: testEnv.tokens[0].tokenId
-            }), followee.connect({
+            }), followeeClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: testEnv.tokens[1].tokenId
             })]);
         }).then(function () {
-            expect(follower.endpointId).not.to.be.undefined;
-            expect(follower.endpointId).to.equal(testEnv.tokens[0].endpointId);
-            expect(followee.endpointId).not.to.be.undefined;
-            expect(followee.endpointId).to.equal(testEnv.tokens[1].endpointId);
+            expect(followerClient.endpointId).not.to.be.undefined;
+            expect(followerClient.endpointId).to.equal(testEnv.tokens[0].endpointId);
+            expect(followeeClient.endpointId).not.to.be.undefined;
+            expect(followeeClient.endpointId).to.equal(testEnv.tokens[1].endpointId);
             done();
         }).done(null, done);
     });
@@ -73,14 +73,14 @@ describe("Respoke groups", function () {
         var followeeGroup;
 
         it("there are no groups by default", function () {
-            var groups = follower.getGroups();
+            var groups = followerClient.getGroups();
             expect(groups).to.be.an.Array;
             expect(groups.length).to.equal(0);
         });
 
         describe("and joins a group", function () {
             beforeEach(function (done) {
-                follower.join({id: groupId}).done(function(theGroup) {
+                followerClient.join({id: groupId}).done(function(theGroup) {
                     followerGroup = theGroup;
                     done();
                 }, done);
@@ -99,8 +99,8 @@ describe("Respoke groups", function () {
                 followerGroup.getMembers().done(function (members) {
                     expect(members).to.be.an.Array;
                     expect(members.length).to.equal(1);
-                    expect(members[0].endpointId).to.equal(follower.endpointId);
-                    expect(follower).not.to.be.undefined;
+                    expect(members[0].endpointId).to.equal(followerClient.endpointId);
+                    expect(followerClient).not.to.be.undefined;
                     done();
                 }, done);
             });
@@ -112,41 +112,50 @@ describe("Respoke groups", function () {
 
         describe("when a second endpoint logs in", function () {
             it("there are no groups by default", function () {
-                var groups = followee.getGroups();
+                var groups = followeeClient.getGroups();
                 expect(groups).to.be.an.Array;
                 expect(groups.length).to.equal(0);
             });
 
             describe("and joins the same group", function () {
-                var joinSpy = sinon.spy();
+                var joinSpy;
 
                 beforeEach(function (done) {
-                    followerGroup = follower.getGroups()[0];
+                    joinSpy = sinon.spy();
+                    done = doneOnceBuilder(done);
+                    followerGroup = followerClient.getGroups()[0];
                     followerGroup.listen('join', joinSpy);
-                    followee.join({id: groupId}).done(function(theGroup) {
+                    followerGroup.listen('join', function () {
+                        setTimeout(done);
+                    });
+                    followeeClient.join({id: groupId}).done(function(theGroup) {
                         followeeGroup = theGroup;
-                        setTimeout(done, 50); // network traversal
                     }, done);
                 });
 
                 it("the group is given back", function () {
-                    expect(followeeGroup.isJoined()).to.be.true;
                     expect(followeeGroup).not.to.be.undefined;
                     expect(followeeGroup).to.be.an.Object;
+                    expect(followeeGroup.isJoined()).to.be.true;
                 });
 
                 it("the group has the right id", function () {
+                    expect(followeeGroup).not.to.be.undefined;
+                    expect(followeeGroup).to.be.an.Object;
                     expect(followeeGroup.isJoined()).to.be.true;
                     expect(followeeGroup.id).to.equal(groupId);
                 });
 
                 it("the only members of the group are both users", function (done) {
+                    expect(followeeGroup).not.to.be.undefined;
+                    expect(followeeGroup).to.be.an.Object;
                     expect(followeeGroup.isJoined()).to.be.true;
+
                     followerGroup.getMembers().done(function (members) {
                         expect(members).to.be.an.Array;
                         expect(members.length).to.equal(2);
                         members.forEach(function (member) {
-                            expect([follower.endpointId, followee.endpointId]).to.contain(member.endpointId);
+                            expect([followerClient.endpointId, followeeClient.endpointId]).to.contain(member.endpointId);
                         });
                         done();
                     }, done);
@@ -158,6 +167,8 @@ describe("Respoke groups", function () {
                 });
 
                 afterEach(function (done) {
+                    followerGroup.ignore();
+                    followeeGroup.ignore();
                     followeeGroup.leave().done(function() {
                         done();
                     }, done);
@@ -165,18 +176,26 @@ describe("Respoke groups", function () {
             });
 
             describe("when the second endpoint leaves the group", function () {
-                var leaveSpy = sinon.spy();
+                var leaveSpy;
                 var invalidSpy = sinon.spy();
 
                 beforeEach(function (done) {
-                    followerGroup = follower.getGroups()[0];
+                    leaveSpy = sinon.spy();
+                    done = doneOnceBuilder(done);
+                    followerGroup = followerClient.getGroups()[0];
                     followerGroup.listen('leave', leaveSpy);
-                    followee.join({id: groupId}).then(function (theGroup) {
+                    followerGroup.listen('leave', function () {
+                        done();
+                    });
+                    followeeClient.join({id: groupId}).then(function (theGroup) {
                         followeeGroup = theGroup;
                         return followeeGroup.leave();
-                    }).done(function() {
-                        setTimeout(done, 50); // network traversal
-                    }, done);
+                    }).done(null, done);
+                });
+
+                afterEach(function () {
+                    followerGroup.ignore();
+                    followeeGroup.ignore();
                 });
 
                 it("group.getMembers() returns an error", function (done) {
@@ -196,7 +215,7 @@ describe("Respoke groups", function () {
                     followerGroup.getMembers().done(function (members) {
                         expect(members).to.be.an.Array;
                         expect(members.length).to.equal(1);
-                        expect(members[0].endpointId).to.equal(follower.endpointId);
+                        expect(members[0].endpointId).to.equal(followerClient.endpointId);
                         done();
                     }, done);
                 });
@@ -247,50 +266,78 @@ describe("Respoke groups", function () {
             var aGroup1;
             var aGroup2;
 
-            before(function (done) {
+            beforeEach(function (done) {
                 onJoinSpy = sinon.spy();
                 onMessageSpy = sinon.spy();
                 onLeaveSpy = sinon.spy();
                 //join the group with onJoin and onLeave handlers
-                follower.join({id: gId, onJoin: onJoinSpy, onMessage: onMessageSpy, onLeave: onLeaveSpy}).then(function (theGroup) {
+                followerClient.join({
+                    id: gId,
+                    onJoin: onJoinSpy,
+                    onMessage: onMessageSpy,
+                    onLeave: onLeaveSpy
+                }).done(function (theGroup) {
                     aGroup1 = theGroup;
                     done();
-                });
+                }, done);
             });
 
-            after(function (done) {
-                aGroup1.leave().done(function () {
-                    setTimeout(done, 50);
-                });
+            afterEach(function (done) {
+                if (aGroup2) {
+                    aGroup2.ignore();
+                }
+
+                if (aGroup1) {
+                    aGroup1.ignore();
+                    aGroup1.leave().done(function () {
+                        done();
+                    });
+                }
             });
 
             it("should call the onJoin handler", function (done) {
-                followee.join({id: gId}).done(function(theGroup) {
-                    setTimeout(function () {
-                        aGroup2 = theGroup;
+                aGroup1.listen('join', function () {
+                    try {
                         expect(onJoinSpy.called).to.be.ok;
                         done();
-                    }, 50);
-                }, done);
+                    } catch (err) {
+                        done(err);
+                    }
+                });
+
+                followeeClient.join({id: gId}).done(null, done);
             });
 
             it("should call the onMessage handler", function (done) {
-                aGroup2.sendMessage({message: "test message"}).done(function () {
-                    setTimeout(function () {
+                aGroup1.once('message', function () {
+                    try {
                         expect(onMessageSpy.called).to.be.ok;
                         done();
-                    }, 50); //network traversal
-                }, done)
+                    } catch (err) {
+                        done(err);
+                    }
+                })
+
+                followeeClient.join({id: gId}).then(function (theGroup) {
+                    aGroup2 = theGroup;
+                    return aGroup2.sendMessage({message: "test message"});
+                }).done(null, done)
             });
 
             it("should call the onLeave handler", function (done) {
-                //cllient 2 leaves the group
-                aGroup2.leave().done(function () {
-                    setTimeout(function () {
+                aGroup1.once('leave', function () {
+                    try {
                         expect(onLeaveSpy.called).to.be.ok;
                         done();
-                    }, 50); // network traversal
-                }, done);
+                    } catch (err) {
+                        done(err);
+                    }
+                });
+
+                followeeClient.join({id: gId}).then(function (theGroup) {
+                    aGroup2 = theGroup;
+                    return aGroup2.leave()
+                }).done(null, done);
             });
         });
 
@@ -348,7 +395,7 @@ describe("Respoke groups", function () {
     });
 
     after(function (done) {
-        Q.all([follower.disconnect(), followee.disconnect()]).fin(function () {
+        Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
                 if (err) {
                     return done(err);
