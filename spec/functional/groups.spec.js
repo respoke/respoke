@@ -80,8 +80,15 @@ describe("Respoke groups", function () {
 
         describe("and joins a group", function () {
             beforeEach(function (done) {
-                followerClient.join({id: groupId}).done(function(theGroup) {
+                followerClient.join({id: groupId}).done(function (theGroup) {
                     followerGroup = theGroup;
+                    done();
+                }, done);
+            });
+
+            afterEach(function (done) {
+                followerGroup.leave().done(function () {
+                    followerGroup = undefined;
                     done();
                 }, done);
             });
@@ -118,18 +125,54 @@ describe("Respoke groups", function () {
             });
 
             describe("and joins the same group", function () {
-                var joinSpy;
+                var joinEventSpy;
+                var onJoinSpy;
+                var onLeaveSpy;
+                var onMessageSpy;
 
                 beforeEach(function (done) {
-                    joinSpy = sinon.spy();
-                    done = doneOnceBuilder(done);
-                    followerGroup = followerClient.getGroups()[0];
-                    followerGroup.listen('join', joinSpy);
-                    followerGroup.listen('join', function () {
-                        setTimeout(done);
-                    });
-                    followeeClient.join({id: groupId}).done(function(theGroup) {
-                        followeeGroup = theGroup;
+                    joinEventSpy = sinon.spy();
+                    onLeaveSpy = sinon.spy();
+                    onJoinSpy = sinon.spy();
+                    onMessageSpy = sinon.spy();
+
+                    done = doneCountBuilder(2, done);
+
+                    followerClient.join({
+                        id: groupId,
+                        onJoin: onJoinSpy,
+                        onLeave: onLeaveSpy,
+                        onMessage: onMessageSpy
+                    }).then(function (theFollowerGroup) {
+                        followerGroup = theFollowerGroup;
+                        followerGroup.listen('join', function () {
+                            joinEventSpy();
+                        });
+                        followerGroup.listen('join', function () {
+                            done();
+                        });
+                        return followeeClient.join({
+                            id: groupId,
+                            onJoin: onJoinSpy,
+                            onLeave: onLeaveSpy
+                        });
+                    }).done(function (theFolloweeGroup) {
+                        followeeGroup = theFolloweeGroup;
+                        followeeGroup.sendMessage({ // checked later
+                            message: 'test'
+                        });
+                        done();
+                    }, done);
+                });
+
+                afterEach(function (done) {
+                    followerGroup.ignore();
+                    followeeGroup.ignore();
+                    Q.all([
+                        followerGroup.leave(),
+                        followeeGroup.leave()
+                    ]).done(function () {
+                        done();
                     }, done);
                 });
 
@@ -150,90 +193,84 @@ describe("Respoke groups", function () {
                     expect(followeeGroup).not.to.be.undefined;
                     expect(followeeGroup).to.be.an.Object;
                     expect(followeeGroup.isJoined()).to.be.true;
+                    expect(followerGroup.isJoined()).to.be.true;
 
                     followerGroup.getMembers().done(function (members) {
-                        expect(members).to.be.an.Array;
-                        expect(members.length).to.equal(2);
-                        members.forEach(function (member) {
-                            expect([followerClient.endpointId, followeeClient.endpointId]).to.contain(member.endpointId);
-                        });
-                        done();
+                        try {
+                            expect(members).to.be.an.Array;
+                            expect(members.length).to.equal(2);
+                            members.forEach(function (member) {
+                                expect([
+                                    followerClient.endpointId,
+                                    followeeClient.endpointId
+                                ]).to.contain(member.endpointId);
+                            });
+                            done();
+                        } catch (err) {
+                            done(err);
+                        }
                     }, done);
                 });
 
-                it("the Group#join event is fired", function () {
-                    expect(followeeGroup.isJoined()).to.be.true;
-                    expect(joinSpy.called).to.be.ok;
+                it("fires the Group#join event", function () {
+                    expect(joinEventSpy.called).to.be.ok;
                 });
 
-                afterEach(function (done) {
-                    followerGroup.ignore();
-                    followeeGroup.ignore();
-                    followeeGroup.leave().done(function() {
-                        done();
-                    }, done);
-                });
-            });
-
-            describe("when the second endpoint leaves the group", function () {
-                var leaveSpy;
-                var invalidSpy = sinon.spy();
-
-                beforeEach(function (done) {
-                    leaveSpy = sinon.spy();
-                    done = doneOnceBuilder(done);
-                    followerGroup = followerClient.getGroups()[0];
-                    followerGroup.listen('leave', leaveSpy);
-                    followerGroup.listen('leave', function () {
-                        done();
-                    });
-                    followeeClient.join({id: groupId}).then(function (theGroup) {
-                        followeeGroup = theGroup;
-                        return followeeGroup.leave();
-                    }).done(null, done);
+                it("calls the onJoin callback", function () {
+                    expect(onJoinSpy.called).to.be.ok;
                 });
 
-                afterEach(function () {
-                    followerGroup.ignore();
-                    followeeGroup.ignore();
-                });
+                describe("sending a message", function () {
+                    var messageEventSpy;
 
-                it("group.getMembers() returns an error", function (done) {
-                    followeeGroup.getMembers().done(function (members) {
-                        done(new Error("A group we're not a member of should error when getMembers() is called."));
-                    }, function (err) {
-                        expect(err).to.be.an.Error;
-                        done();
-                    });
-                });
-
-                it("the Group#leave event is fired", function () {
-                    expect(leaveSpy.called).to.be.ok;
-                });
-
-                it("the first client is only endpoint in the group", function (done) {
-                    followerGroup.getMembers().done(function (members) {
-                        expect(members).to.be.an.Array;
-                        expect(members.length).to.equal(1);
-                        expect(members[0].endpointId).to.equal(followerClient.endpointId);
-                        done();
-                    }, done);
-                });
-
-                it("isJoined() returns false", function () {
-                    expect(followeeGroup.isJoined()).to.be.false;
-                });
-
-                describe("when the first endpoint leaves the group", function () {
                     beforeEach(function (done) {
-                        followeeGroup.listen('leave', invalidSpy);
-                        followerGroup.leave().done(function() {
+                        messageEventSpy = sinon.spy();
+                        followeeGroup.listen('message', messageEventSpy);
+                        followeeGroup.listen('message', function () {
+                            done();
+                        });
+                        followerGroup.sendMessage({
+                            message: 'test'
+                        }).done(null, done);
+                    });
+
+                    it("calls the onMessage callback", function () {
+                        expect(onMessageSpy.called).to.equal(true);
+                    });
+
+                    it("fires the Group#message event", function () {
+                        expect(messageEventSpy.called).to.equal(true);
+                    });
+                });
+
+                describe("when the second endpoint leaves the group", function () {
+                    var leaveEventSpy;
+                    var invalidSpy = sinon.spy();
+
+                    beforeEach(function (done) {
+                        leaveEventSpy = sinon.spy();
+                        done = doneOnceBuilder(done);
+                        followerGroup = followerClient.getGroups()[0];
+                        followerGroup.listen('leave', function () {
+                            leaveEventSpy();
+                        });
+                        followerGroup.listen('leave', function () {
+                            done();
+                        });
+
+                        followeeGroup.leave().done(null, done);
+                    });
+
+                    afterEach(function (done) {
+                        followerGroup.ignore();
+                        followeeGroup.ignore();
+                        followeeGroup.join({id: groupId}).done(function () {
                             done();
                         }, done);
                     });
 
-                    it("first endpoint's group.getMembers() returns an error", function (done) {
-                        followerGroup.getMembers().done(function (members) {
+                    it("group.getMembers() returns an error", function (done) {
+                        followeeGroup.getMembers().done(function (members) {
                             done(new Error("A group we're not a member of should error when getMembers() is called."));
                         }, function (err) {
                             expect(err).to.be.an.Error;
@@ -241,103 +278,59 @@ describe("Respoke groups", function () {
                         });
                     });
 
-                    it("the second endpoint's Group#leave event is not fired", function () {
-                        expect(invalidSpy.called).not.to.be.ok;
+                    it("the Group#leave event is fired", function () {
+                        expect(leaveEventSpy.called).to.be.ok;
                     });
 
-                    it("isJoined() returns false", function () {
-                        expect(followerGroup.isJoined()).to.be.false;
+                    it("the onLeave callback is called", function () {
+                        expect(onLeaveSpy.called).to.be.ok;
                     });
 
-                    afterEach(function (done) {
-                        followerGroup.join().done(function() {
+                    it("the first client is only endpoint in the group", function (done) {
+                        followerGroup.getMembers().done(function (members) {
+                            expect(members).to.be.an.Array;
+                            expect(members.length).to.equal(1);
+                            expect(members[0].endpointId).to.equal(followerClient.endpointId);
                             done();
                         }, done);
                     });
-                });
-            });
-        });
 
-        describe("onJoin, onLeave, and onMessage fire when another group member joins, sends message, and leaves", function () {
-            var onJoinSpy;
-            var onMessageSpy;
-            var onLeaveSpy;
-            var gId = respoke.makeGUID();
-            var aGroup1;
-            var aGroup2;
-
-            beforeEach(function (done) {
-                onJoinSpy = sinon.spy();
-                onMessageSpy = sinon.spy();
-                onLeaveSpy = sinon.spy();
-                //join the group with onJoin and onLeave handlers
-                followerClient.join({
-                    id: gId,
-                    onJoin: onJoinSpy,
-                    onMessage: onMessageSpy,
-                    onLeave: onLeaveSpy
-                }).done(function (theGroup) {
-                    aGroup1 = theGroup;
-                    done();
-                }, done);
-            });
-
-            afterEach(function (done) {
-                if (aGroup2) {
-                    aGroup2.ignore();
-                }
-
-                if (aGroup1) {
-                    aGroup1.ignore();
-                    aGroup1.leave().done(function () {
-                        done();
+                    it("isJoined() returns false", function () {
+                        expect(followeeGroup.isJoined()).to.be.false;
                     });
-                }
-            });
 
-            it("should call the onJoin handler", function (done) {
-                aGroup1.listen('join', function () {
-                    try {
-                        expect(onJoinSpy.called).to.be.ok;
-                        done();
-                    } catch (err) {
-                        done(err);
-                    }
+                    describe("when the first endpoint leaves the group", function () {
+                        beforeEach(function (done) {
+                            followeeGroup.listen('leave', invalidSpy);
+                            followerGroup.leave().done(function() {
+                                setTimeout(done, 1000);
+                            }, done);
+                        });
+
+                        it("first endpoint's group.getMembers() returns an error", function (done) {
+                            followerGroup.getMembers().done(function (members) {
+                                done(new Error("A group we're not a member of should error when getMembers() is called."));
+                            }, function (err) {
+                                expect(err).to.be.an.Error;
+                                done();
+                            });
+                        });
+
+                        it("the second endpoint's Group#leave event is not fired", function () {
+                            expect(invalidSpy.called).not.to.be.ok;
+                        });
+
+                        it("isJoined() returns false", function () {
+                            expect(followerGroup.isJoined()).to.be.false;
+                        });
+
+                        afterEach(function (done) {
+                            followerGroup.join().done(function() {
+                                done();
+                            }, done);
+                        });
+                    });
                 });
-
-                followeeClient.join({id: gId}).done(null, done);
-            });
-
-            it("should call the onMessage handler", function (done) {
-                aGroup1.once('message', function () {
-                    try {
-                        expect(onMessageSpy.called).to.be.ok;
-                        done();
-                    } catch (err) {
-                        done(err);
-                    }
-                })
-
-                followeeClient.join({id: gId}).then(function (theGroup) {
-                    aGroup2 = theGroup;
-                    return aGroup2.sendMessage({message: "test message"});
-                }).done(null, done)
-            });
-
-            it("should call the onLeave handler", function (done) {
-                aGroup1.once('leave', function () {
-                    try {
-                        expect(onLeaveSpy.called).to.be.ok;
-                        done();
-                    } catch (err) {
-                        done(err);
-                    }
-                });
-
-                followeeClient.join({id: gId}).then(function (theGroup) {
-                    aGroup2 = theGroup;
-                    return aGroup2.leave()
-                }).done(null, done);
             });
         });
 
@@ -364,6 +357,7 @@ describe("Respoke groups", function () {
                     }).then(done);
                 });
             });
+
             describe("and adds an endpoint to a group", function () {
                 it("the endpoint should receive join notification", function (done) {
                     var onJoin = function (evt) {
