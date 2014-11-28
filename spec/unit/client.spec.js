@@ -39,6 +39,7 @@ describe("respoke.Client", function () {
             expect(typeof client.getGroup).to.equal('function');
             expect(typeof client.getGroups).to.equal('function');
             expect(typeof client.join).to.equal('function');
+            expect(typeof client.setOffline).to.equal('function');
             expect(typeof client.setOnline).to.equal('function');
             expect(typeof client.setPresence).to.equal('function');
             expect(typeof client.startCall).to.equal('function');
@@ -169,6 +170,17 @@ describe("respoke.Client", function () {
         describe("setOnline()", function () {
             it("throws an error", function (done) {
                 client.setOnline().done(function () {
+                    done(new Error("Shouldn't be able to set presence when not connected!"));
+                }, function (err) {
+                    expect(err.message).to.contain("not connected");
+                    done();
+                });
+            });
+        });
+
+        describe("setOffline()", function () {
+            it("throws an error", function (done) {
+                client.setOffline().done(function () {
                     done(new Error("Shouldn't be able to set presence when not connected!"));
                 }, function (err) {
                     expect(err.message).to.contain("not connected");

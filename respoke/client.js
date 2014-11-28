@@ -733,6 +733,38 @@ module.exports = function (params) {
     };
 
     /**
+     * Convenience method for setting presence to `"unavailable"`.
+     *
+     * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
+     *
+     * @memberof! respoke.Client
+     * @method respoke.Client.setOffline
+     * @param {object} params
+     * @param {string|number|object|Array} [params.presence=unavailable] - The presence to set.
+     * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @returns {Promise|undefined}
+     * @private
+     */
+    that.setOffline = function (params) {
+        var promise;
+
+        params = params || {};
+        params.presence = params.presence || 'unavailable';
+
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            return respoke.handlePromise(promise, params.onSuccess, params.onError);
+        }
+
+        return that.setPresence(params);
+    };
+
+    /**
      * Send a message to an endpoint.
      *
      *     client.sendMessage({
