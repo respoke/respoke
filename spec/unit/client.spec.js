@@ -46,6 +46,7 @@ describe("respoke.Client", function () {
             expect(typeof client.startAudioCall).to.equal('function');
             expect(typeof client.startVideoCall).to.equal('function');
             expect(typeof client.startPhoneCall).to.equal('function');
+            expect(typeof client.startSIPCall).to.equal('function');
         });
 
         it("saves unexpected developer-specified parameters.", function () {

@@ -1141,6 +1141,153 @@ module.exports = function (params) {
     };
 
     /**
+     * Place an audio call to a SIP URI.
+     * @memberof! respoke.Client
+     * @method respoke.Client.startSIPCall
+     * @param {object} params
+     * @param {string} params.uri - The SIP URI to call.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
+     * with the local audio and/or video attached.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
+     * with the remote audio and/or video attached.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
+     * up.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @return {respoke.Call}
+     */
+    that.startSIPCall = function (params) {
+        var promise;
+        var retVal;
+        var call = null;
+        var recipient = {};
+        params = params || {};
+        params.constraints = {
+            video: false,
+            audio: true,
+            mandatory: {},
+            optional: []
+        };
+
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        if (typeof params.caller !== 'boolean') {
+            params.caller = true;
+        }
+
+        if (!params.uri) {
+            log.error("Can't start a phone call without a SIP URI.");
+            promise = Q.reject(new Error("Can't start a phone call without a SIP URI."));
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        recipient.id = params.uri;
+
+        params.instanceId = instanceId;
+        params.remoteEndpoint = recipient;
+
+        params.toType = params.toType || 'sip';
+        params.fromType = params.fromType || 'web';
+
+        params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
+            signalParams.signalType = 'offer';
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
+        };
+        params.signalAnswer = function (signalParams) {
+            signalParams.signalType = 'answer';
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't answer the call.", err.message, err.stack);
+                signalParams.call.hangup({signal: false});
+            });
+        };
+        params.signalConnected = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.connectionId = signalParams.connectionId;
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send connected.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
+        };
+        params.signalModify = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send modify.", err.message, err.stack);
+            });
+        };
+        params.signalCandidate = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send candidate.", err.message, err.stack);
+            });
+        };
+        params.signalHangup = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send hangup.", err.message, err.stack);
+            });
+        };
+        params.signalReport = function (signalParams) {
+            log.debug("Sending debug report", signalParams.report);
+            signalingChannel.sendReport(signalParams);
+        };
+
+        params.signalingChannel = signalingChannel;
+        call = respoke.Call(params);
+        addCall({call: call});
+        return call;
+    };
+
+    /**
      * Assert that we are connected to the backend infrastructure.
      * @memberof! respoke.Client
      * @method respoke.Client.verifyConnected
