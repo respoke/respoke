@@ -608,6 +608,12 @@ module.exports = function (params) {
     that.getCall = function (params) {
         var call = null;
         var endpoint = null;
+        var methods = {
+            did: "startPhoneCall",
+            web: "startCall",
+            sip: "startSIPCall"
+        };
+        params.fromType = params.fromType || "web";
 
         that.calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
@@ -623,28 +629,18 @@ module.exports = function (params) {
         });
 
         if (call === null && params.create === true) {
-            if (params.fromType === 'did') {
-                try {
-                    call = that.startPhoneCall({
-                        id: params.id,
-                        number: params.endpointId, //phone number
-                        caller: false,
-                        fromType: 'web',
-                        toType: 'did'
-                    });
-                } catch (e) {
-                    log.error("Couldn't create Call.", e.message, e.stack);
-                }
-            } else {
-                endpoint = that.getEndpoint({id: params.endpointId});
-                try {
-                    call = endpoint.startCall({
-                        id: params.id,
-                        caller: false
-                    });
-                } catch (e) {
-                    log.error("Couldn't create Call.", e.message, e.stack);
-                }
+            try {
+                call = that[methods[params.fromType]]({
+                    id: params.id,
+                    number: params.fromType === "did" ? params.endpointId : undefined,
+                    uri: params.fromType === "sip" ? params.endpointId : undefined,
+                    endpointId: params.fromType === "web" ? params.endpointId : undefined,
+                    caller: false,
+                    toType: params.fromType,
+                    fromType: "web"
+                });
+            } catch (e) {
+                log.error("Couldn't create Call.", e.message, e.stack);
             }
         }
         return call;
