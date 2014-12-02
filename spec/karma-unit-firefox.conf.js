@@ -14,6 +14,7 @@ module.exports = function(config) {
           '../node_modules/sinon/pkg/sinon.js',
           '../respoke.min.js',
           '../respoke-stats.min.js',
+          'util/mockSignalingChannel.js',
           'unit/*.spec.js'
         ],
 
