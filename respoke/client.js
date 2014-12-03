@@ -457,6 +457,11 @@ module.exports = function (params) {
              * @property {respoke.Client} target
              */
             that.listen('disconnect', clientSettings.onDisconnect);
+            that.listen('disconnect', function () {
+                that.calls.forEach(function (call) {
+                    call.hangup({signal: false});
+                });
+            }, true);
             /**
              * Client has reconnected to Respoke.
              *
