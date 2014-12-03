@@ -193,7 +193,7 @@ module.exports = function (params) {
      * @private
      * @type {number}
      */
-    var bodySizeLimit = 10000;
+    var bodySizeLimit = 20000;
     /**
      * @memberof! respoke.SignalingChannel
      * @name appId
@@ -1728,6 +1728,10 @@ module.exports = function (params) {
         // Too many of these!
         var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
         var request;
+        var bodyLength = 0;
+        if (params.paramaters) {
+            bodyLength = encodeURI(JSON.stringify(params.parameters)).split(/%..|./).length - 1;
+        }
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -1744,7 +1748,7 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
-        if (params.parameters && JSON.stringify(params.parameters).length > bodySizeLimit) {
+        if (bodyLength > bodySizeLimit) {
             deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'));
             return deferred.promise;
         }
