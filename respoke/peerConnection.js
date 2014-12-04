@@ -231,7 +231,6 @@ module.exports = function (params) {
         sdpsReceived: [],
         candidatesSent: [],
         candidatesReceived: [],
-        stats: [],
         userAgent: navigator.userAgent,
         os: navigator.platform
     };
@@ -382,7 +381,6 @@ module.exports = function (params) {
                     that.fire('stats', {
                         stats: stats
                     });
-                    that.report.stats.push(stats);
                 }
             });
             that.listen('close', function closeHandler(evt) {
