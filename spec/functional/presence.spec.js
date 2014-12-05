@@ -56,7 +56,7 @@ describe("Respoke presence", function () {
         }, done);
     }
 
-    before(function (done) {
+    beforeEach(function (done) {
         Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 
@@ -79,8 +79,47 @@ describe("Respoke presence", function () {
 
             followerClient = respoke.createClient();
             followeeClient = respoke.createClient();
+        }).done(function () {
+            done();
+        }, done);
+    });
 
-            return Q.all([followerClient.connect({
+    describe("with a resolveEndpointPresence function", function () {
+        var presence;
+        var endpoint2;
+
+        beforeEach(function (done) {
+            presence = respoke.makeGUID();
+            followerClient.connect({
+                appId: Object.keys(testEnv.allApps)[0],
+                baseURL: respokeTestConfig.baseURL,
+                token: followerToken.tokenId,
+                resolveEndpointPresence: function (presenceList) {
+                    return presence;
+                }
+            }).then(function () {
+                return followeeClient.connect({
+                    appId: Object.keys(testEnv.allApps)[0],
+                    baseURL: respokeTestConfig.baseURL,
+                    token: followeeToken.tokenId
+                })
+            }).then(function () {
+                endpoint2 = followerClient.getEndpoint({id: followeeToken.endpointId});
+                endpoint2.once('presence', function (evt) {
+                    done();
+                });
+                return followeeClient.setPresence({presence: 'nacho presence2'});
+            }).done(null, done);
+        });
+
+        it("and presence is resolved", function () {
+            expect(endpoint2.presence).to.equal(presence);
+        });
+    });
+
+    describe("without a resolveEndpointPresence function", function () {
+        beforeEach(function (done) {
+            Q.all([followerClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followerToken.tokenId
@@ -88,112 +127,43 @@ describe("Respoke presence", function () {
                 appId: Object.keys(testEnv.allApps)[0],
                 baseURL: respokeTestConfig.baseURL,
                 token: followeeToken.tokenId
-            })]);
-        }).done(function () {
-            expect(followerClient.endpointId).not.to.be.undefined;
-            expect(followerClient.endpointId).to.equal(followerToken.endpointId);
-            expect(followeeClient.endpointId).not.to.be.undefined;
-            expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
-            done();
-        }, done);
-    });
-
-    describe("when an endpoint logs in", function () {
-        it("presence is 'unavailable' by default", function () {
-            expect(followerClient.getPresence()).to.equal('unavailable');
+            })]).done(function () {
+                expect(followerClient.endpointId).not.to.be.undefined;
+                expect(followerClient.endpointId).to.equal(followerToken.endpointId);
+                expect(followeeClient.endpointId).not.to.be.undefined;
+                expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
+                done();
+            }, done);
         });
 
-        describe("and sets itself online", function () {
-            beforeEach(function (done) {
-                followerClient.setOnline().done(function() {
-                    done();
-                }, done);
-            });
-
-            it("presence is set to 'available'", function () {
-                expect(followerClient.presence).to.equal('available');
-                expect(followerClient.getPresence()).to.equal('available');
-            });
-
-            describe("and sets itself offline", function () {
-                beforeEach(function (done) {
-                    followerClient.setOffline().done(function() {
-                        done();
-                    }, done);
-                });
-
-                it("presence is set to 'unavailable'", function () {
-                    expect(followerClient.presence).to.equal('unavailable');
-                    expect(followerClient.getPresence()).to.equal('unavailable');
-                });
-            });
-        });
-
-        describe("and sets its presence to a string", function () {
-            var presence = respoke.makeGUID();
-
-            beforeEach(function (done) {
-                followerClient.setPresence({presence: presence}).done(function () {
-                    done();
-                }, done);
-            });
-
-            it("presence is set to " + presence, function () {
-                expect(followerClient.presence).to.equal(presence);
-                expect(followerClient.getPresence()).to.equal(presence);
-            });
-        });
-
-        describe("and sets its presence to an object", function () {
-            var presence = {
-                hey: respoke.makeGUID(),
-                hi: respoke.makeGUID(),
-                ho: respoke.makeGUID()
-            };
-
-            beforeEach(function (done) {
-                followerClient.setPresence({presence: presence}).done(function () {
-                    done();
-                }, done);
-            });
-
-            it("presence is set to the object that was specified", function () {
-                var shownPresence = followerClient.presence;
-                Object.keys(presence).forEach(function (key) {
-                    expect(shownPresence[key]).to.equal(presence[key]);
-                });
-
-                shownPresence = followerClient.getPresence();
-                Object.keys(presence).forEach(function (key) {
-                    expect(shownPresence[key]).to.equal(presence[key]);
-                });
-            });
-        });
-
-        describe("and a second endpoint logs in", function () {
-            var endpoint;
-
-            beforeEach(function () {
-                endpoint = followerClient.getEndpoint({id: followeeToken.endpointId});
-            });
-
+        describe("when an endpoint logs in", function () {
             it("presence is 'unavailable' by default", function () {
-                expect(endpoint.presence).to.equal('unavailable');
-                expect(endpoint.getPresence()).to.equal('unavailable');
+                expect(followerClient.getPresence()).to.equal('unavailable');
             });
 
             describe("and sets itself online", function () {
                 beforeEach(function (done) {
-                    endpoint.once("presence", function (evt) {
+                    followerClient.setOnline().done(function() {
                         done();
-                    });
-
-                    followeeClient.setOnline().done();
+                    }, done);
                 });
 
                 it("presence is set to 'available'", function () {
-                    expect(endpoint.presence).to.equal('available');
-                    expect(endpoint.getPresence()).to.equal('available');
+                    expect(followerClient.presence).to.equal('available');
+                    expect(followerClient.getPresence()).to.equal('available');
+                });
+
+                describe("and sets itself offline", function () {
+                    beforeEach(function (done) {
+                        followerClient.setOffline().done(function() {
+                            done();
+                        }, done);
+                    });
+
+                    it("presence is set to 'unavailable'", function () {
+                        expect(followerClient.presence).to.equal('unavailable');
+                        expect(followerClient.getPresence()).to.equal('unavailable');
+                    });
                 });
             });
 
@@ -201,16 +171,14 @@ describe("Respoke presence", function () {
                 var presence = respoke.makeGUID();
 
                 beforeEach(function (done) {
-                    endpoint.once("presence", function (evt) {
+                    followerClient.setPresence({presence: presence}).done(function () {
                         done();
-                    });
-
-                    followeeClient.setPresence({presence: presence}).done();
+                    }, done);
                 });
 
                 it("presence is set to " + presence, function () {
-                    expect(endpoint.presence).to.equal(presence);
-                    expect(endpoint.getPresence()).to.equal(presence);
+                    expect(followerClient.presence).to.equal(presence);
+                    expect(followerClient.getPresence()).to.equal(presence);
                 });
             });
 
@@ -222,143 +190,171 @@ describe("Respoke presence", function () {
                 };
 
                 beforeEach(function (done) {
-                    endpoint.once("presence", function (evt) {
+                    followerClient.setPresence({presence: presence}).done(function () {
                         done();
-                    });
-
-                    followeeClient.setPresence({presence: presence}).done();
+                    }, done);
                 });
 
                 it("presence is set to the object that was specified", function () {
-                    var shownPresence = endpoint.presence;
+                    var shownPresence = followerClient.presence;
                     Object.keys(presence).forEach(function (key) {
                         expect(shownPresence[key]).to.equal(presence[key]);
                     });
 
-                    shownPresence = endpoint.getPresence();
+                    shownPresence = followerClient.getPresence();
                     Object.keys(presence).forEach(function (key) {
                         expect(shownPresence[key]).to.equal(presence[key]);
                     });
                 });
             });
 
-            describe("resolveEndpointPresence", function () {
-                var presence = respoke.makeGUID();
-                var client1 = respoke.createClient();
-                var client2 = respoke.createClient();
-                var endpoint2;
+            describe("and a second endpoint logs in", function () {
+                var endpoint;
 
-                beforeEach(function (done) {
-                    client1.connect({
-                        appId: Object.keys(testEnv.allApps)[0],
-                        baseURL: respokeTestConfig.baseURL,
-                        token: followerToken.tokenId,
-                        resolveEndpointPresence: function (presenceList) {
-                            return presence;
-                        }
-                    }).then(function () {
-                        return client2.connect({
-                            appId: Object.keys(testEnv.allApps)[0],
-                            baseURL: respokeTestConfig.baseURL,
-                            token: followeeToken.tokenId
-                        })
-                    }).then(function () {
-                        endpoint2 = client1.getEndpoint({id: followeeToken.endpointId});
-                        endpoint2.once('presence', function (evt) {
-                            done();
-                        });
-                        return client2.setPresence({presence: 'nacho presence2'});
-                    }).done(null, done);
+                beforeEach(function () {
+                    endpoint = followerClient.getEndpoint({id: followeeToken.endpointId});
                 });
 
-                it("and presence is resolved", function () {
-                    expect(endpoint2.presence).to.equal(presence);
+                it("presence is 'unavailable' by default", function () {
+                    expect(endpoint.presence).to.equal('unavailable');
+                    expect(endpoint.getPresence()).to.equal('unavailable');
                 });
-            });
 
-            xdescribe("a presence callback", function () {
-                var presenceListener;
-                var presence = respoke.makeGUID();
-
-                describe("when the second user changes its presence", function () {
+                describe("and sets itself online", function () {
                     beforeEach(function (done) {
-                        presenceListener = sinon.spy();
-                        endpoint.once('presence', presenceListener);
-                        endpoint.once('presence', function (evt) {
+                        endpoint.once("presence", function (evt) {
                             done();
                         });
+
+                        followeeClient.setOnline().done();
+                    });
+
+                    it("presence is set to 'available'", function () {
+                        expect(endpoint.presence).to.equal('available');
+                        expect(endpoint.getPresence()).to.equal('available');
+                    });
+                });
+
+                describe("and sets its presence to a string", function () {
+                    var presence = respoke.makeGUID();
+
+                    beforeEach(function (done) {
+                        endpoint.once("presence", function (evt) {
+                            done();
+                        });
+
                         followeeClient.setPresence({presence: presence}).done();
                     });
 
-                    it("fires with the new presence", function () {
-                        expect(presenceListener.called).to.be.ok;
+                    it("presence is set to " + presence, function () {
                         expect(endpoint.presence).to.equal(presence);
+                        expect(endpoint.getPresence()).to.equal(presence);
                     });
                 });
 
-                describe("when the second user disconnects", function () {
+                describe("and sets its presence to an object", function () {
+                    var presence = {
+                        hey: respoke.makeGUID(),
+                        hi: respoke.makeGUID(),
+                        ho: respoke.makeGUID()
+                    };
+
                     beforeEach(function (done) {
-                        presenceListener = sinon.spy();
-                        endpoint.once('presence', presenceListener);
+                        endpoint.once("presence", function (evt) {
+                            done();
+                        });
+
+                        followeeClient.setPresence({presence: presence}).done();
+                    });
+
+                    it("presence is set to the object that was specified", function () {
+                        var shownPresence = endpoint.presence;
+                        Object.keys(presence).forEach(function (key) {
+                            expect(shownPresence[key]).to.equal(presence[key]);
+                        });
+
+                        shownPresence = endpoint.getPresence();
+                        Object.keys(presence).forEach(function (key) {
+                            expect(shownPresence[key]).to.equal(presence[key]);
+                        });
+                    });
+                });
+
+                describe("a presence callback", function () {
+                    var presenceListener;
+                    var presence = respoke.makeGUID();
+
+                    describe("when the second user changes its presence", function () {
+                        beforeEach(function (done) {
+                            presenceListener = sinon.spy();
+                            endpoint.once('presence', presenceListener);
+                            endpoint.once('presence', function (evt) {
+                                done();
+                            });
+                            followeeClient.setPresence({presence: presence}).done();
+                        });
+
+                        it("fires with the new presence", function () {
+                            expect(presenceListener.called).to.be.ok;
+                            expect(endpoint.presence).to.equal(presence);
+                        });
+                    });
+
+                    describe("when the second user disconnects", function () {
+                        beforeEach(function (done) {
+                            presenceListener = sinon.spy();
+                            endpoint.once('presence', presenceListener);
+                            endpoint.once('presence', function (evt) {
+                                done();
+                            });
+                            followeeClient.disconnect().done();
+                        });
+
+                        it("fires with presence 'unavailable'", function () {
+                            expect(presenceListener.called).to.be.ok;
+                            expect(endpoint.presence).to.equal("unavailable");
+                        });
+                    });
+                });
+
+                describe("and then disconnects", function () {
+                    beforeEach(function (done) {
                         endpoint.once('presence', function (evt) {
                             done();
                         });
                         followeeClient.disconnect().done();
                     });
 
-                    it("fires with presence 'unavailable'", function () {
-                        expect(presenceListener.called).to.be.ok;
-                        expect(endpoint.presence).to.equal("unavailable");
+                    it("presence is set to 'unavailable'", function () {
+                        expect(endpoint.presence).to.equal('unavailable');
+                        expect(endpoint.getPresence()).to.equal('unavailable');
                     });
+
+                    afterEach(doReconnect);
                 });
             });
 
-            xdescribe("and then disconnects", function () {
+            describe("and then disconnects", function () {
                 beforeEach(function (done) {
-                    endpoint.once('presence', function (evt) {
+                    followerClient.disconnect().fin(function () {
                         done();
-                    });
-                    followeeClient.disconnect().done();
+                    }).done();
                 });
 
                 it("presence is set to 'unavailable'", function () {
-                    expect(endpoint.presence).to.equal('unavailable');
-                    expect(endpoint.getPresence()).to.equal('unavailable');
+                    expect(followerClient.presence).to.equal('unavailable');
+                    expect(followerClient.getPresence()).to.equal('unavailable');
                 });
 
                 afterEach(doReconnect);
             });
         });
 
-        describe("and then disconnects", function () {
-            beforeEach(function (done) {
-                followerClient.disconnect().fin(function () {
-                    done();
-                }).done();
-            });
-
-            it("presence is set to 'unavailable'", function () {
-                expect(followerClient.presence).to.equal('unavailable');
-                expect(followerClient.getPresence()).to.equal('unavailable');
-            });
-
-            afterEach(doReconnect);
+        afterEach(function (done) {
+            async.series({
+                disconnectClients: disconnectAll,
+                fixtureCleanup: testFixture.afterTest
+            }, done);
         });
-    });
-
-    after(function (done) {
-        async.series({
-            disconnectClients: function (next) {
-                disconnectAll(next);
-            },
-            fixtureCleanup: function (next) {
-                testFixture.afterTest(function (err) {
-                    if (err) {
-                        next(err);
-                    }
-                    next();
-                });
-            }
-        }, done);
     });
 });
