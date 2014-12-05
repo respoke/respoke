@@ -1,4 +1,5 @@
 # Respoke.js
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/respoke/respoke?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Browser/Client Library for [Respoke](https://www.respoke.io). Use this library in a JavaScript web
 app to add individual and group messaging, contact discovery, and voice and video calling to web
