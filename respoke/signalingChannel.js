@@ -621,30 +621,70 @@ module.exports = function (params) {
     };
 
     /**
-     * Register as an observer of presence for the specified endpoint ids.
+     * Register as an observer of presence for the specified endpoint ids. In order to aggregate subsequent repeated
+     * requests, this function, when called synchronously, will continue to accumulate endpoint ids until the next
+     * tick of the event loop, when the request will be issued. The same instance of Promise is returned each time.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.registerPresence
      * @private
      * @param {object} params
      * @param {Array<string>} params.endpointList
+     * @returns {Promise}
      */
-    that.registerPresence = function (params) {
-        if (!that.isConnected()) {
-            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
-        }
+    that.registerPresence = (function () {
+        var endpoints = {};
+        var deferred = Q.defer();
 
-        return wsCall({
-            httpMethod: 'POST',
-            path: '/v1/presenceobservers',
-            parameters: {
-                endpointList: params.endpointList
+        return function (params) {
+            var toRun = (Object.keys(endpoints).length === 0);
+            if (!that.isConnected()) {
+                return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             }
-        }).then(function successHandler() {
-            params.endpointList.forEach(function eachId(id) {
-                presenceRegistered[id] = true;
+
+            params.endpointList.forEach(function (ep) {
+                if (typeof ep === 'string' && presenceRegistered[ep] !== true) {
+                    endpoints[ep] = true;
+                }
             });
-        });
-    };
+
+            if (!toRun) {
+                return deferred.promise;
+            }
+
+            setTimeout(function () {
+                // restart accumulation
+                var endpointList = Object.keys(endpoints);
+                endpoints = {};
+                var saveDeferred = deferred;
+                deferred = Q.defer();
+
+                if (endpointList.length === 0) {
+                    saveDeferred.resolve();
+                    return;
+                }
+
+                wsCall({
+                    httpMethod: 'POST',
+                    path: '/v1/presenceobservers',
+                    parameters: {
+                        endpointList: endpointList
+                    }
+                }).done(function successHandler() {
+                    params.endpointList.forEach(function eachId(id) {
+                        presenceRegistered[id] = true;
+                    });
+                    saveDeferred.resolve();
+                }, function (err) {
+                    saveDeferred.reject(err);
+                });
+            // We could even add a tiny delay like 10ms if we want to get more conservative and
+            // catch asychronous calls to client.getEndpoint() and other methods which call
+            // this method.
+            });
+
+            return deferred.promise;
+        }
+    })();
 
     /**
      * Join a group.
@@ -741,7 +781,10 @@ module.exports = function (params) {
             return Q.reject(new Error("Can't send ACK, no signal was given."));
         }
 
-        endpoint = client.getEndpoint({id: params.signal.fromEndpoint});
+        endpoint = client.getEndpoint({
+            id: params.signal.fromEndpoint,
+            skipPresence: true
+        });
         if (!endpoint) {
             return Q.reject(new Error("Can't send ACK, can't get endpoint."));
         }
@@ -1031,7 +1074,8 @@ module.exports = function (params) {
             if (signal.target === 'directConnection') {
                 // return a promise
                 endpoint = client.getEndpoint({
-                    id: signal.fromEndpoint
+                    id: signal.fromEndpoint,
+                    skipPresence: true
                 });
 
                 if (endpoint.directConnection && endpoint.directConnection.call.id === signal.sessionId) {
@@ -1312,6 +1356,7 @@ module.exports = function (params) {
         } else {
 
             endpoint = client.getEndpoint({
+                skipPresence: true,
                 id: message.endpointId,
                 instanceId: instanceId,
                 name: message.endpointId
@@ -1357,6 +1402,7 @@ module.exports = function (params) {
         } else {
 
             endpoint = client.getEndpoint({
+                skipPresence: true,
                 id: message.endpointId
             });
 
@@ -1474,6 +1520,7 @@ module.exports = function (params) {
         log.debug('socket.on presence', message);
 
         endpoint = client.getEndpoint({
+            skipPresence: true,
             id: message.header.from,
             instanceId: instanceId,
             name: message.header.from,
