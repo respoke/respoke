@@ -12,7 +12,7 @@
 - var classComment = null;
 - var getEventId = function (name) { return "event-" + name.replace('.','-').replace('#','-'); };
 - var getEventName = function (name) { return name.split('#')[1]; };
-- var allClasses = Object.keys(structure);
+- var allClasses = Object.keys(structure).sort();
 
 each comment in comments
   if !comment.isPrivate && comment.ctx && ['method','property','function','declaration','event'].indexOf(comment.ctx.type) !== -1 && comment.ctx.name !== "className"
@@ -55,193 +55,127 @@ each comment in comments
 
 doctype html
 html
-  head
-    title=subTitle + " - " + title
-    link(rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css")
-    link(rel="stylesheet" href="https://highlightjs.org/static/styles/github.css")
-    script(src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js")
-    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js")
-    script(src="https://highlightjs.org/static/highlight.pack.js")
-    style(type="text/css").
-        #navi { z-index: 1000; max-height: 99%; overflow-y: auto; overflow-x: hidden; }
-        #navi .nav>li>a { padding: 3px 15px; display: inline-block; }
-        #navi.show { max-height: 400px; }
-        #navi.show #menu { background: #fff; border: 1px solid #ccc; border-radius: 5px; padding: 8px; display: block!important; }
-        .wrap { word-break: break-all; }
-  body(style="position:relative" data-spy="scroll" data-target="#navi")
+    head
+        title=subTitle + " - " + title
     
-    //- Build the menu
-    #navi.affix.col-sm-3
-      button.btn.btn-default.visible-xs(onclick="$('#navi').toggleClass('show')") Menu
-      #menu.hidden-xs
-        br.hidden-xs
-        ul.nav.nav-pills.nav-stacked(role="tablist")
-          li Properties &amp; Methods
-          each comment, indx in publicComments
-            li: a(href='#' + comment.ctx.name.replace('.','-'))= comment.ctx.name
-          if (publicEvents.length)
-            li Events
-            each comment, indx in publicEvents
-              li: a(href='#' + getEventId(comment.ctx.name))= getEventName(comment.ctx.name)
+        link(rel="stylesheet" type="text/css" href="css/docs.css")
+        include node_modules/respoke-style/templates/head
     
-    //- Header navbar
-    #header.nav.navbar.navbar-default(role="navigation")
-      .container-fluid
-        .navbar-header
-          a.navbar-brand(href="/respoke") Respoke.js
-          button#file-menu.navbar-toggle.collapsed(data-toggle="collapse" data-target="#navbar-links")
-            span.icon-bar
-            span.icon-bar
-            span.icon-bar
-        #navbar-links.collapse.navbar-collapse
-          ul.nav.navbar-nav
+    body
+        include node_modules/respoke-style/templates/navbar
+    
+    
+        //- Build the menu
+        nav: .sidebar: .sidebar-inner: ul
+            li.l1.header: strong Respoke.js JavaScript Library
             each otherClass in allClasses
-              if (otherClass === 'respoke')
-                 //- do nothing
-              else if (otherClass === className)
-                li.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
-              else
-                li: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
+                if (otherClass === className)
+                    li.l1.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
+                    li.l2.header Properties &amp; Methods
+                    each comment, indx in publicComments
+                        li.l3: a(href='#' + comment.ctx.name.replace('.','-'))= comment.ctx.name
+                    if (publicEvents.length)
+                        li.l2.header Events
+                        each comment, indx in publicEvents
+                            li.l3: a(href='#' + getEventId(comment.ctx.name))= getEventName(comment.ctx.name)
+                else
+                    li.l1: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
+                
     
-    
-    //- Page content
-    .col-sm-9.col-sm-offset-3
-      br.visible-xs
-      h1= title
-      h5.help-block= "from " + subTitle
+        .content: article.article: section.content
+            h1= title
+            h5.help-block: a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
 
-      //- Properties and methods
-      each comment, indx in publicComments
-        .comment(id=comment.ctx.name.replace('.','-'))
-          if (indx === 0)
-            //- do nothing, the first comment is the class declaration
-          else if (comment.ctx.type === "property")
-            //- the title of the method or prop
-            h3
-              code= comment.type
-              a.bold(href="#"+comment.ctx.name)= comment.ctx.name
-          else if (comment.ctx.type === "function")
-            h3
-              code= "function"
-              a.bold(href="#"+comment.ctx.name)= comment.ctx.name
-          else
-            h3: a(href="#"+comment.ctx.name)
-              span.bold= comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
-            if (comment.returns)
-              p: strong returns
-                code= comment.returns || "undefined"
+            //- Properties and methods
+            each comment, indx in publicComments
+                .comment(id=comment.ctx.name.replace('.','-'))
+                    if (indx === 0)
+                        //- do nothing, the first comment is the class declaration
+                    else if (comment.ctx.type === "property")
+                        //- the title of the method or prop
+                        h3
+                            code= comment.type
+                            a.bold(href="#"+comment.ctx.name)= comment.ctx.name
+                    else if (comment.ctx.type === "function")
+                        h3
+                            code= "function"
+                            a.bold(href="#"+comment.ctx.name)= comment.ctx.name
+                    else
+                        h3: a(href="#"+comment.ctx.name)
+                            span.bold= comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
+                        if (comment.returns)
+                            p: strong returns
+                                code= comment.returns || "undefined"
 
 
-          //- info about the method or prop
-          if (comment.augments)
-            p: strong extends&nbsp;
-              a(href=comment.augments + ".html"): code= comment.augments
+                    //- info about the method or prop
+                    if (comment.augments)
+                        p: strong extends&nbsp;
+                            a(href=comment.augments + ".html"): code= comment.augments
 
-          if (comment.fires && comment.fires.length)
-            p
-              strong fires
-              code= comment.fires.map(function(f){ return f.replace(className + '#','') }).join('|')
+                    if (comment.fires && comment.fires.length)
+                        p
+                          strong fires
+                          code= comment.fires.map(function(f){ return f.replace(className + '#','') }).join('|')
 
-          if (comment.auth)
-            p
-              each meth in comment.auth
-                span.label.label-default= meth
-                | &nbsp;
+                    if (comment.auth)
+                        p
+                          each meth in comment.auth
+                            span.label.label-default= meth
+                            | &nbsp;
 
-          div!= comment.description.full
+                    div!= comment.description.full
 
-          //- Arguments
-          if (comment.methodParams.length)
-            br
-            h4 Arguments
+                    //- Arguments
+                    if (comment.methodParams.length)
+                        h4 Arguments
 
-            .row.hidden-xs.param
-              .col-sm-4 Name
-              .col-sm-3 Type
-              .col-sm-5
+                        .row.hidden-xs.param
+                            .col-sm-4 Name
+                            .col-sm-3 Type
+                            .col-sm-5
 
-            each param in comment.methodParams
-              .row.param
-                .col-sm-4.wrap: code= param.name
-                .col-sm-3.wrap: small: strong= param.type
-                .col-sm-5= param.desc
-              br.visible-xs
-          br
-          br
-          //- put a header at the end of the class declaration
-          if (indx === 0)
-            h2 Properties and Methods
+                        each param in comment.methodParams
+                            .row.param
+                                .col-sm-4.wrap: code= param.name
+                                .col-sm-3.wrap: small: strong= param.type
+                                .col-sm-5= param.desc
+                     //- put a header at the end of the class declaration
+                     if (indx === 0)
+                         h2 Properties and Methods
+            
+              //- Events
+              if (publicEvents.length)
 
-          //-
-          //- Uncomment for devving!!!
-          //-
-          //- a(href="javascript:void(0)" onclick="this.nextSibling.style.display = this.nextSibling.style.display == 'block' ? 'none' : 'block'") JSON
-          //- pre(style="display:none")
-          //-   code=JSON.stringify(comment, null, 4)
-      //- Events
-      if (publicEvents.length)
+                h2 Events
+                p Listen for events on an instance of this class.
+                pre: code= className.replace('respoke.', '') + '\n.listen("event-name", function (evt) {\n\n})'
 
-        br
-        br
-        h2 Events
-        p Listen for events on an instance of this class.
-        pre: code= className.replace('respoke.', '') + '\n.listen("event-name", function (evt) {\n\n})'
-        br
+                each comment, indx in publicEvents
 
-        each comment, indx in publicEvents
+                    - var eventLinkId = getEventId(comment.ctx.name);
+                    div(id=eventLinkId)
 
-            - var eventLinkId = getEventId(comment.ctx.name);
-            div(id=eventLinkId)
+                        h3
+                            code= comment.ctx.type
+                            = " "
+                            a.bold(href="#" + eventLinkId)= getEventName(comment.ctx.name)
 
-              h3
-                code= comment.ctx.type
-                = " "
-                a.bold(href="#" + eventLinkId)= getEventName(comment.ctx.name)
+                        div!= comment.description.full
 
-              div!= comment.description.full
+                        if (comment.eventPropertyArray.length)
+                            h4 Callback Arguments
 
-              if (comment.eventPropertyArray.length)
-                br
-                h4 Callback Arguments
+                            .row.hidden-xs.param
+                                .col-sm-4 Name
+                                .col-sm-3 Type
+                                .col-sm-5
 
-                .row.hidden-xs.param
-                  .col-sm-4 Name
-                  .col-sm-3 Type
-                  .col-sm-5
+                            each param in comment.eventPropertyArray
+                                .row.param
+                                .col-sm-4.wrap: code= param.name
+                                .col-sm-3.wrap: strong= param.type
+                                .col-sm-5= param.desc
 
-                each param in comment.eventPropertyArray
-                  .row.param
-                    .col-sm-4.wrap: code= param.name
-                    .col-sm-3.wrap: strong= param.type
-                    .col-sm-5= param.desc
-                  br.visible-xs
 
-              br
-              br
-
-              //-
-              //-
-              //- Uncomment for devving!!!
-              //-
-              //-
-              //- a(href="javascript:void(0)" onclick="this.nextSibling.style.display = this.nextSibling.style.display == 'block' ? 'none' : 'block'") JSON
-              //- pre(style="display:none")
-              //-   code=JSON.stringify(comment, null, 4)
-      p(style="height:1000px")
-    script.
-      hljs.initHighlightingOnLoad();
-      $(document).on('scroll', setSidebarPosition);
-      $(window).on('resize', setSidebarPosition);
-      $('#file-menu').on('click', function () {
-        setTimeout(setSidebarPosition, 350);
-      });
-      function setSidebarPosition() {
-        var s = $(document).scrollTop();
-        var h = $('#header').height();
-        if (s < h) {
-            $('#navi').css('top', ((h - s) + 8) + 'px');
-        } else {
-            $('#navi').css('top', '0');
-        }
-      }
-      setSidebarPosition();
+    include node_modules/respoke-style/templates/footer
