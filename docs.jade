@@ -61,9 +61,9 @@ html
         link(rel="stylesheet" type="text/css" href="css/docs.css")
         include node_modules/respoke-style/templates/head
     
-    body
-        include node_modules/respoke-style/templates/navbar
-    
+    body.no-navbar
+        include node_modules/respoke-style/templates/breadcrumbs
+        
     
         //- Build the menu
         nav: .sidebar: .sidebar-inner: ul
