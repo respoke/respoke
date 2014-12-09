@@ -69,8 +69,11 @@ html
         nav: .sidebar
             .sidebar-inner
                 a(href="/"): img(src="images/logo-respoke.png")
+                h4
+                    a(href="/") Docs
+                    | &nbsp;&nbsp;/&nbsp;&nbsp;
+                    a(href="/js-library/"): strong JavaScript Client Library
                 ul
-                    li.l1.header: strong Respoke.js JavaScript Library
                     each otherClass in allClasses
                         if (otherClass === className)
                             li.l1.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
@@ -132,17 +135,17 @@ html
                     //- Arguments
                     if (comment.methodParams.length)
                         h4 Arguments
-
-                        .row.hidden-xs.param
-                            .col-sm-4 Name
-                            .col-sm-3 Type
-                            .col-sm-5
+                        table
+                            tr
+                                th Name
+                                th Type
+                                th 
 
                         each param in comment.methodParams
-                            .row.param
-                                .col-sm-4.wrap: code= param.name
-                                .col-sm-3.wrap: small: strong= param.type
-                                .col-sm-5= param.desc
+                            tr
+                                td: code= param.name
+                                td: small: strong= param.type
+                                td= param.desc
                      //- put a header at the end of the class declaration
                      if (indx === 0)
                          h2 Properties and Methods

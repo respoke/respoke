@@ -1,20 +1,57 @@
 @import 'node_modules/respoke-style/styles/base.scss';
 
+$green: #47DCC3;
+$accent0: #787878;
+$accent0b: #646262;
+$accent1: #6a6a6a;
+$accent2: #4a4a4a;
+
+.content h1 {
+    @include attention($green, $primary);
+}
 
 .sidebar {
+    background: $accent2;
+    font-weight: 500;
+    color: white;
+
 
     .sidebar-inner {
         padding-top: 0 !important;
+        background: $accent2;
         &>a {
-            margin: 0 0 $paddingStandard 0;
-            padding: 0 0 0 14px;
+            margin: 0;
+            padding: 3px 0 0 14px;
             display: block;
-            background: $compliment;
+            background: $accent1;
+            border-bottom: 2px inset $accent0b;
 
             img {
                 margin: 0;
                 padding: 0;
 
+            }
+        }
+        &>h4 {
+            background: $accent1;
+            border-top: 1px ridge $accent0;
+            @include outsetShadow();
+            margin: 0 0 $paddingStandard 0;
+            padding: $paddingMini $paddingStandard;
+            color: $green;
+            a, a:visited { color: $green }
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        ul li {
+            &>a, &>a:visited { color: $green }
+        }
+        ul li.active {
+            background: $green;
+            font-weight: 600;
+            &>a {
+                color: $accent2!important;
             }
         }
 
