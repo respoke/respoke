@@ -66,20 +66,23 @@ html
         
     
         //- Build the menu
-        nav: .sidebar: .sidebar-inner: ul
-            li.l1.header: strong Respoke.js JavaScript Library
-            each otherClass in allClasses
-                if (otherClass === className)
-                    li.l1.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
-                    li.l2.header Properties &amp; Methods
-                    each comment, indx in publicComments
-                        li.l3: a(href='#' + comment.ctx.name.replace('.','-'))= comment.ctx.name
-                    if (publicEvents.length)
-                        li.l2.header Events
-                        each comment, indx in publicEvents
-                            li.l3: a(href='#' + getEventId(comment.ctx.name))= getEventName(comment.ctx.name)
-                else
-                    li.l1: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
+        nav: .sidebar
+            .sidebar-inner
+                a(href="/"): img(src="images/logo-respoke.png")
+                ul
+                    li.l1.header: strong Respoke.js JavaScript Library
+                    each otherClass in allClasses
+                        if (otherClass === className)
+                            li.l1.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
+                            li.l2.header Properties &amp; Methods
+                            each comment, indx in publicComments
+                                li.l3: a(href='#' + comment.ctx.name.replace('.','-'))= comment.ctx.name
+                            if (publicEvents.length)
+                                li.l2.header Events
+                                each comment, indx in publicEvents
+                                    li.l3: a(href='#' + getEventId(comment.ctx.name))= getEventName(comment.ctx.name)
+                        else
+                            li.l1: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
                 
     
         .content: article.article: section.content
