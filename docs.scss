@@ -1,13 +1,43 @@
 @import 'node_modules/respoke-style/styles/base.scss';
 
+table {
+    font-size: 12px;
+    padding-left: $paddingSmall;
+    table-layout: fixed;
+    width: 100%;
+    th { text-align: left; }
+    td {
+        word-wrap: break-word;
+        vertical-align: text-top;
+        padding: $paddingMiniHalf;
+        &:nth-child(1) { width: 25%; }
+        &:nth-child(2) { width: 25%; }
+        &:nth-child(3) { width: 50%; }
+    }
+    small { font-size: 1em; } // disable
+}
+
 $green: #47DCC3;
 $accent0: #787878;
 $accent0b: #646262;
 $accent1: #6a6a6a;
 $accent2: #4a4a4a;
 
-.content h1 {
-    @include attention($green, $primary);
+.content {
+    h1 {
+        @include attention($green, $primary);
+        word-wrap: break-word;
+    }
+    section { margin-top: $paddingHuge; }
+    h2 {
+        font-weight: 500;
+    }
+    h4 {
+        margin-top: $paddingStandard;
+    }
+    strong {
+        font-weight: 700;
+    }
 }
 
 .sidebar {
@@ -53,6 +83,9 @@ $accent2: #4a4a4a;
             &>a {
                 color: $accent2!important;
             }
+        }
+        ul li.l3>a, ul li.l3>a:visited {
+            color: $accent0;
         }
 
     }

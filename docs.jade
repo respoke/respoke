@@ -13,6 +13,8 @@
 - var getEventId = function (name) { return "event-" + name.replace('.','-').replace('#','-'); };
 - var getEventName = function (name) { return name.split('#')[1]; };
 - var allClasses = Object.keys(structure).sort();
+- var mapFireEvents = function(f){ return '"' + f.replace(className + '#','') + '"'; };
+- var alreadyListedEvents = [];
 
 each comment in comments
   if !comment.isPrivate && comment.ctx && ['method','property','function','declaration','event'].indexOf(comment.ctx.type) !== -1 && comment.ctx.name !== "className"
@@ -42,7 +44,12 @@ each comment in comments
         - comment.auth = tag.string.split(', ')
 
     - if (comment.ctx.name == className) classComment = comment;
-    - else if (comment.ctx.type === 'event') publicEvents.push(comment);
+    - else if (comment.ctx.type === 'event') 
+        //- Some events are commented multiple times in the source.
+        - if (alreadyListedEvents.indexOf(comment.ctx.name) !== -1)
+            - continue;
+        - alreadyListedEvents.push(comment.ctx.name);
+        - publicEvents.push(comment);
     - else
       - if (comment.ctx.receiver && comment.ctx.receiver.indexOf('.') !== -1)
         - var commentPrefix = comment.ctx.receiver.split('.');
@@ -88,41 +95,40 @@ html
                             li.l1: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
                 
     
-        .content: article.article: section.content
+        .content: article.article.content
             h1= title
-            h5.help-block: a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
+            h5: a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
 
             //- Properties and methods
             each comment, indx in publicComments
-                .comment(id=comment.ctx.name.replace('.','-'))
+                br
+                section(id=comment.ctx.name.replace('.','-'))
+                    
                     if (indx === 0)
-                        //- do nothing, the first comment is the class declaration
+                        if (comment.augments)
+                            p: strong extends
+                                | &nbsp;
+                                a(href=comment.augments + ".html"): code= comment.augments
+                    
                     else if (comment.ctx.type === "property")
                         //- the title of the method or prop
-                        h3
-                            code= comment.type
-                            a.bold(href="#"+comment.ctx.name)= comment.ctx.name
-                    else if (comment.ctx.type === "function")
-                        h3
-                            code= "function"
-                            a.bold(href="#"+comment.ctx.name)= comment.ctx.name
+                        h2
+                            a(href="#"+comment.ctx.name): strong
+                                = comment.ctx.name
+                            h6: code= comment.type
                     else
-                        h3: a(href="#"+comment.ctx.name)
-                            span.bold= comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
-                        if (comment.returns)
-                            p: strong returns
-                                code= comment.returns || "undefined"
+                        h2
+                            a(href="#"+comment.ctx.name): strong
+                                = comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
+                        h6 returns
+                            | &nbsp;
+                            code= comment.returns || "undefined"
 
-
-                    //- info about the method or prop
-                    if (comment.augments)
-                        p: strong extends&nbsp;
-                            a(href=comment.augments + ".html"): code= comment.augments
 
                     if (comment.fires && comment.fires.length)
-                        p
-                          strong fires
-                          code= comment.fires.map(function(f){ return f.replace(className + '#','') }).join('|')
+                        h6 fires
+                          | &nbsp;
+                          code= comment.fires.map(mapFireEvents).join('|')
 
                     if (comment.auth)
                         p
@@ -141,47 +147,46 @@ html
                                 th Type
                                 th 
 
-                        each param in comment.methodParams
-                            tr
-                                td: code= param.name
-                                td: small: strong= param.type
-                                td= param.desc
+                            each param in comment.methodParams
+                                tr
+                                    td: code= param.name.replace('[', '').replace(']', '')
+                                    td: small: strong= param.type
+                                    td= param.desc
                      //- put a header at the end of the class declaration
                      if (indx === 0)
                          h2 Properties and Methods
             
-              //- Events
-              if (publicEvents.length)
+            //- Events
+            if (publicEvents.length)
 
-                h2 Events
+                h1 Events
                 p Listen for events on an instance of this class.
-                pre: code= className.replace('respoke.', '') + '\n.listen("event-name", function (evt) {\n\n})'
-
+                pre: code= className.replace('respoke.', '') + '.listen("event-name", function eventCallback(evt) {\n\n});'
+                
                 each comment, indx in publicEvents
-
                     - var eventLinkId = getEventId(comment.ctx.name);
-                    div(id=eventLinkId)
-
-                        h3
-                            code= comment.ctx.type
-                            = " "
-                            a.bold(href="#" + eventLinkId)= getEventName(comment.ctx.name)
-
+                    
+                    section(id=eventLinkId)
+                        h2: a(href="#" + eventLinkId)
+                            strong= getEventName(comment.ctx.name)
+                        h6: code= comment.ctx.type
+                        
                         div!= comment.description.full
 
                         if (comment.eventPropertyArray.length)
-                            h4 Callback Arguments
+                            h4 Event Callback Arguments
 
-                            .row.hidden-xs.param
-                                .col-sm-4 Name
-                                .col-sm-3 Type
-                                .col-sm-5
+                            table
+                                tr
+                                    th Name
+                                    th Type
+                                    th
 
-                            each param in comment.eventPropertyArray
-                                .row.param
-                                .col-sm-4.wrap: code= param.name
-                                .col-sm-3.wrap: strong= param.type
-                                .col-sm-5= param.desc
+                                each param in comment.eventPropertyArray
+                                    tr
+                                        td: code= param.name
+                                        td: strong= param.type
+                                        td= param.desc
 
 
     include node_modules/respoke-style/templates/footer
