@@ -239,7 +239,7 @@ module.exports = function (grunt) {
         'stop-webhook-service'
     ]);
 
-    grunt.registerTask('docs', 'Build the documentation and publish to respoke.github.io', [
+    grunt.registerTask('docs', 'Build the documentation HTML pages', [
         'clean:pre-docs',
         'jsdoxy',
         'copy:docs-shared-assets',
