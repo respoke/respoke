@@ -139,7 +139,8 @@ module.exports = function (params) {
     };
 
     /**
-     * Leave this group.
+     * Leave this group. If this method is called multiple times synchronously, it will batch requests and
+     * only make one API call to Respoke.
      *
      *     group.leave({
      *         onSuccess: function () {
@@ -174,7 +175,7 @@ module.exports = function (params) {
         }
 
         signalingChannel.leaveGroup({
-            id: that.id
+            groupList: [that.id]
         }).done(function successHandler() {
             /**
              * This event is fired when the client leaves a group.

@@ -1318,7 +1318,8 @@ module.exports = function (params) {
     };
 
     /**
-     * Join a group and begin keeping track of it.
+     * Join a group and begin keeping track of it. If this method is called multiple times synchronously, it will
+     * batch requests and only make one API call to Respoke.
      *
      * You can leave the group by calling `group.leave()`;
      *
@@ -1379,7 +1380,7 @@ module.exports = function (params) {
         }
 
         signalingChannel.joinGroup({
-            id: params.id
+            groupList: [params.id]
         }).done(function successHandler() {
             var group;
             params.signalingChannel = signalingChannel;

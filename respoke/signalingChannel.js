@@ -523,66 +523,132 @@ module.exports = function (params) {
     };
 
     /**
-     * Join a group.
+     * Leave a group. In order to aggregate subsequent repeated requests, this function, when called synchronously,
+     * will continue to accumulate group ids until the next tick of the event loop, when the request will be
+     * issued. The same instance of Promise is returned each time.
      * @memberof! respoke.SignalingChannel
      * @private
      * @method respoke.SignalingChannel.leaveGroup
      * @returns {Promise}
      * @param {object} params
-     * @param {string} params.id
+     * @param {array} params.groupList
      */
-    that.leaveGroup = function (params) {
-        params = params || {};
+    that.leaveGroup = (function () {
+        var groups = {};
         var deferred = Q.defer();
 
-        if (!that.isConnected()) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        return function (params) {
+            params = params || {};
+            params.groupList = params.groupList || [];
+
+            var toRun = (Object.keys(groups).length === 0);
+
+            if (!that.isConnected()) {
+                deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+                return deferred.promise;
+            }
+
+            params.groupList.forEach(function (id) {
+                if (typeof id === 'string') {
+                    groups[id] = true;
+                }
+            });
+
+            if (!toRun) {
+                return deferred.promise;
+            }
+
+            setTimeout(function () {
+                // restart accumulation
+                var groupList = Object.keys(groups);
+                groups = {};
+                var saveDeferred = deferred;
+                deferred = Q.defer();
+
+                if (groupList.length === 0) {
+                    saveDeferred.resolve();
+                    return;
+                }
+
+                wsCall({
+                    path: '/v1/groups/',
+                    parameters: {
+                        groups: groupList
+                    },
+                    httpMethod: 'DELETE'
+                }).done(function successHandler() {
+                    saveDeferred.resolve();
+                }, function errorHandler(err) {
+                    saveDeferred.reject(err);
+                });
+            });
             return deferred.promise;
-        }
-
-        wsCall({
-            path: '/v1/channels/%s/subscribers/',
-            objectId: params.id,
-            httpMethod: 'DELETE'
-        }).done(function successHandler() {
-            deferred.resolve();
-        }, function errorHandler(err) {
-            deferred.reject(err);
-        });
-
-        return deferred.promise;
-    };
+        };
+    })();
 
     /**
-     * Join a group.
+     * Join a group. In order to aggregate subsequent repeated requests, this function, when called synchronously,
+     * will continue to accumulate group ids until the next tick of the event loop, when the request will be
+     * issued. The same instance of Promise is returned each time.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.joinGroup
      * @private
      * @returns {Promise}
      * @param {object} params
-     * @param {string} params.id
+     * @param {array} params.groupList
      */
-    that.joinGroup = function (params) {
-        params = params || {};
+    that.joinGroup = (function () {
+        var groups = {};
         var deferred = Q.defer();
 
-        if (!that.isConnected()) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        return function (params) {
+            params = params || {};
+            params.groupList = params.groupList || [];
+
+            var toRun = (Object.keys(groups).length === 0);
+
+            if (!that.isConnected()) {
+                deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+                return deferred.promise;
+            }
+
+            params.groupList.forEach(function (id) {
+                if (typeof id === 'string') {
+                    groups[id] = true;
+                }
+            });
+
+            if (!toRun) {
+                return deferred.promise;
+            }
+
+            setTimeout(function () {
+                // restart accumulation
+                var groupList = Object.keys(groups);
+                groups = {};
+                var saveDeferred = deferred;
+                deferred = Q.defer();
+
+                if (groupList.length === 0) {
+                    saveDeferred.resolve();
+                    return;
+                }
+
+                wsCall({
+                    path: '/v1/groups/',
+                    parameters: {
+                        groups: groupList
+                    },
+                    httpMethod: 'POST'
+                }).done(function successHandler() {
+                    saveDeferred.resolve();
+                }, function errorHandler(err) {
+                    saveDeferred.reject(err);
+                });
+            });
             return deferred.promise;
-        }
-
-        wsCall({
-            path: '/v1/channels/%s/subscribers/',
-            objectId: params.id,
-            httpMethod: 'POST'
-        }).done(function successHandler() {
-            deferred.resolve();
-        }, function errorHandler(err) {
-            deferred.reject(err);
-        });
-
-        return deferred.promise;
-    };
+        };
+    })();
 
     /**
      * Publish a message to a group.
@@ -636,7 +702,10 @@ module.exports = function (params) {
         var deferred = Q.defer();
 
         return function (params) {
+            params = params || {};
+            params.endpointList = params.endpointList || [];
             var toRun = (Object.keys(endpoints).length === 0);
+
             if (!that.isConnected()) {
                 return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             }
