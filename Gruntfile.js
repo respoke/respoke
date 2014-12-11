@@ -1,4 +1,5 @@
 "use strict";
+var respokeStyle = require('respoke-style');
 
 module.exports = function (grunt) {
     var saucerSection;
@@ -116,25 +117,29 @@ module.exports = function (grunt) {
             }
         },
         copy: {
-            docs: {
-                files: {
-                    '.docs/site/index.html': '.docs/site/respoke.html'
-                }
+            'docs-shared-assets': {
+                cwd: respokeStyle.paths.assets,
+                expand: true,
+                src: '**/*',
+                dest: '.docs/site/'
             }
         },
         clean: {
-            'post-docs': {
+            'pre-docs': {
                 files: {
-                    src: ['.docs/site/respoke.html']
+                    src: ['.docs/']
                 }
             }
         },
-        'gh-pages': {
-            options: {
-                base: '.docs/site',
-                repo: 'git@github.com:respoke/respoke.git'
-            },
-            src: ['**']
+        sass: {
+            docs: {
+                options: {
+                    loadPath: respokeStyle.includeStylePaths()
+                },
+                files: {
+                    '.docs/site/css/docs.css': 'docs.scss'
+                }
+            }
         }
     });
 
@@ -147,7 +152,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-clean');
-    grunt.loadNpmTasks('grunt-gh-pages');
+    grunt.loadNpmTasks('grunt-contrib-sass');
     grunt.loadNpmTasks('jsdoxy');
 
     grunt.registerTask('dist', [
@@ -234,10 +239,10 @@ module.exports = function (grunt) {
         'stop-webhook-service'
     ]);
 
-    grunt.registerTask('docs', 'Build the documentation and publish to respoke.github.io', [
+    grunt.registerTask('docs', 'Build the documentation HTML pages', [
+        'clean:pre-docs',
         'jsdoxy',
-        'copy:docs',
-        'clean:post-docs',
-        // 'gh-pages'
+        'copy:docs-shared-assets',
+        'sass:docs'
     ]);
 };

@@ -8,6 +8,7 @@ respoke.min.js
 respoke.min.map
 respoke-stats.min.js
 respoke-stats.min.map
+.sass-cache/
 
 # OS
 .DS_Store
