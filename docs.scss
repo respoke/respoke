@@ -17,76 +17,19 @@ table {
     small { font-size: 1em; } // disable
 }
 
-$green: #47DCC3;
-$accent0: #787878;
-$accent0b: #646262;
-$accent1: #6a6a6a;
-$accent2: #4a4a4a;
-
 .content {
     h1 {
-        @include attention($green, $primary);
         word-wrap: break-word;
     }
-    section { margin-top: $paddingHuge; }
     h2 {
         font-weight: 500;
+        padding-top: $paddingStandard * 2;
     }
     h4 {
-        margin-top: $paddingStandard;
+        padding-top: $paddingStandard;
+        padding-bottom: $paddingStandard;
     }
     strong {
         font-weight: 700;
-    }
-}
-
-.sidebar {
-    background: $accent2;
-    font-weight: 500;
-    color: white;
-
-
-    .sidebar-inner {
-        padding-top: 0 !important;
-        background: $accent2;
-        &>a {
-            margin: 0;
-            padding: 3px 0 0 14px;
-            display: block;
-            background: $accent1;
-            border-bottom: 2px inset $accent0b;
-
-            img {
-                margin: 0;
-                padding: 0;
-
-            }
-        }
-        &>h4 {
-            background: $accent1;
-            border-top: 1px ridge $accent0;
-            @include outsetShadow();
-            margin: 0 0 $paddingStandard 0;
-            padding: $paddingMini $paddingStandard;
-            color: $green;
-            a, a:visited { color: $green }
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        ul li {
-            &>a, &>a:visited { color: $green }
-        }
-        ul li.active {
-            background: $green;
-            font-weight: 600;
-            &>a {
-                color: $accent2!important;
-            }
-        }
-        ul li.l3>a, ul li.l3>a:visited {
-            color: $accent0;
-        }
-
     }
 }
