@@ -286,7 +286,10 @@ module.exports = function (params) {
      * @returns {respoke.Endpoint}
      */
     that.getEndpoint = function () {
-        return client.getEndpoint({id: that.endpointId});
+        return client.getEndpoint({
+            id: that.endpointId,
+            skipPresence: true
+        });
     };
 
     return that;

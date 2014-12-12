@@ -796,7 +796,10 @@ module.exports = function (params) {
             retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
             return retVal;
         }
-        endpoint = that.getEndpoint({id: params.endpointId});
+        endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
         delete params.endpointId;
         return endpoint.sendMessage(params);
     };
@@ -865,7 +868,10 @@ module.exports = function (params) {
             return retVal;
         }
 
-        endpoint = that.getEndpoint({id: params.endpointId});
+        endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
         delete params.endpointId;
         return endpoint.startCall(params);
     };
@@ -1312,7 +1318,8 @@ module.exports = function (params) {
     };
 
     /**
-     * Join a group and begin keeping track of it.
+     * Join a group and begin keeping track of it. If this method is called multiple times synchronously, it will
+     * batch requests and only make one API call to Respoke.
      *
      * You can leave the group by calling `group.leave()`;
      *
@@ -1373,7 +1380,7 @@ module.exports = function (params) {
         }
 
         signalingChannel.joinGroup({
-            id: params.id
+            groupList: [params.id]
         }).done(function successHandler() {
             var group;
             params.signalingChannel = signalingChannel;
@@ -1551,6 +1558,7 @@ module.exports = function (params) {
      * @param {respoke.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
      * Endpoint.
      * @arg {boolean} [params.skipCreate] - Skip the creation step and return undefined if we don't yet
+     * @arg {boolean} [params.skipPresence] - Skip registering for this endpoint's presence.
      * @returns {respoke.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -1574,18 +1582,22 @@ module.exports = function (params) {
             params.addCall = addCall;
 
             endpoint = respoke.Endpoint(params);
+            endpoints.push(endpoint);
+        }
+
+        if (!endpoint) {
+            return;
+        }
+
+        if (params.skipPresence !== true) {
             signalingChannel.registerPresence({
                 endpointList: [endpoint.id]
             }).done(null, function (err) {
                 log.error("Couldn't register for presence on", endpoint.id, err.message);
             });
-            endpoints.push(endpoint);
         }
-
-        if (endpoint) {
-            endpoint.listen('presence', params.onPresence);
-            endpoint.listen('message', params.onMessage);
-        }
+        endpoint.listen('presence', params.onPresence);
+        endpoint.listen('message', params.onMessage);
 
         return endpoint;
     };
@@ -1628,6 +1640,7 @@ module.exports = function (params) {
         if (params.endpointId) {
             endpoint = that.getEndpoint({
                 id: params.endpointId,
+                skipPresence: true,
                 skipCreate: params.skipCreate
             });
 
