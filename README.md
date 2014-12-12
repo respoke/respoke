@@ -43,7 +43,7 @@ npm install
 Tests currently cannot run outside of our internal development infrastructure.
 
 ### Compilation
-Transporter uses CommonJS to manage its dependencies, and the [Webpack](http://webpack.github.io/)
+Respoke.js uses CommonJS to manage its dependencies, and the [Webpack](http://webpack.github.io/)
 module bundler to bundle the library. To create the bundled and minified library suitable for
 distribution, you can run
 
