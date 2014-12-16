@@ -15,6 +15,7 @@
 - var allClasses = Object.keys(structure).sort();
 - var mapFireEvents = function(f){ return '"' + f.replace(className + '#','') + '"'; };
 - var alreadyListedEvents = [];
+- var cleanClassName = function (name) { return name.replace('respoke.', ''); };
 
 each comment in comments
   if !comment.isPrivate && comment.ctx && ['method','property','function','declaration','event'].indexOf(comment.ctx.type) !== -1 && comment.ctx.name !== "className"
@@ -44,7 +45,7 @@ each comment in comments
         - comment.auth = tag.string.split(', ')
 
     - if (comment.ctx.name == className) classComment = comment;
-    - else if (comment.ctx.type === 'event') 
+    - else if (comment.ctx.type === 'event')
         //- Some events are commented multiple times in the source.
         - if (alreadyListedEvents.indexOf(comment.ctx.name) !== -1)
             - continue;
@@ -64,15 +65,17 @@ doctype html
 html
     head
         title=subTitle + " - " + title
-    
+
         link(rel="stylesheet" type="text/css" href="css/docs.css")
         include node_modules/respoke-style/templates/head
-    
+
     body
         include node_modules/respoke-style/templates/navbar
+
+        - var breadcrumbs = [{ title: 'Docs', link: '/'}, { title: 'JavaScript Client' }, { title: cleanClassName(className) }];
         include node_modules/respoke-style/templates/breadcrumbs
-        
-    
+
+
         //- Build the menu
         nav: .sidebar: .sidebar-inner: ul
             li.l1.header
@@ -82,7 +85,7 @@ html
             li.l1.header &nbsp;
             each otherClass in allClasses
                 if (otherClass === className)
-                    li.l1.active: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
+                    li.l1.active: a(href=otherClass + '.html')= cleanClassName(otherClass)
                     li.l2.header Properties &amp; Methods
                     each comment, indx in publicComments
                         if (indx !== 0)
@@ -92,9 +95,9 @@ html
                         each comment, indx in publicEvents
                             li.l3: a(href='#' + getEventId(comment.ctx.name))= getEventName(comment.ctx.name)
                 else
-                    li.l1: a(href=otherClass + '.html')= otherClass.replace('respoke.', '')
-                
-    
+                    li.l1: a(href=otherClass + '.html')= cleanClassName(otherClass)
+
+
         .content: article.article.content
             h1= title
             h5: a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
@@ -103,13 +106,13 @@ html
             each comment, indx in publicComments
                 section(id=comment.ctx.name.replace('.','-'))
                     br
-                        
+
                     if (indx === 0)
                         if (comment.augments)
                             p: strong extends
                                 | &nbsp;
                                 a(href=comment.augments + ".html"): code= comment.augments
-                    
+
                     else if (comment.ctx.type === "property")
                         //- the title of the method or prop
                         h2
@@ -145,7 +148,7 @@ html
                             tr
                                 th Name
                                 th Type
-                                th 
+                                th
 
                             each param in comment.methodParams
                                 tr
@@ -155,23 +158,23 @@ html
                      //- put a header at the end of the class declaration
                      if (indx === 0)
                          h2 Properties and Methods
-            
+
             //- Events
             if (publicEvents.length)
 
                 h1 Events
                 p Listen for events on an instance of this class.
                 pre: code= className.replace('respoke.', '') + '.listen("event-name", function eventCallback(evt) {\n\n});'
-                
+
                 each comment, indx in publicEvents
                     - var eventLinkId = getEventId(comment.ctx.name);
-                    
+
                     section(id=eventLinkId)
                         br
                         h2: a(href="#" + eventLinkId)
                             strong= getEventName(comment.ctx.name)
                         h6: code= comment.ctx.type
-                        
+
                         div!= comment.description.full
 
                         if (comment.eventPropertyArray.length)
