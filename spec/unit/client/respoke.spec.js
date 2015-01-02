@@ -2,7 +2,6 @@
 var expect = chai.expect;
 
 var instanceId;
-respoke.log.setLevel('error');
 
 var aBool = true;
 var aString = "test";
