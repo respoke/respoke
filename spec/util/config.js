@@ -12,6 +12,9 @@ window.doneOnceBuilder = function (done) {
     };
 };
 
+// build a function which calls the done callback according to the following rules:
+//   1. immediately if there is an error passed to it
+//   2. when the function has been called $num times.
 window.doneCountBuilder = function (num, done) {
    return (function () {
         var called = false;
