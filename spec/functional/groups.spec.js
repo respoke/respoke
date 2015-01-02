@@ -153,8 +153,6 @@ describe("Respoke groups", function () {
                         });
                         return followeeClient.join({
                             id: groupId,
-                            onJoin: onJoinSpy,
-                            onLeave: onLeaveSpy
                         });
                     }).done(function (theFolloweeGroup) {
                         followeeGroup = theFolloweeGroup;
