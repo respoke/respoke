@@ -177,6 +177,9 @@ module.exports = function (params) {
         signalingChannel.leaveGroup({
             groupList: [that.id]
         }).done(function successHandler() {
+            that.connections = [];
+            deferred.resolve();
+
             /**
              * This event is fired when the client leaves a group.
              * @event respoke.Client#leave
@@ -189,8 +192,6 @@ module.exports = function (params) {
             client.fire('leave', {
                 group: that
             });
-            that.connections = [];
-            deferred.resolve();
         }, function errorHandler(err) {
             deferred.reject();
         });
