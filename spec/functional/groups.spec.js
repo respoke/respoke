@@ -154,11 +154,12 @@ describe("Respoke groups", function () {
                         return followeeClient.join({
                             id: groupId,
                         });
-                    }).done(function (theFolloweeGroup) {
+                    }).then(function (theFolloweeGroup) {
                         followeeGroup = theFolloweeGroup;
-                        followeeGroup.sendMessage({ // checked later
+                        return followeeGroup.sendMessage({ // checked later
                             message: 'test'
                         });
+                    }).done(function () {
                         done();
                     }, done);
                 });
