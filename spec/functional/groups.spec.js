@@ -145,14 +145,12 @@ describe("Respoke groups", function () {
                         onMessage: onMessageSpy
                     }).then(function (theFollowerGroup) {
                         followerGroup = theFollowerGroup;
-                        followerGroup.listen('join', function () {
+                        followerGroup.once('join', function () {
                             joinEventSpy();
-                        });
-                        followerGroup.listen('join', function () {
                             done();
                         });
                         return followeeClient.join({
-                            id: groupId,
+                            id: groupId
                         });
                     }).then(function (theFolloweeGroup) {
                         followeeGroup = theFolloweeGroup;
@@ -165,8 +163,10 @@ describe("Respoke groups", function () {
                 });
 
                 afterEach(function (done) {
-                    followerGroup.ignore();
-                    followeeGroup.ignore();
+                    followerGroup.ignore('join', onJoinSpy);
+                    followerGroup.ignore('leave', onLeaveSpy);
+                    followerGroup.ignore('message', onMessageSpy);
+
                     Q.all([
                         followerGroup.leave(),
                         followeeGroup.leave()
@@ -221,13 +221,15 @@ describe("Respoke groups", function () {
 
                 describe("sending a message", function () {
                     var messageEventSpy;
+                    var doneListener;
 
                     beforeEach(function (done) {
                         messageEventSpy = sinon.spy();
-                        followeeGroup.listen('message', messageEventSpy);
-                        followeeGroup.listen('message', function () {
+                        doneListener = function () {
+                            messageEventSpy();
                             done();
-                        });
+                        };
+                        followeeGroup.once('message', doneListener);
                         followerGroup.sendMessage({
                             message: 'test'
                         }).done(null, done);
@@ -244,26 +246,28 @@ describe("Respoke groups", function () {
 
                 describe("when the second endpoint leaves the group", function () {
                     var leaveEventSpy;
+                    var doneNum;
                     var invalidSpy = sinon.spy();
 
                     beforeEach(function (done) {
-                        leaveEventSpy = sinon.spy();
-                        done = doneOnceBuilder(done);
+                        expect(followerGroup.isJoined()).to.equal(true);
+                        expect(followeeGroup.isJoined()).to.equal(true);
+
                         followerGroup = followerClient.getGroups()[0];
-                        followerGroup.listen('leave', function () {
+                        doneNum = doneCountBuilder(2, done);
+                        leaveEventSpy = sinon.spy();
+                        followerGroup.once('leave', function () {
                             leaveEventSpy();
-                        });
-                        followerGroup.listen('leave', function () {
-                            done();
+                            doneNum();
                         });
 
-                        followeeGroup.leave().done(null, done);
+                        followeeGroup.leave().done(function () {
+                            doneNum();
+                        }, doneNum);
                     });
 
                     afterEach(function (done) {
-                        followerGroup.ignore();
-                        followeeGroup.ignore();
-                        followeeGroup.join({id: groupId}).done(function () {
+                        followeeGroup.join({id: followeeGroup.id}).done(function () {
                             done();
                         }, done);
                     });
