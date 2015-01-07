@@ -145,6 +145,28 @@ describe("A respoke.EventEmitter", function () {
                     expect(value).to.equal("1234");
                 });
             });
+
+            describe("identical listeners", function () {
+                var value = "";
+
+                beforeEach(function (done) {
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                        done()
+                    });
+                    eventEmitter.fire('order');
+                });
+
+                it("only one of the identical listeners is called", function () {
+                    expect(value).to.equal("11"); // not "111"
+                });
+            });
         });
 
         describe("when ignored", function () {
