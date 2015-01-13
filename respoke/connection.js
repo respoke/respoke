@@ -90,6 +90,49 @@ module.exports = function (params) {
     };
 
     /**
+     * Create a new screen sharing call. Screenshares are inherently unidirectional video only. This may change
+     * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
+     * now, if you also need audio, place a second audio only call.
+     *
+     *     connection.startScreenShare({
+     *         onConnect: function (evt) {}
+     *     });
+     *
+     * @memberof! respoke.Connection
+     * @method respoke.Connection.startScreenShare
+     * @param {object} params
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
+     * and the remote party has received the video.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @returns {respoke.Call}
+     */
+    that.startScreenShare = function (params) {
+        that.verifyConnected();
+        params = params || {};
+        params.connectionId = that.id;
+        return that.getEndpoint().startScreenShare(params);
+    };
+
+    /**
      * Create a new Call for a voice and/or video call this particular connection, only. The Call cannot be answered
      * by another connection of this Endpoint.
      *

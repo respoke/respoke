@@ -267,7 +267,6 @@ module.exports = function (params) {
         }
 
         try {
-            log.debug("Running getUserMedia with constraints", that.constraints);
             // TODO set getStream(that.constraints) = true as a flag that we are already
             // attempting to obtain this media so the race condition where gUM is called twice with
             // the same constraints when calls are placed too quickly together doesn't occur.
@@ -286,6 +285,19 @@ module.exports = function (params) {
             if (respoke.useFakeMedia === true) {
                 that.constraints.fake = true;
             }
+            if (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) {
+                respoke.chooseDesktopMedia(function (params) {
+                    if (!params.sourceId) {
+                        respoke.log.error(params.error);
+                        return;
+                    }
+                    that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
+                    log.debug("Running getUserMedia with constraints", that.constraints);
+                    getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
+                });
+                return;
+            }
+            log.debug("Running getUserMedia with constraints", that.constraints);
             getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
             log.error("Couldn't get user media: " + e.message);

@@ -118,7 +118,14 @@ require('./deps/adapter');
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
     streams: [],
-    instances: {}
+    instances: {},
+    hasChromeExtension: false
+};
+
+respoke.extEvent = function (type, data) {
+    var evt = document.createEvent("CustomEvent");
+    evt.initCustomEvent(type, true, true, data);
+    return evt;
 };
 
 /**
@@ -148,6 +155,35 @@ respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.log = log;
 respoke.Q = Q;
+
+/*
+ * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
+ */
+document.addEventListener('respoke-available', function (evt) {
+    var data = evt.detail;
+    if (data.available !== true) {
+        return;
+    }
+
+    respoke.hasChromeExtension = true;
+    respoke.chooseDesktopMedia = function (callback) {
+        if (!callback) {
+            throw new Error("Can't choose desktop media without callback parameter.");
+        }
+
+        function sourceIdListener(evt) {
+            var data = evt.detail;
+
+            respoke.screenSourceId = data.sourceId;
+            callback(data);
+            document.removeEventListener("respoke-source-id", sourceIdListener);
+        }
+
+        document.dispatchEvent(respoke.extEvent('ct-respoke-source-id'));
+        document.addEventListener("respoke-source-id", sourceIdListener);
+    };
+    respoke.log.info("Respoke Screen Share Chrome extension available for use.");
+});
 
 if (!window.skipBugsnag) {
     // Use airbrake.
