@@ -187,6 +187,12 @@ module.exports = function (params) {
                     }
                 }],
                 // Event
+                receiveOffer: {
+                    action: function (params) {
+                        that.receivedSDP = true;
+                    }
+                },
+                // Event
                 hangup: hangupEvent
             },
             // State

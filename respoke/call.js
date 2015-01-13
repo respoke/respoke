@@ -1379,7 +1379,15 @@ module.exports = function (params) {
         doHangup();
     }, true);
 
-    that.listen('signal-offer', listenOffer, true);
+    that.listen('signal-offer', function (evt) {
+        if (pc.state.getState() === 'idle') {
+            pc.state.once('preparing:entry', function () {
+                listenOffer(evt);
+            });
+        } else {
+            listenOffer(evt);
+        }
+    }, true);
     that.listen('signal-hangup', listenHangup, true);
     that.listen('signal-modify', listenModify, true);
     pc.listen('modify-reject', onModifyReject, true);
