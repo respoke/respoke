@@ -276,7 +276,6 @@ module.exports = function (params) {
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
-        var isChrome = !!navigator.webkitGetUserMedia;
 
         params = params || {};
         if (typeof params.caller !== 'boolean') {
@@ -286,7 +285,7 @@ module.exports = function (params) {
 
         if (params.caller) {
             params.sendOnly = true;
-            if (isChrome) {
+            if (respoke.needsChromeExtension) {
                 params.constraints = {
                     audio: false,
                     video: {

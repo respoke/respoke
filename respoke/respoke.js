@@ -119,6 +119,7 @@ var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
     streams: [],
     instances: {},
+    needsChromeExtension: !!(window.chrome && navigator.webkitGetUserMedia),
     hasChromeExtension: false
 };
 
@@ -182,6 +183,7 @@ document.addEventListener('respoke-available', function (evt) {
         document.dispatchEvent(respoke.extEvent('ct-respoke-source-id'));
         document.addEventListener("respoke-source-id", sourceIdListener);
     };
+
     respoke.log.info("Respoke Screen Share Chrome extension available for use.");
 });
 
