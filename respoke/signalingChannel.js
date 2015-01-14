@@ -1133,7 +1133,7 @@ module.exports = function (params) {
             target = client.getCall({
                 id: signal.sessionId,
                 endpointId: signal.fromEndpoint,
-                type: (signal.target !== 'screenshare') ? "screenshare" : signal.fromType,
+                type: (signal.target === 'screenshare') ? 'screenshare' : signal.fromType,
                 create: (signal.target !== 'directConnection' && signal.signalType === 'offer')
             });
             if (target) {

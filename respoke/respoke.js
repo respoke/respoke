@@ -482,7 +482,7 @@ respoke.sdpHasAudio = function (sdp) {
     if (!sdp) {
         throw new Error("respoke.sdpHasAudio called with no parameters.");
     }
-    return sdp.indexOf('m=audio') !== -1;
+    return (sdp.indexOf('m=audio') !== -1 && sdp.indexOf('a=recvonly') === -1);
 };
 
 /**
@@ -496,7 +496,7 @@ respoke.sdpHasVideo = function (sdp) {
     if (!sdp) {
         throw new Error("respoke.sdpHasVideo called with no parameters.");
     }
-    return sdp.indexOf('m=video') !== -1;
+    return (sdp.indexOf('m=video') !== -1 && sdp.indexOf('a=recvonly') === -1);
 };
 
 /**

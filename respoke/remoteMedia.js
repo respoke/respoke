@@ -12,9 +12,9 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * Class for managing the remote media stream, 
+ * Class for managing the remote media stream,
  * which is attached to a call at `call.outgoingMedia`.
- * 
+ *
  * @class respoke.RemoteMedia
  * @constructor
  * @augments respoke.EventEmitter

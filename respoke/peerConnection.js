@@ -419,14 +419,15 @@ module.exports = function (params) {
         pc = new RTCPeerConnection(that.servers, pcOptions);
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
+        pc.oniceconnectionstatechange = onIceConnectionStateChange;
         pc.onaddstream = function onaddstream(evt) {
             /**
-             * @event respoke.PeerConnection#connect
+             * @event respoke.PeerConnection#remote-stream-received
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.PeerConnection}
              */
-            that.fire('connect', {
+            that.fire('remote-stream-received', {
                 stream: evt.stream
             });
         };
@@ -550,6 +551,28 @@ module.exports = function (params) {
                 candidate: candidate,
                 call: that.call
             });
+        }
+    }
+
+    /**
+     * Handle ICE state change
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.onIceConnectionStateChange
+     * @private
+     */
+    function onIceConnectionStateChange(evt) {
+        if (!pc) {
+            return;
+        }
+
+        if (['completed', 'connected'].indexOf(pc.iceConnectionState) > -1) {
+            /**
+             * @event respoke.PeerConnection#connect
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.PeerConnection}
+             */
+            that.fire('connect');
         }
     }
 

@@ -614,7 +614,7 @@ module.exports = function (params) {
         var call = null;
         var endpoint = null;
         var methods = {
-            screenShare: "startScreenShare",
+            screenshare: "startScreenShare",
             did: "startPhoneCall",
             web: "startCall",
             sip: "startSIPCall"
@@ -644,7 +644,7 @@ module.exports = function (params) {
         callParams.toType = params.fromType;
         callParams.fromType = "web";
 
-        switch (params.fromType) {
+        switch (params.type) {
             case "screenshare":
                 callParams.toType = "web"; // overwrite "screenshare"
                 // No break
@@ -660,7 +660,7 @@ module.exports = function (params) {
         }
 
         try {
-            call = that[methods[params.fromType]](callParams);
+            call = that[methods[params.type]](callParams);
         } catch (e) {
             log.error("Couldn't create Call.", e.message, e.stack);
         }

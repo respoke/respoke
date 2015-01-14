@@ -253,6 +253,18 @@ module.exports = function (params) {
      * @private
      */
     function requestMedia() {
+        if (that.receiveOnly === true) {
+            /**
+             * Indicate there is no need to obtain media at this time.
+             * @event respoke.LocalMedia#no-local-media
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             */
+            that.fire('no-local-media');
+            return;
+        }
+
         log.debug('requestMedia');
 
         if (!that.constraints) {
@@ -300,7 +312,7 @@ module.exports = function (params) {
             log.debug("Running getUserMedia with constraints", that.constraints);
             getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
         } catch (e) {
-            log.error("Couldn't get user media: " + e.message);
+            log.error("Couldn't get user media.", e);
         }
     }
 

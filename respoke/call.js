@@ -175,6 +175,7 @@ module.exports = function (params) {
      * @type {respoke.LocalMedia}
      */
     that.outgoingMedia = respoke.LocalMedia({
+        receiveOnly: that.receiveOnly,
         instanceId: instanceId,
         callId: that.id,
         constraints: params.constraints || {
@@ -371,6 +372,18 @@ module.exports = function (params) {
 
         that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;
         that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
+
+        if (pc.state.receiveOnly === true) {
+            that.outgoingMedia.constraints = {
+                audio: false,
+                video: false,
+                mandatory: {
+                    OfferToReceiveAudio: true,
+                    OfferToReceiveVideo: true
+                }
+            };
+        }
+
         if (pc.state.caller === true) {
             // Only the person who initiated this round of media negotiation needs to estimate remote
             // media based on what constraints local media is using.
@@ -447,7 +460,7 @@ module.exports = function (params) {
 
         saveParameters(params);
 
-        pc.listen('connect', onRemoteStreamAdded, true);
+        pc.listen('remote-stream-received', onRemoteStreamAdded, true);
         pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
         pc.state.once('approving-device-access:entry', function (evt) {
@@ -561,10 +574,10 @@ module.exports = function (params) {
         that.incomingMedia.setStream(evt.stream);
 
         /**
-         * Indicates that a remote media stream has been added to the call.
+         * Indicates that either remote media stream has been added to the call or if no
+         * media is expected, the other side is receiving our media.
          *
          * @event respoke.Call#connect
-         * @event respoke.LocalMedia#connect
          * @type {respoke.Event}
          * @property {Element} element - The HTML5 Video element with the remote stream attached.
          * @property {respoke.RemoteMedia} stream - The incomingMedia property on the call.
@@ -649,6 +662,41 @@ module.exports = function (params) {
         return that.incomingMedia.element;
     };
 
+    function streamReceivedHandler(evt) {
+        if (!pc) {
+            return;
+        }
+
+        defMedia.resolve(that.outgoingMedia);
+        pc.addStream(evt.stream);
+        pc.state.dispatch('receiveLocalMedia');
+        if (typeof previewLocalMedia === 'function') {
+            previewLocalMedia(evt.element, that);
+        }
+
+        /**
+         * @event respoke.Call#local-stream-received
+         * @type {respoke.Event}
+         * @property {Element} element
+         * @property {respoke.LocalMedia} stream
+         * @property {string} name - the event name.
+         * @property {respoke.Call} target
+         */
+        that.fire('local-stream-received', {
+            element: evt.element,
+            stream: that.outgoingMedia
+        });
+    }
+
+    function noLocalMediaHandler(evt) {
+        if (!pc) {
+            return;
+        }
+
+        defMedia.resolve();
+        pc.state.dispatch('receiveLocalMedia');
+    }
+
     /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received. This method is called
      * after answer() so we cannot use this method to set up the DirectConnection.
@@ -704,31 +752,8 @@ module.exports = function (params) {
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
-        that.outgoingMedia.listen('stream-received', function streamReceivedHandler(evt) {
-            if (!pc) {
-                return;
-            }
-
-            defMedia.resolve(that.outgoingMedia);
-            pc.addStream(evt.stream);
-            pc.state.dispatch('receiveLocalMedia');
-            if (typeof previewLocalMedia === 'function') {
-                previewLocalMedia(evt.element, that);
-            }
-
-            /**
-             * @event respoke.Call#local-stream-received
-             * @type {respoke.Event}
-             * @property {Element} element
-             * @property {respoke.LocalMedia} stream
-             * @property {string} name - the event name.
-             * @property {respoke.Call} target
-             */
-            that.fire('local-stream-received', {
-                element: evt.element,
-                stream: that.outgoingMedia
-            });
-        }, true);
+        that.outgoingMedia.listen('stream-received', streamReceivedHandler, true);
+        that.outgoingMedia.listen('no-local-media', noLocalMediaHandler, true);
         that.outgoingMedia.listen('error', function errorHandler(evt) {
             pc.state.dispatch('reject', {reason: 'media stream error'});
             pc.report.callStoppedReason = evt.reason;
@@ -1143,10 +1168,11 @@ module.exports = function (params) {
          * Always overwrite constraints for callee on every offer, since answer() and accept() will
          * always be called after parsing the SDP.
          */
-        that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
-        that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
-
-        log.info("Setting outgoingMedia constraints to", that.outgoingMedia.constraints);
+        if (pc.state.receiveOnly !== true) {
+            that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
+            that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
+            log.info("Setting outgoingMedia constraints to", that.outgoingMedia.constraints);
+        }
 
         if (pc.state.isModifying()) {
             if (pc.state.needDirectConnection === true) {
@@ -1434,6 +1460,28 @@ module.exports = function (params) {
             that.answer();
         }
     }, true);
+
+    pc.state.listen('connecting:entry', function (evt) {
+            /*
+             *  If we get told the other side isn't sending any media, we have to fire Call#connect
+             *  based on the PeerConnection#connect event, not the PeerConnection#local-media-received
+             *  event.
+             */
+            if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio()) {
+                pc.listen('connect', function () {
+                    /**
+                     * Indicates that either remote media stream has been added to the call or if no
+                     * media is expected, the other side is receiving our media.
+                     *
+                     * @event respoke.Call#connect
+                     * @type {respoke.Event}
+                     * @property {string} name - The event name.
+                     * @property {respoke.Call} target
+                     */
+                    that.fire('connect');
+                }, true);
+            }
+    });
 
     signalingChannel.getTurnCredentials().then(function (result) {
         if (!pc) {
