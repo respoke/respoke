@@ -128,15 +128,21 @@ module.exports = function (params) {
         return (that.needDirectConnection === true && typeof params.previewLocalMedia === 'function');
     }
 
-    function automaticDirectConnectionCaller(params) {
-        return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function' &&
-            that.caller === true);
+    function automaticOffering(params) {
+        if (that.caller !== true) {
+            return false;
+        }
+
+        if (!that.needDirectConnection && that.receiveOnly) {
+            return true;
+        }
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
     }
 
     function createTimer(func, name, time) {
         var id = setTimeout(function () {
             id = null;
-            respoke.log.error(name, "timer expired.");
+            respoke.log.error((that.caller ? "caller's" : "callee's"), name, "timer expired.");
             func();
         }, time);
         respoke.log.debug('setting timer', name, 'for', time / 1000, 'secs');
@@ -146,7 +152,7 @@ module.exports = function (params) {
                 if (id === null) {
                     return;
                 }
-                respoke.log.debug('clearing timer', name);
+                respoke.log.debug('clearing', (that.caller ? "caller's" : "callee's"), 'timer', name);
                 clearTimeout(id);
                 id = null;
             }
@@ -262,19 +268,19 @@ module.exports = function (params) {
                             guard: needToApproveDirectConnection
                         }, {
                             target: 'offering',
-                            guard: automaticDirectConnectionCaller
+                            guard: automaticOffering
                         }, {
                             // we are not sending anything or developer does not want to approve media.
                             target: 'connecting',
                             guard: function (params) {
-                                // always for callee, caller will always answer before sending offer.
-                                // callee should always answer after receiving offer.
+                                // caller will always answer before sending offer.
+                                // callee will usually answer after receiving offer if media is requested.
                                 if (!that.receivedSDP) {
                                     return false;
                                 }
 
                                 if (needToObtainMedia(params) || needToApproveDirectConnection(params) ||
-                                        automaticDirectConnectionCaller(params)) {
+                                        automaticOffering(params)) {
                                     return false;
                                 }
 

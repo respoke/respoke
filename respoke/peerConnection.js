@@ -199,7 +199,7 @@ module.exports = function (params) {
      * @private
      * @type {object}
      */
-    var offerOptions = params.offerOptions || null;
+    var offerOptions = params.offerOptions || {};
     /**
      * @memberof! respoke.PeerConnection
      * @name pcOptions
@@ -247,10 +247,28 @@ module.exports = function (params) {
             return;
         }
 
+        if (that.state.receiveOnly) {
+            makeOptionsReceiveOnly(offerOptions);
+        }
+
         log.info('creating offer', offerOptions);
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
         }, offerOptions);
+    }
+
+    function makeOptionsReceiveOnly(options) {
+        if (navigator.webkitGetUserMedia) {
+            offerOptions = {
+                mandatory: {
+                    OfferToReceiveVideo: true,
+                    OfferToReceiveAudio: true
+                }
+            };
+        } else {
+            offerOptions.offerToReceiveVideo = true;
+            offerOptions.offerToReceiveAudio = true;
+        }
     }
 
     /**
@@ -384,6 +402,7 @@ module.exports = function (params) {
                 }
             });
             that.listen('close', function closeHandler(evt) {
+
                 stats.stopStats();
             }, true);
             deferred.resolve();
@@ -565,7 +584,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (['completed', 'connected'].indexOf(pc.iceConnectionState) > -1) {
+        if (['completed'].indexOf(pc.iceConnectionState) > -1) {
             /**
              * @event respoke.PeerConnection#connect
              * @type {respoke.Event}
@@ -1006,7 +1025,7 @@ module.exports = function (params) {
         if (that.state.sentSDP || that.state.processedRemoteSDP) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
-                log.debug('Got a remote candidate.', params.candidate);
+                log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', params.candidate);
                 that.report.candidatesReceived.push(params.candidate);
             } catch (e) {
                 log.error("Couldn't add ICE candidate: " + e.message, params.candidate);

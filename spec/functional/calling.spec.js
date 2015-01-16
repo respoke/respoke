@@ -612,6 +612,277 @@ describe("Respoke calling", function () {
             });
         });
 
+        describe("with one-way media", function () {
+            describe("originating from caller", function () {
+                describe("with constraints as well as receiveOnly flag", function () {
+                    var noMediaCallListener = function (evt) {
+                        if (evt.call.caller !== true) {
+                            evt.call.answer({
+                                receiveOnly: true,
+                                constraints: {
+                                    audio: false,
+                                    video: false
+                                }
+                            });
+                        }
+                    };
+
+                    beforeEach(function () {
+                        followeeClient.listen('call', noMediaCallListener);
+                    });
+
+                    afterEach(function () {
+                        followeeClient.ignore('call', noMediaCallListener);
+                    });
+
+                    it("sends both video and audio", function (done) {
+                        var doneOnce = doneOnceBuilder(done);
+
+                        call = followeeEndpoint.startCall({
+                            constraints: {
+                                video: true,
+                                audio: true,
+                                optional: [],
+                                mandatory: {}
+                            },
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.element).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                                    expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                                } catch (e) {
+                                    doneOnce(e);
+                                }
+                            },
+                            onConnect: function (evt) {
+                                doneOnce();
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
+                    });
+
+                    it("receives nothing", function (done) {
+                        var doneOnce = doneOnceBuilder(done);
+
+                        call = followeeEndpoint.startCall({
+                            constraints: {
+                                video : true,
+                                audio : true,
+                                optional: [],
+                                mandatory: {}
+                            },
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.element).to.be.undefined;
+                                    expect(call.incomingMedia.hasVideo()).to.equal(false);
+                                    expect(call.incomingMedia.hasAudio()).to.equal(false);
+                                    doneOnce();
+                                } catch (e) {
+                                    doneOnce(e);
+                                }
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
+                    });
+                });
+
+                describe("with only the receiveOnly flag", function () {
+                    var noMediaCallListener = function (evt) {
+                        if (evt.call.caller !== true) {
+                            evt.call.answer({
+                                receiveOnly: true
+                            });
+                        }
+                    };
+
+                    beforeEach(function () {
+                        followeeClient.listen('call', noMediaCallListener);
+                    });
+
+                    afterEach(function () {
+                        followeeClient.ignore('call', noMediaCallListener);
+                    });
+
+                    it("sends both video and audio", function (done) {
+                        var doneOnce = doneOnceBuilder(done);
+
+                        call = followeeEndpoint.startCall({
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.element).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                                    expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                                } catch (e) {
+                                    doneOnce(e);
+                                }
+                            },
+                            onConnect: function (evt) {
+                                doneOnce();
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
+                    });
+
+                    it("receives nothing", function (done) {
+                        var doneOnce = doneOnceBuilder(done);
+
+                        call = followeeEndpoint.startCall({
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.element).to.be.undefined;
+                                    expect(call.incomingMedia.hasVideo()).to.equal(false);
+                                    expect(call.incomingMedia.hasAudio()).to.equal(false);
+                                    doneOnce();
+                                } catch (e) {
+                                    doneOnce(e);
+                                }
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
+                    });
+                });
+            });
+        });
+
+        describe("originating from the callee", function () {
+            var callListener = function (evt) {
+                if (evt.call.caller !== true) {
+                    evt.call.answer({
+                        constraints: {
+                            audio: true,
+                            video: true
+                        }
+                    });
+                }
+            };
+
+            describe("with constraints as well as receiveOnly flag", function () {
+                beforeEach(function () {
+                    followeeClient.listen('call', callListener);
+                });
+
+                afterEach(function () {
+                    followeeClient.ignore('call', callListener);
+                });
+
+                it("receives both video and audio", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        receiveOnly: true,
+                        constraints: {
+                            video: false,
+                            audio: false,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(evt.stream).to.be.ok;
+                                expect(evt.element).to.be.ok;
+                                expect(evt.stream.getAudioTracks()).to.be.ok;
+                                expect(evt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.incomingMedia.hasVideo()).to.equal(true);
+                                expect(call.incomingMedia.hasAudio()).to.equal(true);
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+
+                it("sends nothing", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    call = followeeEndpoint.startCall({
+                        receiveOnly: true,
+                        constraints: {
+                            video: false,
+                            audio: false,
+                            optional: [],
+                            mandatory: {}
+                        },
+                        onConnect: function (evt) {
+                            try {
+                                expect(call.outgoingMedia.getAudioTracks()).to.be.empty;
+                                expect(call.outgoingMedia.getVideoTracks()).to.be.empty;
+                                doneOnce();
+                            } catch (e) {
+                                doneOnce(e);
+                            }
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        }
+                    });
+                });
+            });
+        });
+
+        xdescribe("screen sharing", function () {
+            it("sends only video and no audio", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startScreenShare({
+                    onLocalMedia: function (evt) {
+                        try {
+                            expect(evt.stream).to.be.ok;
+                            expect(evt.element).to.be.ok;
+                            expect(evt.stream.getAudioTracks()).to.be.ok;
+                            expect(evt.stream.getVideoTracks()).to.be.empty;
+                            expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                            expect(call.outgoingMedia.hasAudio()).to.equal(false);
+                        } catch (e) {
+                            doneOnce(e);
+                        }
+                    },
+                    onConnect: function (evt) {
+                        doneOnce();
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
+                    }
+                });
+            });
+
+            it("receives nothing", function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                call = followeeEndpoint.startVideoCall({
+                    onConnect: function (evt) {
+                        try {
+                            expect(call.incomingMedia.hasVideo()).to.equal(false);
+                            expect(call.incomingMedia.hasAudio()).to.equal(false);
+                            doneOnce();
+                        } catch (e) {
+                            doneOnce(e);
+                        }
+                    },
+                    onHangup: function (evt) {
+                        doneOnce(new Error("Call got hung up"));
+                    }
+                });
+            });
+        });
+
         describe("when previewLocalMedia is specified", function () {
             beforeEach(function () {
                 followeeClient.listen('call', callListener);

@@ -446,7 +446,7 @@ respoke.isEqual = function (a, b) {
     var aKeys;
 
     //check if arrays
-    if (a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
+    if (a && b && a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
         if (a.length !== b.length) {
             //short circuit if arrays are different length
             return false;

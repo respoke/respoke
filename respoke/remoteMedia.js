@@ -195,19 +195,35 @@ module.exports = function (params) {
     that.setStream = function (str) {
         if (str) {
             that.stream = str;
-            /**
-             * Expose getAudioTracks.
-             */
-            that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
-            /**
-             * Expose getVideoTracks.
-             */
-            that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
             that.element = that.element || document.createElement('video');
             attachMediaStream(that.element, that.stream);
             that.element.autoplay = true;
             setTimeout(that.element.play.bind(that.element));
         }
+    };
+
+    /**
+     * Expose getAudioTracks.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getAudioTracks
+     */
+    that.getAudioTracks = function () {
+        if (that.stream) {
+            return that.stream.getAudioTracks();
+        }
+        return [];
+    };
+
+    /**
+     * Expose getVideoTracks.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getVideoTracks
+     */
+    that.getVideoTracks = function () {
+        if (that.stream) {
+            return that.stream.getVideoTracks();
+        }
+        return [];
     };
 
     /**

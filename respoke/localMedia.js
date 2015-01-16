@@ -108,14 +108,7 @@ module.exports = function (params) {
             { RtpDataChannels: false }
         ]
     };
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name pc
-     * @private
-     * @type {respoke.PeerConnection}
-     */
-    var pc = params.pc;
-    delete that.pc;
+
     /**
      * The local `MediaStream` from `getUserMedia()`.
      * @memberof! respoke.LocalMedia
@@ -173,26 +166,6 @@ module.exports = function (params) {
         log.debug('User gave permission to use media.');
         log.debug('onReceiveUserMedia');
 
-        /**
-         * Expose getAudioTracks.
-         * @memberof! respoke.LocalMedia
-         * @method respoke.LocalMedia.getAudioTracks
-         */
-        that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
-
-        /**
-         * Expose getVideoTracks.
-         * @memberof! respoke.LocalMedia
-         * @method respoke.LocalMedia.getVideoTracks
-         */
-        that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
-
-        // This happens when we get an automatic hangup or reject from the other side.
-        if (pc === null) {
-            that.hangup({signal: false});
-            return;
-        }
-
         that.element = that.element || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
@@ -247,13 +220,37 @@ module.exports = function (params) {
     }
 
     /**
+     * Expose getAudioTracks.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getAudioTracks
+     */
+    that.getAudioTracks = function () {
+        if (that.stream) {
+            return that.stream.getAudioTracks();
+        }
+        return [];
+    };
+
+    /**
+     * Expose getVideoTracks.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getVideoTracks
+     */
+    that.getVideoTracks = function () {
+        if (that.stream) {
+            return that.stream.getVideoTracks();
+        }
+        return [];
+    };
+
+    /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.requestMedia
      * @private
      */
     function requestMedia() {
-        if (that.receiveOnly === true) {
+        if (that.state.receiveOnly === true) {
             /**
              * Indicate there is no need to obtain media at this time.
              * @event respoke.LocalMedia#no-local-media
@@ -265,7 +262,7 @@ module.exports = function (params) {
             return;
         }
 
-        log.debug('requestMedia');
+        log.debug('requestMedia', that.state.caller);
 
         if (!that.constraints) {
             throw new Error('No constraints.');

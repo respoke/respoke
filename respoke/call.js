@@ -170,12 +170,55 @@ module.exports = function (params) {
     that.hasVideo = undefined;
 
     /**
+     * @memberof! respoke.Call
+     * @name pc
+     * @private
+     * @type {respoke.PeerConnection}
+     */
+    var pc = respoke.PeerConnection({
+        instanceId: instanceId,
+        state: respoke.CallState({
+            caller: that.caller,
+            needDirectConnection: params.needDirectConnection,
+            sendOnly: params.sendOnly,
+            receiveOnly: params.receiveOnly,
+            // hasMedia is not defined yet.
+            hasMedia: function () {
+                return that.hasMedia();
+            }
+        }),
+        forceTurn: !!params.forceTurn,
+        call: that,
+        pcOptions: {
+            optional: [
+                { DtlsSrtpKeyAgreement: true },
+                { RtpDataChannels: false }
+            ]
+        },
+        offerOptions: params.offerOptions || null,
+        signalOffer: function (args) {
+            if (!pc) {
+                return;
+            }
+
+            params.signalOffer(args);
+            pc.state.dispatch('sentOffer');
+        },
+        signalConnected: params.signalConnected,
+        signalAnswer: params.signalAnswer,
+        signalModify: params.signalModify,
+        signalHangup: params.signalHangup,
+        signalReport: params.signalReport,
+        signalCandidate: params.signalCandidate
+    });
+
+    /**
      * Local media that we are sending to the remote party.
      * @name outgoingMedia
      * @type {respoke.LocalMedia}
      */
     that.outgoingMedia = respoke.LocalMedia({
-        receiveOnly: that.receiveOnly,
+        state: pc.state,
         instanceId: instanceId,
         callId: that.id,
         constraints: params.constraints || {
@@ -192,6 +235,7 @@ module.exports = function (params) {
      * @type {respoke.RemoteMedia}
      */
     that.incomingMedia = respoke.RemoteMedia({
+        state: pc.state,
         instanceId: instanceId,
         callId: that.id,
         constraints: params.constraints
@@ -244,49 +288,6 @@ module.exports = function (params) {
      * @type {boolean}
      */
     var toSendHangup = null;
-
-    /**
-     * @memberof! respoke.Call
-     * @name pc
-     * @private
-     * @type {respoke.PeerConnection}
-     */
-    var pc = respoke.PeerConnection({
-        instanceId: instanceId,
-        state: respoke.CallState({
-            caller: that.caller,
-            needDirectConnection: params.needDirectConnection,
-            sendOnly: params.sendOnly,
-            receiveOnly: params.receiveOnly,
-            // hasMedia is not defined yet.
-            hasMedia: function () {
-                return that.hasMedia();
-            }
-        }),
-        forceTurn: !!params.forceTurn,
-        call: that,
-        pcOptions: {
-            optional: [
-                { DtlsSrtpKeyAgreement: true },
-                { RtpDataChannels: false }
-            ]
-        },
-        offerOptions: params.offerOptions || null,
-        signalOffer: function (args) {
-            if (!pc) {
-                return;
-            }
-
-            params.signalOffer(args);
-            pc.state.dispatch('sentOffer');
-        },
-        signalConnected: params.signalConnected,
-        signalAnswer: params.signalAnswer,
-        signalModify: params.signalModify,
-        signalHangup: params.signalHangup,
-        signalReport: params.signalReport,
-        signalCandidate: params.signalCandidate
-    });
 
     /**
      * Set up promises. If we're not the caller, we need to listen for approval AND the remote SDP to come in
@@ -372,17 +373,6 @@ module.exports = function (params) {
 
         that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;
         that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
-
-        if (pc.state.receiveOnly === true) {
-            that.outgoingMedia.constraints = {
-                audio: false,
-                video: false,
-                mandatory: {
-                    OfferToReceiveAudio: true,
-                    OfferToReceiveVideo: true
-                }
-            };
-        }
 
         if (pc.state.caller === true) {
             // Only the person who initiated this round of media negotiation needs to estimate remote
@@ -1171,7 +1161,7 @@ module.exports = function (params) {
         if (pc.state.receiveOnly !== true) {
             that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
             that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
-            log.info("Setting outgoingMedia constraints to", that.outgoingMedia.constraints);
+            log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
         }
 
         if (pc.state.isModifying()) {
@@ -1461,27 +1451,28 @@ module.exports = function (params) {
         }
     }, true);
 
-    pc.state.listen('connecting:entry', function (evt) {
-            /*
-             *  If we get told the other side isn't sending any media, we have to fire Call#connect
-             *  based on the PeerConnection#connect event, not the PeerConnection#local-media-received
-             *  event.
+    /*
+     *  If we are sending media and the other side is not, we have to fire Call#connect manually,
+     *  because the RTCPeerConnection will never reach an ICE connection state of "connected."
+     *  This will need to be moved when we start handling media renegotiation.
+     */
+    pc.listen('connect', function connectNoMedia() {
+        if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio() &&
+            that.outgoingMedia.hasVideo() && that.outgoingMedia.hasAudio()) {
+            /**
+             * Indicates that either remote media stream has been added to the call or if no
+             * media is expected, the other side is receiving our media.
+             *
+             * @event respoke.Call#connect
+             * @type {respoke.Event}
+             * @property {string} name - The event name.
+             * @property {respoke.Call} target
              */
-            if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio()) {
-                pc.listen('connect', function () {
-                    /**
-                     * Indicates that either remote media stream has been added to the call or if no
-                     * media is expected, the other side is receiving our media.
-                     *
-                     * @event respoke.Call#connect
-                     * @type {respoke.Event}
-                     * @property {string} name - The event name.
-                     * @property {respoke.Call} target
-                     */
-                    that.fire('connect');
-                }, true);
-            }
+            that.fire('connect');
+            pc.state.dispatch('receiveRemoteMedia');
+        }
     });
+
 
     signalingChannel.getTurnCredentials().then(function (result) {
         if (!pc) {
