@@ -1953,7 +1953,7 @@ module.exports = function (params) {
 
     function failWebsocketRequest(request, response, error, deferred) {
         if (response && response.error) {
-            deferred.reject(new Error(error + '(' + request.method + ' ' + params.path + ')'));
+            deferred.reject(new Error(error + '(' + request.method + ' ' + request.path + ')'));
         } else {
             deferred.resolve(response);
         }
