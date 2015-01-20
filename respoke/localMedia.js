@@ -275,26 +275,26 @@ module.exports = function (params) {
             return;
         }
 
-        try {
-            // TODO set getStream(that.constraints) = true as a flag that we are already
-            // attempting to obtain this media so the race condition where gUM is called twice with
-            // the same constraints when calls are placed too quickly together doesn't occur.
-            allowTimer = setTimeout(function allowTimer() {
-                /**
-                 * The browser is asking for permission to access the User's media. This would be an ideal time
-                 * to modify the UI of the application so that the user notices the request for permissions
-                 * and approves it.
-                 * @event respoke.LocalMedia#requesting-media
-                 * @type {respoke.Event}
-                 * @property {string} name - the event name.
-                 * @property {respoke.LocalMedia} target
-                 */
-                that.fire('requesting-media');
-            }, 500);
-            if (respoke.useFakeMedia === true) {
-                that.constraints.fake = true;
-            }
-            if (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) {
+        // TODO set getStream(that.constraints) = true as a flag that we are already
+        // attempting to obtain this media so the race condition where gUM is called twice with
+        // the same constraints when calls are placed too quickly together doesn't occur.
+        allowTimer = setTimeout(function allowTimer() {
+            /**
+             * The browser is asking for permission to access the User's media. This would be an ideal time
+             * to modify the UI of the application so that the user notices the request for permissions
+             * and approves it.
+             * @event respoke.LocalMedia#requesting-media
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             */
+            that.fire('requesting-media');
+        }, 500);
+        if (respoke.useFakeMedia === true) {
+            that.constraints.fake = true;
+        }
+        if (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) {
+            if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
                 respoke.chooseDesktopMedia(function (params) {
                     if (!params.sourceId) {
                         respoke.log.error(params.error);
@@ -305,12 +305,12 @@ module.exports = function (params) {
                     getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 });
                 return;
+            } else {
+                throw new Error("Screen sharing not implemented on this platform yet.");
             }
-            log.debug("Running getUserMedia with constraints", that.constraints);
-            getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
-        } catch (e) {
-            log.error("Couldn't get user media.", e);
         }
+        log.debug("Running getUserMedia with constraints", that.constraints);
+        getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
     }
 
     /**
@@ -565,7 +565,12 @@ module.exports = function (params) {
      * @private
      */
     that.start = function () {
-        requestMedia();
+        try {
+            requestMedia();
+        } catch (err) {
+            clearTimeout(allowTimer);
+            that.fire('error', {reason: err.message});
+        }
     };
 
     return that;
