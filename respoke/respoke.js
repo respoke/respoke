@@ -249,6 +249,16 @@ respoke.connect = function (params) {
 };
 
 /**
+ * This method will be overridden in the case that an extension or plugin is available for screen sharing.
+ *
+ * @static
+ * @memberof respoke
+ */
+respoke.chooseDesktopMedia = function () {
+    log.warn("Screen sharing is not implemented for this browser.");
+};
+
+/**
  * Getter for the respoke client.
  *
  * You can have more than one active client, so this method provides a way to retrieve a specific instance.
