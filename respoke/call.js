@@ -1458,7 +1458,7 @@ module.exports = function (params) {
      */
     pc.state.listen('connecting:entry', function connectNoMedia() {
         if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio() &&
-            that.outgoingMedia.hasVideo() && that.outgoingMedia.hasAudio()) {
+            (that.outgoingMedia.hasVideo() || that.outgoingMedia.hasAudio())) {
             /**
              * Indicates that either remote media stream has been added to the call or if no
              * media is expected, the other side is receiving our media.
