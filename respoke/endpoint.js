@@ -242,6 +242,10 @@ module.exports = function (params) {
      * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
      * now, if you also need audio, place a second audio only call.
      *
+     * NOTE: At this time, screen sharing only works with Chrome, and Chrome requires a Chrome extension to
+     * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
+     * Support for additional browsers will be added in the future.
+     *
      *     endpoint.startScreenShare({
      *         onConnect: function (evt) {}
      *     });
