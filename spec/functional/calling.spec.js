@@ -353,6 +353,48 @@ describe("Respoke calling", function () {
                         }
                     });
                 });
+
+                describe("and then placing a second call with no overlapping media constraints", function () {
+                    var call2;
+
+                    it("causes two calls to be set up correctly", function (done) {
+                        var doneOnce = doneOnceBuilder(done);
+
+                        call2 = followeeEndpoint.startCall({
+                            constraints: {
+                                video: true,
+                                audio: false,
+                                optional: [],
+                                mandatory: {}
+                            },
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.element).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.empty;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    expect(call.outgoingMedia.hasVideo()).to.equal(false);
+                                    expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                                    expect(call2.outgoingMedia.hasVideo()).to.equal(true);
+                                    expect(call2.outgoingMedia.hasAudio()).to.equal(false);
+                                } catch (e) {
+                                    doneOnce(e);
+                                }
+                            },
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.element).to.be.ok;
+                                    doneOnce();
+                                } catch (e) {
+                                    doneOnce(e);
+                                }
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
+                    });
+                });
             });
 
             describe("by the Endpoint.startAudioCall method", function () {
@@ -453,7 +495,7 @@ describe("Respoke calling", function () {
                     });
                 });
 
-                xit("only receives video and not audio", function (done) {
+                it("only receives video and not audio", function (done) {
                     var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
@@ -930,7 +972,7 @@ describe("Respoke calling", function () {
             });
 
             // Can't actually test this because we are using the fake gUM UI flag which doesn't give any time
-            // between asking for media and receiving it. The library a 500ms delay between asking for media and
+            // between asking for media and receiving it. The library has a 500ms delay between asking for media and
             // firing requesting-media so that the UI doesn't flash a request to click the button when no
             // additional permissions are needed. Maybe we can test this another way in the future.
             xdescribe("the onRequestingMedia callback", function () {
