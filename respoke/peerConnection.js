@@ -584,7 +584,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (['completed'].indexOf(pc.iceConnectionState) > -1) {
+        if (pc.iceConnectionState === 'connected') {
             /**
              * @event respoke.PeerConnection#connect
              * @type {respoke.Event}

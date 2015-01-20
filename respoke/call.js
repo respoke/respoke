@@ -1456,7 +1456,7 @@ module.exports = function (params) {
      *  because the RTCPeerConnection will never reach an ICE connection state of "connected."
      *  This will need to be moved when we start handling media renegotiation.
      */
-    pc.listen('connect', function connectNoMedia() {
+    pc.state.listen('connecting:entry', function connectNoMedia() {
         if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio() &&
             that.outgoingMedia.hasVideo() && that.outgoingMedia.hasAudio()) {
             /**
