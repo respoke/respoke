@@ -25,6 +25,9 @@ describe("The respoke namespace", function() {
         expect(typeof respoke.hasUserMedia).to.equal('function');
         expect(typeof respoke.hasRTCPeerConnection).to.equal('function');
         expect(typeof respoke.hasWebsocket).to.equal('function');
+        expect(typeof respoke.needsChromeExtension).to.equal('boolean');
+        expect(typeof respoke.hasChromeExtension).to.equal('boolean');
+        expect(typeof respoke.chooseDesktopMedia).to.equal('function');
     });
 
     describe("the 'once' method", function () {

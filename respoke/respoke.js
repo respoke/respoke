@@ -119,7 +119,7 @@ var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
     streams: [],
     instances: {},
-    needsChromeExtension: !!(window.chrome && navigator.webkitGetUserMedia),
+    needsChromeExtension: !!(window.chrome && !window.opera && navigator.webkitGetUserMedia),
     hasChromeExtension: false
 };
 
