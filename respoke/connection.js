@@ -94,6 +94,11 @@ module.exports = function (params) {
      * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
      * now, if you also need audio, place a second audio only call.
      *
+     * The endpoint who calls `connection.startScreenShare` will be the one whose screen is shared. If you'd like to
+     * implement this as a screenshare request in which the endpoint who starts the call is the watcher and
+     * not the sharer, it is recommened that you use `endpoint.sendMessage` to send a control message to the user
+     * whose screenshare is being requested so that user's app can call `connection.startScreenShare`.
+     *
      * NOTE: At this time, screen sharing only works with Chrome, and Chrome requires a Chrome extension to
      * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
      * Support for additional browsers will be added in the future.

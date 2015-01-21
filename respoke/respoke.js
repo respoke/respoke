@@ -117,12 +117,33 @@ require('./deps/adapter');
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
-    streams: [],
-    instances: {},
-    needsChromeExtension: !!(window.chrome && !window.opera && navigator.webkitGetUserMedia),
-    hasChromeExtension: false
+    streams: []
 };
 
+/**
+ * A map of respoke.Client instances available for use. This is useful if you would like to separate some
+ * functionality of your app into a separate Respoke app which would require a separate appId.
+ * @type {boolean}
+ */
+respoke.instances = {};
+
+/**
+ * Indicate whether the user's browser is Chrome and requires the Respoke Chrome extension to do screen sharing.
+ * @type {boolean}
+ */
+respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.webkitGetUserMedia);
+
+/**
+ * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.
+ * @type {boolean}
+ */
+respoke.hasChromeExtension = false;
+
+/**
+ * Create an Event. This is used in the Chrome extension to communicate between the library and extension.
+ * @private
+ * @type {function}
+ */
 respoke.extEvent = function (type, data) {
     var evt = document.createEvent("CustomEvent");
     evt.initCustomEvent(type, true, true, data);
@@ -252,6 +273,7 @@ respoke.connect = function (params) {
  * This method will be overridden in the case that an extension or plugin is available for screen sharing.
  *
  * @static
+ * @private
  * @memberof respoke
  */
 respoke.chooseDesktopMedia = function () {
@@ -434,6 +456,7 @@ respoke.hasWebsocket = function () {
  * Clone an object.
  * @static
  * @memberof respoke
+ * @private
  * @param {Object} source - The object to clone
  * @returns {Object}
  */
@@ -448,6 +471,7 @@ respoke.clone = function (source) {
  * Compares two objects for equality
  * @static
  * @memberof respoke
+ * @private
  * @param {Object} a
  * @param {Object} b
  * @returns {boolean}
