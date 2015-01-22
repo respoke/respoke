@@ -68,6 +68,14 @@ module.exports = function (params) {
     that.element = params.videoRemoteElement;
     /**
      * @memberof! respoke.RemoteMedia
+     * @name hasScreenShare
+     * @private
+     * @type {boolean}
+     */
+    var hasScreenShare = params.hasScreenShare;
+    delete params.hasScreenShare;
+    /**
+     * @memberof! respoke.RemoteMedia
      * @name sdpHasAudio
      * @private
      * @type {boolean}
@@ -125,7 +133,22 @@ module.exports = function (params) {
     that.stream = null;
 
     /**
+     * Indicate whether we are receiving a screenshare.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.hasScreenShare
+     * @return {boolean}
+     */
+    that.hasScreenShare = function () {
+        if (that.stream) {
+            return (that.stream.getVideoTracks().length > 0 && hasScreenShare);
+        }
+        return hasScreenShare;
+    };
+
+    /**
      * Indicate whether we are receiving video.
+     *
+     * Note: This method will return true when the video is a screenshare.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.hasVideo
      * @return {boolean}
@@ -205,8 +228,8 @@ module.exports = function (params) {
 
     /**
      * Expose getAudioTracks.
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.getAudioTracks
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.getAudioTracks
      */
     that.getAudioTracks = function () {
         if (that.stream) {
@@ -217,8 +240,8 @@ module.exports = function (params) {
 
     /**
      * Expose getVideoTracks.
-     * @memberof! respoke.LocalMedia
-     * @method respoke.LocalMedia.getVideoTracks
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.getVideoTracks
      */
     that.getVideoTracks = function () {
         if (that.stream) {

@@ -68,6 +68,14 @@ module.exports = function (params) {
     that.element = params.element;
     /**
      * @memberof! respoke.LocalMedia
+     * @name hasScreenShare
+     * @private
+     * @type {boolean}
+     */
+    var hasScreenShare = params.hasScreenShare;
+    delete params.hasScreenShare;
+    /**
+     * @memberof! respoke.LocalMedia
      * @name sdpHasAudio
      * @private
      * @type {boolean}
@@ -527,7 +535,22 @@ module.exports = function (params) {
     };
 
     /**
+     * Indicate whether we are sending a screenshare.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.hasScreenShare
+     * @return {boolean}
+     */
+    that.hasScreenShare = function () {
+        if (that.stream) {
+            return (that.stream.getVideoTracks().length > 0 && hasScreenShare);
+        }
+        return hasScreenShare;
+    };
+
+    /**
      * Indicate whether we are sending video.
+     *
+     * Note: This method will return true when the video is a screenshare.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.hasVideo
      * @return {boolean}

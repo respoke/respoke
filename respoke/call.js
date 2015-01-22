@@ -221,6 +221,7 @@ module.exports = function (params) {
         state: pc.state,
         instanceId: instanceId,
         callId: that.id,
+        hasScreenShare: (that.caller && that.target === "screenshare"),
         constraints: params.constraints || {
             video: true,
             audio: true,
@@ -238,6 +239,7 @@ module.exports = function (params) {
         state: pc.state,
         instanceId: instanceId,
         callId: that.id,
+        hasScreenShare: (!that.caller && that.target === "screenshare"),
         constraints: params.constraints
     });
 
