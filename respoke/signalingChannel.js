@@ -1187,6 +1187,7 @@ module.exports = function (params) {
     routingMethods.doOffer = function (params) {
         params.call.connectionId = params.signal.fromConnection;
         /**
+         * Send the `offer` signal into the Call.
          * @event respoke.Call#signal-offer
          * @type {respoke.Event}
          * @property {object} signal
@@ -1208,6 +1209,7 @@ module.exports = function (params) {
      */
     routingMethods.doConnected = function (params) {
         /**
+         * Send the `connected` signal into the Call.
          * @event respoke.Call#signal-connected
          * @type {respoke.Event}
          * @property {object} signal
@@ -1229,6 +1231,7 @@ module.exports = function (params) {
      */
     routingMethods.doModify = function (params) {
         /**
+         * Send the `modify` signal into the Call.
          * @event respoke.Call#signal-modify
          * @type {respoke.Event}
          * @property {object} signal
@@ -1251,6 +1254,7 @@ module.exports = function (params) {
     routingMethods.doAnswer = function (params) {
         params.call.connectionId = params.signal.fromConnection;
         /**
+         * Send the `answer` signal into the Call.
          * @event respoke.Call#signal-answer
          * @type {respoke.Event}
          * @property {object} signal
@@ -1272,6 +1276,7 @@ module.exports = function (params) {
      */
     routingMethods.doIceCandidates = function (params) {
         /**
+         * Send the `icecandidates` signal into the Call.
          * @event respoke.Call#signal-icecandidates
          * @type {respoke.Event}
          * @property {object} signal
@@ -1301,6 +1306,7 @@ module.exports = function (params) {
             return;
         }
         /**
+         * Send the `hangup` signal into the Call.
          * @event respoke.Call#signal-hangup
          * @type {respoke.Event}
          * @property {object} signal
@@ -1365,6 +1371,7 @@ module.exports = function (params) {
         group = client.getGroup({id: message.header.channel});
         if (group) {
             /**
+             * Indicate that a message has been received to a group.
              * @event respoke.Group#message
              * @type {respoke.Event}
              * @property {respoke.TextMessage} message
@@ -1376,6 +1383,7 @@ module.exports = function (params) {
             });
         }
         /**
+         * Indicate that a message has been received.
          * @event respoke.Client#message
          * @type {respoke.Event}
          * @property {respoke.TextMessage} message
@@ -1508,6 +1516,7 @@ module.exports = function (params) {
         }
         if (endpoint) {
             /**
+             * Indicate that a message has been received.
              * @event respoke.Endpoint#message
              * @type {respoke.Event}
              * @property {respoke.TextMessage} message
@@ -1519,6 +1528,7 @@ module.exports = function (params) {
             });
         }
         /**
+         * Indicate that a message has been received.
          * @event respoke.Client#message
          * @type {respoke.Event}
          * @property {respoke.TextMessage} message
@@ -1641,6 +1651,7 @@ module.exports = function (params) {
                 }));
             }).done(function successHandler(user) {
                 /**
+                 * Indicate that a reconnect has succeeded.
                  * @event respoke.Client#reconnect
                  * @property {string} name - the event name.
                  * @property {respoke.Client}
@@ -1753,6 +1764,7 @@ module.exports = function (params) {
             });
 
             /**
+             * Indicate that this client has been disconnected from the Respoke service.
              * @event respoke.Client#disconnect
              * @property {string} name - the event name.
              * @property {respoke.Client} target

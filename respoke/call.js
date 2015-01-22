@@ -519,7 +519,6 @@ module.exports = function (params) {
         log.debug('Call.approve');
         /**
          * Fired when the local media access is approved.
-         *
          * @event respoke.Call#approve
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -566,7 +565,6 @@ module.exports = function (params) {
         /**
          * Indicates that either remote media stream has been added to the call or if no
          * media is expected, the other side is receiving our media.
-         *
          * @event respoke.Call#connect
          * @type {respoke.Event}
          * @property {Element} element - The HTML5 Video element with the remote stream attached.
@@ -665,6 +663,7 @@ module.exports = function (params) {
         }
 
         /**
+         * Indicate that the call has received local media from the browser.
          * @event respoke.Call#local-stream-received
          * @type {respoke.Event}
          * @property {Element} element
@@ -1462,7 +1461,6 @@ module.exports = function (params) {
             /**
              * Indicates that either remote media stream has been added to the call or if no
              * media is expected, the other side is receiving our media.
-             *
              * @event respoke.Call#connect
              * @type {respoke.Event}
              * @property {string} name - The event name.

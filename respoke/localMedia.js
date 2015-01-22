@@ -183,6 +183,7 @@ module.exports = function (params) {
             that.element.autoplay = true;
 
             /**
+             * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
@@ -205,6 +206,7 @@ module.exports = function (params) {
             that.element.autoplay = true;
 
             /**
+             * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
@@ -278,7 +280,7 @@ module.exports = function (params) {
         // TODO set getStream(that.constraints) = true as a flag that we are already
         // attempting to obtain this media so the race condition where gUM is called twice with
         // the same constraints when calls are placed too quickly together doesn't occur.
-        allowTimer = setTimeout(function allowTimer() {
+        allowTimer = setTimeout(function delayPermissionsRequest() {
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
              * to modify the UI of the application so that the user notices the request for permissions
@@ -297,7 +299,16 @@ module.exports = function (params) {
             if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
                 respoke.chooseDesktopMedia(function (params) {
                     if (!params.sourceId) {
-                        respoke.log.error(params.error);
+                        respoke.log.error("Error trying to get screensharing source.", params.error);
+                        /**
+                         * Indicate there has been an error obtaining media.
+                         * @event respoke.LocalMedia#error
+                         * @type {respoke.Event}
+                         * @property {string} name - the event name.
+                         * @property {respoke.LocalMedia} target
+                         * @property {string} message - a textual description of the error.
+                         */
+                        that.fire('error', {error: 'Permission denied.'});
                         return;
                     }
                     that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
@@ -326,20 +337,22 @@ module.exports = function (params) {
             log.warn("Permission denied.");
             /**
              * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#requesting-media
+             * @event respoke.LocalMedia#error
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.LocalMedia} target
+             * @property {string} message - a textual description of the error.
              */
             that.fire('error', {error: 'Permission denied.'});
         } else {
             log.warn(p);
             /**
              * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#requesting-media
+             * @event respoke.LocalMedia#error
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.LocalMedia} target
+             * @property {string} message - a textual description of the error.
              */
             that.fire('error', {error: p.code});
         }
@@ -374,6 +387,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -401,6 +415,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -443,6 +458,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -470,6 +486,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -501,6 +518,7 @@ module.exports = function (params) {
         }
         that.stream = null;
         /**
+         * Indicate that local media has stopped.
          * @event respoke.LocalMedia#stop
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -569,6 +587,13 @@ module.exports = function (params) {
             requestMedia();
         } catch (err) {
             clearTimeout(allowTimer);
+            /**
+             * Indicate there has been an error obtaining media.
+             * @event respoke.LocalMedia#error
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             * @property {string} message - a textual description of the error.
+             */
             that.fire('error', {reason: err.message});
         }
     };

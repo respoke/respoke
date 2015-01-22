@@ -22,7 +22,8 @@ var respoke = require('./respoke');
  * @param {string} params.instanceId - client id
  * @param {string} params.callId - call id
  * @param {object} params.constraints
- * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
+ * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+ * video attached to it.
  * @returns {respoke.RemoteMedia}
  */
 module.exports = function (params) {
@@ -244,6 +245,7 @@ module.exports = function (params) {
         }
         that.stream = null;
         /**
+         * Indicate that remote media has stopped.
          * @event respoke.RemoteMedia#stop
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -253,7 +255,7 @@ module.exports = function (params) {
 
     /**
      * Whether the video stream is muted.
-     * 
+     *
      * All video tracks must be muted for this to return `false`.
      * @returns boolean
      */
@@ -280,6 +282,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -307,6 +310,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -322,7 +326,7 @@ module.exports = function (params) {
 
     /**
      * Whether the audio stream is muted.
-     * 
+     *
      * All audio tracks must be muted for this to return `false`.
      * @returns boolean
      */
@@ -349,6 +353,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -376,6 +381,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target

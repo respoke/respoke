@@ -390,6 +390,8 @@ module.exports = function (params) {
                     }
 
                     /**
+                     * This event is fired every 5 seconds by default, configurable by the 'interval' property to
+                     * `call.startStats` and reports the current state of media statistics.
                      * @event respoke.PeerConnection#stats
                      * @type {respoke.Event}
                      * @property {object} stats - an object with stats in it.
@@ -441,6 +443,7 @@ module.exports = function (params) {
         pc.oniceconnectionstatechange = onIceConnectionStateChange;
         pc.onaddstream = function onaddstream(evt) {
             /**
+             * Indicate the RTCPeerConnection has received remote media.
              * @event respoke.PeerConnection#remote-stream-received
              * @type {respoke.Event}
              * @property {string} name - the event name.
@@ -452,6 +455,7 @@ module.exports = function (params) {
         };
         pc.onremovestream = function onremovestream(evt) {
             /**
+             * Indicate the remote side has stopped sending media.
              * @event respoke.PeerConnection#remote-stream-removed
              * @type {respoke.Event}
              * @property {string} name - the event name.
@@ -586,6 +590,8 @@ module.exports = function (params) {
 
         if (pc.iceConnectionState === 'connected') {
             /**
+             * Indicate that we've successfully connected to the remote side. This is only helpful for the
+             * outgoing connection.
              * @event respoke.PeerConnection#connect
              * @type {respoke.Event}
              * @property {string} name - the event name.
@@ -760,6 +766,7 @@ module.exports = function (params) {
         that.report.callStopped = new Date().getTime();
 
         /**
+         * Indicate that the RTCPeerConnection is closed.
          * @event respoke.PeerConnection#close
          * @type {respoke.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
@@ -914,6 +921,7 @@ module.exports = function (params) {
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
+                 * Indicate that the remote party has accepted our invitation to begin renegotiating media.
                  * @event respoke.PeerConnection#modify-accept
                  * @type {respoke.Event}
                  * @property {string} name - the event name.
@@ -928,6 +936,7 @@ module.exports = function (params) {
                 log.debug(err.message);
                 defModify.reject(err);
                 /**
+                 * Indicate that the remote party has rejected our invitation to begin renegotiating media.
                  * @event respoke.PeerConnection#modify-reject
                  * @type {respoke.Event}
                  * @property {Error} err
@@ -947,6 +956,7 @@ module.exports = function (params) {
             log.debug(err.message);
             defModify.reject(err);
             /**
+             * Indicate that the remote party has rejected our invitation to begin renegotiating media.
              * @event respoke.PeerConnection#modify-reject
              * @type {respoke.Event}
              * @property {Error} err
@@ -966,6 +976,7 @@ module.exports = function (params) {
         if (!that.state.sentSDP || that.state.isState('idle')) {
             err = new Error("Got modify in a precall state.");
             /**
+             * Indicate that the remote party has rejected our invitation to begin renegotiating media.
              * @event respoke.PeerConnection#modify-reject
              * @type {respoke.Event}
              * @property {Error} err
@@ -982,6 +993,7 @@ module.exports = function (params) {
         }
 
        /**
+         * Indicate that the remote party has accepted our invitation to begin renegotiating media.
          * @event respoke.PeerConnection#modify-accept
          * @type {respoke.Event}
          * @property {object} signal

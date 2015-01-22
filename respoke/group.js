@@ -75,7 +75,6 @@ module.exports = function (params) {
     that.listen('join', params.onJoin);
     /**
      * Indicates that a message has been sent to this group.
-     *
      * @event respoke.Group#message
      * @type {respoke.Event}
      * @property {respoke.TextMessage} message
