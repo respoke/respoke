@@ -494,7 +494,7 @@ respoke.isEqual = function (a, b) {
         return true;
     }
 
-    if (typeof a === 'object' && typeof b === 'object') {
+    if (typeof a === 'object' && typeof b === 'object' && Object.keys(a).length === Object.keys(b).length) {
         aKeys = Object.keys(a);
         for (var i = 0; i < aKeys.length; i += 1) {
             if (!respoke.isEqual(a[aKeys[i]], b[aKeys[i]])) {
