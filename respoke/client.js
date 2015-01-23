@@ -614,10 +614,12 @@ module.exports = function (params) {
         var call = null;
         var endpoint = null;
         var methods = {
+            screenshare: "startScreenShare",
             did: "startPhoneCall",
             web: "startCall",
             sip: "startSIPCall"
         };
+        var callParams = {};
         params.fromType = params.fromType || "web";
 
         that.calls.every(function findCall(one) {
@@ -633,20 +635,34 @@ module.exports = function (params) {
             return true;
         });
 
-        if (call === null && params.create === true) {
-            try {
-                call = that[methods[params.fromType]]({
-                    id: params.id,
-                    number: params.fromType === "did" ? params.endpointId : undefined,
-                    uri: params.fromType === "sip" ? params.endpointId : undefined,
-                    endpointId: params.fromType === "web" ? params.endpointId : undefined,
-                    caller: false,
-                    toType: params.fromType,
-                    fromType: "web"
-                });
-            } catch (e) {
-                log.error("Couldn't create Call.", e.message, e.stack);
-            }
+        if (call || params.create !== true) {
+            return call;
+        }
+
+        callParams.id = params.id;
+        callParams.caller = false;
+        callParams.toType = params.fromType;
+        callParams.fromType = "web";
+
+        switch (params.type) {
+            case "screenshare":
+                callParams.toType = "web"; // overwrite "screenshare"
+                // No break
+            case "web":
+                callParams.endpointId = params.endpointId;
+                break;
+            case "did":
+                callParams.number = params.endpointId;
+                break;
+            case "sip":
+                callParams.uri = params.endpointId;
+                break;
+        }
+
+        try {
+            call = that[methods[params.type]](callParams);
+        } catch (e) {
+            log.error("Couldn't create Call.", e.message, e.stack);
         }
         return call;
     };
@@ -805,6 +821,65 @@ module.exports = function (params) {
     };
 
     /**
+     * Create a new screen sharing call. Screenshares are inherently unidirectional video only. This may change
+     * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
+     * now, if you also need audio, place a second audio only call.
+     *
+     * The endpoint who calls `client.startScreenShare` will be the one whose screen is shared. If you'd like to
+     * implement this as a screenshare request in which the endpoint who starts the call is the watcher and
+     * not the sharer, it is recommened that you use `endpoint.sendMessage` to send a control message to the user
+     * whose screenshare is being requested so that user's app can call `client.startScreenShare`.
+     *
+     * NOTE: At this time, screen sharing only works with Chrome, and Chrome requires a Chrome extension to
+     * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
+     * Support for additional browsers will be added in the future.
+     *
+     *     client.startScreenShare({
+     *         endpointId: 'tian',
+     *         onConnect: function (evt) {}
+     *     });
+     *
+     * @memberof! respoke.Client
+     * @method respoke.Client.startScreenShare
+     * @param {object} params
+     * @param {string} params.endpointId - The id of the endpoint that should be called.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
+     * and the remote party has received the video.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @returns {respoke.Call}
+     */
+    that.startScreenShare = function (params) {
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
+        delete params.endpointId;
+        return endpoint.startScreenShare(params);
+    };
+
+    /**
      * Place an audio and/or video call to an endpoint.
      *
      *     // defaults to video when no constraints are supplied
@@ -819,7 +894,6 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {RTCConstraints} [params.constraints]
-     * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or

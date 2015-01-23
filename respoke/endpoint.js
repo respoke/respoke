@@ -238,6 +238,90 @@ module.exports = function (params) {
     };
 
     /**
+     * Create a new screen sharing call. Screenshares are inherently unidirectional video only. This may change
+     * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
+     * now, if you also need audio, place a second audio only call.
+     *
+     * The endpoint who calls `endpoint.startScreenShare` will be the one whose screen is shared. If you'd like to
+     * implement this as a screenshare request in which the endpoint who starts the call is the watcher and
+     * not the sharer, it is recommened that you use `endpoint.sendMessage` to send a control message to the user
+     * whose screenshare is being requested so that user's app can call `endpoint.startScreenShare`.
+     *
+     * NOTE: At this time, screen sharing only works with Chrome, and Chrome requires a Chrome extension to
+     * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
+     * Support for additional browsers will be added in the future.
+     *
+     *     endpoint.startScreenShare({
+     *         onConnect: function (evt) {}
+     *     });
+     *
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.startScreenShare
+     * @param {object} params
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
+     * and the remote party has received the video.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @returns {respoke.Call}
+     */
+    that.startScreenShare = function (params) {
+
+        params = params || {};
+        if (typeof params.caller !== 'boolean') {
+            params.caller = true;
+        }
+        params.target = "screenshare";
+
+        if (params.caller) {
+            params.sendOnly = true;
+            if (respoke.needsChromeExtension) {
+                params.constraints = {
+                    audio: false,
+                    video: {
+                        mandatory: {
+                            chromeMediaSource: "desktop",
+                            maxWidth: 1920,
+                            maxHeight: 1080
+                        },
+                        optional: [{
+                            googTemporalLayeredScreencast: true
+                        }]
+                    }
+                };
+            } else {
+                params.constraints = {
+                    video: {
+                        mediaSource: params.source || "window"
+                    }
+                };
+            }
+        } else {
+            params.receiveOnly = true;
+        }
+        return that.startCall(params);
+    };
+
+    /**
      * Create a new call.
      *
      *     endpoint.startCall({
@@ -287,8 +371,9 @@ module.exports = function (params) {
     that.startCall = function (params) {
         var call = null;
         params = params || {};
+        params.target = params.target || "call";
 
-        log.debug('Endpoint.call');
+        log.debug('Endpoint.call', params);
         client.verifyConnected();
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
@@ -309,14 +394,14 @@ module.exports = function (params) {
             delete signalParams.onError;
 
             signalParams.signalType = 'offer';
-            signalParams.target = 'call';
+            signalParams.target = params.target;
             signalParams.recipient = that;
 
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             signalParams.signalType = 'answer';
-            signalParams.target = 'call';
+            signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
@@ -325,7 +410,7 @@ module.exports = function (params) {
             });
         };
         params.signalConnected = function (signalParams) {
-            signalParams.target = 'call';
+            signalParams.target = params.target;
             signalParams.connectionId = signalParams.call.connectionId;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.recipient = that;
@@ -335,7 +420,7 @@ module.exports = function (params) {
             });
         };
         params.signalModify = function (signalParams) {
-            signalParams.target = 'call';
+            signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
@@ -343,7 +428,7 @@ module.exports = function (params) {
             });
         };
         params.signalCandidate = function (signalParams) {
-            signalParams.target = 'call';
+            signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
@@ -351,7 +436,7 @@ module.exports = function (params) {
             });
         };
         params.signalHangup = function (signalParams) {
-            signalParams.target = 'call';
+            signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
             signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {

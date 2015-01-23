@@ -68,6 +68,14 @@ module.exports = function (params) {
     that.element = params.element;
     /**
      * @memberof! respoke.LocalMedia
+     * @name hasScreenShare
+     * @private
+     * @type {boolean}
+     */
+    var hasScreenShare = params.hasScreenShare;
+    delete params.hasScreenShare;
+    /**
+     * @memberof! respoke.LocalMedia
      * @name sdpHasAudio
      * @private
      * @type {boolean}
@@ -108,14 +116,7 @@ module.exports = function (params) {
             { RtpDataChannels: false }
         ]
     };
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name pc
-     * @private
-     * @type {respoke.PeerConnection}
-     */
-    var pc = params.pc;
-    delete that.pc;
+
     /**
      * The local `MediaStream` from `getUserMedia()`.
      * @memberof! respoke.LocalMedia
@@ -173,26 +174,6 @@ module.exports = function (params) {
         log.debug('User gave permission to use media.');
         log.debug('onReceiveUserMedia');
 
-        /**
-         * Expose getAudioTracks.
-         * @memberof! respoke.LocalMedia
-         * @method respoke.LocalMedia.getAudioTracks
-         */
-        that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
-
-        /**
-         * Expose getVideoTracks.
-         * @memberof! respoke.LocalMedia
-         * @method respoke.LocalMedia.getVideoTracks
-         */
-        that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
-
-        // This happens when we get an automatic hangup or reject from the other side.
-        if (pc === null) {
-            that.hangup({signal: false});
-            return;
-        }
-
         that.element = that.element || document.createElement('video');
 
         // This still needs some work. Using cached streams causes an unused video element to be passed
@@ -210,6 +191,7 @@ module.exports = function (params) {
             that.element.autoplay = true;
 
             /**
+             * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
@@ -232,6 +214,7 @@ module.exports = function (params) {
             that.element.autoplay = true;
 
             /**
+             * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
              * @type {respoke.Event}
              * @property {Element} element - the HTML5 Video element with the new stream attached.
@@ -247,13 +230,49 @@ module.exports = function (params) {
     }
 
     /**
+     * Expose getAudioTracks.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getAudioTracks
+     */
+    that.getAudioTracks = function () {
+        if (that.stream) {
+            return that.stream.getAudioTracks();
+        }
+        return [];
+    };
+
+    /**
+     * Expose getVideoTracks.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.getVideoTracks
+     */
+    that.getVideoTracks = function () {
+        if (that.stream) {
+            return that.stream.getVideoTracks();
+        }
+        return [];
+    };
+
+    /**
      * Create the RTCPeerConnection and add handlers. Process any offer we have already received.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.requestMedia
      * @private
      */
     function requestMedia() {
-        log.debug('requestMedia');
+        if (that.state.receiveOnly === true) {
+            /**
+             * Indicate there is no need to obtain media at this time.
+             * @event respoke.LocalMedia#no-local-media
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             */
+            that.fire('no-local-media');
+            return;
+        }
+
+        log.debug('requestMedia', that.state.caller);
 
         if (!that.constraints) {
             throw new Error('No constraints.');
@@ -266,30 +285,51 @@ module.exports = function (params) {
             return;
         }
 
-        try {
-            log.debug("Running getUserMedia with constraints", that.constraints);
-            // TODO set getStream(that.constraints) = true as a flag that we are already
-            // attempting to obtain this media so the race condition where gUM is called twice with
-            // the same constraints when calls are placed too quickly together doesn't occur.
-            allowTimer = setTimeout(function allowTimer() {
-                /**
-                 * The browser is asking for permission to access the User's media. This would be an ideal time
-                 * to modify the UI of the application so that the user notices the request for permissions
-                 * and approves it.
-                 * @event respoke.LocalMedia#requesting-media
-                 * @type {respoke.Event}
-                 * @property {string} name - the event name.
-                 * @property {respoke.LocalMedia} target
-                 */
-                that.fire('requesting-media');
-            }, 500);
-            if (respoke.useFakeMedia === true) {
-                that.constraints.fake = true;
-            }
-            getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
-        } catch (e) {
-            log.error("Couldn't get user media: " + e.message);
+        // TODO set getStream(that.constraints) = true as a flag that we are already
+        // attempting to obtain this media so the race condition where gUM is called twice with
+        // the same constraints when calls are placed too quickly together doesn't occur.
+        allowTimer = setTimeout(function delayPermissionsRequest() {
+            /**
+             * The browser is asking for permission to access the User's media. This would be an ideal time
+             * to modify the UI of the application so that the user notices the request for permissions
+             * and approves it.
+             * @event respoke.LocalMedia#requesting-media
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             */
+            that.fire('requesting-media');
+        }, 500);
+        if (respoke.useFakeMedia === true) {
+            that.constraints.fake = true;
         }
+        if (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) {
+            if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
+                respoke.chooseDesktopMedia(function (params) {
+                    if (!params.sourceId) {
+                        respoke.log.error("Error trying to get screensharing source.", params.error);
+                        /**
+                         * Indicate there has been an error obtaining media.
+                         * @event respoke.LocalMedia#error
+                         * @type {respoke.Event}
+                         * @property {string} name - the event name.
+                         * @property {respoke.LocalMedia} target
+                         * @property {string} message - a textual description of the error.
+                         */
+                        that.fire('error', {error: 'Permission denied.'});
+                        return;
+                    }
+                    that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
+                    log.debug("Running getUserMedia with constraints", that.constraints);
+                    getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
+                });
+                return;
+            } else {
+                throw new Error("Screen sharing not implemented on this platform yet.");
+            }
+        }
+        log.debug("Running getUserMedia with constraints", that.constraints);
+        getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
     }
 
     /**
@@ -305,20 +345,22 @@ module.exports = function (params) {
             log.warn("Permission denied.");
             /**
              * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#requesting-media
+             * @event respoke.LocalMedia#error
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.LocalMedia} target
+             * @property {string} message - a textual description of the error.
              */
             that.fire('error', {error: 'Permission denied.'});
         } else {
             log.warn(p);
             /**
              * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#requesting-media
+             * @event respoke.LocalMedia#error
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.LocalMedia} target
+             * @property {string} message - a textual description of the error.
              */
             that.fire('error', {error: p.code});
         }
@@ -353,6 +395,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -380,6 +423,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -422,6 +466,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -449,6 +494,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the mute status of local audio or video has changed.
          * @event respoke.LocalMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -480,6 +526,7 @@ module.exports = function (params) {
         }
         that.stream = null;
         /**
+         * Indicate that local media has stopped.
          * @event respoke.LocalMedia#stop
          * @property {string} name - the event name.
          * @property {respoke.LocalMedia} target
@@ -488,7 +535,22 @@ module.exports = function (params) {
     };
 
     /**
+     * Indicate whether we are sending a screenshare.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.hasScreenShare
+     * @return {boolean}
+     */
+    that.hasScreenShare = function () {
+        if (that.stream) {
+            return (that.stream.getVideoTracks().length > 0 && hasScreenShare);
+        }
+        return hasScreenShare;
+    };
+
+    /**
      * Indicate whether we are sending video.
+     *
+     * Note: This method will return true when the video is a screenshare.
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.hasVideo
      * @return {boolean}
@@ -544,7 +606,19 @@ module.exports = function (params) {
      * @private
      */
     that.start = function () {
-        requestMedia();
+        try {
+            requestMedia();
+        } catch (err) {
+            clearTimeout(allowTimer);
+            /**
+             * Indicate there has been an error obtaining media.
+             * @event respoke.LocalMedia#error
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             * @property {string} message - a textual description of the error.
+             */
+            that.fire('error', {reason: err.message});
+        }
     };
 
     return that;

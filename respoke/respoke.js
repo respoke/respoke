@@ -117,8 +117,37 @@ require('./deps/adapter');
  */
 var respoke = module.exports = {
     buildNumber: 'NO BUILD NUMBER',
-    streams: [],
-    instances: {}
+    streams: []
+};
+
+/**
+ * A map of respoke.Client instances available for use. This is useful if you would like to separate some
+ * functionality of your app into a separate Respoke app which would require a separate appId.
+ * @type {boolean}
+ */
+respoke.instances = {};
+
+/**
+ * Indicate whether the user's browser is Chrome and requires the Respoke Chrome extension to do screen sharing.
+ * @type {boolean}
+ */
+respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.webkitGetUserMedia);
+
+/**
+ * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.
+ * @type {boolean}
+ */
+respoke.hasChromeExtension = false;
+
+/**
+ * Create an Event. This is used in the Chrome extension to communicate between the library and extension.
+ * @private
+ * @type {function}
+ */
+respoke.extEvent = function (type, data) {
+    var evt = document.createEvent("CustomEvent");
+    evt.initCustomEvent(type, true, true, data);
+    return evt;
 };
 
 /**
@@ -148,6 +177,36 @@ respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.log = log;
 respoke.Q = Q;
+
+/*
+ * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
+ */
+document.addEventListener('respoke-available', function (evt) {
+    var data = evt.detail;
+    if (data.available !== true) {
+        return;
+    }
+
+    respoke.hasChromeExtension = true;
+    respoke.chooseDesktopMedia = function (callback) {
+        if (!callback) {
+            throw new Error("Can't choose desktop media without callback parameter.");
+        }
+
+        function sourceIdListener(evt) {
+            var data = evt.detail;
+
+            respoke.screenSourceId = data.sourceId;
+            callback(data);
+            document.removeEventListener("respoke-source-id", sourceIdListener);
+        }
+
+        document.dispatchEvent(respoke.extEvent('ct-respoke-source-id'));
+        document.addEventListener("respoke-source-id", sourceIdListener);
+    };
+
+    respoke.log.info("Respoke Screen Share Chrome extension available for use.");
+});
 
 if (!window.skipBugsnag) {
     // Use airbrake.
@@ -208,6 +267,17 @@ respoke.connect = function (params) {
     var client = respoke.Client(params);
     client.connect(params);
     return client;
+};
+
+/**
+ * This method will be overridden in the case that an extension or plugin is available for screen sharing.
+ *
+ * @static
+ * @private
+ * @memberof respoke
+ */
+respoke.chooseDesktopMedia = function () {
+    log.warn("Screen sharing is not implemented for this browser.");
 };
 
 /**
@@ -386,6 +456,7 @@ respoke.hasWebsocket = function () {
  * Clone an object.
  * @static
  * @memberof respoke
+ * @private
  * @param {Object} source - The object to clone
  * @returns {Object}
  */
@@ -400,6 +471,7 @@ respoke.clone = function (source) {
  * Compares two objects for equality
  * @static
  * @memberof respoke
+ * @private
  * @param {Object} a
  * @param {Object} b
  * @returns {boolean}
@@ -408,7 +480,7 @@ respoke.isEqual = function (a, b) {
     var aKeys;
 
     //check if arrays
-    if (a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
+    if (a && b && a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
         if (a.length !== b.length) {
             //short circuit if arrays are different length
             return false;
@@ -422,7 +494,7 @@ respoke.isEqual = function (a, b) {
         return true;
     }
 
-    if (typeof a === 'object' && typeof b === 'object') {
+    if (typeof a === 'object' && typeof b === 'object' && Object.keys(a).length === Object.keys(b).length) {
         aKeys = Object.keys(a);
         for (var i = 0; i < aKeys.length; i += 1) {
             if (!respoke.isEqual(a[aKeys[i]], b[aKeys[i]])) {
@@ -446,7 +518,7 @@ respoke.sdpHasAudio = function (sdp) {
     if (!sdp) {
         throw new Error("respoke.sdpHasAudio called with no parameters.");
     }
-    return sdp.indexOf('m=audio') !== -1;
+    return (sdp.indexOf('m=audio') !== -1 && sdp.indexOf('a=recvonly') === -1);
 };
 
 /**
@@ -460,7 +532,7 @@ respoke.sdpHasVideo = function (sdp) {
     if (!sdp) {
         throw new Error("respoke.sdpHasVideo called with no parameters.");
     }
-    return sdp.indexOf('m=video') !== -1;
+    return (sdp.indexOf('m=video') !== -1 && sdp.indexOf('a=recvonly') === -1);
 };
 
 /**
