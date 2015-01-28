@@ -285,38 +285,59 @@ module.exports = function (params) {
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
-
         params = params || {};
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
         params.target = "screenshare";
+        params.constraints = params.constraints || {};
 
         if (params.caller) {
-            params.sendOnly = true;
-            if (respoke.needsChromeExtension) {
-                params.constraints = {
-                    audio: false,
-                    video: {
-                        mandatory: {
-                            chromeMediaSource: "desktop",
-                            maxWidth: 1920,
-                            maxHeight: 1080
-                        },
-                        optional: [{
-                            googTemporalLayeredScreencast: true
-                        }]
-                    }
-                };
+            if (respoke.needsChromeExtension || respoke.isNodeWebkit) {
+                params.constraints.video = typeof params.constraints.video === 'object' ? params.constraints.video : {};
+                params.constraints.video.optional = params.constraints.video.optional || [];
+                params.constraints.video.mandatory = typeof params.constraints.video.mandatory === 'object' ?
+                    params.constraints.video.mandatory : {};
+                params.constraints.video.mandatory.chromeMediaSource = 'desktop';
+                params.constraints.video.mandatory.maxWidth =
+                    typeof params.constraints.video.mandatory.maxWidth === 'number' ?
+                    params.constraints.video.mandatory.maxWidth : 2000;
+                params.constraints.video.mandatory.maxHeight =
+                    typeof params.constraints.video.mandatory.maxHeight === 'number' ?
+                    params.constraints.video.mandatory.maxHeight : 2000;
+                params.constraints.audio = false;
+
+                if (respoke.isNodeWebkit) {
+                    params.constraints.video.mandatory.chromeMediaSource = 'screen';
+                } else {
+                    params.sendOnly = true;
+                    if (typeof params.constraints.video.optional === 'object' &&
+                            params.constraints.video.optional.length !== undefined) {
+                        if (params.constraints.length > 0) {
+                            params.constraints.forEach(function (thing) {
+                                thing.googTemporalLayeredScreencast = true;
+                            });
+                        } else {
+                            params.constraints.video.optional[0] = {
+                                googTemporalLayeredScreencast: true
+                            };
+                        }
+                    };
+                }
             } else {
-                params.constraints = {
-                    video: {
-                        mediaSource: params.source || "window"
-                    }
+                params.constraints.video = {
+                    mediaSource: params.source || "window"
                 };
             }
         } else {
-            params.receiveOnly = true;
+            params.constraints.video = false;
+
+            if (respoke.needsChromeExtension || respoke.isNodeWebkit) {
+                params.receiveOnly = true;
+                params.constraints.audio = false;
+            } else {
+                params.constraints.audio = true;
+            }
         }
         return that.startCall(params);
     };
