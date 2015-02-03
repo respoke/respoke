@@ -175,6 +175,7 @@ describe("Respoke calling", function () {
                             expect(evt.stream).to.be.ok;
                             expect(evt.element).to.be.ok;
                             expect(evt.element.id).to.equal("my-remote-video-element");
+                            expect(call.caller).to.equal(call.initiator);
 
                             try {
                                 expect(evt.element.src).to.be.ok;
@@ -1318,6 +1319,7 @@ describe("Respoke calling", function () {
                             constraints: constraints,
                             onLocalMedia: function (evt) {
                                 try {
+                                    expect(call.caller).to.equal(call.initiator);
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
                                     expect(evt.stream.getVideoTracks()).to.be.empty;
