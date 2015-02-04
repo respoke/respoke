@@ -236,7 +236,7 @@ module.exports = function (params) {
             clientSettings.enableCallDebugReport : true;
 
         if (typeof params.reconnect !== 'boolean') {
-            clientSettings.reconnect = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
+            clientSettings.reconnect = typeof clientSettings.developmentMode === 'boolean' ? clientSettings.developmentMode : false;
         } else {
             clientSettings.reconnect = !!params.reconnect;
         }
