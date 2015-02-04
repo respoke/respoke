@@ -137,7 +137,7 @@ respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.we
  * Indicate whether we are dealing with node-webkit
  * @type {boolean}
  */
-respoke.isNodeWebkit = (typeof process !== 'undefined');
+respoke.isNwjs = (typeof process !== 'undefined');
 
 /**
  * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.

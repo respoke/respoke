@@ -303,7 +303,7 @@ module.exports = function (params) {
         if (respoke.useFakeMedia === true) {
             that.constraints.fake = true;
         }
-        if (!respoke.isNodeWebkit && that.constraints.video.mandatory &&
+        if (!respoke.isNwjs && that.constraints.video.mandatory &&
                 that.constraints.video.mandatory.chromeMediaSource) {
             if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
                 respoke.chooseDesktopMedia(function (params) {

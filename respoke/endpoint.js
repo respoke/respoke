@@ -293,7 +293,7 @@ module.exports = function (params) {
         params.constraints = params.constraints || {};
 
         if (params.caller) {
-            if (respoke.needsChromeExtension || respoke.isNodeWebkit) {
+            if (respoke.needsChromeExtension || respoke.isNwjs) {
                 params.constraints.video = typeof params.constraints.video === 'object' ? params.constraints.video : {};
                 params.constraints.video.optional = params.constraints.video.optional || [];
                 params.constraints.video.mandatory = typeof params.constraints.video.mandatory === 'object' ?
@@ -307,7 +307,7 @@ module.exports = function (params) {
                     params.constraints.video.mandatory.maxHeight : 2000;
                 params.constraints.audio = false;
 
-                if (respoke.isNodeWebkit) {
+                if (respoke.isNwjs) {
                     params.constraints.video.mandatory.chromeMediaSource = 'screen';
                 } else {
                     params.sendOnly = true;
@@ -332,7 +332,7 @@ module.exports = function (params) {
         } else {
             params.constraints.video = false;
 
-            if (respoke.needsChromeExtension || respoke.isNodeWebkit) {
+            if (respoke.needsChromeExtension || respoke.isNwjs) {
                 params.receiveOnly = true;
                 params.constraints.audio = false;
             } else {
