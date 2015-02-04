@@ -784,11 +784,6 @@ module.exports = function (params) {
             httpMethod: 'GET'
         });
 
-        promise.done(function successHandler(list) {
-            list.forEach(function eachSubscriber(params) {
-                presenceRegistered[params.endpointId] = true;
-            });
-        });
         return promise;
     };
 
