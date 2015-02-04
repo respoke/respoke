@@ -303,7 +303,8 @@ module.exports = function (params) {
         if (respoke.useFakeMedia === true) {
             that.constraints.fake = true;
         }
-        if (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) {
+        if (!respoke.isNwjs && that.constraints.video.mandatory &&
+                that.constraints.video.mandatory.chromeMediaSource) {
             if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
                 respoke.chooseDesktopMedia(function (params) {
                     if (!params.sourceId) {
@@ -367,15 +368,16 @@ module.exports = function (params) {
     }
 
     /**
-     * Whether the video stream is muted.
+     * Whether the video stream is muted, or undefined if no stream of this type exists.
      *
      * All video tracks must be muted for this to return `false`.
      * @returns boolean
      */
     that.isVideoMuted = function () {
-        if (!that.stream) {
-            return false;
+        if (!that.stream || !that.stream.getVideoTracks().length) {
+            return undefined;
         }
+
         return that.stream.getVideoTracks().every(function (track) {
             return !track.enabled;
         });
@@ -438,14 +440,14 @@ module.exports = function (params) {
     };
 
     /**
-     * Whether the audio stream is muted.
+     * Whether the audio stream is muted, or undefined if no track of this type exists.
      *
      * All audio tracks must be muted for this to return `false`.
      * @returns boolean
      */
     that.isAudioMuted = function () {
-        if (!that.stream) {
-            return false;
+        if (!that.stream || !that.stream.getAudioTracks().length) {
+            return undefined;
         }
         return that.stream.getAudioTracks().every(function (track) {
             return !track.enabled;

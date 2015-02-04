@@ -251,6 +251,10 @@ module.exports = function (params) {
             makeOptionsReceiveOnly(offerOptions);
         }
 
+        if (that.state.sendOnly) {
+            makeOptionsSendOnly(offerOptions);
+        }
+
         log.info('creating offer', offerOptions);
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
@@ -268,6 +272,20 @@ module.exports = function (params) {
         } else {
             offerOptions.offerToReceiveVideo = true;
             offerOptions.offerToReceiveAudio = true;
+        }
+    }
+
+    function makeOptionsSendOnly(options) {
+        if (navigator.webkitGetUserMedia) {
+            offerOptions = {
+                mandatory: {
+                    OfferToSendVideo: true,
+                    OfferToSendAudio: true
+                }
+            };
+        } else {
+            offerOptions.offerToSendVideo = true;
+            offerOptions.offerToSendAudio = true;
         }
     }
 

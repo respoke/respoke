@@ -175,6 +175,7 @@ describe("Respoke calling", function () {
                             expect(evt.stream).to.be.ok;
                             expect(evt.element).to.be.ok;
                             expect(evt.element.id).to.equal("my-remote-video-element");
+                            expect(call.caller).to.equal(call.initiator);
 
                             try {
                                 expect(evt.element.src).to.be.ok;
@@ -1318,6 +1319,7 @@ describe("Respoke calling", function () {
                             constraints: constraints,
                             onLocalMedia: function (evt) {
                                 try {
+                                    expect(call.caller).to.equal(call.initiator);
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
                                     expect(evt.stream.getVideoTracks()).to.be.empty;
@@ -1483,6 +1485,60 @@ describe("Respoke calling", function () {
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
                                     expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+        });
+
+        describe("with asymmetric media", function () {
+            var constraints = {
+                video: true,
+                audio: true,
+                optional: [],
+                mandatory: {
+                }
+            };
+
+            describe("by constraints", function () {
+                beforeEach(function () {
+                    followeeEndpoint.startAudioCall();
+                });
+
+                it("sends both audio and video", function (done) {
+                    followeeClient.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onLocalMedia: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    done();
+                                } catch (e) {
+                                    done(e);
+                                }
+                            }
+                        });
+                    });
+                });
+
+                it("receives only audio and not video", function (done) {
+                    followeeClient.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: constraints,
+                            onConnect: function (evt) {
+                                try {
+                                    expect(evt.stream).to.be.ok;
+                                    expect(evt.stream.getAudioTracks()).to.be.ok;
+                                    expect(evt.stream.getVideoTracks()).to.be.empty;
                                     done();
                                 } catch (e) {
                                     done(e);

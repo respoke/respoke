@@ -90,6 +90,17 @@ module.exports = function (params) {
      * @type {boolean}
      */
     that.caller = !!that.caller;
+    Object.defineProperty(that, "initiator", {
+        configurable: true,
+        enumerable: true,
+        get: function () {
+            log.warn("The call.initiator flag is deprecated. Please use call.caller instead.");
+            return that.caller;
+        },
+        set: function () {
+            // ignore
+        }
+    });
 
     /**
      * The call ID.
