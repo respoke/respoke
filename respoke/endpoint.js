@@ -392,6 +392,15 @@ module.exports = function (params) {
     that.startCall = function (params) {
         var call = null;
         params = params || {};
+
+        // If they are requesting a screen share by constraints without having called startScreenShare
+        if (params.target !== 'screenshare' && params.constraints &&
+                params.constraints.video && params.constraints.video.mandatory &&
+                (params.constraints.video.mandatory.chromeMediaSource ||
+                 params.constraints.video.mediaSource)) {
+            return that.startScreenShare(params);
+        }
+
         params.target = params.target || "call";
 
         log.debug('Endpoint.call', params);
