@@ -391,7 +391,7 @@ describe("Respoke groups", function () {
         });
     });
 
-    describe.only("when group.getMembers is called", function () {
+    describe("when group.getMembers is called", function () {
 
         var followeeGroup;
 
