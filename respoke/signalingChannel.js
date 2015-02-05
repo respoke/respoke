@@ -766,7 +766,6 @@ module.exports = function (params) {
      */
     that.getGroupMembers = function (params) {
         var deferred = Q.defer();
-        var promise;
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -778,13 +777,11 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
-        promise = wsCall({
+        return wsCall({
             path: '/v1/channels/%s/subscribers/',
             objectId: params.id,
             httpMethod: 'GET'
         });
-
-        return promise;
     };
 
     /**
