@@ -391,6 +391,39 @@ describe("Respoke groups", function () {
         });
     });
 
+    describe.only("when group.getMembers is called", function () {
+
+        var followeeGroup;
+
+        before(function () {
+            var groupId = respoke.makeGUID();
+            return followerClient.join({
+                id: groupId
+            }).then(function () {
+                return followeeClient.join({ id: groupId });
+            }).then(function (grp) {
+                followeeGroup = grp;
+            });
+        });
+
+        describe("and then client.getEndpoint is called on one of the group members", function () {
+
+            it("registers for that endpoint's presence", function (done) {
+                followeeGroup.getMembers().then(function (members) {
+                    expect(members.length).to.equal(2);
+                    return followeeClient.getEndpoint({ id: followerClient.endpointId });
+                }).then(function (followerEndpoint) {
+                    followerEndpoint.once('presence', function (evt) {
+                        expect(evt).to.include.property('presence');
+                        expect(evt.presence).to.equal('away');
+                        done();
+                    });
+                    followerClient.setPresence({ presence: 'away' });
+                }).catch(done);
+            });
+        });
+    });
+
     after(function (done) {
         Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
