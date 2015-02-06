@@ -375,8 +375,8 @@ module.exports = function (params) {
      * or a promise.
      *
      *     group.getMembers({
-     *         onSuccess: function (members) {
-     *             members.forEach(function (member) {
+     *         onSuccess: function (connections) {
+     *             connections.forEach(function (connection) {
      *                 // do something
      *             });
      *         }
