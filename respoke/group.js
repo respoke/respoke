@@ -371,12 +371,13 @@ module.exports = function (params) {
     /**
      * Get group members
      *
-     * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
-     * or a promise.
+     * Get an array containing all connections subscribed to the group. Accepts onSuccess or onError parameters,
+     * or it returns a promise that you can observe. An endpoint may have more than one connection subscribed to 
+	 * a group, so if you're interested in unique endpoints, you may want to filter the connections by endpointId.
      *
      *     group.getMembers({
-     *         onSuccess: function (members) {
-     *             members.forEach(function (member) {
+     *         onSuccess: function (connections) {
+     *             connections.forEach(function (connection) {
      *                 // do something
      *             });
      *         }
