@@ -21,13 +21,22 @@ describe("The respoke namespace", function() {
         expect(typeof respoke.SignalingMessage).to.equal('function');
         expect(typeof respoke.TextMessage).to.equal('function');
 
-        //capability flags
+        //capability flags & functions
         expect(typeof respoke.hasUserMedia).to.equal('function');
         expect(typeof respoke.hasRTCPeerConnection).to.equal('function');
         expect(typeof respoke.hasWebsocket).to.equal('function');
         expect(typeof respoke.needsChromeExtension).to.equal('boolean');
         expect(typeof respoke.hasChromeExtension).to.equal('boolean');
         expect(typeof respoke.chooseDesktopMedia).to.equal('function');
+        expect(typeof respoke.convertConstraints).to.equal('function');
+        expect(typeof respoke.constraintsHasAudio).to.equal('function');
+        expect(typeof respoke.constraintsHasVideo).to.equal('function');
+        expect(typeof respoke.constraintsHasScreenShare).to.equal('function');
+        expect(typeof respoke.sdpHasAudio).to.equal('function');
+        expect(typeof respoke.sdpHasVideo).to.equal('function');
+        expect(typeof respoke.sdpHasDataChannel).to.equal('function');
+        expect(typeof respoke.isEqual).to.equal('function');
+        expect(typeof respoke.clone).to.equal('function');
     });
 
     describe("the 'once' method", function () {
@@ -470,6 +479,198 @@ describe("The respoke namespace", function() {
         it("should return false for different string values", function () {
             expect(respoke.isEqual('test', 'no test')).to.be.false;
             expect(respoke.isEqual('no test', 'test')).to.be.false;
+        });
+    });
+
+    describe("the convertConstraints function", function () {
+        var input;
+        var output;
+
+        describe("when not passed defaults", function () {
+            describe("when passed an empty array", function () {
+                beforeEach(function () {
+                    input = [];
+                    output = respoke.convertConstraints(input);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.empty();
+                });
+            });
+
+            describe("when passed a populated array", function () {
+                beforeEach(function () {
+                    input = ["test"];
+                    output = respoke.convertConstraints(input);
+                });
+
+                it("returns the same array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.not.empty();
+                    expect(output).to.equal(input);
+                });
+            });
+
+            describe("when passed a null parameter", function () {
+                beforeEach(function () {
+                    input = null;
+                    output = respoke.convertConstraints(input);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.empty();
+                });
+            });
+
+            describe("when passed no parameters", function () {
+                beforeEach(function () {
+                    output = respoke.convertConstraints();
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.empty();
+                });
+            });
+
+            describe("when passed an object", function () {
+                beforeEach(function () {
+                    input = {test: "1"};
+                    output = respoke.convertConstraints(input);
+                });
+
+                it("returns that object in an array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).not.to.be.empty();
+                    expect(output[0]).to.equal(input);
+                });
+            });
+
+            describe("when passed a string", function () {
+                beforeEach(function () {
+                    input = "test";
+                    output = respoke.convertConstraints(input);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.empty();
+                });
+            });
+
+            describe("when passed a number", function () {
+                beforeEach(function () {
+                    input = 42;
+                    output = respoke.convertConstraints(input);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.empty();
+                });
+            });
+        });
+
+        describe("when passed defaults", function () {
+            var defaults = [{
+                audio: true,
+                video: true,
+                mandatory: {},
+                optional: []
+            }];
+
+            describe("when passed an empty array", function () {
+                beforeEach(function () {
+                    input = [];
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output.length).to.equal(1);
+                    expect(output).to.equal(defaults);
+                });
+            });
+
+            describe("when passed a populated array", function () {
+                beforeEach(function () {
+                    input = ["test"];
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns the same array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).to.be.not.empty();
+                    expect(output).to.equal(input);
+                });
+            });
+
+            describe("when passed a null parameter", function () {
+                beforeEach(function () {
+                    input = null;
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output.length).to.equal(1);
+                    expect(output).to.equal(defaults);
+                });
+            });
+
+            describe("when passed no constraint parameter", function () {
+                beforeEach(function () {
+                    input = undefined;
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output.length).to.equal(1);
+                    expect(output).to.equal(defaults);
+                });
+            });
+
+            describe("when passed an object", function () {
+                beforeEach(function () {
+                    input = {test: "1"};
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns that object in an array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output).not.to.be.empty();
+                    expect(output[0]).to.equal(input);
+                });
+            });
+
+            describe("when passed a string", function () {
+                beforeEach(function () {
+                    input = "test";
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output.length).to.equal(1);
+                    expect(output).to.equal(defaults);
+                });
+            });
+
+            describe("when passed a number", function () {
+                beforeEach(function () {
+                    input = 42;
+                    output = respoke.convertConstraints(input, defaults);
+                });
+
+                it("returns an empty array", function () {
+                    expect(output).to.be.an.Array;
+                    expect(output.length).to.equal(1);
+                    expect(output).to.equal(defaults);
+                });
+            });
         });
     });
 });

@@ -307,8 +307,6 @@ module.exports = function (params) {
         that.report.lastSDPString = oOffer.sdp;
 
         //set flags for audio / video being offered
-        that.call.hasAudio = respoke.sdpHasAudio(oOffer.sdp);
-        that.call.hasVideo = respoke.sdpHasVideo(oOffer.sdp);
         that.call.hasDataChannel = respoke.sdpHasDataChannel(oOffer.sdp);
 
         try {
@@ -319,10 +317,8 @@ module.exports = function (params) {
                     }
 
                     log.debug('set remote desc of offer succeeded');
-                    that.call.incomingMedia.setSDP(oOffer); // callee's incoming media
                     pc.createAnswer(function successHandler(oSession) {
                         that.state.processedRemoteSDP = true;
-                        that.call.outgoingMedia.setSDP(oSession); // callee's outgoing media
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
                         err = new Error("Error creating SDP answer." + err.message);
@@ -673,8 +669,7 @@ module.exports = function (params) {
         }
         log.debug('setting and sending offer', oSession);
         that.report.sdpsSent.push(oSession);
-        that.call.outgoingMedia.setSDP(oSession); // caller's outgoing media
-        that.call.incomingMedia.setSDP(oSession); // caller's incoming media estimate
+
         pc.setLocalDescription(oSession, function successHandler(p) {
             oSession.type = 'offer';
             signalOffer({
@@ -821,20 +816,6 @@ module.exports = function (params) {
     };
 
     /**
-     * Set the estimated media status on incoming and outgoing media.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.listenOffer
-     * @param {object} evt
-     * @param {object} evt.signal - The signal, including the remote SDP and the connectionId of the endpoint who
-     * answered the call.
-     * @private
-     */
-    function listenOffer(evt) {
-        that.call.incomingMedia.setSDP(evt.signal.sessionDescription); // callee's incoming media
-        that.call.outgoingMedia.setSDP(evt.signal.sessionDescription); // callee's outgoing media estimate
-    }
-
-    /**
      * Save the answer and tell the browser about it.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.listenAnswer
@@ -850,14 +831,13 @@ module.exports = function (params) {
         log.debug('got answer', evt.signal);
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
+        that.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
         that.report.lastSDPString = evt.signal.sessionDescription.sdp;
-        //set flags for audio / video for answer
-        that.call.hasAudio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
-        that.call.hasVideo = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
-        that.call.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
+
         if (that.state.caller) {
             that.report.calleeconnection = evt.signal.fromConnection;
         }
+
         that.call.connectionId = evt.signal.fromConnection;
         // TODO don't signal connected more than once.
         signalConnected({
@@ -867,7 +847,6 @@ module.exports = function (params) {
         pc.setRemoteDescription(
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
-                that.call.incomingMedia.setSDP(evt.signal.sessionDescription); // caller's incoming media
                 that.state.dispatch('receiveAnswer');
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
@@ -1067,7 +1046,6 @@ module.exports = function (params) {
         }
     };
 
-    that.call.listen('signal-offer', listenOffer, true);
     that.call.listen('signal-answer', listenAnswer, true);
     that.call.listen('signal-connected', listenConnected, true);
     that.call.listen('signal-modify', listenModify, true);

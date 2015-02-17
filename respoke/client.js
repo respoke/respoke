@@ -893,7 +893,7 @@ module.exports = function (params) {
      * @method respoke.Client.startCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
-     * @param {RTCConstraints} [params.constraints]
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -925,8 +925,10 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
-     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have
+     * local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have
+     * remote video attached to it.
      * @return {respoke.Call}
      */
     that.startCall = function (params) {
@@ -964,6 +966,7 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {string} [params.connectionId]
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -1003,12 +1006,13 @@ module.exports = function (params) {
      */
     that.startAudioCall = function (params) {
         params = params || {};
-        params.constraints = {
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: false,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
+
         return that.startCall(params);
     };
 
@@ -1025,6 +1029,7 @@ module.exports = function (params) {
      * @method respoke.Client.startVideoCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
@@ -1065,12 +1070,13 @@ module.exports = function (params) {
      */
     that.startVideoCall = function (params) {
         params = params || {};
-        params.constraints = {
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: true,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
+
         return that.startCall(params);
     };
 
@@ -1114,12 +1120,12 @@ module.exports = function (params) {
         var call = null;
         var recipient = {};
         params = params || {};
-        params.constraints = {
+        params.constraints = [{
             video: false,
             audio: true,
             mandatory: {},
             optional: []
-        };
+        }];
 
         try {
             that.verifyConnected();
@@ -1261,12 +1267,12 @@ module.exports = function (params) {
         var call = null;
         var recipient = {};
         params = params || {};
-        params.constraints = {
+        params.constraints = [{
             video: false,
             audio: true,
             mandatory: {},
             optional: []
-        };
+        }];
 
         try {
             that.verifyConnected();

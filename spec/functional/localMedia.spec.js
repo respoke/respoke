@@ -40,7 +40,6 @@ describe("Respoke local media", function () {
                     localMedia = respoke.LocalMedia({
                         state: state,
                         instanceId: 'blah',
-                        callId: 'blah',
                         hasScreenShare: false,
                         constraints: {
                             audio: true,

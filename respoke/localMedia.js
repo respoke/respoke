@@ -20,7 +20,6 @@ var respoke = require('./respoke');
  * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.instanceId - client id
- * @param {string} params.callId - call id
  * @param {object} [params.constraints]
  * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local
  * video attached to it.
@@ -37,6 +36,7 @@ module.exports = function (params) {
      */
     var instanceId = params.instanceId;
     var that = respoke.EventEmitter(params);
+
     delete that.instanceId;
     /**
      * @memberof! respoke.LocalMedia
@@ -598,6 +598,29 @@ module.exports = function (params) {
         sdpHasVideo = respoke.sdpHasVideo(oSession.sdp);
         sdpHasAudio = respoke.sdpHasAudio(oSession.sdp);
         sdpHasDataChannel = respoke.sdpHasDataChannel(oSession.sdp);
+
+        // We don't have media yet & this can still be changed so create the defaults based on what the sdp says.
+        if (that.temporary) {
+            that.constraints = {
+                video: sdpHasVideo,
+                audio: sdpHasAudio,
+                mandatory: {},
+                optional: []
+            };
+        }
+    };
+
+    /**
+     * Parse the constraints.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.setConstraints
+     * @param {MediaConstraints} constraints
+     * @private
+     */
+    that.setConstraints = function (constraints) {
+        that.constraints = constraints;
+        sdpHasVideo = respoke.constraintsHasVideo(that.constraints);
+        sdpHasAudio = respoke.constraintsHasAudio(that.constraints);
     };
 
     /**
@@ -608,6 +631,14 @@ module.exports = function (params) {
      * @private
      */
     that.start = function () {
+        if (that.state.receiveOnly) {
+            throw new Error("Local media started when receiveOnly is set!");
+        }
+
+        if (that.temporary) {
+            throw new Error("Temporary local media started!");
+        }
+
         try {
             requestMedia();
         } catch (err) {
