@@ -100,50 +100,64 @@ html
 
         .content: article.article.content
             h1= title
-            h5: a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
+            a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
 
+            
             //- Properties and methods
             each comment, indx in publicComments
                 section(id=comment.ctx.name.replace('.','-'))
                     br
-
+                    br
+                    
+                    
+                    //- Special treatment of the first item. It's the class name.
                     if (indx === 0)
+                        h2: code
+                            a(href="#"+comment.ctx.name): strong= comment.ctx.name
                         if (comment.augments)
-                            p: strong extends
-                                | &nbsp;
-                                a(href=comment.augments + ".html"): code= comment.augments
+                            h3 Extends
+                            a(href=comment.augments + ".html"): code= comment.augments
 
                     else if (comment.ctx.type === "property")
                         //- the title of the method or prop
-                        h2
-                            a(href="#"+comment.ctx.name): strong
-                                = comment.ctx.name
-                            h6: code= comment.type
+                        h2: code
+                            a(href="#"+comment.ctx.name): strong= comment.ctx.name
+                        
+                        h3 Type
+                        code= comment.type
                     else
-                        h2
+                        h2: code
                             a(href="#"+comment.ctx.name): strong
                                 = comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
-                        h6 returns
-                            | &nbsp;
-                            code= comment.returns || "undefined"
 
-
+                    
+                    //- Description
+                    if (comment.description.summary)
+                        h3 Description
+                        div!= comment.description.summary
+                    
+                    
+                    //- Usage
+                    if (comment.description.body)
+                        h3 Usage
+                        div!= comment.description.body
+                    
+                    
+                    //- Returns
+                    if (indx !== 0)
+                        h3 Returns
+                        code= comment.returns || "undefined"
+                    
+                    
+                    //- Fires
                     if (comment.fires && comment.fires.length)
-                        h6 fires
-                          | &nbsp;
-                          code= comment.fires.map(mapFireEvents).join('|')
-
-                    if (comment.auth)
-                        p
-                          each meth in comment.auth
-                            span.label.label-default= meth
-                            | &nbsp;
-
-                    div!= comment.description.full
-
+                        h3 Fires
+                        code= comment.fires.map(mapFireEvents).join('|')
+                    
+                    
                     //- Arguments
                     if (indx !== 0 && comment.methodParams.length)
-                        h4 Arguments
+                        h3 Arguments
                         table
                             tr
                                 th Name
@@ -155,6 +169,9 @@ html
                                     td: code= param.name.replace('[', '').replace(']', '')
                                     td: small: strong= param.type
                                     td= param.desc
+                     
+                     
+                     
                      //- put a header at the end of the class declaration
                      if (indx === 0)
                          h2 Properties and Methods

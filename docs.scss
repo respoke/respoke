@@ -1,12 +1,13 @@
 @import 'base';
 
 table {
-    font-size: 12px;
-    padding-left: $paddingSmall;
     table-layout: fixed;
+    border-spacing: 0;
+    border-collapse: separate;
     width: 100%;
     th { text-align: left; }
     td {
+        border: 1px solid #ccc;
         word-wrap: break-word;
         vertical-align: text-top;
         padding: $paddingMiniHalf;
@@ -14,7 +15,6 @@ table {
         &:nth-child(2) { width: 25%; }
         &:nth-child(3) { width: 50%; }
     }
-    small { font-size: 1em; } // disable
 }
 
 .content {
@@ -28,8 +28,5 @@ table {
     h4 {
         padding-top: $paddingStandard;
         padding-bottom: $paddingStandard;
-    }
-    strong {
-        font-weight: 700;
     }
 }
