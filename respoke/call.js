@@ -875,7 +875,7 @@ module.exports = function (params) {
         params = params || {};
         log.debug('Call.removeDirectConnection');
 
-        if (directConnection && directConnection.isActive()) {
+        if (directConnection) {
             directConnection.close({skipRemove: true});
         }
 
@@ -980,9 +980,7 @@ module.exports = function (params) {
                 log.debug('Hanging up because there are no local streams.');
                 that.hangup();
             } else {
-                if (directConnection && directConnection.isActive()) {
-                    that.removeDirectConnection({skipModify: true});
-                }
+                that.removeDirectConnection({skipModify: true});
             }
         }, true);
 
@@ -1089,10 +1087,8 @@ module.exports = function (params) {
 
         that.outgoingMedia.stop();
 
-        if (directConnection && directConnection.isActive()) {
+        if (directConnection) {
             directConnection.close();
-            that.remoteEndpoint.directConnection = null;
-            directConnection.ignore();
             directConnection = null;
         }
 
