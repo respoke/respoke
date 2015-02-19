@@ -228,7 +228,7 @@ module.exports = function (params) {
         }
 
         return !that.outgoingMediaStreams.every(function (stream) {
-            stream.getAudioTracks().length === 0;
+            return stream.getAudioTracks().length === 0;
         });
     };
     that.outgoingMediaStreams.hasVideo = function () {
@@ -237,7 +237,7 @@ module.exports = function (params) {
         }
 
         return !that.outgoingMediaStreams.every(function (stream) {
-            stream.getVideoTracks().length === 0;
+            return stream.getVideoTracks().length === 0;
         });
     };
 
@@ -271,7 +271,7 @@ module.exports = function (params) {
         }
 
         return !that.incomingMediaStreams.every(function (stream) {
-            stream.getAudioTracks().length === 0;
+            return stream.getAudioTracks().length === 0;
         });
     };
     that.incomingMediaStreams.hasVideo = function () {
@@ -280,7 +280,7 @@ module.exports = function (params) {
         }
 
         return !that.incomingMediaStreams.every(function (stream) {
-            stream.getVideoTracks().length === 0;
+            return stream.getVideoTracks().length === 0;
         });
     };
 
@@ -303,7 +303,7 @@ module.exports = function (params) {
     });
 
     /**
-     * A flag indicating whether this call has audio or is expected to have audio.
+     * A flag indicating whether this call has audio or is expected to have audio coming in from the other side.
      *
      * @name hasAudio
      * @type {boolean}
@@ -318,7 +318,7 @@ module.exports = function (params) {
     });
 
     /**
-     * A flag indicating whether this call has video or is expected to have video.
+     * A flag indicating whether this call has video or is expected to have video coming in from the other side.
      *
      * @name hasVideo
      * @type {boolean}
@@ -1582,7 +1582,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Indicate whether the call has media flowing.
+     * Indicate whether the call has media of any type flowing in either direction.
      * @memberof! respoke.Call
      * @method respoke.Call.hasMedia
      * @returns {boolean}
@@ -1791,8 +1791,7 @@ module.exports = function (params) {
      *  This will need to be moved when we start handling media renegotiation.
      */
     pc.state.listen('connecting:entry', function connectNoMedia() {
-        if (!that.incomingMediaStreams.hasVideo() && !that.incomingMediaStreams.hasAudio() &&
-            (that.outgoingMediaStreams.hasVideo() || that.outgoingMediaStreams.hasAudio())) {
+        if (pc.state.sendOnly) {
             /**
              * Indicates that either remote media stream has been added to the call or if no
              * media is expected, the other side is receiving our media.
