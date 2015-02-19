@@ -39,7 +39,6 @@ describe("Respoke local media", function () {
                     state.receiveOnly = false;
                     localMedia = respoke.LocalMedia({
                         state: state,
-                        instanceId: 'blah',
                         hasScreenShare: false,
                         constraints: {
                             audio: true,

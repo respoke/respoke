@@ -228,7 +228,7 @@ if (!window.skipBugsnag) {
     airbrake.onload = function () {
         window.onerror = function (message, file, line) {
             //Only send errors from the respoke.js file to Airbrake
-            if (file.match(/respoke/)) {
+            if (file.match(/respoke/) && !window.skipBugsnag) {
                 Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
             }
         };

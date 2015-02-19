@@ -1,6 +1,7 @@
 window.respokeTestConfig = {
     baseURL: 'http://testing.digiumlabs.com:3001'
 };
+window.skipBugsnag = true;
 respoke.log.setLevel('silent');
 window.doneOnceBuilder = function (done) {
     var called = false;
