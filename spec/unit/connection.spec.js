@@ -125,7 +125,7 @@ describe("A respoke.Connection", function () {
         });
 
         describe("startDirectConnection()", function () {
-            it("throws an error", function success() {
+            it("throws an error", function (done) {
                 connection.startDirectConnection().then(function failure() {
                     done(new Error("User presence succeeded with no connection!"));
                 }, function (err) {

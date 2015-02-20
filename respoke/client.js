@@ -933,19 +933,8 @@ module.exports = function (params) {
      * @return {respoke.Call}
      */
     that.startCall = function (params) {
-        var promise;
-        var retVal;
-        var endpoint;
-
-        try {
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
-        }
-
-        endpoint = that.getEndpoint({
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
             skipPresence: true,
             id: params.endpointId
         });
@@ -1006,15 +995,13 @@ module.exports = function (params) {
      * @return {respoke.Call}
      */
     that.startAudioCall = function (params) {
-        params = params || {};
-        params.constraints = respoke.convertConstraints(params.constraints, [{
-            video: false,
-            audio: true,
-            optional: [],
-            mandatory: {}
-        }]);
-
-        return that.startCall(params);
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
+        delete params.endpointId;
+        return endpoint.startAudioCall(params);
     };
 
     /**
@@ -1070,15 +1057,13 @@ module.exports = function (params) {
      * @return {respoke.Call}
      */
     that.startVideoCall = function (params) {
-        params = params || {};
-        params.constraints = respoke.convertConstraints(params.constraints, [{
-            video: true,
-            audio: true,
-            optional: [],
-            mandatory: {}
-        }]);
-
-        return that.startCall(params);
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
+        delete params.endpointId;
+        return endpoint.startVideoCall(params);
     };
 
     /**
@@ -1121,7 +1106,6 @@ module.exports = function (params) {
      */
     that.startPhoneCall = function (params) {
         var promise;
-        var retVal;
         var call = null;
         var recipient = {};
         params = params || {};
@@ -1132,23 +1116,14 @@ module.exports = function (params) {
             optional: []
         }];
 
-        try {
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
+        that.verifyConnected();
+
+        if (!params.number) {
+            throw new Error("Can't start a phone call without a number.");
         }
 
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
-        }
-
-        if (!params.number) {
-            log.error("Can't start a phone call without a number.");
-            promise = Q.reject(new Error("Can't start a phone call without a number."));
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
         }
 
         recipient.id = params.number;
@@ -1276,7 +1251,6 @@ module.exports = function (params) {
      */
     that.startSIPCall = function (params) {
         var promise;
-        var retVal;
         var call = null;
         var recipient = {};
         params = params || {};
@@ -1287,23 +1261,14 @@ module.exports = function (params) {
             optional: []
         }];
 
-        try {
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
+        that.verifyConnected();
+
+        if (!params.uri) {
+            throw new Error("Can't start a phone call without a SIP URI.");
         }
 
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
-        }
-
-        if (!params.uri) {
-            log.error("Can't start a phone call without a SIP URI.");
-            promise = Q.reject(new Error("Can't start a phone call without a SIP URI."));
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
         }
 
         recipient.id = params.uri;

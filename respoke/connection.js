@@ -136,8 +136,7 @@ module.exports = function (params) {
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
-        that.verifyConnected();
-        params = params || {};
+        client.verifyConnected();
         params.connectionId = that.id;
         return that.getEndpoint().startScreenShare(params);
     };
@@ -184,8 +183,10 @@ module.exports = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
-     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
-     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local
+     * video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
+     * video attached to it.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {
@@ -237,15 +238,9 @@ module.exports = function (params) {
      * @returns {respoke.Call}
      */
     that.startAudioCall = function (params) {
-        params = params || {};
+        client.verifyConnected();
         params.connectionId = that.id;
-        params.constraints = respoke.convertConstraints(params.constraints, [{
-            video: false,
-            audio: true,
-            optional: [],
-            mandatory: {}
-        }]);
-        return that.startCall(params);
+        return that.getEndpoint().startAudioCall(params);
     };
 
     /**
@@ -289,9 +284,9 @@ module.exports = function (params) {
      * @returns {respoke.Call}
      */
     that.startVideoCall = function (params) {
-        params = params || {};
+        client.verifyConnected();
         params.connectionId = that.id;
-        return that.getEndpoint().startCall(params);
+        return that.getEndpoint().startVideoCall(params);
     };
 
     /**
@@ -327,7 +322,19 @@ module.exports = function (params) {
      * directly to the other endpoint.
      */
     that.startDirectConnection = function (params) {
+        var retVal;
+        var deferred;
         params = params || {};
+
+        try {
+            client.verifyConnected();
+        } catch (err) {
+            deferred = respoke.Q.defer();
+            retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
+            deferred.reject(err);
+            return retVal;
+        }
+
         params.connectionId = that.id;
         return that.getEndpoint().startDirectConnection(params);
     };

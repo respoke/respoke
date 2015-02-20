@@ -204,35 +204,35 @@ describe("respoke.Client", function () {
         });
 
         describe("startCall()", function () {
-            it("throws an error", function (done) {
-                client.startCall({
-                    endpointId: respoke.makeGUID()
-                }).done(function () {
-                    done(new Error("Shouldn't be able to start a call when not connected!"));
-                }, function (err) {
+            it("throws an error", function () {
+                try {
+                    client.startCall({
+                        endpointId: respoke.makeGUID()
+                    });
+                } catch (err) {
                     expect(err.message).to.contain("not connected");
-                    done();
-                });
+                    return;
+                }
+                throw new Error("Shouldn't be able to start a call when not connected!");
             });
         });
 
         describe("startPhoneCall()", function () {
-            it("throws an error", function (done) {
-                client.startPhoneCall({
-                    number: '5555555555'
-                }).done(function () {
-                    done(new Error("Shouldn't be able to start a phone call when not connected!"));
-                }, function (err) {
+            it("throws an error", function () {
+                try {
+                    client.startPhoneCall({
+                        number: '5555555555'
+                    });
+                } catch (err) {
                     expect(err.message).to.contain("not connected");
-                    done();
-                });
+                    return;
+                }
+                throw new Error("Shouldn't be able to start a call when not connected!");
             });
         });
 
         describe("join()", function () {
             it("throws an error", function (done) {
-                expect(typeof client.join).to.equal('function');
-                try {
                 client.join({
                     id: respoke.makeGUID()
                 }).done(function () {
@@ -241,9 +241,6 @@ describe("respoke.Client", function () {
                     expect(err.message).to.contain("not connected");
                     done();
                 });
-                } catch(e) {
-                    expect(e ? e.stack: e).to.be.undefined;
-                }
             });
         });
 
