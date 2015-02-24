@@ -1,6 +1,7 @@
 /* global define: false, respoke: false */
 /*!
  * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
+ * @ignore
  */
 
 // UMD wrapper to provide support for CommonJS, AMD, and browser globals

@@ -21,9 +21,11 @@ include node_modules/respoke-style/templates/mixins
 - var alreadyListedEvents = [];
 - var cleanClassName = function (name) { return name.replace('respoke.', ''); };
 - var github = "https://github.com/respoke/respoke/blob/master/";
-- var displayProperties = ['method', 'property', 'function', 'declaration', 'event'];
+- var visibleProps = ['method', 'property', 'function', 'declaration', 'event'];
 - var isDeclaration = function (prop) { return prop !== "className" };
-- var shouldBeVisible = function (comment) { return !comment.isPrivate && comment.ctx && ~displayProperties.indexOf(comment.ctx.type) && isDeclaration(comment.ctx.name); };
+- var shouldBeVisible = function (cmt) {
+-     return !cmt.isPrivate && !cmt.ignore && cmt.ctx && visibleProps.indexOf(cmt.ctx.type) !== -1 && isDeclaration(cmt.ctx.name);
+- };
 
 each comment in comments
   if shouldBeVisible(comment)
@@ -77,7 +79,8 @@ mixin menu()
             a(href="/") &larr; Docs
             br
             br
-            span.normal Respoke.js Browser API
+            | Full Respoke.js Browser API
+            
         each otherClass in allClasses, otherClassName
             if (otherClass === className)
                 li.menu--header
@@ -147,8 +150,6 @@ html
                         
                         //- Special treatment of the first item. It's the class name.
                         if (indx === 0)
-                            h2
-                                a(href="#"+comment.ctx.name)= comment.ctx.name
                             if (comment.augments)
                                 h3 Extends
                                 a(href=comment.augments + ".html")= comment.augments
@@ -219,7 +220,6 @@ html
                     br
                     br
                     h1 Events
-                    p Listen for events on an instance of this class.
                     
                     each comment, indx in publicEvents
                         - var eventLinkId = getEventId(comment.ctx.name);

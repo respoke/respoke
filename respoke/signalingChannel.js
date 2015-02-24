@@ -7,6 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
