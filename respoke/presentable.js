@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,15 +6,16 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var respoke = require('./respoke');
 
 /**
  * The purpose of the class is to allow multiple types of entities to expose presence functionality.
- * 
+ *
  * Setting the presence on a client is provided via `client.setPresence({ presence: "At lunch" })`.
- * 
+ *
  * @class respoke.Presentable
  * @constructor
  * @augments respoke.EventEmitter
@@ -45,9 +46,9 @@ module.exports = function (params) {
     /**
      * Represents the presence status. Typically a string, but other types are supported.
      * Defaults to `'unavailable'`.
-     * 
+     *
      * **Do not modify this directly** - it won't update presence with Respoke. Use `setPresence()`.
-     * 
+     *
      * @memberof! respoke.Presentable
      * @name presence
      * @type {string|number|object|Array}
@@ -65,7 +66,7 @@ module.exports = function (params) {
 
     /**
      * Set the presence on the object for this session.
-     * 
+     *
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.setPresence
      * @param {object} params
@@ -115,11 +116,11 @@ module.exports = function (params) {
 
     /**
      * Get the presence of a Presentable instance.
-     * 
+     *
      *      var billy = client.getEndpoint({ id: "billychia" });
      *      var pres = billy.getPresence();
      *      console.log('Billy is', pres); // "Billy is available"
-     * 
+     *
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.getPresence
      * @returns {string|number|object|array} the current presence of this endpoint.
