@@ -124,7 +124,7 @@ module.exports = function (params) {
     that.stream = params.stream;
     attachMediaStream(that.element, that.stream);
     that.element.autoplay = true;
-    setTimeout(that.element.play.bind(that.element));
+    setTimeout(that.element.play.bind(that.element)); // stupid Firefox requires this.
 
     /**
      * Indicate whether we are receiving a screenshare.
