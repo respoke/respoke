@@ -901,6 +901,13 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
+        params = {
+            signal: JSON.stringify(signal),
+            to: to,
+            toConnection: toConnection,
+            toType: toType
+        };
+
         wsCall({
             path: '/v1/signaling',
             httpMethod: 'POST',
@@ -911,8 +918,10 @@ module.exports = function (params) {
                 toType: toType
             }
         }).done(function successHandler() {
+            console.log('signal', signal.signalType, signal);
             deferred.resolve();
         }, function errorHandler(err) {
+            console.log('signal error', params, err);
             deferred.reject(err);
         });
 
@@ -1124,7 +1133,9 @@ module.exports = function (params) {
             target = client.getCall({
                 id: signal.sessionId,
                 endpointId: signal.fromEndpoint,
-                type: (signal.target === 'screenshare') ? 'screenshare' : signal.fromType,
+                target: signal.target,
+                conferenceId: signal.conferenceId,
+                type: signal.fromType,
                 create: (signal.target !== 'directConnection' && signal.signalType === 'offer')
             });
             if (target) {
