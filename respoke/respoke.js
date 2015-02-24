@@ -214,7 +214,7 @@ document.addEventListener('respoke-available', function (evt) {
     respoke.log.info("Respoke Screen Share Chrome extension available for use.");
 });
 
-if (!window.skipBugsnag) {
+if (!window.skipErrorReporting) {
     // Use airbrake.
     var airbrake = document.createElement('script');
     var first = document.getElementsByTagName('script')[0];
@@ -228,7 +228,7 @@ if (!window.skipBugsnag) {
     airbrake.onload = function () {
         window.onerror = function (message, file, line) {
             //Only send errors from the respoke.js file to Airbrake
-            if (file.match(/respoke/) && !window.skipBugsnag) {
+            if (file.match(/respoke/) && !window.skipErrorReporting) {
                 Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
             }
         };
