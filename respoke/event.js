@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -70,11 +70,11 @@ var EventEmitter = module.exports = function (params) {
 
     /**
      * Add a `listener` function to an object.
-     * 
+     *
      * This method adds the `listener` to the event `eventName`.
-     * 
+     *
      * If an identical listener already registered to this event, it will **not** be added.
-     * 
+     *
      * ##### Example of adding an event listener.
      *
      *     client.listen('connect', function (evt) {
@@ -86,7 +86,7 @@ var EventEmitter = module.exports = function (params) {
      * @param {string} eventType - The name of the event.
      * @param {respoke.EventEmitter.eventListener} listener - A function to call when the event is
      * fired.
-     * @arg {boolean} isInternal - Internal use only. A flag to indicate this listener was 
+     * @arg {boolean} isInternal - Internal use only. A flag to indicate this listener was
      * added by the library. This parameter should not be used by developers who are using
      * the library, only by developers who are working on the library itself.
      */

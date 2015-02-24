@@ -1,5 +1,5 @@
 'use strict';
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *

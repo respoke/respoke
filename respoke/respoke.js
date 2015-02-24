@@ -2,7 +2,7 @@
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
 
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
