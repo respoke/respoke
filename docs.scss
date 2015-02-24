@@ -1,32 +1,85 @@
 @import 'base';
 
-table {
-    table-layout: fixed;
-    border-spacing: 0;
-    border-collapse: separate;
-    width: 100%;
-    th { text-align: left; }
-    td {
-        border: 1px solid #ccc;
-        word-wrap: break-word;
-        vertical-align: text-top;
-        padding: $paddingMiniHalf;
-        &:nth-child(1) { width: 25%; }
-        &:nth-child(2) { width: 25%; }
-        &:nth-child(3) { width: 50%; }
-    }
+@import 'base';
+@import 'components/sidebar';
+@import 'highlight-js-theme-light';
+
+.container {
+    @include outer-container;
+    padding-bottom: $spacing-large;
+
+    @include sidebar-background;
 }
 
 .content {
+    @include span-columns(12);
+    margin-top: $navbar-height + $spacing-medium;
+
+    @include media($tablet) {
+        @include span-columns(5);
+    }
+    @include media($mobile) {
+        @include span-columns(3);
+        @include shift(0.5);
+    }
+
+    :first-child {
+        margin-top: 0;
+    }
+
     h1 {
+        font-weight: 700;
+    }
+    h1, h2 {
         word-wrap: break-word;
+        color: salmon;
+        font-size: 21px;
+        font-family: $font-mono;
+        margin-bottom: 0;
     }
     h2 {
-        font-weight: 500;
-        padding-top: $paddingStandard * 2;
+        font-weight: 400;
+        padding-top: $spacing-medium * 3;
     }
-    h4 {
-        padding-top: $paddingStandard;
-        padding-bottom: $paddingStandard;
+    h3 {
+        padding-top: $spacing-medium;
+        font-weight: 700;
     }
+
+    pre {
+        margin: $spacing-medium 0;
+    }
+
+    img {
+        max-width: 100%;
+    }
+
+    table {
+        table-layout: fixed;
+        border-spacing: 0;
+        border-collapse: separate;
+        width: 100%;
+        margin-left: -$spacing-small;
+        th {
+            padding-left: $spacing-small;
+            text-align: left;
+            font-weight: 400;
+        }
+        td {
+            border: 1px solid #ccc;
+            padding: $spacing-small;
+            word-wrap: break-word;
+            vertical-align: text-top;
+            &:nth-child(1) { width: 25%; }
+            &:nth-child(2) { width: 25%; }
+            &:nth-child(3) { width: 50%; }
+        }
+    }
+}
+
+.normal { font-weight: normal; }
+
+.menu--open > .menu--nested {
+    max-height: 900px;
+    transition: max-height 0.5s ease-in;
 }
