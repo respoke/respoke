@@ -14,10 +14,14 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation,
- * and call state.
- *
+ * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia,
+ * path and codec negotation, and call state.
  * There are several methods on an instance of `respoke.Client` which return a `respoke.Call`.
+ *
+ * ```
+ * var jim = client.getEndpoint({ id: 'jim' });
+ * var call = jim.startAudioCall();
+ * ```
  *
  * @class respoke.Call
  * @constructor

@@ -13,7 +13,23 @@ var respoke = require('./respoke');
 var log = require('loglevel');
 
 /**
- * A generic class for emitting and listening to events.
+ * A generic class for emitting and listening to events. This is used internally by respoke.js
+ * to provide evented behavior. You can add custom events and inherit your own objects from
+ * the EventEmitter.
+ *
+ * ```
+ * // Adding a custom event to a respoke.Client instance
+ * client.listen('my-event', function (evt) { });
+ * client.fire('my-event', { name: 'my-event', asdf: 'jkl' });
+ * ```
+ *
+ * ```
+ * // Custom EventEmitter
+ * var MyCustomEmitter = respoke.EventEmitter();
+ * var emitterInstance = MyCustomEmitter();
+ * emitterInstance.fire('hi', { name: 'hi', message: 'hello' });
+ * emitterInstance.listen('hi', function (evt) { });
+ * ```
  *
  * @class respoke.EventEmitter
  * @inherits respoke.Class

@@ -14,14 +14,14 @@ var respoke = require('./respoke');
 
 /**
  * `respoke.Endpoint`s are users of a Respoke app.
- *
  * An Endpoint can be a person in a browser or device, or an app using Respoke APIs from a server.
- *
  * A Client can interact with endpoints through messages, audio or video calls, or direct connections.
+ * An Endpoint may be authenticated from multiple devices to the same app (each of which is
+ * represented by a Connection).
  *
- * An Endpoint may be authenticated from multiple devices to the same app (each of
- * which is represented by a Connection).
- *
+ * ```
+ * var jim = client.getEndpoint({ id: 'jim' });
+ * ```
  *
  * @constructor
  * @class respoke.Endpoint
@@ -95,10 +95,12 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
-     *
-     *    endpoint.sendMessage({
-     *        message: "wassuuuuup"
-     *    });
+     * 
+     * ```
+     * endpoint.sendMessage({
+     *     message: "wassuuuuup"
+     * });
+     * ```
      *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint

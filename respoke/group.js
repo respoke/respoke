@@ -106,6 +106,7 @@ module.exports = function (params) {
      *     });
      *
      * **Using callbacks** will disable promises.
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.join
      * @return {Promise|undefined}
@@ -351,7 +352,7 @@ module.exports = function (params) {
      * @param {string} params.message - The message.
      * @param {function} params.onSuccess - Success handler indicating that the message was delivered.
      * @param {function} params.onError - Error handler indicating that the message was not delivered.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         params = params || {};
@@ -379,7 +380,7 @@ module.exports = function (params) {
      *     group.getMembers({
      *         onSuccess: function (connections) {
      *             connections.forEach(function (connection) {
-     *                 // do something
+     *                 console.log(connection.endpoint.id);
      *             });
      *         }
      *     });
