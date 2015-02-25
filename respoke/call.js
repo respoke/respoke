@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var Q = require('q');
@@ -13,10 +14,14 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation,
- * and call state.
- *
+ * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia,
+ * path and codec negotation, and call state.
  * There are several methods on an instance of `respoke.Client` which return a `respoke.Call`.
+ *
+ * ```
+ * var jim = client.getEndpoint({ id: 'jim' });
+ * var call = jim.startAudioCall();
+ * ```
  *
  * @class respoke.Call
  * @constructor
@@ -875,7 +880,7 @@ module.exports = function (params) {
         params = params || {};
         log.debug('Call.removeDirectConnection');
 
-        if (directConnection && directConnection.isActive()) {
+        if (directConnection) {
             directConnection.close({skipRemove: true});
         }
 
@@ -980,9 +985,7 @@ module.exports = function (params) {
                 log.debug('Hanging up because there are no local streams.');
                 that.hangup();
             } else {
-                if (directConnection && directConnection.isActive()) {
-                    that.removeDirectConnection({skipModify: true});
-                }
+                that.removeDirectConnection({skipModify: true});
             }
         }, true);
 
@@ -1089,10 +1092,8 @@ module.exports = function (params) {
 
         that.outgoingMedia.stop();
 
-        if (directConnection && directConnection.isActive()) {
+        if (directConnection) {
             directConnection.close();
-            that.remoteEndpoint.directConnection = null;
-            directConnection.ignore();
             directConnection = null;
         }
 

@@ -83,13 +83,13 @@ describe("A Direct Connection", function () {
         });
     });
 
-    describe("when starting a direct connection", function () {
-        function callListener(evt) {
-            if (!evt.directConnection.call.caller) {
-                setTimeout(evt.directConnection.accept);
-            }
+    function callListener(evt) {
+        if (!evt.directConnection.call.caller) {
+            setTimeout(evt.directConnection.accept);
         }
+    }
 
+    describe("when starting a direct connection", function () {
         // Still seeing intermittent failures.
         describe("with call listener specified", function () {
             var hangupReason;
@@ -119,6 +119,44 @@ describe("A Direct Connection", function () {
                 expect(directConnection).to.be.ok;
                 expect(hangupReason).to.equal(undefined);
             });
+        });
+    });
+
+    describe("when starting two direct connections in a row without logging out", function () {
+        var hangupReason;
+
+        beforeEach(function (done) {
+            done = doneCountBuilder(1, done);
+            followeeClient.listen('direct-connection', callListener);
+
+            followeeEndpoint.startDirectConnection({
+                onOpen: function (evt) {
+                    followeeEndpoint.directConnection.close();
+                },
+                onClose: function (evt) {
+                    setTimeout(function () {
+                        followeeEndpoint.startDirectConnection({
+                            onOpen: function (evt) {
+                                directConnection = followeeEndpoint.directConnection;
+                                done();
+                            },
+                            onClose: function (evt) {
+                                hangupReason = evt.reason;
+                                done();
+                            }
+                        }).done(null, done);
+                    }, 1000); // tried timeout of zero, but even 100 fails occasionally.
+                }
+            }).done(null, done);
+        });
+
+        afterEach(function () {
+            followeeClient.ignore('direct-connection', callListener);
+        });
+
+        it("succeeds", function () {
+            expect(directConnection).to.be.ok;
+            expect(hangupReason).to.equal(undefined);
         });
     });
 

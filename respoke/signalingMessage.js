@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 /**
@@ -56,7 +57,7 @@ module.exports = function (params) {
      * @type {string}
      */
     var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
+        'signalType', 'sessionId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId', 'callerId',
         'requesting', 'reason', 'error', 'status', 'connectionId', 'version'
     ];
 
