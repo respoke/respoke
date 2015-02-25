@@ -1081,6 +1081,10 @@ module.exports = function (params) {
      * @method respoke.Client.startPhoneCall
      * @param {object} params
      * @param {string} params.number - The phone number that should be called.
+     * @arg {string} params.callerId - The phone number to use as the caller ID for this phone call. This must
+     * be a phone number listed in your Respoke account, associated with your app, and allowed by the role
+     * that this client is authenticated with. If the role contains a list of numbers and the token does not contain
+     * callerId, this field must be used to set caller ID selected from the list of numbers or no caller ID will be set.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -1160,6 +1164,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
+            signalParams.callerId = {number: params.callerId};
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {

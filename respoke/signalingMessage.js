@@ -57,7 +57,7 @@ module.exports = function (params) {
      * @type {string}
      */
     var allowed = [
-        'signalType', 'sessionId', 'callerId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId',
+        'signalType', 'sessionId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId', 'callerId',
         'requesting', 'reason', 'error', 'status', 'connectionId', 'version'
     ];
 
