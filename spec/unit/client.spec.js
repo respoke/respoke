@@ -1,66 +1,67 @@
-
 var expect = chai.expect;
 
-var instanceId;
-
 describe("respoke.Client", function () {
+    var instanceId;
     var client;
-    beforeEach(function () {
-        instanceId = respoke.makeGUID();
-        client = respoke.createClient({
-            instanceId: instanceId,
-            gloveColor: "white"
-        });
-    });
-
-    describe("it's object structure", function () {
-        it("extends respoke.EventEmitter.", function () {
-            expect(typeof client.listen).to.equal('function');
-            expect(typeof client.ignore).to.equal('function');
-            expect(typeof client.fire).to.equal('function');
-        });
-
-        it("extends respoke.Presentable.", function () {
-            expect(typeof client.getPresence).to.equal('function');
-            expect(typeof client.setPresence).to.equal('function');
-        });
-
-        it("has the correct class name.", function () {
-            expect(client.className).to.equal('respoke.Client');
-        });
-
-        it("contains some important methods.", function () {
-            expect(typeof client.connect).to.equal('function');
-            expect(typeof client.disconnect).to.equal('function');
-            expect(typeof client.getCall).to.equal('function');
-            expect(typeof client.getConnection).to.equal('function');
-            expect(typeof client.getEndpoint).to.equal('function');
-            expect(typeof client.getEndpoints).to.equal('function');
-            expect(typeof client.getGroup).to.equal('function');
-            expect(typeof client.getGroups).to.equal('function');
-            expect(typeof client.join).to.equal('function');
-            expect(typeof client.setOnline).to.equal('function');
-            expect(typeof client.setPresence).to.equal('function');
-            expect(typeof client.startCall).to.equal('function');
-            expect(typeof client.startAudioCall).to.equal('function');
-            expect(typeof client.startVideoCall).to.equal('function');
-            expect(typeof client.startPhoneCall).to.equal('function');
-        });
-
-        it("saves unexpected developer-specified parameters.", function () {
-            expect(client.gloveColor).to.equal('white');
-        });
-
-        it("doesn't expose the signaling channel", function () {
-            expect(client.signalingChannel).to.not.exist;
-            expect(client.getSignalingChannel).to.not.exist;
-            Object.keys(client).forEach(function (key) {
-                expect(key).to.not.contain('signal');
-            });
-        });
-    });
 
     describe("when not connected", function () {
+        beforeEach(function () {
+            instanceId = respoke.makeGUID();
+            client = respoke.createClient({
+                instanceId: instanceId,
+                gloveColor: "white"
+            });
+        });
+
+        describe("it's object structure", function () {
+            it("extends respoke.EventEmitter.", function () {
+                expect(typeof client.listen).to.equal('function');
+                expect(typeof client.ignore).to.equal('function');
+                expect(typeof client.fire).to.equal('function');
+            });
+
+            it("extends respoke.Presentable.", function () {
+                expect(typeof client.getPresence).to.equal('function');
+                expect(typeof client.setPresence).to.equal('function');
+            });
+
+            it("has the correct class name.", function () {
+                expect(client.className).to.equal('respoke.Client');
+            });
+
+            it("contains some important methods.", function () {
+                expect(typeof client.connect).to.equal('function');
+                expect(typeof client.disconnect).to.equal('function');
+                expect(typeof client.getCall).to.equal('function');
+                expect(typeof client.getConnection).to.equal('function');
+                expect(typeof client.getEndpoint).to.equal('function');
+                expect(typeof client.getEndpoints).to.equal('function');
+                expect(typeof client.getGroup).to.equal('function');
+                expect(typeof client.getGroups).to.equal('function');
+                expect(typeof client.join).to.equal('function');
+                expect(typeof client.setOffline).to.equal('function');
+                expect(typeof client.setOnline).to.equal('function');
+                expect(typeof client.setPresence).to.equal('function');
+                expect(typeof client.startCall).to.equal('function');
+                expect(typeof client.startAudioCall).to.equal('function');
+                expect(typeof client.startVideoCall).to.equal('function');
+                expect(typeof client.startPhoneCall).to.equal('function');
+                expect(typeof client.startSIPCall).to.equal('function');
+            });
+
+            it("saves unexpected developer-specified parameters.", function () {
+                expect(client.gloveColor).to.equal('white');
+            });
+
+            it("doesn't expose the signaling channel", function () {
+                expect(client.signalingChannel).to.not.exist;
+                expect(client.getSignalingChannel).to.not.exist;
+                Object.keys(client).forEach(function (key) {
+                    expect(key).to.not.contain('signal');
+                });
+            });
+        });
+
         describe("setPresence()", function () {
             it("tries to set presence and errors because of lack of connection", function (done) {
                 var newPresence = 'xa';
@@ -177,6 +178,17 @@ describe("respoke.Client", function () {
             });
         });
 
+        describe("setOffline()", function () {
+            it("throws an error", function (done) {
+                client.setOffline().done(function () {
+                    done(new Error("Shouldn't be able to set presence when not connected!"));
+                }, function (err) {
+                    expect(err.message).to.contain("not connected");
+                    done();
+                });
+            });
+        });
+
         describe("sendMessage()", function () {
             it("throws an error", function (done) {
                 client.sendMessage({
@@ -276,6 +288,110 @@ describe("respoke.Client", function () {
                     connectionId: respoke.makeGUID()
                 });
                 expect(connection).to.equal.undefined;
+            });
+        });
+    });
+
+    describe("when connected", function () {
+        var methodsWhichReturnPromises = { // and don't require lots of other stubbing
+            'disconnect': 'close',
+            'setPresence': 'sendPresence',
+            'setOnline': 'sendPresence',
+            'setOffline': 'sendPresence',
+            'sendMessage': 'sendMessage'
+        };
+
+        var params = {
+            number: '18005555555',
+            uri: 'erin@localhost:5060',
+            endpointId: 'test',
+            message: 'test',
+            presence: 'test',
+            id: 'test'
+        };
+
+        beforeEach(function (done) {
+            instanceId = respoke.makeGUID();
+
+            respoke.SignalingChannel = MockSignalingChannel;
+            client = respoke.createClient({
+                instanceId: instanceId,
+                gloveColor: "white"
+            });
+            client.connect({
+                developmentMode: true,
+                appId: '68783999-78BD-4079-8979-EBA65FD8873F',
+                endpointId: 'test'
+            }).done(function () {
+                if (window.mockSignalingChannel.className !== "respoke.MockSignalingChannel") {
+                    done(new Error("Not using mock signaling channel"));
+                    return;
+                }
+                done();
+            }, done);
+        });
+
+        afterEach(function () {
+            client = null;
+        });
+
+        Object.keys(methodsWhichReturnPromises).forEach(function (method) {
+            describe(method, function () {
+                var stub;
+
+                beforeEach(function (done) {
+                    stub = sinon.stub(
+                        window.mockSignalingChannel,
+                        methodsWhichReturnPromises[method],
+                        window.mockSignalingChannel[methodsWhichReturnPromises[method]]
+                    );
+                    client[method](params).done(function () {
+                        done();
+                    }, done);
+                });
+
+                it("calls SignalingChannel." + methodsWhichReturnPromises[method], function () {
+                    expect(stub).to.be.called;
+                });
+
+                afterEach(function () {
+                    stub.restore();
+                });
+            });
+        });
+
+        ['startPhoneCall', 'startCall', 'startSIPCall'].forEach(function (method) {
+            describe(method, function () {
+                var callStub;
+                var getEndpointStub;
+                var startCallStub;
+
+                beforeEach(function () {
+                    callStub = sinon.stub(respoke, "Call", function () {
+                        return {
+                            className: 'respoke.MockCall',
+                            listen: function () {}
+                        };
+                    });
+                    startCallStub = sinon.spy();
+                    getEndpointStub = sinon.stub(client, "getEndpoint", function () {
+                        return {
+                            startCall: callStub,
+                            startPhoneCall: callStub,
+                            startSIPCall: callStub
+                        };
+                    });
+                    client[method](params);
+                });
+
+                it("calls SignalingChannel." + method, function () {
+                    expect(startCallStub).to.be.called;
+                });
+
+                afterEach(function () {
+                    callStub.restore();
+                    getEndpointStub.restore();
+                });
             });
         });
     });

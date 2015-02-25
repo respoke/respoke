@@ -1,0 +1,68 @@
+{
+  "additionalRules": [
+      "node_modules/jscs-trailing-whitespace-in-source/rules/*.js"
+  ],
+  "requireCurlyBraces": [
+      "if",
+      "else",
+      "for",
+      "while",
+      "do",
+      "try",
+      "catch"
+  ],
+  "requireSpaceAfterKeywords": [
+      "do",
+      "for",
+      "if",
+      "else",
+      "switch",
+      "case",
+      "try",
+      "void",
+      "while",
+      "return",
+      "function"
+  ],
+  "disallowKeywords": ["with"],
+  "requireSpaceBeforeBlockStatements": true,
+  "requireSpacesInConditionalExpression": true,
+  "disallowSpacesInNamedFunctionExpression": {
+      "beforeOpeningRoundBrace": true
+  },
+  "disallowSpacesInFunctionDeclaration": {
+      "beforeOpeningRoundBrace": true
+  },
+  "requireSpacesInFunction": {
+      "beforeOpeningCurlyBrace": true
+  },
+  "disallowMultipleVarDecl": true,
+  "disallowMultipleLineBreaks": true,
+  "requireBlocksOnNewline": 1,
+  "disallowSpaceAfterObjectKeys": true,
+  "requireSpaceBeforeObjectValues": true,
+  "requireCommaBeforeLineBreak": true,
+  "disallowSpaceBeforePostfixUnaryOperators": true,
+  "requireSpaceBeforeBinaryOperators": true,
+  "requireSpaceAfterBinaryOperators": true,
+  "disallowMixedSpacesAndTabs": true,
+  "disallowTrailingWhitespaceInSource": true,
+  "disallowTrailingComma": true,
+  "requireLineFeedAtFileEnd": true,
+  "requireCapitalizedConstructors": true,
+  "disallowYodaConditions": true,
+  "validateParameterSeparator": ", ",
+  "validateIndentation": 4,
+  "excludeFiles": [
+      "respoke/deps/adapter.js",
+      "node_modules/**",
+      "coverage/**",
+      "build/**",
+      ".grunt/**",
+      ".docs",
+      ".tmp/**",
+      ".idea",
+      "*.min.js",
+      "spec/**"
+  ]
+}

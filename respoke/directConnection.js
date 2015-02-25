@@ -249,6 +249,7 @@ module.exports = function (params) {
      */
     function onDataChannelError(error) {
         /**
+         * Indicate that an error has occurred setting up the direct connection.
          * @event respoke.DirectConnection#error
          * @type {respoke.Event}
          * @property {object} error
@@ -278,6 +279,7 @@ module.exports = function (params) {
             message = evt.data;
         }
         /**
+         * A message has been received over the direct connection.
          * @event respoke.Endpoint#message
          * @type {respoke.Event}
          * @property {object} message
@@ -290,6 +292,7 @@ module.exports = function (params) {
             directConnection: that
         });
         /**
+         * A message has been received over the direct connection.
          * @event respoke.DirectConnection#message
          * @type {respoke.Event}
          * @property {object} message
@@ -314,6 +317,7 @@ module.exports = function (params) {
     function onDataChannelOpen(evt) {
         //dataChannel = evt.target || evt.channel;
         /**
+         * The direct connection is open.
          * @event respoke.DirectConnection#open
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -333,6 +337,7 @@ module.exports = function (params) {
     function onDataChannelClose(evt) {
         //dataChannel = evt.target || evt.channel;
         /**
+         * The direct connection is closed.
          * @event respoke.DirectConnection#close
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -396,6 +401,7 @@ module.exports = function (params) {
         that.call.answer();
 
         /**
+         * The request to open a direct connection has been accepted.
          * @event respoke.DirectConnection#accept
          * @type {respoke.Event}
          * @property {string} name - the event name.
@@ -418,6 +424,7 @@ module.exports = function (params) {
         }
 
         /**
+         * The direct connection has been closed.
          * @event respoke.DirectConnection#close
          * @type {respoke.Event}
          * @property {string} name - the event name.
