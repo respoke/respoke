@@ -50,7 +50,7 @@ module.exports = function (params) {
      * result in a non-transition error when it's OK, and that is the 'reject' event.
      */
     var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'approve', 'answer', 'sentOffer',
-        'receiveAnswer'];
+        'receiveAnswer', 'remoteCandidate'];
 
     function assert(condition) {
         if (!condition) {
@@ -64,10 +64,10 @@ module.exports = function (params) {
     that.isAnswered = false;
     that.sentSDP = false;
     that.receivedSDP = false;
-    that.processedRemoteSDP = false;
     that.needDirectConnection = !!that.needDirectConnection;
     that.sendOnly = !!that.sendOnly;
     that.receiveOnly = !!that.receiveOnly;
+    that.remoteCandidateQueue = [];
 
     // Event
     var rejectEvent = [{
@@ -105,7 +105,7 @@ module.exports = function (params) {
 
     // Event
     function clearReceiveAnswerTimer() {
-        that.processedRemoteSDP = true;
+        that.receivedSDP = true;
         if (receiveAnswerTimer) {
             receiveAnswerTimer.clear();
         }
@@ -121,6 +121,24 @@ module.exports = function (params) {
         }
     };
 
+    // Event
+    function queueRemoteCandidate(candidate) {
+        if (that.receivedSDP) {
+            that.fire('process-candidate', {
+                candidate: candidate
+            });
+        } else {
+            /*
+             * This handler is called synchronously for each item in `remoteCandidateQueue`, so if we push back into
+             * this array synchronously, we can get into an endless shift/push loop.
+             */
+            setTimeout(function () {
+                that.remoteCandidateQueue.push(candidate);
+            });
+        }
+    }
+
+    // Event
     function needToObtainMedia(params) {
         return (that.needDirectConnection !== true && that.receiveOnly !== true);
     }
@@ -164,12 +182,15 @@ module.exports = function (params) {
 
     var stateParams = {
         initialState: 'idle',
+        // Event
         receiveLocalMedia: function () {
             that.hasLocalMedia = true;
         },
         states: {
             // State
             idle: {
+                // Event
+                remoteCandidate: queueRemoteCandidate,
                 // Event
                 exit: function () {
                     that.fire('idle:exit');
@@ -206,10 +227,13 @@ module.exports = function (params) {
             negotiatingContainer: {
                 init: "preparing",
                 // Event
+                remoteCandidate: queueRemoteCandidate,
+                // Event
                 hangup: hangupEvent,
                 // Event
                 modify: rejectModify,
                 states: {
+                    // State
                     preparing: {
                         // Event
                         entry: {
@@ -218,7 +242,6 @@ module.exports = function (params) {
                                 that.hasLocalMedia = false;
                                 that.sentSDP = false;
                                 that.receivedSDP = false;
-                                that.processedRemoteSDP = false;
                                 that.isAnswered = false;
                                 if (!that.isModifying()) {
                                     answerTimer = createTimer(function () {
@@ -373,7 +396,9 @@ module.exports = function (params) {
                     // State
                     offeringContainer: {
                         init: 'offering',
+                        // Event
                         reject: rejectEvent,
+                        // Event
                         sentOffer: function () {
                             // start answer timer
                             receiveAnswerTimer = createTimer(function () {
@@ -381,6 +406,7 @@ module.exports = function (params) {
                             }, 'receive answer', receiveAnswerTimeout);
                         },
                         states: {
+                            // State
                             offering: {
                                 // Event
                                 entry: function () {
@@ -414,9 +440,12 @@ module.exports = function (params) {
                     // State
                     connectingContainer: {
                         init: 'connecting',
+                        // Event
                         reject: rejectEvent,
+                        // Event
                         receiveAnswer: clearReceiveAnswerTimer,
                         states: {
+                            // State
                             connecting: {
                                 // Event
                                 entry: function () {
@@ -464,12 +493,16 @@ module.exports = function (params) {
             // this state, we will reject it. If the other party is in connected, we will be able to modify.
             modifyingContainer: {
                 init: 'modifying',
+                // Event
+                remoteCandidate: queueRemoteCandidate,
+                // Event
                 reject: rejectEvent,
                 // Event
                 modify: rejectModify,
                 // Event
                 hangup: hangupEvent,
                 states: {
+                    // State
                     modifying: {
                         // Event
                         entry: function () {
@@ -494,16 +527,21 @@ module.exports = function (params) {
             // State
             connectedContainer: {
                 init: 'connected',
+                // Event
+                remoteCandidate: queueRemoteCandidate,
+                // Event
                 reject: {
                     target: 'terminated',
                     action: function (params) {
                         that.hangupReason = params.reason || "got reject while connected";
                     }
                 },
+                // Event
                 receiveAnswer: clearReceiveAnswerTimer,
                 // Event
                 hangup: hangupEvent,
                 states: {
+                    // State
                     connected: {
                         // Event
                         entry: function () {
@@ -545,6 +583,7 @@ module.exports = function (params) {
             terminatedContainer: {
                 init: 'terminated',
                 states: {
+                    // State
                     terminated: {
                         // Event
                         entry: {

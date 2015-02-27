@@ -90,22 +90,6 @@ module.exports = function (params) {
     var defModify;
     /**
      * @memberof! respoke.PeerConnection
-     * @name candidateSendingQueue
-     * @private
-     * @type {array}
-     * @desc An array to save candidates between offer and answer so that both parties can process them simultaneously.
-     */
-    var candidateSendingQueue = [];
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name candidateReceivingQueue
-     * @private
-     * @type {array}
-     * @desc An array to save candidates between offer and answer so that both parties can process them simultaneously.
-     */
-    var candidateReceivingQueue = [];
-    /**
-     * @memberof! respoke.PeerConnection
      * @name client
      * @private
      * @type {respoke.Client}
@@ -312,8 +296,9 @@ module.exports = function (params) {
 
                     log.debug('set remote desc of offer succeeded');
                     that.call.incomingMedia.setSDP(oOffer); // callee's incoming media
+                    processQueues();
+
                     pc.createAnswer(function successHandler(oSession) {
-                        that.state.processedRemoteSDP = true;
                         that.call.outgoingMedia.setSDP(oSession); // callee's outgoing media
                         saveAnswerAndSend(oSession);
                     }, function errorHandler(err) {
@@ -494,6 +479,25 @@ module.exports = function (params) {
                 initOffer();
             }
         });
+
+        that.state.listen('process-candidate', function (params) {
+            if (!pc) {
+                return;
+            }
+
+            // Old versions of browsers throw errors if the candidates are in the wrong format, newer versions
+            // use these success and error handlers.
+            try {
+                pc.addIceCandidate(new RTCIceCandidate(params.candidate), function candidateSuccess() {
+                    log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', params.candidate);
+                    that.report.candidatesReceived.push(params.candidate);
+                }, function candidateError(err) {
+                    log.error("Couldn't add ICE candidate.", err, params.candidate);
+                });
+            } catch (e) {
+                log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
+            }
+        });
     };
 
     /**
@@ -577,14 +581,10 @@ module.exports = function (params) {
             return;
         }
 
-        if (!that.state.sentSDP && !that.state.processedRemoteSDP) {
-            candidateSendingQueue.push(candidate);
-        } else {
-            signalCandidate({
-                candidate: candidate,
-                call: that.call
-            });
-        }
+        signalCandidate({
+            candidate: candidate,
+            call: that.call
+        });
     }
 
     /**
@@ -622,32 +622,16 @@ module.exports = function (params) {
     }
 
     /**
-     * Process any ICE candidates that we received either from the browser or the other side while
-     * we were trying to set up our RTCPeerConnection to handle them.
+     * Process any ICE candidates that we received from the other side before setRemoteDescription.
      * @memberof! respoke.PeerConnection
      * @method respoke.PeerConnection.processQueues
      * @private
      */
     function processQueues() {
-        /* We only need to queue (and thus process queues) if
-         * we are the caller. The person receiving the call
-         * never has a valid PeerConnection at a time when we don't
-         * have one. */
-        var can = null;
-        for (var i = 0; i < candidateSendingQueue.length; i += 1) {
-            signalCandidate({
-                candidate: candidateSendingQueue[i],
-                call: that.call
-            });
+        var can;
+        while (can = that.state.remoteCandidateQueue.shift()) {
+            that.state.dispatch('remoteCandidate', can);
         }
-        candidateSendingQueue = [];
-        for (var i = 0; i < candidateReceivingQueue.length; i += 1) {
-            that.addRemoteCandidate({
-                candidate: candidateReceivingQueue[i],
-                processingQueue: true
-            });
-        }
-        candidateReceivingQueue = [];
     }
 
     /**
@@ -674,7 +658,6 @@ module.exports = function (params) {
                 sessionDescription: oSession,
                 onSuccess: function () {
                     that.state.sentSDP = true;
-                    setTimeout(processQueues);
                 },
                 onError: function (err) {
                     respoke.log.error('offer could not be sent');
@@ -725,7 +708,6 @@ module.exports = function (params) {
                 call: that.call
             });
             that.state.sentSDP = true;
-            processQueues();
         }, function errorHandler(p) {
             var err = new Error('Error calling setLocalDescription on answer I created.');
             /**
@@ -859,8 +841,10 @@ module.exports = function (params) {
         pc.setRemoteDescription(
             new RTCSessionDescription(evt.signal.sessionDescription),
             function successHandler() {
+                log.debug('set remote desc of answer succeeded');
                 that.call.incomingMedia.setSDP(evt.signal.sessionDescription); // caller's incoming media
                 that.state.dispatch('receiveAnswer');
+                processQueues();
             }, function errorHandler(p) {
                 var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
                 that.report.callStoppedReason = newErr.message;
@@ -1038,25 +1022,7 @@ module.exports = function (params) {
             return;
         }
 
-        if (!pc) {
-            candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate because pc is null.');
-            return;
-        }
-
-        if (that.state.sentSDP || that.state.processedRemoteSDP) {
-            try {
-                pc.addIceCandidate(new RTCIceCandidate(params.candidate));
-                log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', params.candidate);
-                that.report.candidatesReceived.push(params.candidate);
-            } catch (e) {
-                log.error("Couldn't add ICE candidate: " + e.message, params.candidate);
-                return;
-            }
-        } else if (!params.processingQueue) {
-            candidateReceivingQueue.push(params.candidate);
-            log.debug('Queueing a candidate because no offer yet.');
-        }
+        that.state.dispatch('remoteCandidate', params.candidate);
     };
 
     that.call.listen('signal-offer', listenOffer, true);
