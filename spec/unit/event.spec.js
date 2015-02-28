@@ -7,6 +7,10 @@ describe("A respoke.EventEmitter", function () {
         "gloveColor": "white"
     });
 
+    afterEach(function () {
+        eventEmitter.ignore();
+    });
+
     it("has the correct class name.", function () {
         expect(eventEmitter.className).to.equal('respoke.EventEmitter');
     });
@@ -100,10 +104,6 @@ describe("A respoke.EventEmitter", function () {
             });
         });
 
-        afterEach(function () {
-            eventEmitter.ignore();
-        });
-
         describe("when not ignored", function () {
             beforeEach(function (done) {
                 eventEmitter.fire('event2');
@@ -119,6 +119,53 @@ describe("A respoke.EventEmitter", function () {
                 expect(results['4']).to.equal(1);
                 expect(results['5']).to.equal(1);
                 expect(results['6']).to.equal(1);
+            });
+
+            describe("multiple events", function () {
+                var value = "";
+
+                beforeEach(function (done) {
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '2';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '3';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '4';
+                        done()
+                    });
+                    eventEmitter.fire('order');
+                });
+
+                it("should fire in the order in which they were added", function () {
+                    expect(value).to.equal("1234");
+                });
+            });
+
+            describe("identical listeners", function () {
+                var value = "";
+
+                beforeEach(function (done) {
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                    });
+                    eventEmitter.listen('order', function () {
+                        value += '1';
+                        done()
+                    });
+                    eventEmitter.fire('order');
+                });
+
+                it("only one of the identical listeners is called", function () {
+                    expect(value).to.equal("11"); // not "111"
+                });
             });
         });
 
@@ -146,6 +193,74 @@ describe("A respoke.EventEmitter", function () {
         });
     });
 
+    describe("the 'hasListener' method", function () {
+        describe("when listener is added via 'listen'", function () {
+            describe("when isInternal is true", function () {
+                beforeEach(function () {
+                    eventEmitter.listen("has-listener-test", function () {}, true);
+                });
+
+                it("returns false", function () {
+                    expect(eventEmitter.hasListeners("has-listener-test")).to.equal(false);
+                });
+            });
+
+            describe("when isInternal is false", function () {
+                beforeEach(function () {
+                    eventEmitter.listen("has-listener-test", function () {});
+                });
+
+                it("returns true", function () {
+                    expect(eventEmitter.hasListeners("has-listener-test")).to.equal(true);
+                });
+            });
+        });
+
+        describe("when listener is added via 'once'", function () {
+            describe("when isInternal is true", function () {
+                beforeEach(function () {
+                    eventEmitter.once("has-listener-test", function () {}, true);
+                });
+
+                it("returns false", function () {
+                    expect(eventEmitter.hasListeners("has-listener-test")).to.equal(false);
+                });
+
+                describe("after the event is called", function () {
+                    beforeEach(function (done) {
+                        eventEmitter.fire('has-listener-test');
+                        setTimeout(done);
+                    });
+
+                    it("returns false", function () {
+                        expect(eventEmitter.hasListeners("has-listener-test")).to.equal(false);
+                    });
+                });
+            });
+
+            describe("when isInternal is false", function () {
+                beforeEach(function () {
+                    eventEmitter.once("has-listener-test", function () {});
+                });
+
+                it("returns true", function () {
+                    expect(eventEmitter.hasListeners("has-listener-test")).to.equal(true);
+                });
+
+                describe("after the event is called", function () {
+                    beforeEach(function (done) {
+                        eventEmitter.fire('has-listener-test');
+                        setTimeout(done);
+                    });
+
+                    it("returns false", function () {
+                        expect(eventEmitter.hasListeners("has-listener-test")).to.equal(false);
+                    });
+                });
+            });
+        });
+    });
+
     describe("the 'once' method", function () {
         var listener;
 
@@ -165,6 +280,44 @@ describe("A respoke.EventEmitter", function () {
 
         it("removes the listener after it fires", function () {
             expect(eventEmitter.hasListeners('onceTest')).to.equal(false);
+        });
+
+        describe("called with different functions", function () {
+            var thing1;
+            var thing2;
+            var thing3;
+
+            beforeEach(function (done) {
+                eventEmitter.once('multiTest', function () {
+                    thing1 = !thing1;
+                });
+                eventEmitter.once('multiTest', function () {
+                    thing2 = !thing2;
+                });
+                eventEmitter.once('multiTest', function () {
+                    thing3 = !thing3;
+                    done();
+                });
+                eventEmitter.fire('multiTest');
+            });
+
+            it("calls all the methods exactly once", function (done) {
+                expect(thing1).to.equal(true);
+                expect(thing2).to.equal(true);
+                expect(thing3).to.equal(true);
+
+                eventEmitter.once('multiTest', function () {
+                    try {
+                        expect(thing1).to.equal(true);
+                        expect(thing2).to.equal(true);
+                        expect(thing3).to.equal(true);
+                        done();
+                    } catch (err) {
+                        done(err);
+                    }
+                });
+                eventEmitter.fire('multiTest');
+            });
         });
     });
 });

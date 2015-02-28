@@ -12,9 +12,9 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * Class for managing the remote media stream, 
+ * Class for managing the remote media stream,
  * which is attached to a call at `call.outgoingMedia`.
- * 
+ *
  * @class respoke.RemoteMedia
  * @constructor
  * @augments respoke.EventEmitter
@@ -22,7 +22,8 @@ var respoke = require('./respoke');
  * @param {string} params.instanceId - client id
  * @param {string} params.callId - call id
  * @param {object} params.constraints
- * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
+ * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+ * video attached to it.
  * @returns {respoke.RemoteMedia}
  */
 module.exports = function (params) {
@@ -65,6 +66,14 @@ module.exports = function (params) {
      * @type {HTMLVideoElement}
      */
     that.element = params.videoRemoteElement;
+    /**
+     * @memberof! respoke.RemoteMedia
+     * @name hasScreenShare
+     * @private
+     * @type {boolean}
+     */
+    var hasScreenShare = params.hasScreenShare;
+    delete params.hasScreenShare;
     /**
      * @memberof! respoke.RemoteMedia
      * @name sdpHasAudio
@@ -124,7 +133,22 @@ module.exports = function (params) {
     that.stream = null;
 
     /**
+     * Indicate whether we are receiving a screenshare.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.hasScreenShare
+     * @return {boolean}
+     */
+    that.hasScreenShare = function () {
+        if (that.stream) {
+            return (that.stream.getVideoTracks().length > 0 && hasScreenShare);
+        }
+        return hasScreenShare;
+    };
+
+    /**
      * Indicate whether we are receiving video.
+     *
+     * Note: This method will return true when the video is a screenshare.
      * @memberof! respoke.RemoteMedia
      * @method respoke.RemoteMedia.hasVideo
      * @return {boolean}
@@ -195,19 +219,35 @@ module.exports = function (params) {
     that.setStream = function (str) {
         if (str) {
             that.stream = str;
-            /**
-             * Expose getAudioTracks.
-             */
-            that.getAudioTracks = that.stream.getAudioTracks.bind(that.stream);
-            /**
-             * Expose getVideoTracks.
-             */
-            that.getVideoTracks = that.stream.getVideoTracks.bind(that.stream);
             that.element = that.element || document.createElement('video');
             attachMediaStream(that.element, that.stream);
             that.element.autoplay = true;
             setTimeout(that.element.play.bind(that.element));
         }
+    };
+
+    /**
+     * Expose getAudioTracks.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.getAudioTracks
+     */
+    that.getAudioTracks = function () {
+        if (that.stream) {
+            return that.stream.getAudioTracks();
+        }
+        return [];
+    };
+
+    /**
+     * Expose getVideoTracks.
+     * @memberof! respoke.RemoteMedia
+     * @method respoke.RemoteMedia.getVideoTracks
+     */
+    that.getVideoTracks = function () {
+        if (that.stream) {
+            return that.stream.getVideoTracks();
+        }
+        return [];
     };
 
     /**
@@ -228,6 +268,7 @@ module.exports = function (params) {
         }
         that.stream = null;
         /**
+         * Indicate that remote media has stopped.
          * @event respoke.RemoteMedia#stop
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -237,7 +278,7 @@ module.exports = function (params) {
 
     /**
      * Whether the video stream is muted.
-     * 
+     *
      * All video tracks must be muted for this to return `false`.
      * @returns boolean
      */
@@ -264,6 +305,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -291,6 +333,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -306,7 +349,7 @@ module.exports = function (params) {
 
     /**
      * Whether the audio stream is muted.
-     * 
+     *
      * All audio tracks must be muted for this to return `false`.
      * @returns boolean
      */
@@ -333,6 +376,7 @@ module.exports = function (params) {
             track.enabled = false;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target
@@ -360,6 +404,7 @@ module.exports = function (params) {
             track.enabled = true;
         });
         /**
+         * Indicate that the muted status of remote video or audio has changed.
          * @event respoke.RemoteMedia#mute
          * @property {string} name - the event name.
          * @property {respoke.RemoteMedia} target

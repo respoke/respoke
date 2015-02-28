@@ -1,0 +1,196 @@
+// Copyright 2014, Digium, Inc.
+// All rights reserved.
+//
+// This source code is licensed under The MIT License found in the
+// LICENSE file in the root directory of this source tree.
+//
+// For all details and documentation:  https://www.respoke.io
+- var subTitle = comments[0].ctx.file.input;
+- var title = className;
+- var publicComments = [];
+- var publicEvents = [];
+- var classComment = null;
+- var getEventId = function (name) { return "event-" + name.replace('.','-').replace('#','-'); };
+- var getEventName = function (name) { return name.split('#')[1]; };
+- var allClasses = Object.keys(structure).sort();
+- var mapFireEvents = function(f){ return '"' + f.replace(className + '#','') + '"'; };
+- var alreadyListedEvents = [];
+- var cleanClassName = function (name) { return name.replace('respoke.', ''); };
+
+each comment in comments
+  if !comment.isPrivate && comment.ctx && ['method','property','function','declaration','event'].indexOf(comment.ctx.type) !== -1 && comment.ctx.name !== "className"
+    - comment.methodParams = [];
+    - comment.argumentArray = [];
+    - comment.eventPropertyArray = [];
+    each tag in comment.tags
+
+      if (tag.type === "param")
+        - var tagParamName = tag.name;//.replace('[','').replace(']','');
+        - comment.methodParams.push({   name: tagParamName,   type: tag.types.join(', '),   desc: tag.description.replace('- ','')  });
+        - if (tagParamName.indexOf('.') === -1 && tagParamName.indexOf('[') === -1) comment.argumentArray.push(tagParamName);
+
+      else if (tag.type === "property")
+        - var tagParamName = tag.name.replace('[','').replace(']','');
+        - comment.eventPropertyArray.push({   name: tagParamName,   type: tag.types[0],   desc: tag.description.replace('- ','')  });
+
+      else if (tag.type === "type")
+        - comment.type = tag.types.join('|');
+      else if ( (tag.type === "returns" || tag.type === "return") && tag.string)
+        - var returnStringArray = tag.string.split( /\{|\}/g );
+        - if (!returnStringArray[0]) returnStringArray.shift();
+        - comment.returns = returnStringArray[0];
+      else if (tag.type === "augments" && tag.otherClass)
+        - comment.augments = tag.otherClass
+      else if (tag.type === "auth")
+        - comment.auth = tag.string.split(', ')
+
+    - if (comment.ctx.name == className) classComment = comment;
+    - else if (comment.ctx.type === 'event')
+        //- Some events are commented multiple times in the source.
+        - if (alreadyListedEvents.indexOf(comment.ctx.name) !== -1)
+            - continue;
+        - alreadyListedEvents.push(comment.ctx.name);
+        - publicEvents.push(comment);
+    - else
+      - if (comment.ctx.receiver && comment.ctx.receiver.indexOf('.') !== -1)
+        - var commentPrefix = comment.ctx.receiver.split('.');
+        - commentPrefix.shift()
+        - comment.ctx.name = commentPrefix.join('.') + '.' + comment.ctx.name;
+      - publicComments.push(comment);
+
+- publicComments.unshift(classComment);
+
+
+doctype html
+html
+    head
+        title=subTitle + " - " + title
+
+        link(rel="stylesheet" type="text/css" href="css/docs.css")
+        include node_modules/respoke-style/templates/head
+
+    body
+        include node_modules/respoke-style/templates/navbar
+
+        - var breadcrumbs = [{ title: 'Docs', link: '/'}, { title: 'JavaScript Client' }, { title: cleanClassName(className) }];
+        include node_modules/respoke-style/templates/breadcrumbs
+
+
+        //- Build the menu
+        nav: .sidebar: .sidebar-inner: ul
+            li.l1.header
+                a(href="/") Docs
+                | &nbsp;&nbsp;/&nbsp;&nbsp;
+                strong: a(href="respoke.html") JavaScript Client Library
+            li.l1.header &nbsp;
+            each otherClass in allClasses
+                if (otherClass === className)
+                    li.l1.active: a(href=otherClass + '.html')= cleanClassName(otherClass)
+                    li.l2.header Properties &amp; Methods
+                    each comment, indx in publicComments
+                        if (indx !== 0)
+                            li.l3: a(href='#' + comment.ctx.name.replace('.','-'))= comment.ctx.name
+                    if (publicEvents.length)
+                        li.l2.header Events
+                        each comment, indx in publicEvents
+                            li.l3: a(href='#' + getEventId(comment.ctx.name))= getEventName(comment.ctx.name)
+                else
+                    li.l1: a(href=otherClass + '.html')= cleanClassName(otherClass)
+
+
+        .content: article.article.content
+            h1= title
+            h5: a(href="https://github.com/respoke/respoke/blob/master/" + subTitle)= "from " + subTitle
+
+            //- Properties and methods
+            each comment, indx in publicComments
+                section(id=comment.ctx.name.replace('.','-'))
+                    br
+
+                    if (indx === 0)
+                        if (comment.augments)
+                            p: strong extends
+                                | &nbsp;
+                                a(href=comment.augments + ".html"): code= comment.augments
+
+                    else if (comment.ctx.type === "property")
+                        //- the title of the method or prop
+                        h2
+                            a(href="#"+comment.ctx.name): strong
+                                = comment.ctx.name
+                            h6: code= comment.type
+                    else
+                        h2
+                            a(href="#"+comment.ctx.name): strong
+                                = comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
+                        h6 returns
+                            | &nbsp;
+                            code= comment.returns || "undefined"
+
+
+                    if (comment.fires && comment.fires.length)
+                        h6 fires
+                          | &nbsp;
+                          code= comment.fires.map(mapFireEvents).join('|')
+
+                    if (comment.auth)
+                        p
+                          each meth in comment.auth
+                            span.label.label-default= meth
+                            | &nbsp;
+
+                    div!= comment.description.full
+
+                    //- Arguments
+                    if (indx !== 0 && comment.methodParams.length)
+                        h4 Arguments
+                        table
+                            tr
+                                th Name
+                                th Type
+                                th
+
+                            each param in comment.methodParams
+                                tr
+                                    td: code= param.name.replace('[', '').replace(']', '')
+                                    td: small: strong= param.type
+                                    td= param.desc
+                     //- put a header at the end of the class declaration
+                     if (indx === 0)
+                         h2 Properties and Methods
+
+            //- Events
+            if (publicEvents.length)
+
+                h1 Events
+                p Listen for events on an instance of this class.
+                pre: code= className.replace('respoke.', '') + '.listen("event-name", function eventCallback(evt) {\n\n});'
+
+                each comment, indx in publicEvents
+                    - var eventLinkId = getEventId(comment.ctx.name);
+
+                    section(id=eventLinkId)
+                        br
+                        h2: a(href="#" + eventLinkId)
+                            strong= getEventName(comment.ctx.name)
+                        h6: code= comment.ctx.type
+
+                        div!= comment.description.full
+
+                        if (comment.eventPropertyArray.length)
+                            h4 Event Callback Arguments
+
+                            table
+                                tr
+                                    th Name
+                                    th Type
+                                    th
+
+                                each param in comment.eventPropertyArray
+                                    tr
+                                        td: code= param.name
+                                        td: strong= param.type
+                                        td= param.desc
+
+
+    include node_modules/respoke-style/templates/footer

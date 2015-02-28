@@ -199,7 +199,7 @@ module.exports = function (params) {
      * @private
      * @type {object}
      */
-    var offerOptions = params.offerOptions || null;
+    var offerOptions = params.offerOptions || {};
     /**
      * @memberof! respoke.PeerConnection
      * @name pcOptions
@@ -231,7 +231,6 @@ module.exports = function (params) {
         sdpsReceived: [],
         candidatesSent: [],
         candidatesReceived: [],
-        stats: [],
         userAgent: navigator.userAgent,
         os: navigator.platform
     };
@@ -248,10 +247,46 @@ module.exports = function (params) {
             return;
         }
 
+        if (that.state.receiveOnly) {
+            makeOptionsReceiveOnly(offerOptions);
+        }
+
+        if (that.state.sendOnly) {
+            makeOptionsSendOnly(offerOptions);
+        }
+
         log.info('creating offer', offerOptions);
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
         }, offerOptions);
+    }
+
+    function makeOptionsReceiveOnly(options) {
+        if (navigator.webkitGetUserMedia) {
+            offerOptions = {
+                mandatory: {
+                    OfferToReceiveVideo: true,
+                    OfferToReceiveAudio: true
+                }
+            };
+        } else {
+            offerOptions.offerToReceiveVideo = true;
+            offerOptions.offerToReceiveAudio = true;
+        }
+    }
+
+    function makeOptionsSendOnly(options) {
+        if (navigator.webkitGetUserMedia) {
+            offerOptions = {
+                mandatory: {
+                    OfferToSendVideo: true,
+                    OfferToSendAudio: true
+                }
+            };
+        } else {
+            offerOptions.offerToSendVideo = true;
+            offerOptions.offerToSendAudio = true;
+        }
     }
 
     /**
@@ -373,6 +408,8 @@ module.exports = function (params) {
                     }
 
                     /**
+                     * This event is fired every 5 seconds by default, configurable by the 'interval' property to
+                     * `call.startStats` and reports the current state of media statistics.
                      * @event respoke.PeerConnection#stats
                      * @type {respoke.Event}
                      * @property {object} stats - an object with stats in it.
@@ -382,10 +419,10 @@ module.exports = function (params) {
                     that.fire('stats', {
                         stats: stats
                     });
-                    that.report.stats.push(stats);
                 }
             });
             that.listen('close', function closeHandler(evt) {
+
                 stats.stopStats();
             }, true);
             deferred.resolve();
@@ -421,19 +458,22 @@ module.exports = function (params) {
         pc = new RTCPeerConnection(that.servers, pcOptions);
         pc.onicecandidate = onIceCandidate;
         pc.onnegotiationneeded = onNegotiationNeeded;
+        pc.oniceconnectionstatechange = onIceConnectionStateChange;
         pc.onaddstream = function onaddstream(evt) {
             /**
-             * @event respoke.PeerConnection#connect
+             * Indicate the RTCPeerConnection has received remote media.
+             * @event respoke.PeerConnection#remote-stream-received
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.PeerConnection}
              */
-            that.fire('connect', {
+            that.fire('remote-stream-received', {
                 stream: evt.stream
             });
         };
         pc.onremovestream = function onremovestream(evt) {
             /**
+             * Indicate the remote side has stopped sending media.
              * @event respoke.PeerConnection#remote-stream-removed
              * @type {respoke.Event}
              * @property {string} name - the event name.
@@ -552,6 +592,30 @@ module.exports = function (params) {
                 candidate: candidate,
                 call: that.call
             });
+        }
+    }
+
+    /**
+     * Handle ICE state change
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.onIceConnectionStateChange
+     * @private
+     */
+    function onIceConnectionStateChange(evt) {
+        if (!pc) {
+            return;
+        }
+
+        if (pc.iceConnectionState === 'connected') {
+            /**
+             * Indicate that we've successfully connected to the remote side. This is only helpful for the
+             * outgoing connection.
+             * @event respoke.PeerConnection#connect
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.PeerConnection}
+             */
+            that.fire('connect');
         }
     }
 
@@ -720,6 +784,7 @@ module.exports = function (params) {
         that.report.callStopped = new Date().getTime();
 
         /**
+         * Indicate that the RTCPeerConnection is closed.
          * @event respoke.PeerConnection#close
          * @type {respoke.Event}
          * @property {boolean} sentSignal - Whether or not we sent a 'hangup' signal to the other party.
@@ -874,6 +939,7 @@ module.exports = function (params) {
             if (defModify.promise.isPending()) {
                 defModify.resolve();
                 /**
+                 * Indicate that the remote party has accepted our invitation to begin renegotiating media.
                  * @event respoke.PeerConnection#modify-accept
                  * @type {respoke.Event}
                  * @property {string} name - the event name.
@@ -888,6 +954,7 @@ module.exports = function (params) {
                 log.debug(err.message);
                 defModify.reject(err);
                 /**
+                 * Indicate that the remote party has rejected our invitation to begin renegotiating media.
                  * @event respoke.PeerConnection#modify-reject
                  * @type {respoke.Event}
                  * @property {Error} err
@@ -907,6 +974,7 @@ module.exports = function (params) {
             log.debug(err.message);
             defModify.reject(err);
             /**
+             * Indicate that the remote party has rejected our invitation to begin renegotiating media.
              * @event respoke.PeerConnection#modify-reject
              * @type {respoke.Event}
              * @property {Error} err
@@ -926,6 +994,7 @@ module.exports = function (params) {
         if (!that.state.sentSDP || that.state.isState('idle')) {
             err = new Error("Got modify in a precall state.");
             /**
+             * Indicate that the remote party has rejected our invitation to begin renegotiating media.
              * @event respoke.PeerConnection#modify-reject
              * @type {respoke.Event}
              * @property {Error} err
@@ -942,6 +1011,7 @@ module.exports = function (params) {
         }
 
        /**
+         * Indicate that the remote party has accepted our invitation to begin renegotiating media.
          * @event respoke.PeerConnection#modify-accept
          * @type {respoke.Event}
          * @property {object} signal
@@ -985,7 +1055,7 @@ module.exports = function (params) {
         if (that.state.sentSDP || that.state.processedRemoteSDP) {
             try {
                 pc.addIceCandidate(new RTCIceCandidate(params.candidate));
-                log.debug('Got a remote candidate.', params.candidate);
+                log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', params.candidate);
                 that.report.candidatesReceived.push(params.candidate);
             } catch (e) {
                 log.error("Couldn't add ICE candidate: " + e.message, params.candidate);

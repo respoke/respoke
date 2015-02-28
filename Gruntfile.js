@@ -1,4 +1,5 @@
 "use strict";
+var respokeStyle = require('respoke-style');
 
 module.exports = function (grunt) {
     var saucerSection;
@@ -33,7 +34,7 @@ module.exports = function (grunt) {
                     compress: true,
                     sourceMap: true,
                     sourceMapIncludeSources: true,
-                    banner: '/*! Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software. */'
+                    banner: '/*! Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For all details and documentation: https://www.respoke.io */'
                 },
                 files: {
                     'respoke-stats.min.js': 'plugins/respoke-stats/respoke-stats.js'
@@ -68,25 +69,76 @@ module.exports = function (grunt) {
         karma: {
             unitChrome: {
                 singleRun: true,
-                configFile: './karma-unit-chrome.conf.js'
+                configFile: './spec/karma-unit-chrome.conf.js'
             },
             unitFirefox: {
                 singleRun: true,
-                configFile: './karma-unit-firefox.conf.js'
+                configFile: './spec/karma-unit-firefox.conf.js'
             },
             functionalChrome: {
                 singleRun: true,
-                configFile: './karma-functional-chrome.conf.js'
+                configFile: './spec/karma-functional-chrome.conf.js'
             },
             functionalFirefox: {
                 singleRun: true,
-                configFile: './karma-functional-firefox.conf.js'
+                configFile: './spec/karma-functional-firefox.conf.js'
             }
         },
         watch: {
             scripts: {
-                files: ['respoke/**/*.js','plugins/**/*.js'],
+                files: ['respoke/**/*.js', 'plugins/**/*.js'],
                 tasks: ['dist']
+            }
+        },
+
+        // Generating Documentation
+        jsdoxy: {
+            options: {
+                jsonOutput: '.docs/jsdoxy-output.json',
+                outputPrivate: false,
+                template: './docs.jade'
+            },
+            files: {
+                src: [
+                    "respoke/call.js",
+                    "respoke/client.js",
+                    "respoke/connection.js",
+                    "respoke/directConnection.js",
+                    "respoke/endpoint.js",
+                    "respoke/event.js",
+                    "respoke/group.js",
+                    "respoke/localMedia.js",
+                    "respoke/presentable.js",
+                    "respoke/remoteMedia.js",
+                    "respoke/respoke.js",
+                    "plugins/respoke-stats/respoke-stats.js"
+                ],
+                dest: '.docs/site/'
+            }
+        },
+        copy: {
+            'docs-shared-assets': {
+                cwd: respokeStyle.paths.assets,
+                expand: true,
+                src: '**/*',
+                dest: '.docs/site/'
+            }
+        },
+        clean: {
+            'pre-docs': {
+                files: {
+                    src: ['.docs/']
+                }
+            }
+        },
+        sass: {
+            docs: {
+                options: {
+                    includePaths: respokeStyle.includeStylePaths()
+                },
+                files: {
+                    '.docs/site/css/docs.css': 'docs.scss'
+                }
             }
         }
     });
@@ -98,6 +150,10 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-env');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-copy');
+    grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-sass');
+    grunt.loadNpmTasks('jsdoxy');
 
     grunt.registerTask('dist', [
         'webpack',
@@ -116,7 +172,7 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('webhookService.dir'))) {
             throw grunt.util.error('webhook-service dir not available.  Please setup webhook-service.');
         }
-        process.on('exit', function() {
+        process.on('exit', function () {
             //ensure webhook-service child process is dead
             killWebhookService();
         });
@@ -138,9 +194,9 @@ module.exports = function (grunt) {
         if (!grunt.file.isDir(grunt.config('saucerSection.dir'))) {
             throw grunt.util.error('saucer-section dir not available.  Please setup saucer-section.');
         }
-        process.on('exit', function() {
+        process.on('exit', function () {
             //ensure saucer-section child process is dead
-             killSaucerSection();
+            killSaucerSection();
         });
         saucerSection = grunt.util.spawn({
             grunt: true,
@@ -181,5 +237,12 @@ module.exports = function (grunt) {
         'lowerSails',
         'stop-saucer-section',
         'stop-webhook-service'
+    ]);
+
+    grunt.registerTask('docs', 'Build the documentation HTML pages', [
+        'clean:pre-docs',
+        'jsdoxy',
+        'copy:docs-shared-assets',
+        'sass:docs'
     ]);
 };

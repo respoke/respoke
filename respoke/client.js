@@ -236,7 +236,7 @@ module.exports = function (params) {
             clientSettings.enableCallDebugReport : true;
 
         if (typeof params.reconnect !== 'boolean') {
-            clientSettings.reconnect = typeof params.developmentMode === 'boolean' ? params.developmentMode : false;
+            clientSettings.reconnect = typeof clientSettings.developmentMode === 'boolean' ? clientSettings.developmentMode : false;
         } else {
             clientSettings.reconnect = !!params.reconnect;
         }
@@ -457,6 +457,11 @@ module.exports = function (params) {
              * @property {respoke.Client} target
              */
             that.listen('disconnect', clientSettings.onDisconnect);
+            that.listen('disconnect', function () {
+                that.calls.forEach(function (call) {
+                    call.hangup({signal: false});
+                });
+            }, true);
             /**
              * Client has reconnected to Respoke.
              *
@@ -470,7 +475,7 @@ module.exports = function (params) {
             log.info('logged in as ' + that.endpointId, that);
             deferred.resolve();
         }, function errorHandler(err) {
-            deferred.reject("Couldn't create an endpoint.");
+            deferred.reject(err);
             log.error(err.message, err.stack);
         });
 
@@ -608,6 +613,14 @@ module.exports = function (params) {
     that.getCall = function (params) {
         var call = null;
         var endpoint = null;
+        var methods = {
+            screenshare: "startScreenShare",
+            did: "startPhoneCall",
+            web: "startCall",
+            sip: "startSIPCall"
+        };
+        var callParams = {};
+        params.fromType = params.fromType || "web";
 
         that.calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
@@ -622,30 +635,34 @@ module.exports = function (params) {
             return true;
         });
 
-        if (call === null && params.create === true) {
-            if (params.fromType === 'did') {
-                try {
-                    call = that.startPhoneCall({
-                        id: params.id,
-                        number: params.endpointId, //phone number
-                        caller: false,
-                        fromType: 'web',
-                        toType: 'did'
-                    });
-                } catch (e) {
-                    log.error("Couldn't create Call.", e.message, e.stack);
-                }
-            } else {
-                endpoint = that.getEndpoint({id: params.endpointId});
-                try {
-                    call = endpoint.startCall({
-                        id: params.id,
-                        caller: false
-                    });
-                } catch (e) {
-                    log.error("Couldn't create Call.", e.message, e.stack);
-                }
-            }
+        if (call || params.create !== true) {
+            return call;
+        }
+
+        callParams.id = params.id;
+        callParams.caller = false;
+        callParams.toType = params.fromType;
+        callParams.fromType = "web";
+
+        switch (params.type) {
+            case "screenshare":
+                callParams.toType = "web"; // overwrite "screenshare"
+                // No break
+            case "web":
+                callParams.endpointId = params.endpointId;
+                break;
+            case "did":
+                callParams.number = params.endpointId;
+                break;
+            case "sip":
+                callParams.uri = params.endpointId;
+                break;
+        }
+
+        try {
+            call = that[methods[params.type]](callParams);
+        } catch (e) {
+            log.error("Couldn't create Call.", e.message, e.stack);
         }
         return call;
     };
@@ -714,7 +731,6 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @returns {Promise|undefined}
-     * @private
      */
     that.setOnline = function (params) {
         var promise;
@@ -746,7 +762,6 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @returns {Promise|undefined}
-     * @private
      */
     that.setOffline = function (params) {
         var promise;
@@ -797,9 +812,71 @@ module.exports = function (params) {
             retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
             return retVal;
         }
-        endpoint = that.getEndpoint({id: params.endpointId});
+        endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
         delete params.endpointId;
         return endpoint.sendMessage(params);
+    };
+
+    /**
+     * Create a new screen sharing call. Screenshares are inherently unidirectional video only. This may change
+     * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
+     * now, if you also need audio, place a second audio only call.
+     *
+     * The endpoint who calls `client.startScreenShare` will be the one whose screen is shared. If you'd like to
+     * implement this as a screenshare request in which the endpoint who starts the call is the watcher and
+     * not the sharer, it is recommened that you use `endpoint.sendMessage` to send a control message to the user
+     * whose screenshare is being requested so that user's app can call `client.startScreenShare`.
+     *
+     * NOTE: At this time, screen sharing only works with Chrome, and Chrome requires a Chrome extension to
+     * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
+     * Support for additional browsers will be added in the future.
+     *
+     *     client.startScreenShare({
+     *         endpointId: 'tian',
+     *         onConnect: function (evt) {}
+     *     });
+     *
+     * @memberof! respoke.Client
+     * @method respoke.Client.startScreenShare
+     * @param {object} params
+     * @param {string} params.endpointId - The id of the endpoint that should be called.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
+     * and the remote party has received the video.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
+     * all connections belonging to this endpoint.
+     * @returns {respoke.Call}
+     */
+    that.startScreenShare = function (params) {
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
+        delete params.endpointId;
+        return endpoint.startScreenShare(params);
     };
 
     /**
@@ -817,7 +894,6 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {RTCConstraints} [params.constraints]
-     * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -866,7 +942,10 @@ module.exports = function (params) {
             return retVal;
         }
 
-        endpoint = that.getEndpoint({id: params.endpointId});
+        endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
         delete params.endpointId;
         return endpoint.startCall(params);
     };
@@ -925,8 +1004,8 @@ module.exports = function (params) {
     that.startAudioCall = function (params) {
         params = params || {};
         params.constraints = {
-            video : false,
-            audio : true,
+            video: false,
+            audio: true,
             optional: [],
             mandatory: {}
         };
@@ -987,8 +1066,8 @@ module.exports = function (params) {
     that.startVideoCall = function (params) {
         params = params || {};
         params.constraints = {
-            video : true,
-            audio : true,
+            video: true,
+            audio: true,
             optional: [],
             mandatory: {}
         };
@@ -1050,7 +1129,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (params.caller === undefined) {
+        if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
 
@@ -1067,6 +1146,153 @@ module.exports = function (params) {
         params.remoteEndpoint = recipient;
 
         params.toType = params.toType || 'did';
+        params.fromType = params.fromType || 'web';
+
+        params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
+            signalParams.signalType = 'offer';
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
+        };
+        params.signalAnswer = function (signalParams) {
+            signalParams.signalType = 'answer';
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't answer the call.", err.message, err.stack);
+                signalParams.call.hangup({signal: false});
+            });
+        };
+        params.signalConnected = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.connectionId = signalParams.connectionId;
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send connected.", err.message, err.stack);
+                signalParams.call.hangup();
+            });
+        };
+        params.signalModify = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send modify.", err.message, err.stack);
+            });
+        };
+        params.signalCandidate = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send candidate.", err.message, err.stack);
+            });
+        };
+        params.signalHangup = function (signalParams) {
+            signalParams.target = 'call';
+            signalParams.recipient = recipient;
+            signalParams.toType = params.toType;
+            signalParams.fromType = params.fromType;
+            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
+                log.error("Couldn't send hangup.", err.message, err.stack);
+            });
+        };
+        params.signalReport = function (signalParams) {
+            log.debug("Sending debug report", signalParams.report);
+            signalingChannel.sendReport(signalParams);
+        };
+
+        params.signalingChannel = signalingChannel;
+        call = respoke.Call(params);
+        addCall({call: call});
+        return call;
+    };
+
+    /**
+     * Place an audio call to a SIP URI.
+     * @memberof! respoke.Client
+     * @method respoke.Client.startSIPCall
+     * @param {object} params
+     * @param {string} params.uri - The SIP URI to call.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
+     * with the local audio and/or video attached.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
+     * with the remote audio and/or video attached.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
+     * up.
+     * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
+     * This callback will be called when media is muted or unmuted.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.receiveOnly] - whether or not we accept media
+     * @param {boolean} [params.sendOnly] - whether or not we send media
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @return {respoke.Call}
+     */
+    that.startSIPCall = function (params) {
+        var promise;
+        var retVal;
+        var call = null;
+        var recipient = {};
+        params = params || {};
+        params.constraints = {
+            video: false,
+            audio: true,
+            mandatory: {},
+            optional: []
+        };
+
+        try {
+            that.verifyConnected();
+        } catch (e) {
+            promise = Q.reject(e);
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        if (typeof params.caller !== 'boolean') {
+            params.caller = true;
+        }
+
+        if (!params.uri) {
+            log.error("Can't start a phone call without a SIP URI.");
+            promise = Q.reject(new Error("Can't start a phone call without a SIP URI."));
+            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
+            return retVal;
+        }
+
+        recipient.id = params.uri;
+
+        params.instanceId = instanceId;
+        params.remoteEndpoint = recipient;
+
+        params.toType = params.toType || 'sip';
         params.fromType = params.fromType || 'web';
 
         params.signalOffer = function (signalParams) {
@@ -1166,7 +1392,8 @@ module.exports = function (params) {
     };
 
     /**
-     * Join a group and begin keeping track of it.
+     * Join a group and begin keeping track of it. If this method is called multiple times synchronously, it will
+     * batch requests and only make one API call to Respoke.
      *
      * You can leave the group by calling `group.leave()`;
      *
@@ -1227,7 +1454,7 @@ module.exports = function (params) {
         }
 
         signalingChannel.joinGroup({
-            id: params.id
+            groupList: [params.id]
         }).done(function successHandler() {
             var group;
             params.signalingChannel = signalingChannel;
@@ -1405,6 +1632,7 @@ module.exports = function (params) {
      * @param {respoke.Endpoint.onPresence} [params.onPresence] - Handle presence notifications from this one
      * Endpoint.
      * @arg {boolean} [params.skipCreate] - Skip the creation step and return undefined if we don't yet
+     * @arg {boolean} [params.skipPresence] - Skip registering for this endpoint's presence.
      * @returns {respoke.Endpoint} The endpoint whose ID was specified.
      */
     that.getEndpoint = function (params) {
@@ -1428,18 +1656,22 @@ module.exports = function (params) {
             params.addCall = addCall;
 
             endpoint = respoke.Endpoint(params);
+            endpoints.push(endpoint);
+        }
+
+        if (!endpoint) {
+            return;
+        }
+
+        if (params.skipPresence !== true) {
             signalingChannel.registerPresence({
                 endpointList: [endpoint.id]
             }).done(null, function (err) {
                 log.error("Couldn't register for presence on", endpoint.id, err.message);
             });
-            endpoints.push(endpoint);
         }
-
-        if (endpoint) {
-            endpoint.listen('presence', params.onPresence);
-            endpoint.listen('message', params.onMessage);
-        }
+        endpoint.listen('presence', params.onPresence);
+        endpoint.listen('message', params.onMessage);
 
         return endpoint;
     };
@@ -1482,6 +1714,7 @@ module.exports = function (params) {
         if (params.endpointId) {
             endpoint = that.getEndpoint({
                 id: params.endpointId,
+                skipPresence: true,
                 skipCreate: params.skipCreate
             });
 

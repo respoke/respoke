@@ -15,6 +15,8 @@ describe("respoke.Client", function () {
             return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
         }).then(function (params) {
             // create 2 tokens
+            testEnv.app = params.app;
+            testEnv.role = params.role;
             return Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                 roleId: params.role.id,
                 appId: params.app.id
@@ -43,6 +45,68 @@ describe("respoke.Client", function () {
             });
         });
 
+        xdescribe("over and over again with fast enough", function () {
+            it("eventually hits the rate limit", function (done) {
+                done = doneOnceBuilder(done);
+                var clients = [];
+                var tokens = [];
+                var promises = [];
+                var count = 0;
+                var goal = 40;
+                var timeout = 100;
+
+                for (var i = 1; i <= goal; i += 1) {
+                    clients.push(respoke.createClient({
+                        baseURL: respokeTestConfig.baseURL,
+                        appId: testEnv.app.id
+                    }));
+                }
+
+                clients.forEach(function (client, index) {
+                    var deferred = Q.defer();
+                    promises.push(deferred.promise);
+
+                    setTimeout(function () {
+                        Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                            roleId: testEnv.role.id,
+                            appId: testEnv.app.id
+                        }).done(function (token) {
+                            tokens.push(token.tokenId);
+                            deferred.resolve()
+                        }, function (err) {
+                            // handled elsewhere
+                            deferred.resolve();
+                        });
+                    }, timeout * index);
+                });
+
+                Q.all(promises).done(function () {
+                    clients.forEach(function (client, index) {
+                        if (!tokens[index]) {
+                            return;
+                        }
+                        client.connect({token: tokens[index]}).done(function () {
+                            count += 1;
+                            if (count === clients.length) { // all succeeded
+                                done(new Error("Didn't hit rate limit."));
+                            }
+                        }, function (err) {
+                            if (err.message.indexOf('exceeded') > -1) {
+                                done();
+                                return;
+                            }
+                            count += 1;
+                            if (count === clients.length) { // all succeeded
+                                done(new Error("Didn't hit rate limit."));
+                            }
+                        });
+                    });
+                }, function (err) {
+                    done(new Error("Couldn't get enough tokens to attempt the test. " + err.message));
+                });
+            });
+        });
+
         describe("with a made-up token", function () {
             it("fails", function (done) {
                 client.connect({
@@ -61,7 +125,7 @@ describe("respoke.Client", function () {
     after(function (done) {
         testFixture.afterTest(function (err) {
             if (err) {
-                return done(new Error(JSON.stringify(err)));
+                return done(err);
             }
             done();
         });

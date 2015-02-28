@@ -193,7 +193,7 @@ module.exports = function (params) {
      * @private
      * @type {number}
      */
-    var bodySizeLimit = 10000;
+    var bodySizeLimit = 20000;
     /**
      * @memberof! respoke.SignalingChannel
      * @name appId
@@ -256,12 +256,12 @@ module.exports = function (params) {
      * @type {object}
      */
     var errors = {
-        // TODO convert this to strings
         400: "Can't perform this action: missing or invalid parameters.",
         401: "Can't perform this action: not authenticated.",
         403: "Can't perform this action: not authorized.",
         404: "Item not found.",
         409: "Can't perform this action: item in the wrong state.",
+        429: "API rate limit was exceeded.",
         500: "Can't perform this action: server problem."
     };
 
@@ -367,10 +367,9 @@ module.exports = function (params) {
                 deferred.resolve(response.result.tokenId);
                 return;
             }
-            deferred.reject(new Error("Couldn't get a developer mode token."));
+            deferred.reject(new Error("Couldn't get a developer mode token: " + response.error));
         }, function (err) {
-            log.error("Network call failed:", err.message);
-            deferred.reject(new Error("Couldn't get a developer mode token."));
+            deferred.reject(new Error("Couldn't get a developer mode token: " + err));
         });
         return deferred.promise;
     };
@@ -406,11 +405,11 @@ module.exports = function (params) {
                 deferred.resolve();
                 log.debug("Signaling connection open to", clientSettings.baseURL);
             } else {
-                deferred.reject(new Error("Couldn't authenticate app."));
+                deferred.reject(new Error("Couldn't authenticate app: " + response.error));
             }
         }, function (err) {
             log.error("Network call failed:", err.message);
-            deferred.reject(new Error("Couldn't authenticate app."));
+            deferred.reject(new Error("Couldn't authenticate app: " + err.message));
         });
 
         return deferred.promise;
@@ -524,66 +523,132 @@ module.exports = function (params) {
     };
 
     /**
-     * Join a group.
+     * Leave a group. In order to aggregate subsequent repeated requests, this function, when called synchronously,
+     * will continue to accumulate group ids until the next tick of the event loop, when the request will be
+     * issued. The same instance of Promise is returned each time.
      * @memberof! respoke.SignalingChannel
      * @private
      * @method respoke.SignalingChannel.leaveGroup
      * @returns {Promise}
      * @param {object} params
-     * @param {string} params.id
+     * @param {array} params.groupList
      */
-    that.leaveGroup = function (params) {
-        params = params || {};
+    that.leaveGroup = (function () {
+        var groups = {};
         var deferred = Q.defer();
 
-        if (!that.isConnected()) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        return function (params) {
+            params = params || {};
+            params.groupList = params.groupList || [];
+
+            var toRun = (Object.keys(groups).length === 0);
+
+            if (!that.isConnected()) {
+                deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+                return deferred.promise;
+            }
+
+            params.groupList.forEach(function (id) {
+                if (typeof id === 'string') {
+                    groups[id] = true;
+                }
+            });
+
+            if (!toRun) {
+                return deferred.promise;
+            }
+
+            setTimeout(function () {
+                // restart accumulation
+                var groupList = Object.keys(groups);
+                groups = {};
+                var saveDeferred = deferred;
+                deferred = Q.defer();
+
+                if (groupList.length === 0) {
+                    saveDeferred.resolve();
+                    return;
+                }
+
+                wsCall({
+                    path: '/v1/groups/',
+                    parameters: {
+                        groups: groupList
+                    },
+                    httpMethod: 'DELETE'
+                }).done(function successHandler() {
+                    saveDeferred.resolve();
+                }, function errorHandler(err) {
+                    saveDeferred.reject(err);
+                });
+            });
             return deferred.promise;
-        }
-
-        wsCall({
-            path: '/v1/channels/%s/subscribers/',
-            objectId: params.id,
-            httpMethod: 'DELETE'
-        }).done(function successHandler() {
-            deferred.resolve();
-        }, function errorHandler(err) {
-            deferred.reject(err);
-        });
-
-        return deferred.promise;
-    };
+        };
+    })();
 
     /**
-     * Join a group.
+     * Join a group. In order to aggregate subsequent repeated requests, this function, when called synchronously,
+     * will continue to accumulate group ids until the next tick of the event loop, when the request will be
+     * issued. The same instance of Promise is returned each time.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.joinGroup
      * @private
      * @returns {Promise}
      * @param {object} params
-     * @param {string} params.id
+     * @param {array} params.groupList
      */
-    that.joinGroup = function (params) {
-        params = params || {};
+    that.joinGroup = (function () {
+        var groups = {};
         var deferred = Q.defer();
 
-        if (!that.isConnected()) {
-            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+        return function (params) {
+            params = params || {};
+            params.groupList = params.groupList || [];
+
+            var toRun = (Object.keys(groups).length === 0);
+
+            if (!that.isConnected()) {
+                deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+                return deferred.promise;
+            }
+
+            params.groupList.forEach(function (id) {
+                if (typeof id === 'string') {
+                    groups[id] = true;
+                }
+            });
+
+            if (!toRun) {
+                return deferred.promise;
+            }
+
+            setTimeout(function () {
+                // restart accumulation
+                var groupList = Object.keys(groups);
+                groups = {};
+                var saveDeferred = deferred;
+                deferred = Q.defer();
+
+                if (groupList.length === 0) {
+                    saveDeferred.resolve();
+                    return;
+                }
+
+                wsCall({
+                    path: '/v1/groups/',
+                    parameters: {
+                        groups: groupList
+                    },
+                    httpMethod: 'POST'
+                }).done(function successHandler() {
+                    saveDeferred.resolve();
+                }, function errorHandler(err) {
+                    saveDeferred.reject(err);
+                });
+            });
             return deferred.promise;
-        }
-
-        wsCall({
-            path: '/v1/channels/%s/subscribers/',
-            objectId: params.id,
-            httpMethod: 'POST'
-        }).done(function successHandler() {
-            deferred.resolve();
-        }, function errorHandler(err) {
-            deferred.reject(err);
-        });
-
-        return deferred.promise;
-    };
+        };
+    })();
 
     /**
      * Publish a message to a group.
@@ -622,30 +687,73 @@ module.exports = function (params) {
     };
 
     /**
-     * Register as an observer of presence for the specified endpoint ids.
+     * Register as an observer of presence for the specified endpoint ids. In order to aggregate subsequent repeated
+     * requests, this function, when called synchronously, will continue to accumulate endpoint ids until the next
+     * tick of the event loop, when the request will be issued. The same instance of Promise is returned each time.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.registerPresence
      * @private
      * @param {object} params
      * @param {Array<string>} params.endpointList
+     * @returns {Promise}
      */
-    that.registerPresence = function (params) {
-        if (!that.isConnected()) {
-            return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
-        }
+    that.registerPresence = (function () {
+        var endpoints = {};
+        var deferred = Q.defer();
 
-        return wsCall({
-            httpMethod: 'POST',
-            path: '/v1/presenceobservers',
-            parameters: {
-                endpointList: params.endpointList
+        return function (params) {
+            params = params || {};
+            params.endpointList = params.endpointList || [];
+            var toRun = (Object.keys(endpoints).length === 0);
+
+            if (!that.isConnected()) {
+                return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
             }
-        }).then(function successHandler() {
-            params.endpointList.forEach(function eachId(id) {
-                presenceRegistered[id] = true;
+
+            params.endpointList.forEach(function (ep) {
+                if (typeof ep === 'string' && presenceRegistered[ep] !== true) {
+                    endpoints[ep] = true;
+                }
             });
-        });
-    };
+
+            if (!toRun) {
+                return deferred.promise;
+            }
+
+            setTimeout(function () {
+                // restart accumulation
+                var endpointList = Object.keys(endpoints);
+                endpoints = {};
+                var saveDeferred = deferred;
+                deferred = Q.defer();
+
+                if (endpointList.length === 0) {
+                    saveDeferred.resolve();
+                    return;
+                }
+
+                wsCall({
+                    httpMethod: 'POST',
+                    path: '/v1/presenceobservers',
+                    parameters: {
+                        endpointList: endpointList
+                    }
+                }).done(function successHandler() {
+                    params.endpointList.forEach(function eachId(id) {
+                        presenceRegistered[id] = true;
+                    });
+                    saveDeferred.resolve();
+                }, function (err) {
+                    saveDeferred.reject(err);
+                });
+            // We could even add a tiny delay like 10ms if we want to get more conservative and
+            // catch asychronous calls to client.getEndpoint() and other methods which call
+            // this method.
+            });
+
+            return deferred.promise;
+        }
+    })();
 
     /**
      * Join a group.
@@ -658,7 +766,6 @@ module.exports = function (params) {
      */
     that.getGroupMembers = function (params) {
         var deferred = Q.defer();
-        var promise;
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -670,18 +777,11 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
-        promise = wsCall({
+        return wsCall({
             path: '/v1/channels/%s/subscribers/',
             objectId: params.id,
             httpMethod: 'GET'
         });
-
-        promise.done(function successHandler(list) {
-            list.forEach(function eachSubscriber(params) {
-                presenceRegistered[params.endpointId] = true;
-            });
-        });
-        return promise;
     };
 
     /**
@@ -742,7 +842,10 @@ module.exports = function (params) {
             return Q.reject(new Error("Can't send ACK, no signal was given."));
         }
 
-        endpoint = client.getEndpoint({id: params.signal.fromEndpoint});
+        endpoint = client.getEndpoint({
+            id: params.signal.fromEndpoint,
+            skipPresence: true
+        });
         if (!endpoint) {
             return Q.reject(new Error("Can't send ACK, can't get endpoint."));
         }
@@ -1022,8 +1125,8 @@ module.exports = function (params) {
             target = client.getCall({
                 id: signal.sessionId,
                 endpointId: signal.fromEndpoint,
-                fromType: signal.fromType,
-                create: (signal.target === 'call' && signal.signalType === 'offer')
+                type: (signal.target === 'screenshare') ? 'screenshare' : signal.fromType,
+                create: (signal.target !== 'directConnection' && signal.signalType === 'offer')
             });
             if (target) {
                 return target;
@@ -1032,7 +1135,8 @@ module.exports = function (params) {
             if (signal.target === 'directConnection') {
                 // return a promise
                 endpoint = client.getEndpoint({
-                    id: signal.fromEndpoint
+                    id: signal.fromEndpoint,
+                    skipPresence: true
                 });
 
                 if (endpoint.directConnection && endpoint.directConnection.call.id === signal.sessionId) {
@@ -1075,6 +1179,7 @@ module.exports = function (params) {
     routingMethods.doOffer = function (params) {
         params.call.connectionId = params.signal.fromConnection;
         /**
+         * Send the `offer` signal into the Call.
          * @event respoke.Call#signal-offer
          * @type {respoke.Event}
          * @property {object} signal
@@ -1096,6 +1201,7 @@ module.exports = function (params) {
      */
     routingMethods.doConnected = function (params) {
         /**
+         * Send the `connected` signal into the Call.
          * @event respoke.Call#signal-connected
          * @type {respoke.Event}
          * @property {object} signal
@@ -1117,6 +1223,7 @@ module.exports = function (params) {
      */
     routingMethods.doModify = function (params) {
         /**
+         * Send the `modify` signal into the Call.
          * @event respoke.Call#signal-modify
          * @type {respoke.Event}
          * @property {object} signal
@@ -1139,6 +1246,7 @@ module.exports = function (params) {
     routingMethods.doAnswer = function (params) {
         params.call.connectionId = params.signal.fromConnection;
         /**
+         * Send the `answer` signal into the Call.
          * @event respoke.Call#signal-answer
          * @type {respoke.Event}
          * @property {object} signal
@@ -1160,6 +1268,7 @@ module.exports = function (params) {
      */
     routingMethods.doIceCandidates = function (params) {
         /**
+         * Send the `icecandidates` signal into the Call.
          * @event respoke.Call#signal-icecandidates
          * @type {respoke.Event}
          * @property {object} signal
@@ -1189,6 +1298,7 @@ module.exports = function (params) {
             return;
         }
         /**
+         * Send the `hangup` signal into the Call.
          * @event respoke.Call#signal-hangup
          * @type {respoke.Event}
          * @property {object} signal
@@ -1253,6 +1363,7 @@ module.exports = function (params) {
         group = client.getGroup({id: message.header.channel});
         if (group) {
             /**
+             * Indicate that a message has been received to a group.
              * @event respoke.Group#message
              * @type {respoke.Event}
              * @property {respoke.TextMessage} message
@@ -1264,6 +1375,7 @@ module.exports = function (params) {
             });
         }
         /**
+         * Indicate that a message has been received.
          * @event respoke.Client#message
          * @type {respoke.Event}
          * @property {respoke.TextMessage} message
@@ -1313,11 +1425,11 @@ module.exports = function (params) {
         } else {
 
             endpoint = client.getEndpoint({
+                skipPresence: true,
                 id: message.endpointId,
                 instanceId: instanceId,
                 name: message.endpointId
             });
-
 
             // Handle presence not associated with a channel
             if (!connection) {
@@ -1359,6 +1471,7 @@ module.exports = function (params) {
         } else {
 
             endpoint = client.getEndpoint({
+                skipPresence: true,
                 id: message.endpointId
             });
 
@@ -1395,6 +1508,7 @@ module.exports = function (params) {
         }
         if (endpoint) {
             /**
+             * Indicate that a message has been received.
              * @event respoke.Endpoint#message
              * @type {respoke.Event}
              * @property {respoke.TextMessage} message
@@ -1406,6 +1520,7 @@ module.exports = function (params) {
             });
         }
         /**
+         * Indicate that a message has been received.
          * @event respoke.Client#message
          * @type {respoke.Event}
          * @property {respoke.TextMessage} message
@@ -1476,6 +1591,7 @@ module.exports = function (params) {
         log.debug('socket.on presence', message);
 
         endpoint = client.getEndpoint({
+            skipPresence: true,
             id: message.header.from,
             instanceId: instanceId,
             name: message.header.from,
@@ -1527,6 +1643,7 @@ module.exports = function (params) {
                 }));
             }).done(function successHandler(user) {
                 /**
+                 * Indicate that a reconnect has succeeded.
                  * @event respoke.Client#reconnect
                  * @property {string} name - the event name.
                  * @property {respoke.Client}
@@ -1578,13 +1695,13 @@ module.exports = function (params) {
             port: port || '443',
             protocol: protocol,
             secure: (protocol === 'https'),
-            query: 'app-token=' + appToken
+            query: '__sails_io_sdk_version=0.10.0&app-token=' + appToken
         };
 
         if (that.isConnected() || isConnecting()) {
             return;
         }
-        socket = io.connect(clientSettings.baseURL + '?app-token=' + appToken, connectParams);
+        socket = io.connect(clientSettings.baseURL, connectParams);
 
         socket.on('connect', generateConnectHandler(function onSuccess() {
             deferred.resolve();
@@ -1639,6 +1756,7 @@ module.exports = function (params) {
             });
 
             /**
+             * Indicate that this client has been disconnected from the Respoke service.
              * @event respoke.Client#disconnect
              * @property {string} name - the event name.
              * @property {respoke.Client} target
@@ -1729,7 +1847,11 @@ module.exports = function (params) {
         var start = now();
         // Too many of these!
         var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
-        var pendingRequestsKey;
+        var request;
+        var bodyLength = 0;
+        if (params.paramaters) {
+            bodyLength = encodeURI(JSON.stringify(params.parameters)).split(/%..|./).length - 1;
+        }
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -1746,8 +1868,8 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
-        if (params.parameters && JSON.stringify(params.parameters).length > bodySizeLimit) {
-            deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'))
+        if (bodyLength > bodySizeLimit) {
+            deferred.reject(new Error('Request body exceeds maximum size of ' + bodySizeLimit + ' bytes'));
             return deferred.promise;
         }
 
@@ -1765,39 +1887,89 @@ module.exports = function (params) {
             });
         }
 
-        pendingRequestsKey = pendingRequests.add(deferred);
-        socket.emit(params.httpMethod, JSON.stringify({
-            url: params.path,
-            data: params.parameters,
-            headers: {'App-Token': appToken}
-        }), function handleResponse(response) {
-            var durationMillis = now() - start;
-            pendingRequests.remove(pendingRequestsKey);
+        request = {
+            method: params.httpMethod,
+            path: params.path,
+            parameters: params.parameters,
+            tries: 0,
+            durationMillis: 0
+        };
 
+        request.id = pendingRequests.add(deferred);
+
+        function handleResponse(response) {
+            /*
+             * Response:
+             *  {
+             *      body: {},
+             *      headers: {},
+             *      statusCode: 200
+             *  }
+             */
             try {
-                response = JSON.parse(response);
+                response.body = JSON.parse(response.body);
             } catch (e) {
-                deferred.reject(new Error("Server response could not be parsed!"));
+                if (typeof response.body !== 'object') {
+                    deferred.reject(new Error("Server response could not be parsed!" + response.body));
+                    return;
+                }
+            }
+
+            if (response.statusCode === 429) {
+                if (request.tries < 3 && deferred.promise.isPending()) {
+                    setTimeout(function () {
+                        start = now();
+                        sendWebsocketRequest(request, handleResponse);
+                    }, 1000); // one day this will be response.interval or something
+                } else {
+                    request.durationMillis = now() - start;
+                    pendingRequests.remove(request.id);
+                    failWebsocketRequest(request, response.body,
+                            "Too many retries after rate limit exceeded.", deferred);
+                }
                 return;
+            }
+
+            request.durationMillis = now() - start;
+            pendingRequests.remove(request.id);
+
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) === -1) {
+                failWebsocketRequest(request, response.body,
+                        response.body.error || errors[this.status] || "Unknown error", deferred);
+            } else {
+                deferred.resolve(response.body);
             }
 
             if (logRequest) {
                 log.debug('socket response', {
-                    method: params.httpMethod,
-                    path: params.path,
-                    durationMillis: durationMillis,
-                    response: response
+                    method: request.method,
+                    path: request.path,
+                    durationMillis: request.durationMillis,
+                    response: response.body
                 });
             }
+        }
 
-            if (response && response.error) {
-                deferred.reject(new Error(response.error + '(' + params.httpMethod + ' ' + params.path + ')'));
-            } else {
-                deferred.resolve(response);
-            }
-        });
-
+        start = now();
+        sendWebsocketRequest(request, handleResponse);
         return deferred.promise;
+    }
+
+    function failWebsocketRequest(request, response, error, deferred) {
+        if (response && response.error) {
+            deferred.reject(new Error(error + '(' + request.method + ' ' + request.path + ')'));
+        } else {
+            deferred.resolve(response);
+        }
+    }
+
+    function sendWebsocketRequest(request, handleResponse) {
+        request.tries += 1;
+        socket.emit(request.method, JSON.stringify({
+            url: request.path,
+            data: request.parameters,
+            headers: {'App-Token': appToken}
+        }), handleResponse);
     }
 
     /**
@@ -1827,7 +1999,7 @@ module.exports = function (params) {
             'result': null,
             'code': null
         };
-        var start = now();
+        var start;
 
         uri = clientSettings.baseURL + params.path;
 
@@ -1884,6 +2056,9 @@ module.exports = function (params) {
 
         xhr.onreadystatechange = function () {
             var durationMillis = now() - start;
+            var limit;
+            var unit;
+
             if (this.readyState !== 4) {
                 return;
             }
@@ -1895,6 +2070,7 @@ module.exports = function (params) {
                 response.code = this.status;
                 response.uri = uri;
                 response.params = params.parameters;
+                response.error = errors[this.status];
                 if (this.response) {
                     try {
                         response.result = JSON.parse(this.response);
@@ -1909,6 +2085,12 @@ module.exports = function (params) {
                     response: response
                 });
                 deferred.resolve(response);
+            } else if (this.status === 429) {
+                unit = this.getResponseHeader('RateLimit-Time-Units');
+                limit = this.getResponseHeader('RateLimit-Limit');
+                deferred.reject(new Error("Rate limit of " + limit + "/" + unit +
+                    " exceeded. Try again in 1 " + unit + "."));
+                return;
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
                 return;

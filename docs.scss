@@ -1,0 +1,35 @@
+@import 'base';
+
+table {
+    font-size: 12px;
+    padding-left: $paddingSmall;
+    table-layout: fixed;
+    width: 100%;
+    th { text-align: left; }
+    td {
+        word-wrap: break-word;
+        vertical-align: text-top;
+        padding: $paddingMiniHalf;
+        &:nth-child(1) { width: 25%; }
+        &:nth-child(2) { width: 25%; }
+        &:nth-child(3) { width: 50%; }
+    }
+    small { font-size: 1em; } // disable
+}
+
+.content {
+    h1 {
+        word-wrap: break-word;
+    }
+    h2 {
+        font-weight: 500;
+        padding-top: $paddingStandard * 2;
+    }
+    h4 {
+        padding-top: $paddingStandard;
+        padding-bottom: $paddingStandard;
+    }
+    strong {
+        font-weight: 700;
+    }
+}

@@ -25,25 +25,25 @@
      * This is a **plugin** for respoke. To leverage it, include `<script src="https://cdn.respoke.io/respoke-stats.min.js"></script>`.
      *
      * The plugin adds the methods `getStats()` and `stopStats()` to `respoke.Call`.
-     * 
+     *
      * ## Usage
-     * 
+     *
      * Once you have a `Call` instance after `endpoint.startCall()` or in the `client.on('call')` / `new Client({ onCall: yourCallHandler })` event listener:
-     * 
+     *
      * **using callbacks**
-     *      
+     *
      *      call.getStats({
      *          onStats: function continualStatsHandler(evt) { . . . },
      *          onSuccess: yourOnSuccessHandler,
-     *          onError: yourOnErrorHandler 
+     *          onError: yourOnErrorHandler
      *      });
-     * 
+     *
      * **or using a promise**
-     * 
+     *
      *      call.getStats({
      *          onStats: function continualStatsHandler(evt) { . . . },
      *      }).done(onSuccess, onFailure);
-     * 
+     *
      * @class respoke.MediaStats
      * @constructor
      * @link https://cdn.respoke.io/respoke-stats.min.js
@@ -225,8 +225,8 @@
             });
 
             if (report.connection) {
-                report.connection.foundIncomingNetworkPaths = ('true' === report.connection.foundIncomingNetworkPaths);
-                report.connection.foundOutgoingNetworkPaths = ('true' === report.connection.foundOutgoingNetworkPaths);
+                report.connection.foundIncomingNetworkPaths = report.connection.foundIncomingNetworkPaths === 'true';
+                report.connection.foundOutgoingNetworkPaths = report.connection.foundOutgoingNetworkPaths === 'true';
             }
             return report;
         }
@@ -407,7 +407,7 @@
                         if (interestingStats[side + mediaType]) {
                             // fill in the value of the respective 'match'
                             // build the name of the stat from parts
-                            if (interestingStats[side + mediaType].match.value.length === 0){
+                            if (interestingStats[side + mediaType].match.value.length === 0) {
                                 interestingStats[side + mediaType].match.value = ssrc;
                             }
                         }

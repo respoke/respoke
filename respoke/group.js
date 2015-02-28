@@ -75,7 +75,6 @@ module.exports = function (params) {
     that.listen('join', params.onJoin);
     /**
      * Indicates that a message has been sent to this group.
-     *
      * @event respoke.Group#message
      * @type {respoke.Event}
      * @property {respoke.TextMessage} message
@@ -139,7 +138,8 @@ module.exports = function (params) {
     };
 
     /**
-     * Leave this group.
+     * Leave this group. If this method is called multiple times synchronously, it will batch requests and
+     * only make one API call to Respoke.
      *
      *     group.leave({
      *         onSuccess: function () {
@@ -174,8 +174,11 @@ module.exports = function (params) {
         }
 
         signalingChannel.leaveGroup({
-            id: that.id
+            groupList: [that.id]
         }).done(function successHandler() {
+            that.connections = [];
+            deferred.resolve();
+
             /**
              * This event is fired when the client leaves a group.
              * @event respoke.Client#leave
@@ -188,8 +191,6 @@ module.exports = function (params) {
             client.fire('leave', {
                 group: that
             });
-            that.connections = [];
-            deferred.resolve();
         }, function errorHandler(err) {
             deferred.reject();
         });
@@ -370,12 +371,13 @@ module.exports = function (params) {
     /**
      * Get group members
      *
-     * Get an array containing the members of the group. Accepts `onSuccess` or `onError` parameters,
-     * or a promise.
+     * Get an array containing all connections subscribed to the group. Accepts onSuccess or onError parameters,
+     * or it returns a promise that you can observe. An endpoint may have more than one connection subscribed to 
+	 * a group, so if you're interested in unique endpoints, you may want to filter the connections by endpointId.
      *
      *     group.getMembers({
-     *         onSuccess: function (members) {
-     *             members.forEach(function (member) {
+     *         onSuccess: function (connections) {
+     *             connections.forEach(function (connection) {
      *                 // do something
      *             });
      *         }
