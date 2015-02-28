@@ -90,15 +90,6 @@ module.exports = function (params) {
     var defModify;
     /**
      * @memberof! respoke.PeerConnection
-     * @name previewLocalMedia
-     * @private
-     * @type {respoke.Call.previewLocalMedia}
-     * @desc A callback provided by the developer that we'll call after receiving local media and before
-     * approve() is called.
-     */
-    var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
-    /**
-     * @memberof! respoke.PeerConnection
      * @name candidateSendingQueue
      * @private
      * @type {array}

@@ -126,7 +126,7 @@ module.exports = function (params) {
     }
 
     function needToApproveDirectConnection(params) {
-        return (that.needDirectConnection === true && typeof params.previewLocalMedia === 'function');
+        return (that.needDirectConnection === true && typeof that.previewLocalMedia === 'function');
     }
 
     function automaticOffering(params) {
@@ -137,7 +137,7 @@ module.exports = function (params) {
         if (!that.needDirectConnection && that.receiveOnly) {
             return true;
         }
-        return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
+        return (that.needDirectConnection === true && typeof that.previewLocalMedia !== 'function');
     }
 
     function createTimer(func, name, time) {
@@ -253,9 +253,9 @@ module.exports = function (params) {
                         // Event
                         answer: [{
                             action: function (params) {
-                                assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
+                                assert(!that.previewLocalMedia || typeof that.previewLocalMedia === 'function');
                                 that.isAnswered = true;
-                                if (typeof params.previewLocalMedia !== 'function') {
+                                if (typeof that.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
                                 }
                             }
@@ -285,7 +285,7 @@ module.exports = function (params) {
                                     return false;
                                 }
 
-                                if (!params.previewLocalMedia || that.receiveOnly) {
+                                if (!that.previewLocalMedia || that.receiveOnly) {
                                     setTimeout(function () {
                                         params.approve();
                                     });
@@ -325,21 +325,21 @@ module.exports = function (params) {
                                 // Event
                                 approve: [{
                                     target: 'approvingContent',
-                                    guard: function (params) {
-                                        return (typeof params.previewLocalMedia === 'function');
+                                    guard: function () {
+                                        return (typeof that.previewLocalMedia === 'function');
                                     }
                                 }, {
                                     target: 'connecting',
-                                    guard: function (params) {
+                                    guard: function () {
                                         return (that.caller === false &&
                                             (that.hasLocalMedia === true || that.needDirectConnection === true) &&
-                                            typeof params.previewLocalMedia !== 'function');
+                                            typeof that.previewLocalMedia !== 'function');
                                     }
                                 }, {
                                     target: 'offering',
-                                    guard: function (params) {
+                                    guard: function () {
                                         return (that.caller === true && that.hasLocalMedia === true &&
-                                            typeof params.previewLocalMedia !== 'function');
+                                            typeof that.previewLocalMedia !== 'function');
                                     }
                                 }]
                             },
