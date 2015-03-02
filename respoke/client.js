@@ -642,7 +642,6 @@ module.exports = function (params) {
 
         callParams.id = params.id;
         callParams.caller = false;
-        callParams.toType = params.fromType;
         callParams.fromType = "web";
 
         switch (params.type) {
@@ -654,9 +653,11 @@ module.exports = function (params) {
                 break;
             case "did":
                 callParams.number = params.endpointId;
+                callParams.toType = "did";
                 break;
             case "sip":
                 callParams.uri = params.endpointId;
+                callParams.toType = "sip";
                 break;
         }
 
