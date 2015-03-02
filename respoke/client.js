@@ -1164,7 +1164,9 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalParams.callerId = {number: params.callerId};
+            if (params.callerId) {
+                signalParams.callerId = {number: params.callerId};
+            }
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {

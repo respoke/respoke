@@ -686,7 +686,7 @@ module.exports = function (params) {
                     setTimeout(processQueues);
                 },
                 onError: function (err) {
-                    respoke.log.error('offer could not be sent');
+                    respoke.log.error('offer could not be sent', err);
                     that.call.hangup({signal: false});
                 }
             });
