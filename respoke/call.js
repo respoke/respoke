@@ -194,6 +194,7 @@ module.exports = function (params) {
     var pc = respoke.PeerConnection({
         instanceId: instanceId,
         state: respoke.CallState({
+            instanceId: instanceId,
             caller: that.caller,
             needDirectConnection: params.needDirectConnection,
             sendOnly: params.sendOnly,
@@ -1503,7 +1504,6 @@ module.exports = function (params) {
             return;
         }
         pc.state.dispatch('initiate', {
-            client: client,
             caller: that.caller
         });
     }).done(null, function (err) {
