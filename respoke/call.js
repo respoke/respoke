@@ -140,13 +140,6 @@ module.exports = function (params) {
     var defModify;
     /**
      * @memberof! respoke.Call
-     * @name previewLocalMedia
-     * @private
-     * @type {respoke.Call.previewLocalMedia}
-     */
-    var previewLocalMedia = params.previewLocalMedia;
-    /**
-     * @memberof! respoke.Call
      * @name client
      * @private
      * @type {respoke.getClient}
@@ -380,8 +373,8 @@ module.exports = function (params) {
         that.listen('mute', params.onMute);
         that.listen('requesting-media', params.onRequestingMedia);
 
-        previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
-            params.previewLocalMedia : previewLocalMedia;
+        pc.state.previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
+            params.previewLocalMedia : pc.state.previewLocalMedia;
 
         pc.state.receiveOnly = typeof params.receiveOnly === 'boolean' ? params.receiveOnly : pc.state.receiveOnly;
         pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
@@ -476,7 +469,6 @@ module.exports = function (params) {
             doAddVideo(params);
         });
         pc.state.dispatch('answer', {
-            previewLocalMedia: previewLocalMedia,
             approve: that.approve
         });
         /**
@@ -544,9 +536,7 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('approve');
-        pc.state.dispatch('approve', {
-            previewLocalMedia: previewLocalMedia
-        });
+        pc.state.dispatch('approve');
 
         if (defModify && defModify.promise.isPending()) {
             defModify.resolve(true);
@@ -677,8 +667,8 @@ module.exports = function (params) {
         defMedia.resolve(that.outgoingMedia);
         pc.addStream(evt.stream);
         pc.state.dispatch('receiveLocalMedia');
-        if (typeof previewLocalMedia === 'function') {
-            previewLocalMedia(evt.element, that);
+        if (typeof pc.state.previewLocalMedia === 'function') {
+            pc.state.previewLocalMedia(evt.element, that);
         }
 
         /**
@@ -756,9 +746,7 @@ module.exports = function (params) {
              * @property {respoke.Call} target
              */
             that.fire('allow');
-            pc.state.dispatch('approve', {
-                previewLocalMedia: previewLocalMedia
-            });
+            pc.state.dispatch('approve');
         }, true);
         that.outgoingMedia.listen('stream-received', streamReceivedHandler, true);
         that.outgoingMedia.listen('no-local-media', noLocalMediaHandler, true);
@@ -1204,7 +1192,6 @@ module.exports = function (params) {
         }
 
         pc.state.dispatch('receiveOffer', {
-            previewLocalMedia: previewLocalMedia,
             approve: that.approve
         });
     }
@@ -1472,7 +1459,7 @@ module.exports = function (params) {
      */
     pc.state.listen('connecting:entry', function connectNoMedia() {
         if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio() &&
-            (that.outgoingMedia.hasVideo() || that.outgoingMedia.hasAudio())) {
+            (that.outgoingMedia.hasVideo() || that.outgoingMedia.hasAudio() || pc.state.needDirectConnection)) {
             /**
              * Indicates that either remote media stream has been added to the call or if no
              * media is expected, the other side is receiving our media.
