@@ -53,7 +53,7 @@ module.exports = function (params) {
      * result in a non-transition error when it's OK, and that is the 'reject' event.
      */
     var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'approve', 'answer', 'sentOffer',
-        'receiveAnswer', 'remoteCandidate'];
+        'receiveAnswer'];
 
     function assert(condition) {
         if (!condition) {
@@ -67,10 +67,10 @@ module.exports = function (params) {
     that.isAnswered = false;
     that.sentSDP = false;
     that.receivedSDP = false;
+    that.processedRemoteSDP = false;
     that.needDirectConnection = !!that.needDirectConnection;
     that.sendOnly = !!that.sendOnly;
     that.receiveOnly = !!that.receiveOnly;
-    that.remoteCandidateQueue = [];
 
     // Event
     var rejectEvent = [{
@@ -108,7 +108,7 @@ module.exports = function (params) {
 
     // Event
     function clearReceiveAnswerTimer() {
-        that.receivedSDP = true;
+        that.processedRemoteSDP = true;
         if (receiveAnswerTimer) {
             receiveAnswerTimer.clear();
         }
@@ -124,30 +124,12 @@ module.exports = function (params) {
         }
     };
 
-    // Event
-    function queueRemoteCandidate(candidate) {
-        if (that.receivedSDP) {
-            that.fire('process-candidate', {
-                candidate: candidate
-            });
-        } else {
-            /*
-             * This handler is called synchronously for each item in `remoteCandidateQueue`, so if we push back into
-             * this array synchronously, we can get into an endless shift/push loop.
-             */
-            setTimeout(function () {
-                that.remoteCandidateQueue.push(candidate);
-            });
-        }
-    }
-
-    // Event
     function needToObtainMedia(params) {
         return (that.needDirectConnection !== true && that.receiveOnly !== true);
     }
 
     function needToApproveDirectConnection(params) {
-        return (that.needDirectConnection === true && typeof that.previewLocalMedia === 'function');
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia === 'function');
     }
 
     function automaticOffering(params) {
@@ -158,7 +140,7 @@ module.exports = function (params) {
         if (!that.needDirectConnection && that.receiveOnly) {
             return true;
         }
-        return (that.needDirectConnection === true && typeof that.previewLocalMedia !== 'function');
+        return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
     }
 
     function hasListener() {
@@ -194,15 +176,12 @@ module.exports = function (params) {
 
     var stateParams = {
         initialState: 'idle',
-        // Event
         receiveLocalMedia: function () {
             that.hasLocalMedia = true;
         },
         states: {
             // State
             idle: {
-                // Event
-                remoteCandidate: queueRemoteCandidate,
                 // Event
                 exit: function () {
                     that.fire('idle:exit');
@@ -233,13 +212,10 @@ module.exports = function (params) {
             negotiatingContainer: {
                 init: "preparing",
                 // Event
-                remoteCandidate: queueRemoteCandidate,
-                // Event
                 hangup: hangupEvent,
                 // Event
                 modify: rejectModify,
                 states: {
-                    // State
                     preparing: {
                         // Event
                         entry: {
@@ -248,6 +224,7 @@ module.exports = function (params) {
                                 that.hasLocalMedia = false;
                                 that.sentSDP = false;
                                 that.receivedSDP = false;
+                                that.processedRemoteSDP = false;
                                 that.isAnswered = false;
                                 if (!that.isModifying()) {
                                     answerTimer = createTimer(function () {
@@ -282,9 +259,9 @@ module.exports = function (params) {
                         // Event
                         answer: [{
                             action: function (params) {
-                                assert(!that.previewLocalMedia || typeof that.previewLocalMedia === 'function');
+                                assert(!params.previewLocalMedia || typeof params.previewLocalMedia === 'function');
                                 that.isAnswered = true;
-                                if (typeof that.previewLocalMedia !== 'function') {
+                                if (typeof params.previewLocalMedia !== 'function') {
                                     that.hasLocalMediaApproval = true;
                                 }
                             }
@@ -314,7 +291,7 @@ module.exports = function (params) {
                                     return false;
                                 }
 
-                                if (!that.previewLocalMedia || that.receiveOnly) {
+                                if (!params.previewLocalMedia || that.receiveOnly) {
                                     setTimeout(function () {
                                         params.approve();
                                     });
@@ -354,21 +331,21 @@ module.exports = function (params) {
                                 // Event
                                 approve: [{
                                     target: 'approvingContent',
-                                    guard: function () {
-                                        return (typeof that.previewLocalMedia === 'function');
+                                    guard: function (params) {
+                                        return (typeof params.previewLocalMedia === 'function');
                                     }
                                 }, {
                                     target: 'connecting',
-                                    guard: function () {
+                                    guard: function (params) {
                                         return (that.caller === false &&
                                             (that.hasLocalMedia === true || that.needDirectConnection === true) &&
-                                            typeof that.previewLocalMedia !== 'function');
+                                            typeof params.previewLocalMedia !== 'function');
                                     }
                                 }, {
                                     target: 'offering',
-                                    guard: function () {
+                                    guard: function (params) {
                                         return (that.caller === true && that.hasLocalMedia === true &&
-                                            typeof that.previewLocalMedia !== 'function');
+                                            typeof params.previewLocalMedia !== 'function');
                                     }
                                 }]
                             },
@@ -402,9 +379,7 @@ module.exports = function (params) {
                     // State
                     offeringContainer: {
                         init: 'offering',
-                        // Event
                         reject: rejectEvent,
-                        // Event
                         sentOffer: function () {
                             // start answer timer
                             receiveAnswerTimer = createTimer(function () {
@@ -412,7 +387,6 @@ module.exports = function (params) {
                             }, 'receive answer', receiveAnswerTimeout);
                         },
                         states: {
-                            // State
                             offering: {
                                 // Event
                                 entry: function () {
@@ -446,12 +420,9 @@ module.exports = function (params) {
                     // State
                     connectingContainer: {
                         init: 'connecting',
-                        // Event
                         reject: rejectEvent,
-                        // Event
                         receiveAnswer: clearReceiveAnswerTimer,
                         states: {
-                            // State
                             connecting: {
                                 // Event
                                 entry: function () {
@@ -499,16 +470,12 @@ module.exports = function (params) {
             // this state, we will reject it. If the other party is in connected, we will be able to modify.
             modifyingContainer: {
                 init: 'modifying',
-                // Event
-                remoteCandidate: queueRemoteCandidate,
-                // Event
                 reject: rejectEvent,
                 // Event
                 modify: rejectModify,
                 // Event
                 hangup: hangupEvent,
                 states: {
-                    // State
                     modifying: {
                         // Event
                         entry: function () {
@@ -533,21 +500,16 @@ module.exports = function (params) {
             // State
             connectedContainer: {
                 init: 'connected',
-                // Event
-                remoteCandidate: queueRemoteCandidate,
-                // Event
                 reject: {
                     target: 'terminated',
                     action: function (params) {
                         that.hangupReason = params.reason || "got reject while connected";
                     }
                 },
-                // Event
                 receiveAnswer: clearReceiveAnswerTimer,
                 // Event
                 hangup: hangupEvent,
                 states: {
-                    // State
                     connected: {
                         // Event
                         entry: function () {
@@ -589,7 +551,6 @@ module.exports = function (params) {
             terminatedContainer: {
                 init: 'terminated',
                 states: {
-                    // State
                     terminated: {
                         // Event
                         entry: {
