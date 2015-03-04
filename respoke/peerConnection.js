@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -680,7 +681,7 @@ module.exports = function (params) {
                     setTimeout(processQueues);
                 },
                 onError: function (err) {
-                    respoke.log.error('offer could not be sent');
+                    respoke.log.error('offer could not be sent', err);
                     that.call.hangup({signal: false});
                 }
             });
