@@ -511,8 +511,8 @@ module.exports = function (params) {
             localMedia = constraint;
         } else {
             localMedia = respoke.LocalMedia({
+                streamId: that.remoteEndpoint.id,
                 state: pc.state,
-                instanceId: instanceId,
                 hasScreenShare: respoke.constraintsHasScreenShare(constraint),
                 constraints: constraint,
             });

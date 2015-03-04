@@ -19,7 +19,6 @@ var respoke = require('./respoke');
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {string} params.instanceId - client id
  * @param {object} [params.constraints]
  * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local
  * video attached to it.
@@ -28,16 +27,8 @@ var respoke = require('./respoke');
 module.exports = function (params) {
     "use strict";
     params = params || {};
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name instanceId
-     * @private
-     * @type {string}
-     */
-    var instanceId = params.instanceId;
     var that = respoke.EventEmitter(params);
 
-    delete that.instanceId;
     /**
      * @memberof! respoke.LocalMedia
      * @name className
@@ -51,14 +42,6 @@ module.exports = function (params) {
      * @type {string}
      */
     that.id = respoke.makeGUID();
-
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name client
-     * @private
-     * @type {respoke.getClient}
-     */
-    var client = respoke.getClient(instanceId);
     /**
      * The HTML element with video attached.
      * @memberof! respoke.LocalMedia
@@ -207,7 +190,7 @@ module.exports = function (params) {
             that.stream.numPc = 1;
             respoke.streams.push({stream: that.stream, constraints: that.constraints});
 
-            that.stream.id = client.endpointId;
+            that.stream.id = that.streamId;
             attachMediaStream(that.element, that.stream);
             // We won't want our local video outputting audio.
             that.element.muted = true;
