@@ -20,8 +20,6 @@ var respoke = require('./respoke');
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {string} params.instanceId - client id
- * @param {string} params.callId - call id
  * @param {object} [params.constraints]
  * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have local
  * video attached to it.
@@ -30,15 +28,8 @@ var respoke = require('./respoke');
 module.exports = function (params) {
     "use strict";
     params = params || {};
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name instanceId
-     * @private
-     * @type {string}
-     */
-    var instanceId = params.instanceId;
     var that = respoke.EventEmitter(params);
-    delete that.instanceId;
+
     /**
      * @memberof! respoke.LocalMedia
      * @name className
@@ -52,14 +43,6 @@ module.exports = function (params) {
      * @type {string}
      */
     that.id = respoke.makeGUID();
-
-    /**
-     * @memberof! respoke.LocalMedia
-     * @name client
-     * @private
-     * @type {respoke.getClient}
-     */
-    var client = respoke.getClient(instanceId);
     /**
      * The HTML element with video attached.
      * @memberof! respoke.LocalMedia
@@ -208,7 +191,7 @@ module.exports = function (params) {
             that.stream.numPc = 1;
             respoke.streams.push({stream: that.stream, constraints: that.constraints});
 
-            that.stream.id = client.endpointId;
+            that.stream.id = that.streamId;
             attachMediaStream(that.element, that.stream);
             // We won't want our local video outputting audio.
             that.element.muted = true;
@@ -599,6 +582,29 @@ module.exports = function (params) {
         sdpHasVideo = respoke.sdpHasVideo(oSession.sdp);
         sdpHasAudio = respoke.sdpHasAudio(oSession.sdp);
         sdpHasDataChannel = respoke.sdpHasDataChannel(oSession.sdp);
+
+        // We don't have media yet & this can still be changed so create the defaults based on what the sdp says.
+        if (that.temporary) {
+            that.constraints = {
+                video: sdpHasVideo,
+                audio: sdpHasAudio,
+                mandatory: {},
+                optional: []
+            };
+        }
+    };
+
+    /**
+     * Parse the constraints.
+     * @memberof! respoke.LocalMedia
+     * @method respoke.LocalMedia.setConstraints
+     * @param {MediaConstraints} constraints
+     * @private
+     */
+    that.setConstraints = function (constraints) {
+        that.constraints = constraints;
+        sdpHasVideo = respoke.constraintsHasVideo(that.constraints);
+        sdpHasAudio = respoke.constraintsHasAudio(that.constraints);
     };
 
     /**
@@ -609,6 +615,14 @@ module.exports = function (params) {
      * @private
      */
     that.start = function () {
+        if (that.state.receiveOnly) {
+            throw new Error("Local media started when receiveOnly is set!");
+        }
+
+        if (that.temporary) {
+            throw new Error("Temporary local media started!");
+        }
+
         try {
             requestMedia();
         } catch (err) {

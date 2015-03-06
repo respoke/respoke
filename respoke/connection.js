@@ -239,12 +239,12 @@ module.exports = function (params) {
     that.startAudioCall = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        params.constraints = {
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: false,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
         return that.startCall(params);
     };
 
