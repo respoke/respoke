@@ -645,12 +645,9 @@ module.exports = function (params) {
         callParams.fromType = "web";
 
         switch (params.type) {
-            // jshint ignore:start
             case "screenshare":
-                callParams.toType = "web"; // overwrite "screenshare"
-                // No break
-            // jshint ignore:end
             case "web":
+                callParams.toType = "web"; // overwrite "screenshare"
                 callParams.endpointId = params.endpointId;
                 break;
             case "did":
