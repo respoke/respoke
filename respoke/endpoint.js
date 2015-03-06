@@ -336,7 +336,7 @@ module.exports = function (params) {
                                 googTemporalLayeredScreencast: true
                             };
                         }
-                    };
+                    }
                 }
             } else {
                 screenConstraint.video = {

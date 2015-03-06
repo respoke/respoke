@@ -520,7 +520,7 @@ module.exports = function (params) {
                 streamId: that.remoteEndpoint.id,
                 state: pc.state,
                 hasScreenShare: respoke.constraintsHasScreenShare(constraint),
-                constraints: constraint,
+                constraints: constraint
             });
             that.outgoingMediaStreams.push(localMedia);
         }
@@ -1810,7 +1810,6 @@ module.exports = function (params) {
     signalingChannel.getTurnCredentials().then(function (result) {
         if (!pc) {
             throw new Error("Already hung up.");
-            return;
         }
         if (!result) {
             log.warn("Relay service not available.");
@@ -1821,7 +1820,6 @@ module.exports = function (params) {
     }).fin(function () {
         if (!pc) {
             throw new Error("Already hung up.");
-            return;
         }
         pc.state.dispatch('initiate', {
             caller: that.caller

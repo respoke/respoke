@@ -80,7 +80,7 @@ var EventEmitter = module.exports = function (params) {
     that.once = function (eventType, listener, isInternal) {
         var string = listener.toString();
         listener = respoke.once(listener);
-        listener.toString = function () { return string; }
+        listener.toString = function () { return string; };
         listener.once = true;
         that.listen(eventType, listener, isInternal);
     };
