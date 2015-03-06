@@ -151,7 +151,7 @@ module.exports = function (grunt) {
                 root: '.docs/site/',
                 port: 2007,
                 host: "0.0.0.0",
-                showDir : true,
+                showDir: true,
                 autoIndex: true,
 
                 // server default file extension

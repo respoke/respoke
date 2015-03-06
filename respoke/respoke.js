@@ -598,7 +598,6 @@ respoke.constraintsHasAudio = function (constraints) {
     return (constraints.audio === true);
 };
 
-
 /**
  * Does the constraints indicate a video stream?
  * @static

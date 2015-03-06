@@ -295,7 +295,7 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.isSendingReport = function (params) {
-        return  clientSettings.enableCallDebugReport;
+        return clientSettings.enableCallDebugReport;
     };
 
     /**
