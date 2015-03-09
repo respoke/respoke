@@ -120,7 +120,8 @@
 		"RTCIceCandidate",
 		"webkitRTCPeerConnection",
 		"$j",
-        "Airbrake"
+        "Airbrake",
+        "JSON"
     ],
     "indent"        : 4         // Specify indentation spacing
 }
