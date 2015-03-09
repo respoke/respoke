@@ -451,11 +451,16 @@ module.exports = function (params) {
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'answer';
             signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 signalParams.call.hangup({signal: false});
             });
         };
@@ -583,10 +588,15 @@ module.exports = function (params) {
             });
         };
         params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
             signalParams.signalType = 'answer';
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 signalParams.call.hangup({signal: false});
             });
         };
