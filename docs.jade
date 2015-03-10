@@ -80,7 +80,7 @@ mixin menu()
             br
             br
             | Full Respoke.js Browser API
-            
+
         each otherClass in allClasses, otherClassName
             if (otherClass === className)
                 li.menu--header
@@ -103,7 +103,7 @@ mixin menu()
                                             = getEventName(comment.ctx.name)
             else
                 li: a(href=otherClass + '.html')= cleanClassName(otherClass)
-                
+
 mixin menuItem(node)
     - var itemClasses = [];
 
@@ -124,28 +124,28 @@ html
             link(rel="canonical" href="https://docs.respoke.io/js-library/#{link}")
             link(rel="stylesheet" type="text/css" href="css/docs.css")
     body
-    
+
         +navbar('dark')
             +menu()
-        
-        
+
+
         .container.navbar--push-it
             nav.sidebar
                 +menu()
-            
-            
+
+
             article.content: block content
                 h1= title
                 a(href=github + subTitle)= "from " + subTitle
 
-                
+
                 //- Properties and methods
                 each comment, indx in publicComments
                     section(id=comment.ctx.name.replace('.','-'))
                         br
                         br
-                        
-                        
+
+
                         //- Special treatment of the first item. It's the class name.
                         if (indx === 0)
                             if (comment.augments)
@@ -156,38 +156,38 @@ html
                             //- the title of the method or prop
                             h2
                                 a(href="#"+comment.ctx.name)= comment.ctx.name
-                            
+
                             h3 Type
                             code= comment.type
                         else
                             h2: a(href="#"+comment.ctx.name)
                                 = comment.ctx.name + "(" + comment.argumentArray.join(', ') + ")"
 
-                        
+
                         //- Description
                         if (comment.description.summary)
                             h3 Description
                             div!= comment.description.summary
-                        
-                        
+
+
                         //- Usage
                         if (comment.description.body)
                             h3 Usage
                             div!= comment.description.body
-                        
-                        
+
+
                         //- Returns
                         if (indx !== 0 && comment.returns)
                             h3 Returns
                             code= comment.returns
-                        
-                        
+
+
                         //- Fires
                         if (comment.fires && comment.fires.length)
                             h3 Fires
                             code= comment.fires.map(mapFireEvents).join('|')
-                        
-                        
+
+
                         //- Arguments
                         if (indx !== 0 && comment.methodParams.length)
                             h3 Arguments
@@ -202,9 +202,9 @@ html
                                         td: code= param.name.replace('[', '').replace(']', '')
                                         td= param.type
                                         td= param.desc
-                         
-                         
-                         
+
+
+
                          //- put a header at the end of the class declaration
                          if (indx === 0)
                              h2 Properties and Methods
@@ -218,7 +218,7 @@ html
                     br
                     br
                     h1 Events
-                    
+
                     each comment, indx in publicEvents
                         - var eventLinkId = getEventId(comment.ctx.name);
 
@@ -226,7 +226,7 @@ html
                             br
                             h2: a(href="#" + eventLinkId)= getEventName(comment.ctx.name)
                             h6: code= comment.ctx.type
-                            
+
                             h3 Description
                             div!= comment.description.full
 
