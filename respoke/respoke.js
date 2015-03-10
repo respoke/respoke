@@ -667,16 +667,23 @@ respoke.queueFactory = function () {
     "use strict";
     var queue = [];
     /**
-     * @param {function} action - the action to perform on each item.
+     * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
      */
     queue.trigger = function (action) {
         if (!action) {
             throw new Error("Trigger function requires an action parameter.");
         }
 
-        queue.forEach(action);
+        function safeAction(item) {
+            try {
+                action(item);
+            } catch (err) {
+                log.error("Error calling queue action.", err);
+            }
+        }
+        queue.forEach(safeAction);
         queue.length = 0;
-        queue.push = action;
+        queue.push = safeAction;
     };
 
     return queue;
