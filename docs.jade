@@ -118,9 +118,9 @@ html
     head
         block head
             title=subTitle + " - " + title
-            include node_modules/respoke-style/templates/head
             meta(name="keywords" content="respoke, webrtc, pubsub, audio video calling")
             meta(name="description" content="Respoke.js docs for " + subTitle)
+            +head({ analyticsDomains: ['docs.respoke.io'] })
             link(rel="canonical" href="https://docs.respoke.io/js-library/#{link}")
             link(rel="stylesheet" type="text/css" href="css/docs.css")
     body
@@ -246,4 +246,4 @@ html
                                             td= param.desc
 
 
-        include node_modules/respoke-style/templates/footer
+        +footer
