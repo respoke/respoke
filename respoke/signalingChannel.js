@@ -2001,7 +2001,7 @@ module.exports = function (params) {
             'result': null,
             'code': null
         };
-        var start;
+        var start = now();
 
         uri = clientSettings.baseURL + params.path;
 
