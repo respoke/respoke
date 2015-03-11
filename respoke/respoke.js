@@ -654,3 +654,37 @@ respoke.convertConstraints = function (constraints, defaults) {
 
     return constraints;
 };
+
+/**
+ * Queue items until a trigger is called, then process them all with an action. Before trigger, hold items for
+ * processing. After trigger, process new items immediately.
+ * @static
+ * @memberof respoke
+ * @returns {Array}
+ * @private
+ */
+respoke.queueFactory = function () {
+    "use strict";
+    var queue = [];
+    /**
+     * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
+     */
+    queue.trigger = function (action) {
+        if (!action) {
+            throw new Error("Trigger function requires an action parameter.");
+        }
+
+        function safeAction(item) {
+            try {
+                action(item);
+            } catch (err) {
+                log.error("Error calling queue action.", err);
+            }
+        }
+        queue.forEach(safeAction);
+        queue.length = 0;
+        queue.push = safeAction;
+    };
+
+    return queue;
+}

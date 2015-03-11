@@ -37,6 +37,7 @@ describe("The respoke namespace", function() {
         expect(typeof respoke.sdpHasDataChannel).to.equal('function');
         expect(typeof respoke.isEqual).to.equal('function');
         expect(typeof respoke.clone).to.equal('function');
+        expect(typeof respoke.queueFactory).to.equal('function');
     });
 
     describe("the 'once' method", function () {
@@ -669,6 +670,116 @@ describe("The respoke namespace", function() {
                     expect(output).to.be.an.Array;
                     expect(output.length).to.equal(1);
                     expect(output).to.equal(defaults);
+                });
+            });
+        });
+    });
+
+    describe("the queueFactory function", function () {
+        var queue;
+
+        beforeEach(function () {
+            queue = respoke.queueFactory();
+        });
+
+        it("returns an empty array", function () {
+            expect(queue).to.be.an.Array;
+            expect(queue).to.be.empty;
+        });
+
+        it("adds the trigger method", function () {
+            expect(queue.trigger).to.be.a.Function;
+        });
+
+        describe("the push method", function () {
+            it("adds items to the array", function () {
+                queue.push("foo");
+                queue.push("bar");
+                queue.push("baz");
+                expect(queue.length).to.equal(3);
+                expect(queue[0]).to.equal("foo");
+                expect(queue[1]).to.equal("bar");
+                expect(queue[2]).to.equal("baz");
+            });
+
+            describe("after trigger", function () {
+                beforeEach(function () {
+                    queue.trigger(function () {});
+                });
+
+                it("doesn't add items to the array", function () {
+                    queue.push("foo");
+                    queue.push("bar");
+                    queue.push("baz");
+                    expect(queue.length).to.equal(0);
+                    expect(queue).to.be.empty;
+                });
+            });
+        });
+
+        describe("the trigger method", function () {
+            var spy;
+
+            beforeEach(function () {
+                spy = sinon.spy();
+            });
+
+            it("requires an action parameter", function (done) {
+                try {
+                    queue.trigger();
+                    done(new Error("Trigger function must not accept undefined action parameter!"));
+                } catch (err) {
+                    expect(err).to.be.an.Error;
+                    done();
+                }
+            });
+
+            describe("when called on an empty queue", function () {
+                it("does not call the action yet", function () {
+                    queue.trigger(spy);
+                    expect(spy.called).to.equal(false);
+                });
+
+                describe("when additonal items are added", function () {
+                    it("the action gets called immediately", function () {
+                        queue.trigger(spy);
+                        queue.push('foo');
+                        expect(spy.calledOnce).to.equal(true);
+                        expect(spy.calledWith('foo')).to.equal(true);
+                        queue.push('bar');
+                        expect(spy.calledTwice).to.equal(true);
+                        expect(spy.calledWith('bar')).to.equal(true);
+                    });
+                });
+            });
+
+            describe("when called on a populated queue", function () {
+                beforeEach(function () {
+                    queue.push('foo');
+                    queue.push('bar');
+                    queue.trigger(spy);
+                });
+
+                it("calls the action on each item immediately", function () {
+                    expect(spy.calledTwice).to.equal(true);
+                    expect(spy.calledWith('foo')).to.equal(true);
+                    expect(spy.calledWith('bar')).to.equal(true);
+                });
+
+                describe("when additonal items are added", function () {
+                    beforeEach(function () {
+                        queue.push('baz');
+                        queue.push('bam');
+                    });
+
+                    it("doesn't add them to the array", function () {
+                        expect(queue).to.be.empty;
+                    });
+
+                    it("the action gets called immediately", function () {
+                        expect(spy.calledWith('baz')).to.equal(true);
+                        expect(spy.calledWith('bam')).to.equal(true);
+                    });
                 });
             });
         });
