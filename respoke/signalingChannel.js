@@ -421,11 +421,9 @@ module.exports = function (params) {
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.close
      * @private
-     * @param {object} params
      * @return {Promise}
      */
-    that.close = function (params) {
-        params = params || {};
+    that.close = function () {
         var deferred = Q.defer();
 
         wsCall({
