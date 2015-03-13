@@ -1850,7 +1850,7 @@ module.exports = function (params) {
         var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
         var request;
         var bodyLength = 0;
-        if (params.paramaters) {
+        if (params.parameters) {
             bodyLength = encodeURI(JSON.stringify(params.parameters)).split(/%..|./).length - 1;
         }
 
