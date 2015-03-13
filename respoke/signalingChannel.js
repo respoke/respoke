@@ -493,7 +493,7 @@ module.exports = function (params) {
      * @private
      * @returns {Promise<respoke.Group>}
      * @param {object} params
-     * @param {string} name
+     * @param {string} params.name
      */
     that.getGroup = function (params) {
         params = params || {};
