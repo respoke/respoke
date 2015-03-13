@@ -2092,10 +2092,8 @@ module.exports = function (params) {
                 limit = this.getResponseHeader('RateLimit-Limit');
                 deferred.reject(new Error("Rate limit of " + limit + "/" + unit +
                     " exceeded. Try again in 1 " + unit + "."));
-                return;
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
-                return;
             }
         };
 
