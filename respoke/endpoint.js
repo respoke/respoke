@@ -1,4 +1,4 @@
-/*
+/**!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -14,14 +14,14 @@ var respoke = require('./respoke');
 
 /**
  * `respoke.Endpoint`s are users of a Respoke app.
- *
  * An Endpoint can be a person in a browser or device, or an app using Respoke APIs from a server.
- *
  * A Client can interact with endpoints through messages, audio or video calls, or direct connections.
+ * An Endpoint may be authenticated from multiple devices to the same app (each of which is
+ * represented by a Connection).
  *
- * An Endpoint may be authenticated from multiple devices to the same app (each of
- * which is represented by a Connection).
- *
+ * ```
+ * var jim = client.getEndpoint({ id: 'jim' });
+ * ```
  *
  * @constructor
  * @class respoke.Endpoint
@@ -29,7 +29,8 @@ var respoke = require('./respoke');
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
- * @param {respoke.client.resolvePresence} [params.resolvePresence] An optional function for resolving presence for an endpoint.
+ * @param {respoke.client.resolvePresence} [params.resolvePresence] An optional function for resolving presence
+ * for an endpoint.
  * @returns {respoke.Endpoint}
  */
 module.exports = function (params) {
@@ -95,10 +96,12 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
-     *
-     *    endpoint.sendMessage({
-     *        message: "wassuuuuup"
-     *    });
+     * 
+     * ```
+     * endpoint.sendMessage({
+     *     message: "wassuuuuup"
+     * });
+     * ```
      *
      * **Using callbacks** will disable promises.
      * @memberof! respoke.Endpoint
@@ -173,12 +176,14 @@ module.exports = function (params) {
      */
     that.startAudioCall = function (params) {
         params = params || {};
-        params.constraints = {
+
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: false,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
+
         return that.startCall(params);
     };
 
@@ -228,12 +233,14 @@ module.exports = function (params) {
      */
     that.startVideoCall = function (params) {
         params = params || {};
-        params.constraints = {
+
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: true,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
+
         return that.startCall(params);
     };
 
@@ -285,58 +292,65 @@ module.exports = function (params) {
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
+        var screenConstraint;
         params = params || {};
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
         params.target = "screenshare";
-        params.constraints = params.constraints || {};
+        params.constraints = respoke.convertConstraints(params.constraints, [{
+            audio: true,
+            video: {},
+            mandatory: {},
+            optional: []
+        }]);
+        screenConstraint = params.constraints[0];
 
         if (params.caller) {
             if (respoke.needsChromeExtension || respoke.isNwjs) {
-                params.constraints.video = typeof params.constraints.video === 'object' ? params.constraints.video : {};
-                params.constraints.video.optional = params.constraints.video.optional || [];
-                params.constraints.video.mandatory = typeof params.constraints.video.mandatory === 'object' ?
-                    params.constraints.video.mandatory : {};
-                params.constraints.video.mandatory.chromeMediaSource = 'desktop';
-                params.constraints.video.mandatory.maxWidth =
-                    typeof params.constraints.video.mandatory.maxWidth === 'number' ?
-                    params.constraints.video.mandatory.maxWidth : 2000;
-                params.constraints.video.mandatory.maxHeight =
-                    typeof params.constraints.video.mandatory.maxHeight === 'number' ?
-                    params.constraints.video.mandatory.maxHeight : 2000;
-                params.constraints.audio = false;
+                screenConstraint.video = typeof screenConstraint.video === 'object' ? screenConstraint.video : {};
+                screenConstraint.video.optional = screenConstraint.video.optional || [];
+                screenConstraint.video.mandatory = typeof screenConstraint.video.mandatory === 'object' ?
+                    screenConstraint.video.mandatory : {};
+                screenConstraint.video.mandatory.chromeMediaSource = 'desktop';
+                screenConstraint.video.mandatory.maxWidth =
+                    typeof screenConstraint.video.mandatory.maxWidth === 'number' ?
+                    screenConstraint.video.mandatory.maxWidth : 2000;
+                screenConstraint.video.mandatory.maxHeight =
+                    typeof screenConstraint.video.mandatory.maxHeight === 'number' ?
+                    screenConstraint.video.mandatory.maxHeight : 2000;
+                screenConstraint.audio = false;
 
                 if (respoke.isNwjs) {
-                    params.constraints.video.mandatory.chromeMediaSource = 'screen';
+                    screenConstraint.video.mandatory.chromeMediaSource = 'screen';
                 } else {
                     params.sendOnly = true;
-                    if (typeof params.constraints.video.optional === 'object' &&
-                            params.constraints.video.optional.length !== undefined) {
-                        if (params.constraints.length > 0) {
-                            params.constraints.forEach(function (thing) {
+                    if (typeof screenConstraint.video.optional === 'object' &&
+                            screenConstraint.video.optional.length !== undefined) {
+                        if (screenConstraint.length > 0) {
+                            screenConstraint.forEach(function (thing) {
                                 thing.googTemporalLayeredScreencast = true;
                             });
                         } else {
-                            params.constraints.video.optional[0] = {
+                            screenConstraint.video.optional[0] = {
                                 googTemporalLayeredScreencast: true
                             };
                         }
-                    };
+                    }
                 }
             } else {
-                params.constraints.video = {
+                screenConstraint.video = {
                     mediaSource: params.source || "window"
                 };
             }
         } else {
-            params.constraints.video = false;
+            screenConstraint.video = false;
 
             if (respoke.needsChromeExtension || respoke.isNwjs) {
                 params.receiveOnly = true;
-                params.constraints.audio = false;
+                screenConstraint.audio = false;
             } else {
-                params.constraints.audio = true;
+                screenConstraint.audio = true;
             }
         }
         return that.startCall(params);
@@ -375,7 +389,7 @@ module.exports = function (params) {
      * information.
      * @param {respoke.Call.previewLocalMedia} [params.previewLocalMedia] - A function to call if the developer
      * wants to perform an action between local media becoming available and calling approve().
-     * @param {RTCConstraints} [params.constraints]
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {boolean} [params.receiveOnly] - whether or not we accept media
      * @param {boolean} [params.sendOnly] - whether or not we send media
      * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
@@ -385,19 +399,26 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
-     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local
+     * video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
+     * video attached to it.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {
         var call = null;
         params = params || {};
 
+        params.constraints = respoke.convertConstraints(params.constraints, [{
+            video: true,
+            audio: true,
+            mandatory: {},
+            optional: []
+        }]);
+
         // If they are requesting a screen share by constraints without having called startScreenShare
-        if (params.target !== 'screenshare' && params.constraints &&
-                params.constraints.video && params.constraints.video.mandatory &&
-                (params.constraints.video.mandatory.chromeMediaSource ||
-                 params.constraints.video.mediaSource)) {
+        if (params.target !== 'screenshare' && params.constraints[0] &&
+                respoke.constraintsHasScreenShare(params.constraints[0])) {
             return that.startScreenShare(params);
         }
 
@@ -430,12 +451,16 @@ module.exports = function (params) {
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'answer';
             signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't answer the call.", err.message, err.stack);
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 signalParams.call.hangup({signal: false});
             });
         };
@@ -445,7 +470,6 @@ module.exports = function (params) {
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.recipient = that;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
             });
         };
@@ -453,31 +477,23 @@ module.exports = function (params) {
             signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
-            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send modify.", err.message, err.stack);
-            });
+            signalingChannel.sendModify(signalParams).done();
         };
         params.signalCandidate = function (signalParams) {
             signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
-            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                log.warn("Couldn't send candidate.", err.message, err.stack);
-            });
+            signalingChannel.sendCandidate(signalParams).done();
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
-            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send hangup.", err.message, err.stack);
-            });
+            signalingChannel.sendHangup(signalParams).done();
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams).done(null, function errorHandler(err) {
-                log.warn("Couldn't debug report.", err.message, err.stack);
-            });
+            signalingChannel.sendReport(signalParams).done();
         };
 
         params.signalingChannel = signalingChannel;
@@ -568,32 +584,31 @@ module.exports = function (params) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
             });
         };
         params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
             signalParams.signalType = 'answer';
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't answer the call.", err.message, err.stack);
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 signalParams.call.hangup({signal: false});
             });
         };
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send candidate.", err.message, err.stack);
-            });
+            signalingChannel.sendCandidate(signalParams).done();
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send hangup.", err.message, err.stack);
-            });
+            signalingChannel.sendHangup(signalParams).done();
         };
         params.signalReport = function (signalParams) {
             signalParams.report.target = 'directConnection';

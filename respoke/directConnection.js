@@ -1,4 +1,4 @@
-/*
+/**!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -419,6 +419,11 @@ module.exports = function (params) {
     that.close = function (params) {
         params = params || {};
         log.debug("DirectConnection.close");
+
+        if (that.call && that.call.remoteEndpoint) {
+            that.call.remoteEndpoint.directConnection = null;
+        }
+
         if (dataChannel) {
             dataChannel.close();
         }
@@ -434,12 +439,11 @@ module.exports = function (params) {
 
         that.ignore();
 
-        if (params.skipRemove !== true) {
+        if (that.call && params.skipRemove !== true) {
             that.call.removeDirectConnection();
         }
 
         dataChannel = null;
-        that.call.remoteEndpoint.directConnection = null;
         that.call = null;
         pc = null;
     };

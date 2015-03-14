@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var Q = require('q');
@@ -105,6 +106,7 @@ module.exports = function (params) {
      *     });
      *
      * **Using callbacks** will disable promises.
+     *
      * @memberof! respoke.Group
      * @method respoke.Group.join
      * @return {Promise|undefined}
@@ -350,7 +352,7 @@ module.exports = function (params) {
      * @param {string} params.message - The message.
      * @param {function} params.onSuccess - Success handler indicating that the message was delivered.
      * @param {function} params.onError - Error handler indicating that the message was not delivered.
-     * @returns {Promise}
+     * @returns {Promise|undefined}
      */
     that.sendMessage = function (params) {
         params = params || {};
@@ -372,13 +374,13 @@ module.exports = function (params) {
      * Get group members
      *
      * Get an array containing all connections subscribed to the group. Accepts onSuccess or onError parameters,
-     * or it returns a promise that you can observe. An endpoint may have more than one connection subscribed to 
+     * or it returns a promise that you can observe. An endpoint may have more than one connection subscribed to
 	 * a group, so if you're interested in unique endpoints, you may want to filter the connections by endpointId.
      *
      *     group.getMembers({
      *         onSuccess: function (connections) {
      *             connections.forEach(function (connection) {
-     *                 // do something
+     *                 console.log(connection.endpoint.id);
      *             });
      *         }
      *     });

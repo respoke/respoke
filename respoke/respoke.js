@@ -2,7 +2,7 @@
 /*global Bugsnag: true*/
 /*jshint bitwise: false*/
 
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -10,6 +10,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -214,7 +215,7 @@ document.addEventListener('respoke-available', function (evt) {
     respoke.log.info("Respoke Screen Share Chrome extension available for use.");
 });
 
-if (!window.skipBugsnag) {
+if (!window.skipErrorReporting) {
     // Use airbrake.
     var airbrake = document.createElement('script');
     var first = document.getElementsByTagName('script')[0];
@@ -228,7 +229,7 @@ if (!window.skipBugsnag) {
     airbrake.onload = function () {
         window.onerror = function (message, file, line) {
             //Only send errors from the respoke.js file to Airbrake
-            if (file.match(/respoke/)) {
+            if (file.match(/respoke/) && !window.skipErrorReporting) {
                 Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
             }
         };
@@ -528,7 +529,7 @@ respoke.sdpExtract = function(sdp){
  * Does the sdp indicate an audio stream?
  * @static
  * @memberof respoke
- * @params {RTCSessionDescription}
+ * @params {string}
  * @returns {boolean}
  */
 respoke.sdpHasAudio = function (sdp) {
@@ -542,7 +543,7 @@ respoke.sdpHasAudio = function (sdp) {
  * Does the sdp indicate a video stream?
  * @static
  * @memberof respoke
- * @params {RTCSessionDescription}
+ * @params {string}
  * @returns {boolean}
  */
 respoke.sdpHasVideo = function (sdp) {
@@ -556,7 +557,7 @@ respoke.sdpHasVideo = function (sdp) {
  * Does the sdp indicate a data channel?
  * @static
  * @memberof respoke
- * @params {RTCSessionDescription}
+ * @params {string}
  * @returns {boolean}
  */
 respoke.sdpHasDataChannel = function (sdp) {
@@ -567,10 +568,38 @@ respoke.sdpHasDataChannel = function (sdp) {
 };
 
 /**
- * Does the sdp indicate an audio stream?
+ * Does the sdp indicate the creator is sendOnly?
  * @static
  * @memberof respoke
- * @params {MediaConstraints}
+ * @params {string}
+ * @returns {boolean}
+ */
+respoke.sdpHasSendOnly = function (sdp) {
+    if (!sdp) {
+        throw new Error("respoke.sdpHasSendOnly called with no parameters.");
+    }
+    return sdp.indexOf('a=sendonly') !== -1;
+};
+
+/**
+ * Does the sdp indicate the creator is receiveOnly?
+ * @static
+ * @memberof respoke
+ * @params {string}
+ * @returns {boolean}
+ */
+respoke.sdpHasReceiveOnly = function (sdp) {
+    if (!sdp) {
+        throw new Error("respoke.sdpHasReceiveOnly called with no parameters.");
+    }
+    return sdp.indexOf('a=recvonly') !== -1;
+};
+
+/**
+ * Do the constraints indicate an audio stream?
+ * @static
+ * @memberof respoke
+ * @params {RTCConstraints}
  * @returns {boolean}
  */
 respoke.constraintsHasAudio = function (constraints) {
@@ -584,7 +613,7 @@ respoke.constraintsHasAudio = function (constraints) {
  * Does the constraints indicate a video stream?
  * @static
  * @memberof respoke
- * @params {MediaConstraints}
+ * @params {RTCConstraints}
  * @returns {boolean}
  */
 respoke.constraintsHasVideo = function (constraints) {
@@ -593,3 +622,80 @@ respoke.constraintsHasVideo = function (constraints) {
     }
     return (constraints.video === true || typeof constraints.video === 'object');
 };
+
+/**
+ * Does the constraints indicate a screenshare?
+ * @static
+ * @memberof respoke
+ * @params {RTCConstraints}
+ * @returns {boolean}
+ */
+respoke.constraintsHasScreenShare = function (constraints) {
+    if (!constraints) {
+        throw new Error("respoke.constraintsHasScreenShare called with no parameters.");
+    }
+
+    return (constraints.video && constraints.video.mandatory &&
+            (constraints.video.mandatory.chromeMediaSource || constraints.video.mediaSource));
+};
+
+/**
+ * Convert old-style constraints parameter into a constraints array.
+ * @static
+ * @memberof respoke
+ * @params {Array<RTCConstraints>|RTCConstraints} [constraints]
+ * @params {Array<RTCConstraints>} [defaults]
+ * @returns {Array<RTCConstraints>}
+ */
+respoke.convertConstraints = function (constraints, defaults) {
+    constraints = constraints || [];
+    defaults = defaults || [];
+
+    if (!constraints.splice) {
+        if (typeof constraints === 'object') {
+            constraints = [constraints];
+        } else {
+            constraints = [];
+        }
+    }
+
+    if (constraints.length === 0 && defaults.length > 0) {
+        return defaults;
+    }
+
+    return constraints;
+};
+
+/**
+ * Queue items until a trigger is called, then process them all with an action. Before trigger, hold items for
+ * processing. After trigger, process new items immediately.
+ * @static
+ * @memberof respoke
+ * @returns {Array}
+ * @private
+ */
+respoke.queueFactory = function () {
+    "use strict";
+    var queue = [];
+    /**
+     * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
+     */
+    queue.trigger = function (action) {
+        if (!action) {
+            throw new Error("Trigger function requires an action parameter.");
+        }
+
+        function safeAction(item) {
+            try {
+                action(item);
+            } catch (err) {
+                log.error("Error calling queue action.", err);
+            }
+        }
+        queue.forEach(safeAction);
+        queue.length = 0;
+        queue.push = safeAction;
+    };
+
+    return queue;
+}

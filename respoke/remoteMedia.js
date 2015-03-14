@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -19,10 +20,11 @@ var respoke = require('./respoke');
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {string} params.instanceId - client id
- * @param {string} params.callId - call id
  * @param {object} params.constraints
- * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+ * @param {boolean} params.temporary - whether this instance represents our best guess of future media. If so,
+ * this object will be deleted when real media comes in. It will be replaced by different instance of
+ * respoke.RemoteMedia representing the actual state of media.
+ * @param {HTMLVideoElement} params.element - Pass in an optional html video element to have remote
  * video attached to it.
  * @returns {respoke.RemoteMedia}
  */
@@ -35,9 +37,7 @@ module.exports = function (params) {
      * @private
      * @type {string}
      */
-    var instanceId = params.instanceId;
     var that = respoke.EventEmitter(params);
-    delete that.instanceId;
     /**
      * @memberof! respoke.RemoteMedia
      * @name className
@@ -51,21 +51,13 @@ module.exports = function (params) {
      * @type {string}
      */
     that.id = respoke.makeGUID();
-
-    /**
-     * @memberof! respoke.RemoteMedia
-     * @name client
-     * @private
-     * @type {respoke.getClient}
-     */
-    var client = respoke.getClient(instanceId);
     /**
      * The HTML element with attached video.
      * @memberof! respoke.RemoteMedia
      * @name element
      * @type {HTMLVideoElement}
      */
-    that.element = params.videoRemoteElement;
+    that.element = params.element || document.createElement('video');
     /**
      * @memberof! respoke.RemoteMedia
      * @name hasScreenShare
@@ -130,7 +122,10 @@ module.exports = function (params) {
      * @name stream
      * @type {RTCMediaStream}
      */
-    that.stream = null;
+    that.stream = params.stream;
+    attachMediaStream(that.element, that.stream);
+    that.element.autoplay = true;
+    setTimeout(that.element.play.bind(that.element)); // stupid Firefox requires this.
 
     /**
      * Indicate whether we are receiving a screenshare.
@@ -207,23 +202,6 @@ module.exports = function (params) {
         that.constraints = constraints;
         sdpHasVideo = respoke.constraintsHasVideo(that.constraints);
         sdpHasAudio = respoke.constraintsHasAudio(that.constraints);
-    };
-
-    /**
-     * Save the media stream
-     * @memberof! respoke.RemoteMedia
-     * @method respoke.RemoteMedia.setStream
-     * @param {MediaStream} str
-     * @private
-     */
-    that.setStream = function (str) {
-        if (str) {
-            that.stream = str;
-            that.element = that.element || document.createElement('video');
-            attachMediaStream(that.element, that.stream);
-            that.element.autoplay = true;
-            setTimeout(that.element.play.bind(that.element));
-        }
     };
 
     /**

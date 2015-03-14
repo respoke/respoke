@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var respoke = require('./respoke');
@@ -238,12 +239,12 @@ module.exports = function (params) {
     that.startAudioCall = function (params) {
         params = params || {};
         params.connectionId = that.id;
-        params.constraints = {
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: false,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
         return that.startCall(params);
     };
 

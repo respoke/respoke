@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -29,9 +30,12 @@ module.exports = function (params) {
     "use strict";
     params = params || {};
     var fsm;
+    var instanceId = params.instanceId;
     var that = respoke.EventEmitter(params);
     that.className = 'respoke.CallState';
+    delete that.instanceId;
 
+    var client = respoke.getClient(instanceId);
     var allTimers = [];
     var answerTimer;
     var answerTimeout = params.answerTimeout || 10000;
@@ -139,6 +143,15 @@ module.exports = function (params) {
         return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
     }
 
+    function hasListener() {
+        if ((client.hasListeners('call') && !that.needDirectConnection) ||
+                (client.hasListeners('direct-connection') && that.needDirectConnection)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     function createTimer(func, name, time) {
         var id = setTimeout(function () {
             id = null;
@@ -177,19 +190,13 @@ module.exports = function (params) {
                 initiate: [{
                     target: 'negotiatingContainer',
                     guard: function (params) {
-                        assert(typeof params.client === 'object');
                         assert(typeof params.caller === 'boolean');
-                        return (params.caller === true || params.client.hasListeners('call'));
+                        return (params.caller === true || hasListener());
                     }
                 }, {
                     target: 'terminated',
                     guard: function (params) {
-                        if (params.caller !== true && !params.client.hasListeners('call')) {
-                            that.hangupReason = 'no call listener';
-                            that.signalBye = true;
-                            return true;
-                        }
-                        return false;
+                        return (params.caller !== true && !hasListener());
                     }
                 }],
                 // Event

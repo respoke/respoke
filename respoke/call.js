@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var Q = require('q');
@@ -13,10 +14,14 @@ var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
- * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia, path and codec negotation,
- * and call state.
- *
+ * A `respoke.Call` is Respoke's interface into a WebRTC call, including getUserMedia,
+ * path and codec negotation, and call state.
  * There are several methods on an instance of `respoke.Client` which return a `respoke.Call`.
+ *
+ * ```
+ * var jim = client.getEndpoint({ id: 'jim' });
+ * var call = jim.startAudioCall();
+ * ```
  *
  * @class respoke.Call
  * @constructor
@@ -41,6 +46,7 @@ var respoke = require('./respoke');
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
+ * @param {Array<RTCConstraints>} params.constraints - Array of WebRTC constraints.
  * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
  * media renegotiation.
  * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -59,8 +65,10 @@ var respoke = require('./respoke');
  * @param {respoke.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
- * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
- * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
+ * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local
+ * video attached to it.
+ * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+ * video attached to it.
  * @returns {respoke.Call}
  */
 module.exports = function (params) {
@@ -101,6 +109,13 @@ module.exports = function (params) {
             // ignore
         }
     });
+
+    if (!that.caller) {
+        // Don't let Respoke.js pass any default constraints if we're accepting the call. We have no freaking clue
+        // what kind of media we are expected to provide at this point.
+        delete params.constraints;
+        that.constraints = [];
+    }
 
     /**
      * The call ID.
@@ -154,6 +169,7 @@ module.exports = function (params) {
      * @type {respoke.signalingChannel}
      */
     var signalingChannel = params.signalingChannel;
+
     /**
      * Informational property. Whether call debugs were enabled on the client during creation.
      * Changing this value will do nothing.
@@ -161,24 +177,6 @@ module.exports = function (params) {
      * @type {boolean}
      */
     that.enableCallDebugReport = params.signalingChannel.isSendingReport();
-    /**
-     * A flag indicating whether this call has audio.
-     *
-     * This becomes available after the call is accepted, for the client being called only.
-     *
-     * @name hasAudio
-     * @type {boolean}
-     */
-    that.hasAudio = undefined;
-    /**
-     * A flag indicating whether this call has video.
-     *
-     * This becomes available after the call is accepted, for the client being called only.
-     *
-     * @name hasVideo
-     * @type {boolean}
-     */
-    that.hasVideo = undefined;
 
     /**
      * @memberof! respoke.Call
@@ -189,6 +187,7 @@ module.exports = function (params) {
     var pc = respoke.PeerConnection({
         instanceId: instanceId,
         state: respoke.CallState({
+            instanceId: instanceId,
             caller: that.caller,
             needDirectConnection: params.needDirectConnection,
             sendOnly: params.sendOnly,
@@ -224,20 +223,45 @@ module.exports = function (params) {
     });
 
     /**
-     * Local media that we are sending to the remote party.
+     * Array of streams of local media that we are sending to the remote party.
+     * @name outgoingMediaStreams
+     * @type {Array<respoke.LocalMedia>}
+     */
+    that.outgoingMediaStreams = [];
+    that.outgoingMediaStreams.hasAudio = function () {
+        if (that.outgoingMediaStreams.length === 0) {
+            return false;
+        }
+
+        return !that.outgoingMediaStreams.every(function (stream) {
+            return stream.getAudioTracks().length === 0;
+        });
+    };
+    that.outgoingMediaStreams.hasVideo = function () {
+        if (that.outgoingMediaStreams.length === 0) {
+            return false;
+        }
+
+        return !that.outgoingMediaStreams.every(function (stream) {
+            return stream.getVideoTracks().length === 0;
+        });
+    };
+
+    /**
+     * Local media that we are sending to the remote party. This will be undefined if we are sending no media.
+     * This property is just the first item in the `outgoingMediaStreams` array. If multiple streams are present,
+     * use that array to find the stream you need instead of relying on this property.
      * @name outgoingMedia
      * @type {respoke.LocalMedia}
      */
-    that.outgoingMedia = respoke.LocalMedia({
-        state: pc.state,
-        instanceId: instanceId,
-        callId: that.id,
-        hasScreenShare: (that.caller && that.target === "screenshare"),
-        constraints: params.constraints || {
-            video: true,
-            audio: true,
-            optional: [],
-            mandatory: {}
+    Object.defineProperty(that, "outgoingMedia", {
+        configurable: false,
+        enumerable: true,
+        get: function () {
+            return that.outgoingMediaStreams[0];
+        },
+        set: function () {
+            // ignore
         }
     });
 
@@ -249,34 +273,78 @@ module.exports = function (params) {
      * @type {string}
      */
     that.remoteSdpExtract = undefined;
+    
+    /**
+     * Array of streams of remote media that we are receiving from the remote party.
+     * @name incomingMediaStreams
+     * @type {Array<respoke.RemoteMedia>}
+     */
+    that.incomingMediaStreams = [];
+    that.incomingMediaStreams.hasAudio = function () {
+        if (that.incomingMediaStreams.length === 0) {
+            return false;
+        }
+
+        return !that.incomingMediaStreams.every(function (stream) {
+            return stream.getAudioTracks().length === 0;
+        });
+    };
+    that.incomingMediaStreams.hasVideo = function () {
+        if (that.incomingMediaStreams.length === 0) {
+            return false;
+        }
+
+        return !that.incomingMediaStreams.every(function (stream) {
+            return stream.getVideoTracks().length === 0;
+        });
+    };
 
     /**
-     * Remote media that we are receiving from the remote party.
+     * Remote media that we are receiving from the remote party.  This will be undefined if we
+     * are receiving no media. This property is just the first item in the `incomingMediaStreams` array. If multiple
+     * streams are present, use that array to find the stream you need instead of relying on this property.
      * @name incomingMedia
      * @type {respoke.RemoteMedia}
      */
-    that.incomingMedia = respoke.RemoteMedia({
-        state: pc.state,
-        instanceId: instanceId,
-        callId: that.id,
-        hasScreenShare: (!that.caller && that.target === "screenshare"),
-        constraints: params.constraints
+    Object.defineProperty(that, "incomingMedia", {
+        configurable: false,
+        enumerable: true,
+        get: function () {
+            return that.incomingMediaStreams[0];
+        },
+        set: function () {
+            // ignore
+        }
     });
 
     /**
-     * This event indicates that local video has been unmuted.
-     * @event respoke.Call#mute
-     * @property {string} name - the event name.
-     * @property {respoke.Call} target
-     * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
-     * has been changed.
-     * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+     * A flag indicating whether this call has audio or is expected to have audio coming in from the other side.
+     *
+     * @name hasAudio
+     * @type {boolean}
      */
-    that.outgoingMedia.listen('mute', function (evt) {
-        that.fire('mute', {
-            type: evt.type,
-            muted: evt.muted
-        });
+    Object.defineProperty(that, "hasAudio", {
+        configurable: false,
+        enumerable: true,
+        get: that.incomingMediaStreams.hasAudio,
+        set: function () {
+            // ignore
+        }
+    });
+
+    /**
+     * A flag indicating whether this call has video or is expected to have video coming in from the other side.
+     *
+     * @name hasVideo
+     * @type {boolean}
+     */
+    Object.defineProperty(that, "hasVideo", {
+        configurable: false,
+        enumerable: true,
+        get: that.incomingMediaStreams.hasVideo,
+        set: function () {
+            // ignore
+        }
     });
 
     delete params.signalingChannel;
@@ -354,17 +422,21 @@ module.exports = function (params) {
      * @param {respoke.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
      * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
      * granted by the browser without asking the user to approve it.
-     * @param {object} [params.constraints]
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
      * @param {boolean} [params.sendOnly]
      * @param {boolean} [params.needDirectConnection] - flag to enable skipping media & opening direct connection.
-     * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
-     * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
+     * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local
+     * video attached to it.
+     * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+     * video attached to it.
      * @private
      * @fires respoke.Call#stats
      */
     function saveParameters(params) {
+        var isNewConstraint;
+
         /* This happens when the call is hung up automatically, for instance due to the lack of an onCall
          * handler. In this case, pc has been set to null in hangup. The call has already failed, and the
          * invocation of this function is an artifact of async code not being finished yet, so we can just
@@ -390,18 +462,30 @@ module.exports = function (params) {
         pc.state.sendOnly = typeof params.sendOnly === 'boolean' ? params.sendOnly : pc.state.sendOnly;
         pc.state.needDirectConnection = typeof params.needDirectConnection === 'boolean' ?
             params.needDirectConnection : pc.state.needDirectConnection;
-        pc.disableTurn = params.disableTurn || pc.disableTurn;
-        pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : pc.forceTurn;
+        pc.disableTurn = typeof params.disableTurn === 'boolean' ? params.disableTurn : !!pc.disableTurn;
+        pc.forceTurn = typeof params.forceTurn === 'boolean' ? params.forceTurn : !!pc.forceTurn;
 
-        that.outgoingMedia.constraints = params.constraints || that.outgoingMedia.constraints;
-        that.outgoingMedia.element = params.videoLocalElement || that.outgoingMedia.element;
+        that.videoLocalElement = params.videoLocalElement ? params.videoLocalElement : that.videoLocalElement;
+        that.videoRemoteElement = params.videoRemoteElement ? params.videoRemoteElement : that.videoRemoteElement;
 
-        if (pc.state.caller === true) {
+        if (pc.state.receiveOnly) {
+            that.outgoingMediaStreams.length = 0;
+            that.constraints = [];
+        } else if (params.constraints) {
+            that.constraints = respoke.convertConstraints(params.constraints);
+            updateOutgoingMediaEstimate({constraints: that.constraints[0]});
+        }
+
+        if (pc.state.sendOnly) {
+            that.incomingMediaStreams.length = 0;
+        } else if (params.constraints && pc.state.caller === true && that.incomingMediaStreams.length === 0) {
+            // TODO above condition is not good enough for media renegotiation.
             // Only the person who initiated this round of media negotiation needs to estimate remote
             // media based on what constraints local media is using.
-            that.incomingMedia.setConstraints(that.outgoingMedia.constraints);
+            // Also don't try to guess what media they'll send back if we're sending more than one stream.
+            that.constraints = respoke.convertConstraints(params.constraints);
+            updateIncomingMediaEstimate({constraints: params.constraints[0]});
         }
-        that.incomingMedia.element = params.videoRemoteElement || that.incomingMedia.element;
 
         pc.listen('stats', function fireStats(evt) {
             /**
@@ -422,6 +506,97 @@ module.exports = function (params) {
         delete that.signalHangup;
         delete that.signalReport;
         delete that.signalCandidate;
+    }
+
+    /**
+     * Build respoke.LocalMedia after the call is answered.
+     * @memberof! respoke.Call
+     * @method respoke.Call.buildLocalMedia
+     * @param {RTCConstraint} constraint
+     * @private
+     */
+    function buildLocalMedia(constraint) {
+        var localMedia;
+
+        if (pc.state.receiveOnly) {
+            return;
+        }
+
+        if (constraint.className === 'respoke.LocalMedia') {
+            localMedia = constraint;
+        } else {
+            localMedia = respoke.LocalMedia({
+                streamId: that.remoteEndpoint.id,
+                state: pc.state,
+                hasScreenShare: respoke.constraintsHasScreenShare(constraint),
+                constraints: constraint
+            });
+            that.outgoingMediaStreams.push(localMedia);
+        }
+
+        // Use the element for only one set of constraints, and make sure its one that has video.
+        if (respoke.constraintsHasVideo(localMedia.constraints) &&
+                that.videoLocalElement && !that.videoLocalElement.used) {
+            that.videoLocalElement.used = true;
+            localMedia.element = that.videoLocalElement;
+        }
+
+        localMedia.listen('requesting-media', function waitAllowHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
+            /**
+             * The browser is asking for permission to access the User's media. This would be an ideal time
+             * to modify the UI of the application so that the user notices the request for permissions
+             * and approves it.
+             * @event respoke.Call#requesting-media
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.Call} target
+             */
+            that.fire('requesting-media');
+        }, true);
+
+        localMedia.listen('allow', function allowHandler(evt) {
+            if (!pc) {
+                return;
+            }
+
+            /**
+             * The user has approved the request for media. Any UI changes made to remind the user to click Allow
+             * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
+             * even if the allow process is automatic, i. e., permission and media is granted by the browser
+             * without asking the user to approve it.
+             * @event respoke.Call#allow
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.Call} target
+             */
+            that.fire('allow');
+            pc.state.dispatch('approve', {
+                previewLocalMedia: previewLocalMedia
+            });
+        }, true);
+        localMedia.listen('stream-received', streamReceivedHandler, true);
+        localMedia.listen('no-local-media', noLocalMediaHandler, true);
+        localMedia.listen('error', function errorHandler(evt) {
+            pc.state.dispatch('reject', {reason: 'media stream error'});
+            pc.report.callStoppedReason = evt.reason;
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event respoke.Call#error
+             * @type {respoke.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {respoke.Call} target
+             * @property {string} name - the event name.
+             */
+            that.fire('error', {
+                reason: evt.reason
+            });
+        }, true);
+
+        localMedia.start();
     }
 
     /**
@@ -462,13 +637,15 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
-     * @param {object} [params.constraints] - Information about the media for this call.
-     * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local video attached to it.
-     * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote video attached to it.
+     * @param {Array<RTCConstraints>} [params.constraints] - Information about the media for this call.
+     * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local
+     * video attached to it.
+     * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+     * video attached to it.
      */
     that.answer = function (params) {
         params = params || {};
-        log.debug('Call.answer');
+        log.debug('Call.answer', params);
 
         saveParameters(params);
 
@@ -516,7 +693,7 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {boolean} [params.receiveOnly] - Whether or not we accept media.
      * @param {boolean} [params.sendOnly] - Whether or not we send media.
-     * @param {object} [params.constraints] - Information about the media for this call.
+     * @param {Array<RTCConstraints>} [params.constraints] - Information about the media for this call.
      */
     that.accept = that.answer;
 
@@ -577,12 +754,45 @@ module.exports = function (params) {
      * @fires respoke.Call#connect
      */
     function onRemoteStreamAdded(evt) {
+        var hasAudio = false;
+        var hasVideo = false;
+        var hasScreenShare = false;
+        var remoteMedia;
+        var useEl;
+
         if (!pc) {
             return;
         }
         log.debug('received remote media', evt);
 
-        that.incomingMedia.setStream(evt.stream);
+        // This is the first remote media we have received. The one we currently have is a guess. Rip it
+        // out and replace it with reality.
+        if (that.incomingMediaStreams.length === 1 && that.incomingMediaStreams[0].temporary === true) {
+            // have to do it this way because assigning a blank array to that.incomingMediaStreams will
+            // clobber the methods like hasAudio that we have added to the array.
+            that.incomingMediaStreams.length = 0;
+        }
+
+        hasAudio = evt.stream.getAudioTracks().length > 0;
+        hasVideo = evt.stream.getVideoTracks().length > 0;
+        // TODO this is not good enough long term.
+        hasScreenShare = hasVideo && that.target === 'screenshare';
+
+        if (that.videoRemoteElement && !that.videoRemoteElement.used) {
+            that.videoRemoteElement.used = true;
+            useEl = that.videoRemoteElement;
+        }
+
+        remoteMedia = respoke.RemoteMedia({
+            element: useEl,
+            stream: evt.stream,
+            hasScreenShare: hasScreenShare,
+            constraints: {
+                audio: hasAudio,
+                video: hasVideo
+            }
+        });
+        that.incomingMediaStreams.push(remoteMedia);
 
         /**
          * Indicates that either remote media stream has been added to the call or if no
@@ -596,8 +806,8 @@ module.exports = function (params) {
          */
         pc.state.dispatch('receiveRemoteMedia');
         that.fire('connect', {
-            stream: evt.stream,
-            element: that.incomingMedia.element
+            stream: remoteMedia.stream,
+            element: remoteMedia.element
         });
     }
 
@@ -655,7 +865,7 @@ module.exports = function (params) {
      * @returns {Video} An HTML5 video element.
      */
     that.getLocalElement = function () {
-        return that.outgoingMedia.element;
+        return that.outgoingMediaStreams[0] ? that.outgoingMediaStreams[0].element : undefined;
     };
 
     /**
@@ -669,7 +879,7 @@ module.exports = function (params) {
      * @returns {Video} An HTML5 video element.
      */
     that.getRemoteElement = function () {
-        return that.incomingMedia.element;
+        return that.incomingMediaStreams[0] ? that.incomingMediaStreams[0].element : undefined;
     };
 
     function streamReceivedHandler(evt) {
@@ -677,7 +887,7 @@ module.exports = function (params) {
             return;
         }
 
-        defMedia.resolve(that.outgoingMedia);
+        defMedia.resolve(evt.target);
         pc.addStream(evt.stream);
         pc.state.dispatch('receiveLocalMedia');
         if (typeof previewLocalMedia === 'function') {
@@ -695,7 +905,23 @@ module.exports = function (params) {
          */
         that.fire('local-stream-received', {
             element: evt.element,
-            stream: that.outgoingMedia
+            stream: evt.target
+        });
+
+        /**
+         * This event indicates that local video has been unmuted.
+         * @event respoke.Call#mute
+         * @property {string} name - the event name.
+         * @property {respoke.Call} target
+         * @property {string} type - Either "audio" or "video" to specify the type of stream whose muted state
+         * has been changed.
+         * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
+         */
+        evt.target.listen('mute', function (evt) {
+            that.fire('mute', {
+                type: evt.type,
+                muted: evt.muted
+            });
         });
     }
 
@@ -715,7 +941,7 @@ module.exports = function (params) {
      * @method respoke.Call.doAddVideo
      * @private
      * @param {object} params
-     * @param {object} [params.constraints] - getUserMedia constraints
+     * @param {Array<RTCConstraints>} [params.constraints] - getUserMedia constraints
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
@@ -727,62 +953,6 @@ module.exports = function (params) {
     function doAddVideo(params) {
         log.debug('Call.doAddVideo');
         saveParameters(params);
-        that.outgoingMedia.listen('requesting-media', function waitAllowHandler(evt) {
-            if (!pc) {
-                return;
-            }
-
-            /**
-             * The browser is asking for permission to access the User's media. This would be an ideal time
-             * to modify the UI of the application so that the user notices the request for permissions
-             * and approves it.
-             * @event respoke.Call#requesting-media
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.Call} target
-             */
-            that.fire('requesting-media');
-        }, true);
-        that.outgoingMedia.listen('allow', function allowHandler(evt) {
-            if (!pc) {
-                return;
-            }
-
-            /**
-             * The user has approved the request for media. Any UI changes made to remind the user to click Allow
-             * should be canceled now. This event is the same as the `onAllow` callback.  This event gets fired
-             * even if the allow process is automatic, i. e., permission and media is granted by the browser
-             * without asking the user to approve it.
-             * @event respoke.Call#allow
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.Call} target
-             */
-            that.fire('allow');
-            pc.state.dispatch('approve', {
-                previewLocalMedia: previewLocalMedia
-            });
-        }, true);
-        that.outgoingMedia.listen('stream-received', streamReceivedHandler, true);
-        that.outgoingMedia.listen('no-local-media', noLocalMediaHandler, true);
-        that.outgoingMedia.listen('error', function errorHandler(evt) {
-            pc.state.dispatch('reject', {reason: 'media stream error'});
-            pc.report.callStoppedReason = evt.reason;
-            /**
-             * This event is fired on errors that occur during call setup or media negotiation.
-             * @event respoke.Call#error
-             * @type {respoke.Event}
-             * @property {string} reason - A human readable description about the error.
-             * @property {respoke.Call} target
-             * @property {string} name - the event name.
-             */
-            that.fire('error', {
-                reason: evt.reason
-            });
-        });
-
-        that.outgoingMedia.start();
-        return that.outgoingMedia;
     }
 
     /**
@@ -794,7 +964,8 @@ module.exports = function (params) {
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=true]
-     * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
+     * @param {Array<RTCConstraints>} [params.constraints] - getUserMedia constraints, indicating the media
+     * being requested is
      * an audio and/or video stream.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
@@ -807,9 +978,9 @@ module.exports = function (params) {
     that.addVideo = function (params) {
         log.debug('Call.addVideo');
         params = params || {};
-        params.constraints = params.constraints || {video: true, audio: true};
-        params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
-        params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
+        if (!params.constraints || !params.constraints.length) {
+            params.constraints = [{video: true, audio: true}];
+        }
         params.instanceId = instanceId;
 
         if (!defMedia.promise.isFulfilled()) { // we're the callee & have just accepted to modify
@@ -834,8 +1005,8 @@ module.exports = function (params) {
      * @param {object} params
      * @param {boolean} [params.audio=true]
      * @param {boolean} [params.video=false]
-     * @param {object} [params.constraints] - getUserMedia constraints, indicating the media being requested is
-     * an audio and/or video stream.
+     * @param {Array<RTCConstraints>} [params.constraints] - getUserMedia constraints, indicating the media
+     * being requested is an audio and/or video stream.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect]
@@ -846,11 +1017,10 @@ module.exports = function (params) {
      */
     that.addAudio = function (params) {
         params = params || {};
-        params.constraints = params.constraints || {video: false, audio: true};
-        params.constraints.video = typeof params.constraints.video === 'boolean' ?
-            params.constraints.video : false;
-        params.constraints.audio = typeof params.audio === 'boolean' ? params.audio : params.constraints.audio;
-        params.constraints.video = typeof params.video === 'boolean' ? params.video : params.constraints.video;
+        if (!params.constraints || !params.constraints.length) {
+            params.constraints = [{video: false, audio: true}];
+        }
+
         return that.addVideo(params);
     };
 
@@ -884,7 +1054,7 @@ module.exports = function (params) {
         params = params || {};
         log.debug('Call.removeDirectConnection');
 
-        if (directConnection && directConnection.isActive()) {
+        if (directConnection) {
             directConnection.close({skipRemove: true});
         }
 
@@ -989,9 +1159,7 @@ module.exports = function (params) {
                 log.debug('Hanging up because there are no local streams.');
                 that.hangup();
             } else {
-                if (directConnection && directConnection.isActive()) {
-                    that.removeDirectConnection({skipModify: true});
-                }
+                that.removeDirectConnection({skipModify: true});
             }
         }, true);
 
@@ -1096,12 +1264,12 @@ module.exports = function (params) {
     var doHangup = function () {
         log.debug('hangup', that.caller);
 
-        that.outgoingMedia.stop();
+        that.outgoingMediaStreams.forEach(function (stream) {
+            stream.stop();
+        });
 
-        if (directConnection && directConnection.isActive()) {
+        if (directConnection) {
             directConnection.close();
-            that.remoteEndpoint.directConnection = null;
-            directConnection.ignore();
             directConnection = null;
         }
 
@@ -1148,15 +1316,112 @@ module.exports = function (params) {
      * @returns {boolean}
      */
     that.isActive = function () {
-        // TODO: make this look for remote streams, too. Want to make this handle one-way media calls.
         return !!(pc && pc.isActive() && (
-            (that.outgoingMedia.hasMedia()) ||
+            that.outgoingMediaStreams.length > 0 ||
+            that.incomingMediaStreams.length > 0 ||
             (directConnection && directConnection.isActive())
         ));
     };
 
     /**
+     * Set the estimated media status on incoming media.
+     * @memberof! respoke.Call
+     * @method respoke.Call.listenAnswer
+     * @param {object} evt
+     * @param {object} evt.signal - The offer signal including the sdp
+     * @private
+     */
+    function listenAnswer(evt) {
+        log.debug('listenAnswer', evt.signal);
+
+        that.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
+        updateIncomingMediaEstimate({sdp: evt.signal.sessionDescription});
+    }
+
+    /**
+     * Set the estimated media status on incoming media.
+     * @memberof! respoke.Call
+     * @method respoke.Call.updateIncomingMediaEstimate
+     * @param {object} params
+     * @param {RTCSessionDescriptor} [params.sdp] - optional sdp to use to estimate media
+     * @param {RTCConstraints} [params.constraints] - optional constraints to use to estimate media
+     * @private
+     */
+    function updateIncomingMediaEstimate(params) {
+        if (pc.state.sendOnly) {
+            that.incomingMediaStreams.length = 0;
+            return;
+        }
+
+        if (!params.sdp && !params.constraints) {
+            throw new Error("Can't estimate incoming media without sdp or constraints");
+        }
+
+        if (that.incomingMediaStreams.length === 0) {
+            that.incomingMediaStreams.push(respoke.RemoteMedia({
+                temporary: true
+            }));
+        }
+
+        if (params.sdp) {
+            if (that.incomingMediaStreams[0] && that.incomingMediaStreams[0].temporary) {
+                that.incomingMediaStreams[0].setSDP(params.sdp);
+            }
+        }
+
+        if (params.constraints) {
+            if (that.incomingMediaStreams[0] && that.incomingMediaStreams[0].temporary) {
+                that.incomingMediaStreams[0].setConstraints(params.constraints);
+            }
+        }
+    }
+
+    /**
+     * Set the estimated media status on outgoing media. For this method, by the time we have constraints, we're
+     * already calling getUserMedia so we will have exactly the right information. No need to use constraints
+     * to estimate.
+     * @memberof! respoke.Call
+     * @method respoke.Call.updateOutgoingMediaEstimate
+     * @param {object} params
+     * @param {RTCSessionDescriptor} [params.sdp] - optional sdp to use to estimate media
+     * @param {RTCConstraints} [params.constraints] - optional constraints to use to estimate media
+     * @private
+     */
+    function updateOutgoingMediaEstimate(params) {
+        if (pc.state.receiveOnly) {
+            that.outgoingMediaStreams.length = 0;
+            that.constraints = [];
+            return;
+        }
+
+        if (!params.sdp && !params.constraints) {
+            throw new Error("Can't estimate outgoing media without sdp or constraints");
+        }
+
+        if (that.outgoingMediaStreams.length === 0) {
+            that.outgoingMediaStreams.push(respoke.LocalMedia({
+                instanceId: instanceId,
+                state: pc.state,
+                temporary: true
+            }));
+        }
+
+        if (params.sdp) {
+            if (that.outgoingMediaStreams[0] && that.outgoingMediaStreams[0].temporary) {
+                that.outgoingMediaStreams[0].setSDP(params.sdp);
+            }
+        }
+
+        if (params.constraints) {
+            if (that.outgoingMediaStreams[0] && that.outgoingMediaStreams[0].temporary) {
+                that.outgoingMediaStreams[0].setConstraints(params.constraints);
+            }
+        }
+    }
+
+    /**
      * Save the offer so we can tell the browser about it after the PeerConnection is ready.
+     * Set the estimated media status on incoming and outgoing media.
      * @memberof! respoke.Call
      * @method respoke.Call.listenOffer
      * @param {object} evt
@@ -1169,27 +1434,39 @@ module.exports = function (params) {
         var info = {};
 
         that.sessionId = evt.signal.sessionId;
+        pc.state.receiveOnly = respoke.sdpHasSendOnly(evt.signal.sessionDescription.sdp);
+        pc.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
         pc.state.listen('connecting:entry', function () {
             if (!pc.state.caller) {
                 pc.processOffer(evt.signal.sessionDescription);
             }
         });
 
+        // Only do this if we're still trying to guess what media is coming in.
+        // TODO not good enough for media renegotiation
+        updateIncomingMediaEstimate({sdp: evt.signal.sessionDescription});
+
         /*
          * Always overwrite constraints for callee on every offer, since answer() and accept() will
-         * always be called after parsing the SDP.
+         * always be called after parsing the SDP. However, if the caller isn't sending any media,
+         * use audio & video as our estimate.
+         * TODO not good enough for media renegotiation
          */
 
         /*
          * extra info for accept/reject choice
          */
         that.remoteSdpExtract = respoke.sdpExtract(evt.signal.sessionDescription.sdp);
-
-        if (pc.state.receiveOnly !== true) {
-            that.outgoingMedia.constraints.video = respoke.sdpHasVideo(evt.signal.sessionDescription.sdp);
-            that.outgoingMedia.constraints.audio = respoke.sdpHasAudio(evt.signal.sessionDescription.sdp);
-            log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
+        // If sendOnly, we can't rely on the offer for media estimate. It doesn't have any media in it!
+        if (pc.state.sendOnly) {
+            updateOutgoingMediaEstimate({constraints: {
+                audio: true,
+                video: true
+            }});
+        } else {
+            updateOutgoingMediaEstimate({sdp: evt.signal.sessionDescription});
         }
+        log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
 
         if (pc.state.isModifying()) {
             if (pc.state.needDirectConnection === true) {
@@ -1267,7 +1544,8 @@ module.exports = function (params) {
                 defMedia.resolve(false);
             }
         }
-        pc.state.needDirectConnection = typeof evt.signal.directConnection === 'boolean' ? evt.signal.directConnection : null;
+        pc.state.needDirectConnection = typeof evt.signal.directConnection === 'boolean' ?
+            evt.signal.directConnection : null;
         that.outgoingMedia.constraints = evt.signal.constraints || that.outgoingMedia.constraints;
     }
 
@@ -1320,7 +1598,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Indicate whether the call has media flowing.
+     * Indicate whether the call has media of any type flowing in either direction.
      * @memberof! respoke.Call
      * @method respoke.Call.hasMedia
      * @returns {boolean}
@@ -1422,6 +1700,7 @@ module.exports = function (params) {
         doHangup();
     }, true);
 
+    that.listen('signal-answer', listenAnswer);
     that.listen('signal-offer', function (evt) {
         if (pc.state.getState() === 'idle') {
             pc.state.once('preparing:entry', function () {
@@ -1445,6 +1724,50 @@ module.exports = function (params) {
             }
             pc.addRemoteCandidate({candidate: candidate});
         });
+    }, true);
+
+    that.listen('answer', function (evt) {
+        if (pc.state.receiveOnly || pc.state.needDirectConnection) {
+            that.outgoingMediaStreams.length = 0;
+            return;
+        }
+
+        /*
+         * By the time we get to here, we could be in a couple of states.
+         *
+         * If receiveOnly is set to true, we could possibly have constraints (if the developer used the API wrong)
+         * but we will not have any media in that.outgoingMediaStreams. We should unset that.constraints and skip
+         * building any local media.
+         *
+         * If we have never received any constraints, and receiveOnly is NOT set to true, we will have an estimate
+         * at that.outgoingMediaStreams[0] with temporary set to true. This estimate was set by parsing the SDP.
+         *
+         * If we have received one or more constraints, that.constraints array will contain the most recent set
+         * AND we will have an estimate at that.outgoingMediaStreams[0] with temporary set to true. We must completely
+         * rebuild that.outgoingMediaStreams from that.constraints.
+         */
+        if (pc.state.receiveOnly) {
+            that.outgoingMediaStreams.length = 0;
+            that.constraints = [];
+            return;
+        }
+
+        if (that.constraints.length === 0) {
+            // We didn't get told what to do by constraints; use our guess.
+            that.outgoingMediaStreams[0].temporary = undefined;
+        } else if (that.outgoingMediaStreams.length > 0 && that.outgoingMediaStreams[0].temporary) {
+            // We got told what to do. Discard our guess. It's OK for that.outgoingMediaStreams to be empty now.
+            that.outgoingMediaStreams.shift();
+        }
+
+        if (that.constraints.length > 0) {
+            that.outgoingMediaStreams.length = 0;
+            that.constraints.forEach(buildLocalMedia);
+        } else if (that.outgoingMediaStreams.length > 0) {
+            that.outgoingMediaStreams.forEach(buildLocalMedia);
+        } else {
+            throw new Error("I have no idea what type of media I am supposed to build.");
+        }
     }, true);
 
     if (pc.state.needDirectConnection !== true) {
@@ -1484,8 +1807,7 @@ module.exports = function (params) {
      *  This will need to be moved when we start handling media renegotiation.
      */
     pc.state.listen('connecting:entry', function connectNoMedia() {
-        if (!that.incomingMedia.hasVideo() && !that.incomingMedia.hasAudio() &&
-            (that.outgoingMedia.hasVideo() || that.outgoingMedia.hasAudio())) {
+        if (pc.state.sendOnly) {
             /**
              * Indicates that either remote media stream has been added to the call or if no
              * media is expected, the other side is receiving our media.
@@ -1499,11 +1821,9 @@ module.exports = function (params) {
         }
     });
 
-
     signalingChannel.getTurnCredentials().then(function (result) {
         if (!pc) {
             throw new Error("Already hung up.");
-            return;
         }
         if (!result) {
             log.warn("Relay service not available.");
@@ -1514,10 +1834,8 @@ module.exports = function (params) {
     }).fin(function () {
         if (!pc) {
             throw new Error("Already hung up.");
-            return;
         }
         pc.state.dispatch('initiate', {
-            client: client,
             caller: that.caller
         });
     }).done(null, function (err) {

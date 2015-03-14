@@ -39,8 +39,6 @@ describe("Respoke local media", function () {
                     state.receiveOnly = false;
                     localMedia = respoke.LocalMedia({
                         state: state,
-                        instanceId: 'blah',
-                        callId: 'blah',
                         hasScreenShare: false,
                         constraints: {
                             audio: true,
@@ -216,8 +214,6 @@ describe("Respoke local media", function () {
                     state.receiveOnly = false;
                     localMedia = respoke.LocalMedia({
                         state: state,
-                        instanceId: 'blah',
-                        callId: 'blah',
                         hasScreenShare: false,
                         constraints: {
                             audio: true,
@@ -339,8 +335,6 @@ describe("Respoke local media", function () {
                     state.receiveOnly = false;
                     localMedia = respoke.LocalMedia({
                         state: state,
-                        instanceId: 'blah',
-                        callId: 'blah',
                         hasScreenShare: false,
                         constraints: {
                             audio: false,

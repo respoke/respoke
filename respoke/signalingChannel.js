@@ -1,5 +1,5 @@
 'use strict';
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -7,6 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -294,7 +295,7 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.isSendingReport = function (params) {
-        return  clientSettings.enableCallDebugReport;
+        return clientSettings.enableCallDebugReport;
     };
 
     /**
@@ -752,7 +753,7 @@ module.exports = function (params) {
             });
 
             return deferred.promise;
-        }
+        };
     })();
 
     /**
@@ -1898,6 +1899,7 @@ module.exports = function (params) {
         request.id = pendingRequests.add(deferred);
 
         function handleResponse(response) {
+            var thisHandler = this; // jshint ignore:line
             /*
              * Response:
              *  {
@@ -1933,9 +1935,9 @@ module.exports = function (params) {
             request.durationMillis = now() - start;
             pendingRequests.remove(request.id);
 
-            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) === -1) {
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(thisHandler.status) === -1) {
                 failWebsocketRequest(request, response.body,
-                        response.body.error || errors[this.status] || "Unknown error", deferred);
+                        response.body.error || errors[thisHandler.status] || "Unknown error", deferred);
             } else {
                 deferred.resolve(response.body);
             }

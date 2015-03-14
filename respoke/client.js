@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var log = require('loglevel');
@@ -641,21 +642,21 @@ module.exports = function (params) {
 
         callParams.id = params.id;
         callParams.caller = false;
-        callParams.toType = params.fromType;
         callParams.fromType = "web";
 
         switch (params.type) {
             case "screenshare":
-                callParams.toType = "web"; // overwrite "screenshare"
-                // No break
             case "web":
+                callParams.toType = "web"; // overwrite "screenshare"
                 callParams.endpointId = params.endpointId;
                 break;
             case "did":
                 callParams.number = params.endpointId;
+                callParams.toType = "did";
                 break;
             case "sip":
                 callParams.uri = params.endpointId;
+                callParams.toType = "sip";
                 break;
         }
 
@@ -893,7 +894,7 @@ module.exports = function (params) {
      * @method respoke.Client.startCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
-     * @param {RTCConstraints} [params.constraints]
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -925,8 +926,10 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have local video attached to it.
-     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote video attached to it.
+     * @param {HTMLVideoElement} [params.videoLocalElement] - Pass in an optional html video element to have
+     * local video attached to it.
+     * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have
+     * remote video attached to it.
      * @return {respoke.Call}
      */
     that.startCall = function (params) {
@@ -964,6 +967,7 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {string} [params.connectionId]
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -1003,12 +1007,13 @@ module.exports = function (params) {
      */
     that.startAudioCall = function (params) {
         params = params || {};
-        params.constraints = {
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: false,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
+
         return that.startCall(params);
     };
 
@@ -1025,6 +1030,7 @@ module.exports = function (params) {
      * @method respoke.Client.startVideoCall
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @param {string} [params.connectionId]
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
@@ -1065,12 +1071,13 @@ module.exports = function (params) {
      */
     that.startVideoCall = function (params) {
         params = params || {};
-        params.constraints = {
+        params.constraints = respoke.convertConstraints(params.constraints, [{
             video: true,
             audio: true,
             optional: [],
             mandatory: {}
-        };
+        }]);
+
         return that.startCall(params);
     };
 
@@ -1080,6 +1087,10 @@ module.exports = function (params) {
      * @method respoke.Client.startPhoneCall
      * @param {object} params
      * @param {string} params.number - The phone number that should be called.
+     * @arg {string} params.callerId - The phone number to use as the caller ID for this phone call. This must
+     * be a phone number listed in your Respoke account, associated with your app, and allowed by the role
+     * that this client is authenticated with. If the role contains a list of numbers and the token does not contain
+     * callerId, this field must be used to set caller ID selected from the list of numbers or no caller ID will be set.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -1114,12 +1125,12 @@ module.exports = function (params) {
         var call = null;
         var recipient = {};
         params = params || {};
-        params.constraints = {
+        params.constraints = [{
             video: false,
             audio: true,
             mandatory: {},
             optional: []
-        };
+        }];
 
         try {
             that.verifyConnected();
@@ -1159,15 +1170,23 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
+            if (params.callerId) {
+                signalParams.callerId = {number: params.callerId};
+            }
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'answer';
             signalParams.target = 'call';
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
             });
@@ -1261,12 +1280,12 @@ module.exports = function (params) {
         var call = null;
         var recipient = {};
         params = params || {};
-        params.constraints = {
+        params.constraints = [{
             video: false,
             audio: true,
             mandatory: {},
             optional: []
-        };
+        }];
 
         try {
             that.verifyConnected();
@@ -1309,12 +1328,17 @@ module.exports = function (params) {
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'answer';
             signalParams.target = 'call';
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
             });

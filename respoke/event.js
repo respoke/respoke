@@ -1,4 +1,4 @@
-/*
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,13 +6,30 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
 var respoke = require('./respoke');
 var log = require('loglevel');
 
 /**
- * A generic class for emitting and listening to events.
+ * A generic class for emitting and listening to events. This is used internally by respoke.js
+ * to provide evented behavior. You can add custom events and inherit your own objects from
+ * the EventEmitter.
+ *
+ * ```
+ * // Adding a custom event to a respoke.Client instance
+ * client.listen('my-event', function (evt) { });
+ * client.fire('my-event', { name: 'my-event', asdf: 'jkl' });
+ * ```
+ *
+ * ```
+ * // Custom EventEmitter
+ * var MyCustomEmitter = respoke.EventEmitter();
+ * var emitterInstance = MyCustomEmitter();
+ * emitterInstance.fire('hi', { name: 'hi', message: 'hello' });
+ * emitterInstance.listen('hi', function (evt) { });
+ * ```
  *
  * @class respoke.EventEmitter
  * @inherits respoke.Class
@@ -63,18 +80,18 @@ var EventEmitter = module.exports = function (params) {
     that.once = function (eventType, listener, isInternal) {
         var string = listener.toString();
         listener = respoke.once(listener);
-        listener.toString = function () { return string; }
+        listener.toString = function () { return string; };
         listener.once = true;
         that.listen(eventType, listener, isInternal);
     };
 
     /**
      * Add a `listener` function to an object.
-     * 
+     *
      * This method adds the `listener` to the event `eventName`.
-     * 
+     *
      * If an identical listener already registered to this event, it will **not** be added.
-     * 
+     *
      * ##### Example of adding an event listener.
      *
      *     client.listen('connect', function (evt) {
@@ -86,7 +103,7 @@ var EventEmitter = module.exports = function (params) {
      * @param {string} eventType - The name of the event.
      * @param {respoke.EventEmitter.eventListener} listener - A function to call when the event is
      * fired.
-     * @arg {boolean} isInternal - Internal use only. A flag to indicate this listener was 
+     * @arg {boolean} isInternal - Internal use only. A flag to indicate this listener was
      * added by the library. This parameter should not be used by developers who are using
      * the library, only by developers who are working on the library itself.
      */

@@ -88,6 +88,10 @@ module.exports = function (grunt) {
             scripts: {
                 files: ['respoke/**/*.js', 'plugins/**/*.js'],
                 tasks: ['dist']
+            },
+            docs: {
+                files: ['respoke/**/*.js', 'plugins/**/*.js', 'docs.scss', 'docs.jade'],
+                tasks: ['docs']
             }
         },
 
@@ -140,6 +144,24 @@ module.exports = function (grunt) {
                     '.docs/site/css/docs.css': 'docs.scss'
                 }
             }
+        },
+        'http-server': {
+            docs: {
+                // the server root directory
+                root: '.docs/site/',
+                port: 2007,
+                host: "0.0.0.0",
+                showDir: true,
+                autoIndex: true,
+
+                // server default file extension
+                // ext: "html",
+
+                // run in parallel with other tasks
+                runInBackground: true
+
+            }
+
         }
     });
 
@@ -152,6 +174,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-http-server');
     grunt.loadNpmTasks('grunt-sass');
     grunt.loadNpmTasks('jsdoxy');
 
@@ -244,5 +267,10 @@ module.exports = function (grunt) {
         'jsdoxy',
         'copy:docs-shared-assets',
         'sass:docs'
+    ]);
+    grunt.registerTask('docs-server', 'Build, watch, rebuild, and serve the docs', [
+        'docs',
+        'http-server:docs',
+        'watch:docs'
     ]);
 };

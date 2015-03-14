@@ -70,8 +70,6 @@ describe("A Direct Connection", function () {
             expect(followerClient.endpointId).to.equal(followerToken.endpointId);
             expect(followeeClient.endpointId).not.to.be.undefined;
             expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
-            followerClient.listen('call', function () {});
-            followeeClient.listen('call', function () {});
         }).done(function () {
             followerEndpoint = followeeClient.getEndpoint({id: followerClient.endpointId});
             followeeEndpoint = followerClient.getEndpoint({id: followeeClient.endpointId});
@@ -83,15 +81,18 @@ describe("A Direct Connection", function () {
         });
     });
 
-    describe("when starting a direct connection", function () {
-        function callListener(evt) {
-            if (!evt.directConnection.call.caller) {
-                setTimeout(evt.directConnection.accept);
-            }
+    function callListener(evt) {
+        if (!evt.directConnection.call.caller) {
+            setTimeout(evt.directConnection.accept);
         }
+    }
 
-        // Still seeing intermittent failures.
-        describe("with call listener specified", function () {
+    describe("when starting a direct connection", function () {
+        beforeEach(function () {
+            directConnection = undefined;
+        });
+
+        describe("with direct connection listener specified", function () {
             var hangupReason;
             var dc;
 
@@ -99,7 +100,7 @@ describe("A Direct Connection", function () {
                 done = doneCountBuilder(1, done);
                 followeeClient.listen('direct-connection', callListener);
 
-                directConnection = followeeEndpoint.startDirectConnection({
+                followeeEndpoint.startDirectConnection({
                     onOpen: function (evt) {
                         directConnection = followeeEndpoint.directConnection;
                         done();
@@ -118,7 +119,71 @@ describe("A Direct Connection", function () {
             it("succeeds", function () {
                 expect(directConnection).to.be.ok;
                 expect(hangupReason).to.equal(undefined);
+                expect(directConnection.isActive()).to.equal(true);
             });
+        });
+
+        describe("with no direct connection listener specified", function () {
+            var hangupReason;
+            var dc;
+
+            beforeEach(function (done) {
+                done = doneCountBuilder(1, done);
+
+                followeeEndpoint.startDirectConnection({
+                    onOpen: function (evt) {
+                        directConnection = followeeEndpoint.directConnection;
+                        done();
+                    },
+                    onClose: function (evt) {
+                        hangupReason = evt.reason;
+                        done();
+                    }
+                }).done(null, done);
+            });
+
+            it("fails", function () {
+                expect(directConnection).to.equal(undefined);
+            });
+        });
+    });
+
+    describe("when starting two direct connections in a row without logging out", function () {
+        var hangupReason;
+
+        beforeEach(function (done) {
+            done = doneCountBuilder(1, done);
+            followeeClient.listen('direct-connection', callListener);
+
+            followeeEndpoint.startDirectConnection({
+                onOpen: function (evt) {
+                    followeeEndpoint.directConnection.close();
+                },
+                onClose: function (evt) {
+                    setTimeout(function () {
+                        followeeEndpoint.startDirectConnection({
+                            onOpen: function (evt) {
+                                directConnection = followeeEndpoint.directConnection;
+                                done();
+                            },
+                            onClose: function (evt) {
+                                hangupReason = evt.reason;
+                                done();
+                            }
+                        }).done(null, done);
+                    }, 1000); // tried timeout of zero, but even 100 fails occasionally.
+                }
+            }).done(null, done);
+        });
+
+        afterEach(function () {
+            followeeClient.ignore('direct-connection', callListener);
+        });
+
+        it("succeeds", function () {
+            expect(directConnection).to.be.ok;
+            expect(hangupReason).to.equal(undefined);
+            expect(directConnection.isActive()).to.equal(true);
         });
     });
 
