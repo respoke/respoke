@@ -837,6 +837,7 @@ module.exports = function (params) {
             return;
         }
         log.debug('got answer', evt.signal);
+	evt.signal.sessionDescription = that.call.remoteSDP(evt.signal.sessionDescription);
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
         that.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);

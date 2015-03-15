@@ -266,15 +266,6 @@ module.exports = function (params) {
     });
 
     /**
-     * extracted extra info from the sdp
-     * may be basis for call rejection/auto answer
-     *
-     * @name remoteSdpExtract
-     * @type {string}
-     */
-    that.remoteSdpExtract = undefined;
-    
-    /**
      * Array of streams of remote media that we are receiving from the remote party.
      * @name incomingMediaStreams
      * @type {Array<respoke.RemoteMedia>}
@@ -598,6 +589,20 @@ module.exports = function (params) {
 
         localMedia.start();
     }
+    /**
+     *
+     * optionally inspect or manipulate the remoteSDP before 
+     * it is applied
+     * @memberof! respoke.Call
+     * @method respoke.Call.remoteSDP
+     * @param {SessionDescription} remoteSession
+     * @public
+     * @returns SessionDescription
+     */
+    that.remoteSDP = function(remoteSession){
+	return remoteSession;
+    };
+
 
     /**
      * Answer the call and start the process of obtaining media. This method is called automatically on the caller's
@@ -1434,6 +1439,7 @@ module.exports = function (params) {
         var info = {};
 
         that.sessionId = evt.signal.sessionId;
+        evt.signal.sessionDescription = that.remoteSDP(evt.signal.sessionDescription);
         pc.state.receiveOnly = respoke.sdpHasSendOnly(evt.signal.sessionDescription.sdp);
         pc.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
         pc.state.listen('connecting:entry', function () {
@@ -1453,10 +1459,6 @@ module.exports = function (params) {
          * TODO not good enough for media renegotiation
          */
 
-        /*
-         * extra info for accept/reject choice
-         */
-        that.remoteSdpExtract = respoke.sdpExtract(evt.signal.sessionDescription.sdp);
         // If sendOnly, we can't rely on the offer for media estimate. It doesn't have any media in it!
         if (pc.state.sendOnly) {
             updateOutgoingMediaEstimate({constraints: {
