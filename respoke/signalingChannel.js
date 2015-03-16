@@ -421,11 +421,9 @@ module.exports = function (params) {
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.close
      * @private
-     * @param {object} params
      * @return {Promise}
      */
-    that.close = function (params) {
-        params = params || {};
+    that.close = function () {
         var deferred = Q.defer();
 
         wsCall({
@@ -495,7 +493,7 @@ module.exports = function (params) {
      * @private
      * @returns {Promise<respoke.Group>}
      * @param {object} params
-     * @param {string} name
+     * @param {string} params.name
      */
     that.getGroup = function (params) {
         params = params || {};
@@ -1850,7 +1848,7 @@ module.exports = function (params) {
         var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
         var request;
         var bodyLength = 0;
-        if (params.paramaters) {
+        if (params.parameters) {
             bodyLength = encodeURI(JSON.stringify(params.parameters)).split(/%..|./).length - 1;
         }
 
@@ -2092,10 +2090,8 @@ module.exports = function (params) {
                 limit = this.getResponseHeader('RateLimit-Limit');
                 deferred.reject(new Error("Rate limit of " + limit + "/" + unit +
                     " exceeded. Try again in 1 " + unit + "."));
-                return;
             } else {
                 deferred.reject(new Error('unexpected response ' + this.status));
-                return;
             }
         };
 
