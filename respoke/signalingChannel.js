@@ -2143,6 +2143,9 @@ module.exports = function (params) {
      * @param {object} xhrResponse The response of an XMLHttpRequest
      * @param {string} header The name of the header to retrieve the value for
      * @returns {string|null} The value(s) of the header, or null if disallowed or unavailable.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getResponseHeader
+     * @private
      */
     function getResponseHeader(xhrResponse, header) {
         try {
@@ -2157,6 +2160,9 @@ module.exports = function (params) {
      *
      * @param {object} xhrResponse The response of an XMLHttpRequest
      * @returns {*} the key/val pairs of the response headers
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getAllResponseHeaders
+     * @private
      */
     function getAllResponseHeaders(xhrResponse) {
         var result = {};
@@ -2187,6 +2193,19 @@ module.exports = function (params) {
         return result;
     }
 
+    /**
+     * Creates an Error with the supplied `message` and, if available, the `Request-Id` header
+     * from the supplied `response`.
+     *
+     * @param {object} res
+     * @param {object} [res.headers]
+     * @param {string} [res.headers.Request-Id] The requestId to append to the Error message
+     * @param {string} message The message the Error should be constructed with
+     * @returns {Error} the constructed Error object
+     * @memberof respoke.SignalingChannel
+     * @method respoke.SignalingChannel.buildResponseError
+     * @api private
+     */
     function buildResponseError(res, message) {
         var requestId = res && res.headers && res.headers['Request-Id'];
         if (requestId) {
