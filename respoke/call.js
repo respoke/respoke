@@ -529,7 +529,6 @@ module.exports = function (params) {
             localMedia = constraint;
         } else {
             localMedia = respoke.LocalMedia({
-                state: pc.state,
                 hasScreenShare: respoke.constraintsHasScreenShare(constraint),
                 constraints: constraint
             });
@@ -1418,7 +1417,6 @@ module.exports = function (params) {
         if (that.outgoingMediaStreams.length === 0) {
             that.outgoingMediaStreams.push(respoke.LocalMedia({
                 instanceId: instanceId,
-                state: pc.state,
                 temporary: true
             }));
         }
