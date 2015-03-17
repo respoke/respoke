@@ -368,9 +368,9 @@ module.exports = function (params) {
                 deferred.resolve(response.result.tokenId);
                 return;
             }
-            deferred.reject(new Error("Couldn't get a developer mode token: " + response.error));
+            deferred.reject(buildResponseError(response, "Couldn't get a developer mode token: " + response.error));
         }, function (err) {
-            deferred.reject(new Error("Couldn't get a developer mode token: " + err));
+            deferred.reject(new Error("Couldn't get a developer mode token: " + err.message));
         });
         return deferred.promise;
     };
@@ -406,7 +406,7 @@ module.exports = function (params) {
                 deferred.resolve();
                 log.debug("Signaling connection open to", clientSettings.baseURL);
             } else {
-                deferred.reject(new Error("Couldn't authenticate app: " + response.error));
+                deferred.reject(buildResponseError(response, "Couldn't authenticate app: " + response.error));
             }
         }, function (err) {
             log.error("Network call failed:", err.message);
@@ -1924,7 +1924,7 @@ module.exports = function (params) {
                 } else {
                     request.durationMillis = now() - start;
                     pendingRequests.remove(request.id);
-                    failWebsocketRequest(request, response.body,
+                    failWebsocketRequest(request, response,
                             "Too many retries after rate limit exceeded.", deferred);
                 }
                 return;
@@ -1934,7 +1934,7 @@ module.exports = function (params) {
             pendingRequests.remove(request.id);
 
             if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(thisHandler.status) === -1) {
-                failWebsocketRequest(request, response.body,
+                failWebsocketRequest(request, response,
                         response.body.error || errors[thisHandler.status] || "Unknown error", deferred);
             } else {
                 deferred.resolve(response.body);
@@ -1945,7 +1945,7 @@ module.exports = function (params) {
                     method: request.method,
                     path: request.path,
                     durationMillis: request.durationMillis,
-                    response: response.body
+                    response: response
                 });
             }
         }
@@ -1956,10 +1956,10 @@ module.exports = function (params) {
     }
 
     function failWebsocketRequest(request, response, error, deferred) {
-        if (response && response.error) {
-            deferred.reject(new Error(error + '(' + request.method + ' ' + request.path + ')'));
+        if (response && response.body && response.body.error) {
+            deferred.reject(buildResponseError(response, error + '(' + request.method + ' ' + request.path + ')'));
         } else {
-            deferred.resolve(response);
+            deferred.resolve(response.body);
         }
     }
 
@@ -2062,12 +2062,15 @@ module.exports = function (params) {
             if (this.readyState !== 4) {
                 return;
             }
+
             if (this.status === 0) {
                 deferred.reject(new Error("Status is 0: Incomplete request, SSL error, or CORS error."));
                 return;
             }
+
             if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
                 response.code = this.status;
+                response.headers = getAllResponseHeaders(this);
                 response.uri = uri;
                 response.params = params.parameters;
                 response.error = errors[this.status];
@@ -2086,12 +2089,12 @@ module.exports = function (params) {
                 });
                 deferred.resolve(response);
             } else if (this.status === 429) {
-                unit = this.getResponseHeader('RateLimit-Time-Units');
-                limit = this.getResponseHeader('RateLimit-Limit');
-                deferred.reject(new Error("Rate limit of " + limit + "/" + unit +
+                unit = getResponseHeader(this, 'RateLimit-Time-Units');
+                limit = getResponseHeader(this, 'RateLimit-Limit');
+                deferred.reject(buildResponseError(response, "Rate limit of " + limit + "/" + unit +
                     " exceeded. Try again in 1 " + unit + "."));
             } else {
-                deferred.reject(new Error('unexpected response ' + this.status));
+                deferred.reject(buildResponseError(response, 'unexpected response ' + this.status));
             }
         };
 
@@ -2128,6 +2131,88 @@ module.exports = function (params) {
         } else {
             return '';
         }
+    }
+
+    /**
+     * Tries to retrieve a single header value from an XHR response. If the header is disallowed,
+     * or does not exist, will return null. Otherwise returns the value of the header.
+     *
+     * The CORS spec does not define what the browser should do in the case of a request for a
+     * disallowed header, but at least Chrome throws an exception.
+     *
+     * @param {object} xhrResponse The response of an XMLHttpRequest
+     * @param {string} header The name of the header to retrieve the value for
+     * @returns {string|null} The value(s) of the header, or null if disallowed or unavailable.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getResponseHeader
+     * @private
+     */
+    function getResponseHeader(xhrResponse, header) {
+        try {
+            return xhrResponse.getResponseHeader(header);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Retrieves all headers from an XHR response as key/val pairs
+     *
+     * @param {object} xhrResponse The response of an XMLHttpRequest
+     * @returns {*} the key/val pairs of the response headers
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getAllResponseHeaders
+     * @private
+     */
+    function getAllResponseHeaders(xhrResponse) {
+        var result = {};
+        var headers;
+        var pairs;
+
+        headers = xhrResponse.getAllResponseHeaders();
+        if (!headers) {
+            return result;
+        }
+
+        // 1 header per line (cr+lf)
+        pairs = headers.split('\u000d\u000a');
+        pairs.forEach(function (pair) {
+            var key;
+            var val;
+
+            // key separated from value by ': '
+            // value may contain ': ', so using indexOf instead of split
+            var index = pair.indexOf('\u003a\u0020');
+            if (index > 0) {
+                key = pair.substring(0, index);
+                val = pair.substring(index + 2);
+                result[key] = val;
+            }
+        });
+
+        return result;
+    }
+
+    /**
+     * Creates an Error with the supplied `message` and, if available, the `Request-Id` header
+     * from the supplied `response`.
+     *
+     * @param {object} res
+     * @param {object} [res.headers]
+     * @param {string} [res.headers.Request-Id] The requestId to append to the Error message
+     * @param {string} message The message the Error should be constructed with
+     * @returns {Error} the constructed Error object
+     * @memberof respoke.SignalingChannel
+     * @method respoke.SignalingChannel.buildResponseError
+     * @api private
+     */
+    function buildResponseError(res, message) {
+        var requestId = res && res.headers && res.headers['Request-Id'];
+        if (requestId) {
+            message += ' [Request-Id: ' + requestId + ']';
+        }
+
+        return new Error(message);
     }
 
     return that;
