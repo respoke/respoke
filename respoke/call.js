@@ -125,6 +125,9 @@ module.exports = function (params) {
      */
     that.id = that.caller ? respoke.makeGUID() : that.id;
 
+    // log the call id to the console for debugging purposes. Do not change this to `respoke.log`!
+    console.log("[Respoke] Creating call. id='" + that.id + "'");
+
     if (!that.id) {
         throw new Error("Can't start a new call without a call id.");
     }
