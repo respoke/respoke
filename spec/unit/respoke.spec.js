@@ -1,4 +1,4 @@
-
+"use strict";
 var expect = chai.expect;
 
 describe("The respoke namespace", function() {
@@ -365,7 +365,7 @@ describe("The respoke namespace", function() {
                 aNumber: aNumber,
                 aString: aString,
                 aBool: aBool
-            }
+            };
             expect(respoke.isEqual(anObject, testObject)).to.be.true;
             expect(respoke.isEqual(testObject, anObject)).to.be.true;
         });
@@ -405,7 +405,7 @@ describe("The respoke namespace", function() {
                 aStringTwo: aString,
                 aNumberTwo: aNumber,
                 anArrayTwo: anArray
-            }
+            };
             expect(respoke.isEqual(anObject, testObject)).to.be.false;
             expect(respoke.isEqual(testObject, anObject)).to.be.false;
         });

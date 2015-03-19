@@ -1,4 +1,5 @@
 'use strict';
+/* global respoke: true */
 /*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
@@ -10,10 +11,10 @@
  * @ignore
  */
 
-var log = require('loglevel');
 var Q = require('q');
 var io = require('socket.io-client');
 var respoke = require('./respoke');
+var log = require('loglevel');
 
 /**
  * Returns a timestamp, measured in milliseconds.
@@ -1603,7 +1604,7 @@ module.exports = function (params) {
         });
 
         if (endpoint.getPresence() === 'unavailable') {
-            var groups = client.getGroups();
+            groups = client.getGroups();
             if (groups) {
                 groups.forEach(function eachGroup(group) {
                     group.removeMember({connectionId: message.header.fromConnection});

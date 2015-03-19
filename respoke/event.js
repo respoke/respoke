@@ -9,6 +9,7 @@
  * @ignore
  */
 
+/* global respoke: true */
 var respoke = require('./respoke');
 var log = require('loglevel');
 
@@ -183,6 +184,7 @@ var EventEmitter = module.exports = function (params) {
         var args = null;
         var count = 0;
         var toRemove = [];
+        var i;
 
         evt = evt || {};
         evt.name = eventType;
@@ -197,7 +199,7 @@ var EventEmitter = module.exports = function (params) {
             return;
         }
 
-        for (var i = 0; i < eventList[eventType].length; i += 1) {
+        for (i = 0; i < eventList[eventType].length; i += 1) {
             var listener = eventList[eventType][i];
             if (typeof listener === 'function') {
                 setTimeout(listenerBuilder(listener, evt, eventType));
@@ -209,7 +211,7 @@ var EventEmitter = module.exports = function (params) {
             }
         }
 
-        for (var i = (toRemove.length - 1); i >= 0; i -= 1) {
+        for (i = (toRemove.length - 1); i >= 0; i -= 1) {
             eventList[eventType].splice(toRemove[i], 1);
         }
 
