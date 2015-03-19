@@ -4,6 +4,10 @@ var respokeStyle = require('respoke-style');
 module.exports = function (grunt) {
     var saucerSection;
     var webhookService;
+    var jsHintFiles = ['**/*.js'];
+    if (grunt.option('file')) {
+        jsHintFiles = [grunt.option('file').split(' ')];
+    }
 
     function killSaucerSection() {
         if (saucerSection) {
@@ -99,6 +103,27 @@ module.exports = function (grunt) {
             }
         },
 
+        jshint: {
+            options: {
+                jshintrc: '.jshintrc'
+            },
+            pretty: {
+                src: [
+                    jsHintFiles
+                ]
+            },
+            ci: {
+                options: {
+                    reporter: require('jshint-junit-reporter'),
+                    reporterOutput: 'build/jshint-output.xml',
+                    jshintrc: '.jshintrc'
+                },
+                src: [
+                    jsHintFiles
+                ]
+            }
+        },
+
         // Generating Documentation
         jsdoxy: {
             options: {
@@ -178,9 +203,11 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-http-server');
     grunt.loadNpmTasks('grunt-sass');
     grunt.loadNpmTasks('jsdoxy');
+    grunt.loadNpmTasks('grunt-contrib-jshint');
 
     grunt.registerTask('dist', [
         'webpack',
@@ -256,7 +283,9 @@ module.exports = function (grunt) {
         'stop-webhook-service'
     ]);
 
+    grunt.registerTask('lint', 'run jshint', ['jshint:pretty']);
     grunt.registerTask('ci', 'Run all tests', [
+        'jshint:ci',
         'dist',
         'env:test',
         'start-saucer-section',
