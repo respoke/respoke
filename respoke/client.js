@@ -913,7 +913,6 @@ module.exports = function (params) {
         }]);
 
         params.signalOffer = function (signalParams) {
-            try {
             var onSuccess = signalParams.onSuccess;
             var onError = signalParams.onError;
             delete signalParams.onSuccess;
@@ -928,20 +927,22 @@ module.exports = function (params) {
             signalParams.toType = "conference";
 
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
-            } catch (err) {
-                console.log(err);
-            }
         };
-        /*params.signalAnswer = function (signalParams) {
+        params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
             signalParams.signalType = 'answer';
             signalParams.target = params.target;
             signalParams.recipient = recipient;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.toType = "conference";
-            signalingChannel.sendSDP(signalParams).done(null, function errorHandler(err) {
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 signalParams.call.hangup({signal: false});
             });
-        };*/
+        };
         params.signalConnected = function (signalParams) {
             signalParams.target = params.target;
             signalParams.connectionId = signalParams.call.connectionId;
