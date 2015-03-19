@@ -118,6 +118,10 @@ module.exports = function (params) {
         that.constraints = [];
     }
 
+    if (params.callerId) {
+        console.log('got a callerId param', params.callerId);
+    }
+
     /**
      * The call ID.
      * @memberof! respoke.Call

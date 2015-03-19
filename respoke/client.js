@@ -644,6 +644,7 @@ module.exports = function (params) {
         callParams.id = params.id;
         callParams.caller = false;
         callParams.fromType = "web";
+        callParams.callerId = params.callerId;
 
         switch (params.type) {
             case "screenshare":
