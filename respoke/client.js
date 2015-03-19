@@ -650,15 +650,14 @@ module.exports = function (params) {
         callParams.caller = false;
         callParams.fromType = "web";
 
-        if (params.target === "conference" || params.target === "screenshare") {
-            switchType = params.target
+        if (params.target === "conference") {
+            callParams.conferenceId = params.conferenceId;
+            switchType = params.target;
+        } else if (params.target === "screenshare") {
+            switchType = params.target;
         }
 
         switch (switchType) {
-            case "conference":
-                callParams.conferenceId = params.conferenceId;
-                // No break
-            case "screenshare":
             case "web":
                 callParams.toType = "web"; // overwrite "screenshare"
                 callParams.endpointId = params.endpointId;

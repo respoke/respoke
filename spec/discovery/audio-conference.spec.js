@@ -1,3 +1,4 @@
+"use strict";
 var expect = chai.expect;
 
 describe("Respoke audio conferencing", function () {
@@ -88,7 +89,7 @@ describe("Respoke audio conferencing", function () {
                 expect(client.endpointId).not.to.be.undefined;
                 expect(client.endpointId).to.equal("test");
                 done();
-            }, done)
+            }, done); 
         });
     });
 
@@ -113,11 +114,9 @@ describe("Respoke audio conferencing", function () {
                 conferenceId: "conference-service",
                 open: true,
                 onLocalMedia: function (evt) {
-                    localElement = evt.element;
                     localMedia = evt.stream;
                 },
                 onConnect: function (evt) {
-                    remoteElement = evt.element;
                     doneOnce();
                 },
                 onHangup: function (evt) {
