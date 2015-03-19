@@ -1,3 +1,6 @@
+"use strict";
+/* global log: false */
+
 function MockSignalingChannel(params) {
     params = params || {};
     var that = respoke.EventEmitter(params);
@@ -81,7 +84,7 @@ function MockSignalingChannel(params) {
             connectionId: "87839992-8BD2-0792-9792-BA65FD8873F2"
         }]);
 
-        return promise;
+        return deferred.promise;
     };
 
     that.sendMessage = function (params) {
@@ -271,5 +274,4 @@ function MockSignalingChannel(params) {
 
     window.mockSignalingChannel = that;
     return that;
-};
-
+}

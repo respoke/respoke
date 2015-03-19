@@ -1,4 +1,4 @@
-
+"use strict";
 var expect = chai.expect;
 
 describe("A respoke.EventEmitter", function () {
@@ -57,7 +57,7 @@ describe("A respoke.EventEmitter", function () {
                     argListener = function (thisSet) {
                         capturedArg = thisSet;
                         done();
-                    }
+                    };
                     expectedArg = set;
                     eventEmitter.listen('event4', argListener);
                     eventEmitter.fire('event4', set);
@@ -136,7 +136,7 @@ describe("A respoke.EventEmitter", function () {
                     });
                     eventEmitter.listen('order', function () {
                         value += '4';
-                        done()
+                        done();
                     });
                     eventEmitter.fire('order');
                 });
@@ -158,7 +158,7 @@ describe("A respoke.EventEmitter", function () {
                     });
                     eventEmitter.listen('order', function () {
                         value += '1';
-                        done()
+                        done();
                     });
                     eventEmitter.fire('order');
                 });

@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("Respoke local media", function () {
@@ -10,11 +12,11 @@ describe("Respoke local media", function () {
         var state = {};
         var localMedia;
         var allowSpy;
-        var streamReceivedSpy;
         var errorSpy;
         var audioTracks;
         var videoTracks;
-
+        var streamReceivedSpy;
+        var requestingMediaSpy;
 
         beforeEach(function () {
             sinon.stub(respoke, 'getClient').returns({endpointId: 'blah'});

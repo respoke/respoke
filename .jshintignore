@@ -1,7 +1,4 @@
 node_modules/**/*
-spec/**/*
+respoke/deps/**/*
 respoke.min.js
 respoke-stats.min.js
-respoke/deps/adapter.js
-respoke/respoke.js
-.jshintreporter.js

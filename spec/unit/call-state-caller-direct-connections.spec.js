@@ -1,4 +1,4 @@
-
+"use strict";
 var expect = chai.expect;
 
 xdescribe("respoke.CallState for direct connections as the caller", function () {
@@ -465,7 +465,7 @@ xdescribe("respoke.CallState for direct connections as the caller", function () 
 
                                 it("fires the 'terminated:entry' event", function () {
                                     expect(terminatedSpy.called).to.equal(true);
-                                })
+                                });
                             });
                         });
 

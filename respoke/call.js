@@ -9,6 +9,7 @@
  * @ignore
  */
 
+/* global respoke: true */
 var Q = require('q');
 var log = require('loglevel');
 var respoke = require('./respoke');

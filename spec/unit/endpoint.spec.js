@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 var instanceId = respoke.makeGUID();
@@ -123,7 +125,7 @@ describe("A respoke.Endpoint", function () {
         });
 
         describe("startDirectConnection()", function () {
-            it("throws an error", function success() {
+            it("throws an error", function success(done) {
                 endpoint.startDirectConnection().then(function failure() {
                     done(new Error("User presence succeeded with no connection!"));
                 }, function (err) {
@@ -138,7 +140,7 @@ describe("A respoke.Endpoint", function () {
                 ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'].forEach(function (presString) {
                     describe("when presence is set to '" + presString + "'", function () {
                         it("endpoint.presence equals '" + presString + "'", function () {
-                            endpoint.connections = [{presence: presString}]
+                            endpoint.connections = [{presence: presString}];
                             endpoint.resolvePresence();
                             expect(endpoint.presence).to.equal(presString);
                         });
@@ -155,22 +157,25 @@ describe("A respoke.Endpoint", function () {
 
                         if (presString1 === presString2) {
                             return;
-                        }
+                       }
 
                         describe("when presence is set to '" + presString1 + "' and '" + presString2 + "'", function (){
                             it("endpoint.presence equals the one that appears first in the array", function () {
-                                endpoint.connections = [{presence: presString1}, {presence: presString2}]
+                                var presenceToFind;
+                                if (presenceStrings.indexOf(presString1) > presenceStrings.indexOf(presString2)) {
+                                    presenceToFind = presString2;
+                                } else {
+                                    presenceToFind = presString1;
+                                }
+
+                                endpoint.connections = [{presence: presString1}, {presence: presString2}];
                                 endpoint.resolvePresence();
-                                expect(endpoint.presence).to.equal((function () {
-                                    if (presenceStrings.indexOf(presString1) > presenceStrings.indexOf(presString2)) {
-                                        return presString2;
-                                    }
-                                    return presString1;
-                                }()));
+                                expect(endpoint.presence).to.equal(presenceToFind);
                             });
                         });
-                    };
-                };
+                    }
+                }
+
                 describe("with custom resolve endpoint presence", function () {
 
                     var customPresence1 = {'myRealPresence': 'not ready'};

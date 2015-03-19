@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("Respoke presence", function () {
@@ -102,7 +104,7 @@ describe("Respoke presence", function () {
                     appId: Object.keys(testEnv.allApps)[0],
                     baseURL: respokeTestConfig.baseURL,
                     token: followeeToken.tokenId
-                })
+                });
             }).then(function () {
                 endpoint2 = followerClient.getEndpoint({id: followeeToken.endpointId});
                 endpoint2.once('presence', function (evt) {

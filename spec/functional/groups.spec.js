@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("Respoke groups", function () {
@@ -368,7 +370,7 @@ describe("Respoke groups", function () {
                         expect(evt.group.id).to.equal(groupName);
                         done();
                     };
-                    client.listen('join', onJoin)
+                    client.listen('join', onJoin);
                     testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
                         expect(err).to.be.undefined;
                     });
@@ -381,7 +383,7 @@ describe("Respoke groups", function () {
                         expect(evt.group).to.not.be.undefined;
                         expect(evt.group.id).to.equal(groupName);
                         done();
-                    }
+                    };
                     client.listen('leave', onLeave);
                     testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
                         expect(err).to.be.undefined;

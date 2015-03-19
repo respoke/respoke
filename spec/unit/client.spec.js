@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("respoke.Client", function () {
