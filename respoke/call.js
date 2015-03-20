@@ -118,8 +118,11 @@ module.exports = function (params) {
         that.constraints = [];
     }
 
-    if (params.callerId) {
-        console.log('got a callerId param', params.callerId);
+    if (params.callerId && params.callerId instanceof Object) {
+        that.callerid = {
+            name: params.callerId.name || null,
+            number: params.callerId.number || null
+        };
     }
 
     /**
