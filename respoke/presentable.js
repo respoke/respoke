@@ -57,7 +57,7 @@ module.exports = function (params) {
     that.presence = 'unavailable';
 
     /**
-     * @memberof! respoke.DirectConnection
+     * @memberof! respoke.Presentable
      * @name client
      * @type {respoke.Client}
      * @private
