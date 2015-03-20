@@ -834,13 +834,10 @@ module.exports = function (params) {
     };
 
     /**
-     * Create a new conference call, given a conference ID. If the ID is already in use and is either open or the
-     * correct key is also given, the client will join the existing call. If the ID is already in use and a key
-     * is required to join but not given, the attempt to join the conference will fail.
+     * Create a new conference call with the specified conferenceId.
      *
      *     client.startConferenceCall({
      *         conferenceId: "javascript-meetup",
-     *         key: "optional-access-key",
      *         onConnect: function (evt) {}
      *     });
      *
@@ -849,15 +846,15 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.conferenceId - The id that should be used to create the conference call or the ID
      * of the call to join.
-     * @param {string} [params.key] - The access key to use. If not set, the conference call will be open such
+     * @arg {string} [params.key] - The access key to use. If not set, the conference call will be open such
      * that any endpoint can join.
-     * @param {boolean} [params.open] - whether endpoints can join this conference without a key.
-     * @param {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
-     * @param {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
-     * @param {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
+     * @arg {boolean} [params.open] - whether endpoints can join this conference without a key.
+     * @arg {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
+     * @arg {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
+     * @arg {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
      * @param {respoke.Conference.onMute} [params.onMute] - Callback for when local or remote media is muted or unmuted.
-     * @param {respoke.Conference.onTopic} [params.onTopic] - Callback for the conference topic changes.
-     * @param {respoke.Conference.onPresenter} [params.onPresenter] - Callback for when the presenter changes.
+     * @arg {respoke.Conference.onTopic} [params.onTopic] - Callback for the conference topic changes.
+     * @arg {respoke.Conference.onPresenter} [params.onPresenter] - Callback for when the presenter changes.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video

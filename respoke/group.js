@@ -452,13 +452,12 @@ module.exports = function (params) {
      * @memberof! respoke.Group
      * @method respoke.Group.startConferenceCall
      * @param {object} params
-     * @param {string} [params.message] - Optional message to send to the group invited to this conference.
-     * @param {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
-     * @param {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
-     * @param {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
+     * @arg {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
+     * @arg {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
+     * @arg {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
      * @param {respoke.Conference.onMute} [params.onMute] - Callback for when local or remote media is muted or unmuted.
-     * @param {respoke.Conference.onTopic} [params.onTopic] - Callback for the conference topic changes.
-     * @param {respoke.Conference.onPresenter} [params.onPresenter] - Callback for when the presenter changes.
+     * @arg {respoke.Conference.onTopic} [params.onTopic] - Callback for the conference topic changes.
+     * @arg {respoke.Conference.onPresenter} [params.onPresenter] - Callback for when the presenter changes.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -485,27 +484,10 @@ module.exports = function (params) {
      */
     that.startConferenceCall = function (params) {
         var conference = null;
-        var participants = [];
         params = params || {};
-        var message = params.message;
-        delete params.message;
         params.conferenceId = that.id;
 
         conference = client.startConferenceCall(params);
-
-        that.connections.forEach(function (conn) {
-            if (participants.indexOf(conn.getEndpoint())) {
-                return;
-            }
-
-            participants.push(conn.getEndpoint());
-        });
-
-        conference.permit({
-            endpoints: participants,
-            message: message
-        });
-
         return conference;
     };
 
