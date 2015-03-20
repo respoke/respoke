@@ -119,7 +119,7 @@ module.exports = function (params) {
     }
 
     if (params.callerId && params.callerId instanceof Object) {
-        that.callerid = {
+        that.callerId = {
             name: params.callerId.name || null,
             number: params.callerId.number || null
         };
