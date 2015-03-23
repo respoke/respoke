@@ -919,10 +919,8 @@ module.exports = function (params) {
                 toType: toType
             }
         }).done(function successHandler() {
-            console.log('signal', signal.signalType, signal);
             deferred.resolve();
         }, function errorHandler(err) {
-            console.log('signal error', params, err);
             deferred.reject(err);
         });
 

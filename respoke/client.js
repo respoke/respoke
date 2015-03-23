@@ -834,7 +834,7 @@ module.exports = function (params) {
     };
 
     /**
-     * Create a new conference call with the specified conferenceId.
+     * Experimental. Create a new conference call with the specified conferenceId.
      *
      *     client.startConferenceCall({
      *         conferenceId: "javascript-meetup",
@@ -843,6 +843,7 @@ module.exports = function (params) {
      *
      * @memberof! respoke.Client
      * @method respoke.Client.startConferenceCall
+     * @private
      * @param {object} params
      * @param {string} params.conferenceId - The id that should be used to create the conference call or the ID
      * of the call to join.

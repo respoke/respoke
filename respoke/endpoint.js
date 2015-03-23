@@ -536,7 +536,7 @@ module.exports = function (params) {
      * @param {string} [params.connectionId] - An optional connection ID to use for this connection. This allows
      * the connection to be made to a specific instance of an endpoint in the case that the same endpoint is logged
      * in from multiple locations.
-     * @returns {respoke.DirectConnection} The DirectConnection which can be used to send data and messages
+     * @returns {Promise<respoke.DirectConnection>} The DirectConnection which can be used to send data and messages
      * directly to the other endpoint.
      */
     that.startDirectConnection = function (params) {

@@ -89,7 +89,7 @@ describe("Respoke audio conferencing", function () {
                 expect(client.endpointId).not.to.be.undefined;
                 expect(client.endpointId).to.equal("test");
                 done();
-            }, done); 
+            }, done);
         });
     });
 

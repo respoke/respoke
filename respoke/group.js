@@ -442,8 +442,8 @@ module.exports = function (params) {
     };
 
     /**
-     * Create a new conference call. The ID will be the group name. Only members of this group will be permitted to
-     * participate in the conference call.
+     * Experimental. Create a new conference call. The ID will be the group name. Only members of this group will
+     * be permitted to participate in the conference call.
      *
      *     group.startConferenceCall({
      *         onConnect: function (evt) {}
@@ -451,6 +451,7 @@ module.exports = function (params) {
      *
      * @memberof! respoke.Group
      * @method respoke.Group.startConferenceCall
+     * @private
      * @param {object} params
      * @arg {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
      * @arg {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
