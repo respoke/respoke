@@ -58,7 +58,7 @@ module.exports = function (params) {
     that.presence = 'unavailable';
 
     /**
-     * @memberof! respoke.DirectConnection
+     * @memberof! respoke.Presentable
      * @name client
      * @type {respoke.Client}
      * @private
@@ -67,6 +67,13 @@ module.exports = function (params) {
 
     /**
      * Set the presence on the object for this session.
+     * 
+     * ```
+     * client.setPresence({ presence: 'busy' });
+     * ```
+     * 
+     * While technically available on an Endpoint or Connection, this will not trigger
+     * any API changes. The changes will only be reflected locally.
      *
      * @memberof! respoke.Presentable
      * @method respoke.Presentable.setPresence
