@@ -118,7 +118,7 @@ module.exports = function (params) {
         that.constraints = [];
     }
 
-    if (params.callerId && params.callerId instanceof Object) {
+    if (typeof params.callerId === 'object') {
         that.callerId = {
             name: params.callerId.name || null,
             number: params.callerId.number || null
