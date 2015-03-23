@@ -1,5 +1,8 @@
-// Call a function only if there's a error or on the $num attempt
+"use strict";
 
+var expect = chai.expect;
+
+// Call a function only if there's a error or on the $num attempt
 describe("doneCountBuilder", function () {
     var builderSpy;
     var doneOnce;

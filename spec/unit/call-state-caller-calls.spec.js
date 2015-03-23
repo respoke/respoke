@@ -1,4 +1,4 @@
-
+"use strict";
 var expect = chai.expect;
 
 xdescribe("respoke.CallState for calls as the caller", function () {
@@ -785,7 +785,7 @@ xdescribe("respoke.CallState for calls as the caller", function () {
 
                                     it("fires the 'terminated:entry' event", function () {
                                         expect(terminatedSpy.called).to.equal(true);
-                                    })
+                                    });
                                 });
                             });
 

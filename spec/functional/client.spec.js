@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("respoke.Client", function () {
@@ -72,7 +74,7 @@ describe("respoke.Client", function () {
                             appId: testEnv.app.id
                         }).done(function (token) {
                             tokens.push(token.tokenId);
-                            deferred.resolve()
+                            deferred.resolve();
                         }, function (err) {
                             // handled elsewhere
                             deferred.resolve();

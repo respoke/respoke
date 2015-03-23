@@ -1,5 +1,5 @@
 "use strict";
-/*global Bugsnag: true*/
+/*global respoke: true */
 /*jshint bitwise: false*/
 
 /*!
@@ -486,6 +486,7 @@ respoke.clone = function (source) {
  */
 respoke.isEqual = function (a, b) {
     var aKeys;
+    var i;
 
     //check if arrays
     if (a && b && a.hasOwnProperty('length') && b.hasOwnProperty('length') && a.splice && b.splice) {
@@ -494,7 +495,7 @@ respoke.isEqual = function (a, b) {
             return false;
         }
 
-        for (var i = 0; i < a.length; i += 1) {
+        for (i = 0; i < a.length; i += 1) {
             if (!respoke.isEqual(a[i], b[i])) {
                 return false;
             }
@@ -504,7 +505,7 @@ respoke.isEqual = function (a, b) {
 
     if (typeof a === 'object' && typeof b === 'object' && Object.keys(a).length === Object.keys(b).length) {
         aKeys = Object.keys(a);
-        for (var i = 0; i < aKeys.length; i += 1) {
+        for (i = 0; i < aKeys.length; i += 1) {
             if (!respoke.isEqual(a[aKeys[i]], b[aKeys[i]])) {
                 return false;
             }
@@ -665,7 +666,6 @@ respoke.convertConstraints = function (constraints, defaults) {
  * @private
  */
 respoke.queueFactory = function () {
-    "use strict";
     var queue = [];
     /**
      * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
@@ -688,4 +688,4 @@ respoke.queueFactory = function () {
     };
 
     return queue;
-}
+};

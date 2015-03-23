@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("Respoke calling", function () {
@@ -87,7 +89,7 @@ describe("Respoke calling", function () {
         describe("with call listener specified", function () {
             var stream;
             var localElement;
-            var remoteElement
+            var remoteElement;
 
             beforeEach(function (done) {
                 followeeClient.listen('call', callListener);
@@ -304,7 +306,7 @@ describe("Respoke calling", function () {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.empty;
-                                expect(call.outgoingMediaStreams.length).to.equal(1)
+                                expect(call.outgoingMediaStreams.length).to.equal(1);
                                 expect(call.outgoingMedia.hasVideo()).to.equal(false);
                                 expect(call.outgoingMedia.hasAudio()).to.equal(true);
                                 expect(call.outgoingMediaStreams.hasVideo()).to.equal(false);
@@ -319,7 +321,7 @@ describe("Respoke calling", function () {
                                 expect(evt.stream).to.be.ok;
                                 expect(evt.stream.getAudioTracks()).to.be.ok;
                                 expect(evt.stream.getVideoTracks()).to.be.empty;
-                                expect(call.incomingMediaStreams.length).to.equal(1)
+                                expect(call.incomingMediaStreams.length).to.equal(1);
                                 expect(call.incomingMedia.hasVideo()).to.equal(false);
                                 expect(call.incomingMedia.hasAudio()).to.equal(true);
                                 expect(call.incomingMediaStreams.hasVideo()).to.equal(false);
@@ -766,7 +768,7 @@ describe("Respoke calling", function () {
                 call = followeeEndpoint.startVideoCall({
                     onConnect: function (evt) {
                         try {
-                            expect(call.incomingMediaStreams.length).to.equal(0)
+                            expect(call.incomingMediaStreams.length).to.equal(0);
                             expect(call.incomingMedia).to.equal(undefined);
                             expect(call.incomingMedia).to.equal(undefined);
                             expect(call.hasMedia()).to.equal(true);

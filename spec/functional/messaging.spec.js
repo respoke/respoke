@@ -1,3 +1,5 @@
+"use strict";
+
 var expect = chai.expect;
 
 describe("Messaging", function () {
@@ -269,6 +271,8 @@ describe("Messaging", function () {
             });
 
             it("can not send messages to another endpoint", function (done) {
+                var params;
+
                 this.timeout(4000);
                 setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
 
@@ -289,6 +293,8 @@ describe("Messaging", function () {
             });
 
             it("can not receive messages from another endpoint", function (done) {
+                var params;
+
                 this.timeout(4000);
                 setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
 
@@ -307,10 +313,10 @@ describe("Messaging", function () {
     afterEach(function (done) {
         Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
             testFixture.afterTest(function (err) {
-            messagesFollowerReceived = [];
-            messagesFolloweeReceived = [];
-            messagesFollowerSent = [];
-            messagesFolloweeSent = [];
+            var messagesFollowerReceived = [];
+            var messagesFolloweeReceived = [];
+            var messagesFollowerSent = [];
+            var messagesFolloweeSent = [];
                 if (err) {
                     return done(err);
                 }

@@ -1,5 +1,6 @@
-var expect = chai.expect;
+"use strict";
 
+var expect = chai.expect;
 var client;
 var instanceId;
 var group;

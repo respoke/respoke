@@ -49,7 +49,7 @@
     "laxbreak"      : false,    // Tolerate unsafe line breaks e.g. `return [\n] x` without
 	                            // semicolons.
     "laxcomma"      : false,    // Suppress warnings about comma-first coding style.
-    "loopfunc"      : false,    // Allow functions to be defined within loops.
+    "loopfunc"      : true,    // Allow functions to be defined within loops.
     "multistr"      : true,    // Tolerate multi-line strings.
     "onecase"       : false,    // Tolerate switches with just one case.
     "proto"         : false,    // Tolerate __proto__ property. This property is deprecated.
@@ -57,7 +57,7 @@
     "scripturl"     : false,    // Tolerate script-targeted URLs.
     "smarttabs"     : false,    // Tolerate mixed tabs and spaces when the latter are used for
 	                            // alignmnent only.
-    "shadow"        : true,     // Allows re-define variables later in code e.g. `var x=1; x=2;`.
+    "shadow"        : false,     // Allows re-define variables later in code e.g. `var x=1; x=2;`.
     "sub"           : false,    // Tolerate all forms of subscript notation besides dot notation
 	                            // e.g. `dict['key']` instead of `dict.key`.
     "supernew"      : false,    // Tolerate `new function () { ... };` and `new Object;`.
@@ -104,17 +104,25 @@
     // [4]: http://www.jshint.com/options/
 
     "maxerr"        : 100,      // Maximum errors before stopping.
+    "mocha": true,
     "predef"        : [         // Extra globals.
-        "beforeEach",
-        "afterEach",
-        "before",
-        "after",
-        "xdescribe",
-        "describe",
-        "xit",
-        "it",
-        "Q",
-        "respoke"
+        "chai",
+        "sinon",
+        "MockSignalingChannel",
+        "doneOnceBuilder",
+        "doneCountBuilder",
+        "respokeTestConfig",
+        "async",
+        "fixture",
+        "done",
+        "Airbrake",
+        "respoke",
+        "createIceServer",
+        "attachMediaStream",
+        "getUserMedia",
+        "RTCIceCandidate",
+        "RTCSessionDescription",
+        "RTCPeerConnection"
     ],
     "indent"        : 4         // Specify indentation spacing
 }
