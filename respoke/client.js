@@ -609,7 +609,9 @@ module.exports = function (params) {
      * @param {string} [params.endpointId] - Endpoint ID. Warning: If you pass only the endpointId, this method
      * will just return the first call that matches. If you are placing multiple calls to the same endpoint,
      * pass in the call ID, too.
-     * @param {boolean} params.create - whether or not to create a new call if the specified endpointId isn't found
+     * @arg {boolean} [params.create] - whether or not to create a new call if the specified endpointId isn't found
+     * @arg {string} [params.fromType] - fromType from the signal, tells us if this is a SIP or DID call.
+     * @arg {string} [params.target] - target from the signal, tells us if this is a screenshare or conference call.
      * @returns {respoke.Call}
      */
     that.getCall = function (params) {
@@ -619,10 +621,12 @@ module.exports = function (params) {
             screenshare: "startScreenShare",
             did: "startPhoneCall",
             web: "startCall",
-            sip: "startSIPCall"
+            sip: "startSIPCall",
+            conference: "startConferenceCall"
         };
         var callParams = {};
-        params.fromType = params.fromType || "web";
+        params.fromType = params.type || "web";
+        var switchType = params.type;
 
         that.calls.every(function findCall(one) {
             if (params.id && one.id === params.id) {
@@ -642,11 +646,18 @@ module.exports = function (params) {
         }
 
         callParams.id = params.id;
+        callParams.conferenceId = params.conferenceId;
         callParams.caller = false;
         callParams.fromType = "web";
 
-        switch (params.type) {
-            case "screenshare":
+        if (params.target === "conference") {
+            callParams.conferenceId = params.conferenceId;
+            switchType = params.target;
+        } else if (params.target === "screenshare") {
+            switchType = params.target;
+        }
+
+        switch (switchType) {
             case "web":
                 callParams.toType = "web"; // overwrite "screenshare"
                 callParams.endpointId = params.endpointId;
@@ -823,6 +834,156 @@ module.exports = function (params) {
     };
 
     /**
+     * Experimental. Create a new conference call with the specified conferenceId.
+     *
+     *     client.startConferenceCall({
+     *         conferenceId: "javascript-meetup",
+     *         onConnect: function (evt) {}
+     *     });
+     *
+     * @memberof! respoke.Client
+     * @method respoke.Client.startConferenceCall
+     * @private
+     * @param {object} params
+     * @param {string} params.conferenceId - The id that should be used to create the conference call or the ID
+     * of the call to join.
+     * @arg {string} [params.key] - The access key to use. If not set, the conference call will be open such
+     * that any endpoint can join.
+     * @arg {boolean} [params.open] - whether endpoints can join this conference without a key.
+     * @arg {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
+     * @arg {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
+     * @arg {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
+     * @param {respoke.Conference.onMute} [params.onMute] - Callback for when local or remote media is muted or unmuted.
+     * @arg {respoke.Conference.onTopic} [params.onTopic] - Callback for the conference topic changes.
+     * @arg {respoke.Conference.onPresenter} [params.onPresenter] - Callback for when the presenter changes.
+     * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
+     * media renegotiation.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
+     * and the remote party has received the video.
+     * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
+     * hung up.
+     * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
+     * browser has granted access to media.
+     * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
+     * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
+     * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
+     * the approval was automatic.
+     * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
+     * for the user to give permission to start getting audio or video.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
+     * information.
+     * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
+     * relay servers. If it cannot flow through relay servers, the call will fail.
+     * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
+     * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @returns {respoke.Conference}
+     */
+    that.startConferenceCall = function (params) {
+        var conference = null;
+        var recipient;
+
+        params = params || {};
+        params.open = !!params.open;
+
+        that.verifyConnected();
+
+        if (!params.conferenceId) {
+            params.conferenceId = respoke.makeGUID();
+        }
+
+        recipient = {id: params.conferenceId};
+
+        if (params.open) {
+            params.key = undefined;
+        } else if (!params.key) {
+            params.key = respoke.makeGUID();
+        }
+
+        params.instanceId = instanceId;
+        params.target = "conference";
+        params.constraints = respoke.convertConstraints(params.constraints, [{
+            video: false,
+            audio: true,
+            mandatory: {},
+            optional: []
+        }]);
+
+        params.signalOffer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
+            signalParams.signalType = 'offer';
+            signalParams.target = params.target;
+            signalParams.id = params.id;
+            signalParams.key = params.key;
+            signalParams.open = params.open;
+            signalParams.recipient = recipient;
+            signalParams.toType = "conference";
+
+            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
+        };
+        params.signalAnswer = function (signalParams) {
+            var onSuccess = signalParams.onSuccess;
+            var onError = signalParams.onError;
+            delete signalParams.onSuccess;
+            delete signalParams.onError;
+
+            signalParams.signalType = 'answer';
+            signalParams.target = params.target;
+            signalParams.recipient = recipient;
+            signalParams.sessionId = signalParams.call.sessionId;
+            signalParams.toType = "conference";
+            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
+                signalParams.call.hangup({signal: false});
+            });
+        };
+        params.signalConnected = function (signalParams) {
+            signalParams.target = params.target;
+            signalParams.connectionId = signalParams.call.connectionId;
+            signalParams.sessionId = signalParams.call.sessionId;
+            signalParams.recipient = recipient;
+            signalParams.toType = "conference";
+            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+                signalParams.call.hangup();
+            });
+        };
+        params.signalModify = function (signalParams) {
+            signalParams.target = params.target;
+            signalParams.recipient = recipient;
+            signalParams.sessionId = signalParams.call.sessionId;
+            signalParams.toType = "conference";
+            signalingChannel.sendModify(signalParams).done();
+        };
+        params.signalCandidate = function (signalParams) {
+            signalParams.target = params.target;
+            signalParams.recipient = recipient;
+            signalParams.sessionId = signalParams.call.sessionId;
+            signalParams.toType = "conference";
+            signalingChannel.sendCandidate(signalParams).done();
+        };
+        params.signalHangup = function (signalParams) {
+            signalParams.target = params.target;
+            signalParams.recipient = recipient;
+            signalParams.sessionId = signalParams.call.sessionId;
+            signalParams.toType = "conference";
+            signalingChannel.sendHangup(signalParams).done();
+        };
+        params.signalReport = function (signalParams) {
+            log.debug("Sending debug report", signalParams.report);
+            signalingChannel.sendReport(signalParams).done();
+        };
+
+        params.signalingChannel = signalingChannel;
+        conference = respoke.Conference(params);
+        addCall({call: conference.call});
+        return conference;
+    };
+
+    /**
      * Create a new screen sharing call. Screenshares are inherently unidirectional video only. This may change
      * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
      * now, if you also need audio, place a second audio only call.
@@ -934,19 +1095,8 @@ module.exports = function (params) {
      * @return {respoke.Call}
      */
     that.startCall = function (params) {
-        var promise;
-        var retVal;
-        var endpoint;
-
-        try {
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
-        }
-
-        endpoint = that.getEndpoint({
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
             skipPresence: true,
             id: params.endpointId
         });
@@ -1007,15 +1157,13 @@ module.exports = function (params) {
      * @return {respoke.Call}
      */
     that.startAudioCall = function (params) {
-        params = params || {};
-        params.constraints = respoke.convertConstraints(params.constraints, [{
-            video: false,
-            audio: true,
-            optional: [],
-            mandatory: {}
-        }]);
-
-        return that.startCall(params);
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
+        delete params.endpointId;
+        return endpoint.startAudioCall(params);
     };
 
     /**
@@ -1071,15 +1219,13 @@ module.exports = function (params) {
      * @return {respoke.Call}
      */
     that.startVideoCall = function (params) {
-        params = params || {};
-        params.constraints = respoke.convertConstraints(params.constraints, [{
-            video: true,
-            audio: true,
-            optional: [],
-            mandatory: {}
-        }]);
-
-        return that.startCall(params);
+        that.verifyConnected();
+        var endpoint = that.getEndpoint({
+            skipPresence: true,
+            id: params.endpointId
+        });
+        delete params.endpointId;
+        return endpoint.startVideoCall(params);
     };
 
     /**
@@ -1122,7 +1268,6 @@ module.exports = function (params) {
      */
     that.startPhoneCall = function (params) {
         var promise;
-        var retVal;
         var call = null;
         var recipient = {};
         params = params || {};
@@ -1133,23 +1278,14 @@ module.exports = function (params) {
             optional: []
         }];
 
-        try {
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
+        that.verifyConnected();
+
+        if (!params.number) {
+            throw new Error("Can't start a phone call without a number.");
         }
 
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
-        }
-
-        if (!params.number) {
-            log.error("Can't start a phone call without a number.");
-            promise = Q.reject(new Error("Can't start a phone call without a number."));
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
         }
 
         recipient.id = params.number;
@@ -1277,7 +1413,6 @@ module.exports = function (params) {
      */
     that.startSIPCall = function (params) {
         var promise;
-        var retVal;
         var call = null;
         var recipient = {};
         params = params || {};
@@ -1288,23 +1423,14 @@ module.exports = function (params) {
             optional: []
         }];
 
-        try {
-            that.verifyConnected();
-        } catch (e) {
-            promise = Q.reject(e);
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
+        that.verifyConnected();
+
+        if (!params.uri) {
+            throw new Error("Can't start a phone call without a SIP URI.");
         }
 
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
-        }
-
-        if (!params.uri) {
-            log.error("Can't start a phone call without a SIP URI.");
-            promise = Q.reject(new Error("Can't start a phone call without a SIP URI."));
-            retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
-            return retVal;
         }
 
         recipient.id = params.uri;
