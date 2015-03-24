@@ -112,6 +112,7 @@
         "doneOnceBuilder",
         "doneCountBuilder",
         "respokeTestConfig",
+        "xdescribe",
         "async",
         "fixture",
         "done",
