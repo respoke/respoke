@@ -478,7 +478,7 @@ module.exports = function (params) {
             deferred.resolve();
         }, function errorHandler(err) {
             deferred.reject(err);
-            if (err.message && err.message.match(/^Forbidden/)) {
+            if (err.message && err.message.match(/Connection limit exceeded/)) {
                 log.error(
                     'You have reached the connection limit on the account associated with this appId. ' +
                     'Please upgrade your account from the developer portal at https://portal.respoke.io ' +

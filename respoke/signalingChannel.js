@@ -1968,7 +1968,10 @@ module.exports = function (params) {
 
     function failWebsocketRequest(request, response, error, deferred) {
         if (response && response.body && response.body.error) {
-            deferred.reject(buildResponseError(response, error + '(' + request.method + ' ' + request.path + ')'));
+            if (response.body.details) {
+                error += ' ' + response.body.details;
+            }
+            deferred.reject(buildResponseError(response, error + ' (' + request.method + ' ' + request.path + ')'));
         } else {
             deferred.resolve(response.body);
         }
