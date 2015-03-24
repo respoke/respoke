@@ -479,12 +479,10 @@ module.exports = function (params) {
         }, function errorHandler(err) {
             deferred.reject(err);
             if (err.message && err.message.match(/^Forbidden/)) {
-                log.error([
-                    'You have reached the connection limit on the account',
-                    'associated with this appId. Please upgrade your account',
-                    'from the developer portal at https://portal.respoke.io if',
-                    'you need more concurrent connections.'
-                ].join(' '), err);
+                log.error(
+                    'You have reached the connection limit on the account associated with this appId. ' +
+                    'Please upgrade your account from the developer portal at https://portal.respoke.io ' +
+                    'if you need more concurrent connections.', err);
             } else {
                 log.error(err.message, err.stack);
             }
