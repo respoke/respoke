@@ -53,11 +53,8 @@ describe("respoke.Client", function () {
 
         describe("with connectionLimit error", function () {
             it("returns advert with connection limit error", function (done) {
-                done = doneOnceBuilder(done);
                 var clients = [];
                 var tokens = [];
-                var promises = [];
-                var count = 0;
                 var goal = 6;
 
                 for (var i = 1; i <= goal; i += 1) {
@@ -67,47 +64,22 @@ describe("respoke.Client", function () {
                     }));
                 }
 
-                clients.forEach(function (client, index) {
-                    var deferred = Q.defer();
-                    promises.push(deferred.promise);
-
-                    Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                Q.all(clients.map(function (client, index) {
+                    return Q.nfcall(testFixture.createToken, testEnv.httpClient, {
                         roleId: testEnv.role.id,
                         appId: testEnv.app.id
-                    }).done(function (token) {
+                    }).then(function (token) {
                         tokens.push(token.tokenId);
-                        deferred.resolve();
-                    }, function (err) {
-                        // handled elsewhere
-                        deferred.resolve();
                     });
-                });
-
-                Q.all(promises).done(function () {
-                    clients.forEach(function (client, index) {
-                        if (!tokens[index]) {
-                            return;
-                        }
-                        client.connect({token: tokens[index]})
-                            .done(function () {
-                                count += 1;
-                                if (count === clients.length) { // all succeeded
-                                    done(new Error("Connection limit not exceeded."));
-                                }
-                            }, function (error) {
-                                if (error.message.indexOf('Forbidden') > -1) {
-                                    done();
-                                    return;
-                                }
-                                count += 1;
-                                if (count === clients.length) { // all succeeded
-                                    done(new Error("Connection limit not exceeded."));
-                                }
-                            });
-                    });
-                }, function (err) {
-                    done(new Error("Couldn't get enough tokens to attempt the test. " + err.message));
-                });
+                })).then(function () {
+                    return Q.all(clients.map(function (client, index) {
+                        return client.connect({token: tokens[index]});
+                    }));
+                }).then(function () {
+                    done(new Error("Clients should not connect successfully past connection limit!"));
+                }).catch(function (err) {
+                    done();
+                }).done();
             });
         });
 
