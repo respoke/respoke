@@ -872,7 +872,7 @@ module.exports = function (params) {
                 that.call.fire('error', {
                     message: newErr.message
                 });
-                log.error('set remote desc of answer failed', evt.signal.sessionDescription);
+                log.error('set remote desc of answer failed', evt.signal.sessionDescription, p);
                 that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
                 that.close();
             }
