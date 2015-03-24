@@ -103,7 +103,6 @@ module.exports = function (params) {
     delete params.onTopic;
     delete params.onPresenter;
 
-
     params.caller = true;
     delete params.conferenceId;
     delete params.key;

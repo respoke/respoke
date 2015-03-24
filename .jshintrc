@@ -106,6 +106,8 @@
     "maxerr"        : 100,      // Maximum errors before stopping.
     "mocha": true,
     "predef"        : [         // Extra globals.
+        "xit",
+        "xdescribe",
         "chai",
         "sinon",
         "MockSignalingChannel",
