@@ -1307,7 +1307,9 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            if (params.callerId) {
+
+            // using hasOwnProperty here because callerId could be explicitly set to null or empty string
+            if (params.hasOwnProperty('callerId')) {
                 signalParams.callerId = {number: params.callerId};
             }
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
