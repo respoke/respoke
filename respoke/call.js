@@ -118,7 +118,6 @@ module.exports = function (params) {
         that.constraints = [];
     }
 
-
     if (that.fromType === 'did') {
         params.callerId = params.callerId || {};
         that.callerId = {
