@@ -6,7 +6,11 @@ describe("respoke.Client", function () {
     this.timeout(30000);
 
     var Q = respoke.Q;
-    var testFixture = fixture("Client Functional test");
+    var testFixture = fixture("Client Functional test", {
+        accountParams: {
+            connectionLimit: 5
+        }
+    });
     var testEnv;
     var client;
 
@@ -44,6 +48,38 @@ describe("respoke.Client", function () {
                 }, function onError(err) {
                     done(err);
                 });
+            });
+        });
+
+        describe("with connectionLimit error", function () {
+            it("returns advert with connection limit error", function (done) {
+                var clients = [];
+                var tokens = [];
+                var goal = 6;
+
+                for (var i = 1; i <= goal; i += 1) {
+                    clients.push(respoke.createClient({
+                        baseURL: respokeTestConfig.baseURL,
+                        appId: testEnv.app.id
+                    }));
+                }
+
+                Q.all(clients.map(function (client, index) {
+                    return Q.nfcall(testFixture.createToken, testEnv.httpClient, {
+                        roleId: testEnv.role.id,
+                        appId: testEnv.app.id
+                    }).then(function (token) {
+                        tokens.push(token.tokenId);
+                    });
+                })).then(function () {
+                    return Q.all(clients.map(function (client, index) {
+                        return client.connect({token: tokens[index]});
+                    }));
+                }).then(function () {
+                    done(new Error("Clients should not connect successfully past connection limit!"));
+                }).catch(function (err) {
+                    done();
+                }).done();
             });
         });
 
