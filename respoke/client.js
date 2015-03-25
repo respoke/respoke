@@ -649,6 +649,7 @@ module.exports = function (params) {
         callParams.conferenceId = params.conferenceId;
         callParams.caller = false;
         callParams.fromType = "web";
+        callParams.callerId = params.callerId;
 
         if (params.target === "conference") {
             callParams.conferenceId = params.conferenceId;

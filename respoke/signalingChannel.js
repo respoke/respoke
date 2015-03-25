@@ -1135,7 +1135,8 @@ module.exports = function (params) {
                 target: signal.target,
                 conferenceId: signal.conferenceId,
                 type: signal.fromType,
-                create: (signal.target !== 'directConnection' && signal.signalType === 'offer')
+                create: (signal.target !== 'directConnection' && signal.signalType === 'offer'),
+                callerId: signal.callerId
             });
             if (target) {
                 return target;

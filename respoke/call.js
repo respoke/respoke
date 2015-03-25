@@ -118,6 +118,15 @@ module.exports = function (params) {
         that.constraints = [];
     }
 
+
+    if (that.fromType === 'did') {
+        params.callerId = params.callerId || {};
+        that.callerId = {
+            name: params.callerId.name || null,
+            number: params.callerId.number || null
+        };
+    }
+
     /**
      * The call ID.
      * @memberof! respoke.Call
