@@ -666,6 +666,7 @@ module.exports = function (params) {
         }
 
         switch (switchType) {
+            case "screenshare":
             case "web":
                 callParams.toType = "web"; // overwrite "screenshare"
                 callParams.endpointId = params.endpointId;
