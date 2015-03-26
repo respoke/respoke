@@ -8,7 +8,8 @@
     "watch": "webpack --watch",
     "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "jshint": "jshint ./ --config=.jshintrc --reporter=.jshintreporter",
-    "jscs": "jscs ./"
+    "jscs": "jscs ./",
+    "lint": "npm run jshint && npm run jscs"
   },
   "keywords": [
     "respoke",

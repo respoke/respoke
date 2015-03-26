@@ -5,7 +5,6 @@ describe("The respoke namespace", function() {
     it("contains all the library's classes.", function() {
         expect(typeof respoke).to.equal('object');
         expect(typeof respoke.Call).to.equal('function');
-        expect(typeof respoke.Class).to.equal('function');
         expect(typeof respoke.Client).to.equal('function');
         expect(typeof respoke.Connection).to.equal('function');
         expect(typeof respoke.DirectConnection).to.equal('function');
@@ -40,13 +39,20 @@ describe("The respoke namespace", function() {
         expect(typeof respoke.queueFactory).to.equal('function');
     });
 
-    describe("the 'once' method", function () {
+    it("contains event emitter methods.", function () {
+        expect(typeof respoke.listen).to.equal('function');
+        expect(typeof respoke.ignore).to.equal('function');
+        expect(typeof respoke.fire).to.equal('function');
+        expect(typeof respoke.once).to.equal('function');
+    });
+
+    describe("the 'callOnce' method", function () {
         var initialFunction;
         var onceFunction;
 
         beforeEach(function () {
             initialFunction = sinon.spy();
-            onceFunction = respoke.once(initialFunction);
+            onceFunction = respoke.callOnce(initialFunction);
         });
 
         it("returns function", function () {

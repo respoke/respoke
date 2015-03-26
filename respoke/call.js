@@ -1266,7 +1266,7 @@ module.exports = function (params) {
         params.reason = params.reason || "hangup method called.";
         pc.state.dispatch('hangup', params);
     };
-    that.hangup = respoke.once(that.hangup);
+    that.hangup = respoke.callOnce(that.hangup);
 
     /**
      * Tear down the call, release user media.  Send a hangup signal to the remote party if
@@ -1310,7 +1310,7 @@ module.exports = function (params) {
         that.ignore();
         pc = null;
     };
-    doHangup = respoke.once(doHangup);
+    doHangup = respoke.callOnce(doHangup);
 
     /**
      * Expose hangup as reject for approve/reject workflow.
