@@ -134,6 +134,11 @@ module.exports = function (params) {
         }
     }
 
+    function handleStreamEnded(/* evt */) {
+        // perform cleanup on the LocalMedia instance if the underlying stream has ended
+        that.stop();
+    }
+
     /**
      * Save the local stream. Kick off SDP creation.
      * @memberof! respoke.LocalMedia
@@ -175,6 +180,8 @@ module.exports = function (params) {
             that.element.muted = true;
             that.element.autoplay = true;
 
+            aStream.addEventListener('ended', handleStreamEnded, false);
+
             /**
              * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
@@ -198,6 +205,7 @@ module.exports = function (params) {
             that.element.muted = true;
             that.element.autoplay = true;
 
+            that.stream.addEventListener('ended', handleStreamEnded, false);
             /**
              * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
