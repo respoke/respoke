@@ -9,7 +9,6 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
 
@@ -391,10 +390,10 @@ module.exports = function (params) {
      */
     that.accept = function (params) {
         params = params || {};
-        log.debug('DirectConnection.accept');
+        respoke.log.debug('DirectConnection.accept');
         saveParameters(params);
 
-        log.debug("I am " + (pc.state.caller ? '' : 'not ') + "the caller.");
+        respoke.log.debug("I am " + (pc.state.caller ? '' : 'not ') + "the caller.");
 
         if (pc.state.caller === true) {
             createDataChannel();
@@ -419,7 +418,7 @@ module.exports = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        log.debug("DirectConnection.close");
+        respoke.log.debug("DirectConnection.close");
 
         if (that.call && that.call.remoteEndpoint) {
             that.call.remoteEndpoint.directConnection = null;

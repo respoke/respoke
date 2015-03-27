@@ -11,7 +11,6 @@
 
 /* global respoke: true */
 var Q = require('q');
-var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
@@ -103,7 +102,7 @@ module.exports = function (params) {
         configurable: true,
         enumerable: true,
         get: function () {
-            log.warn("The call.initiator flag is deprecated. Please use call.caller instead.");
+            respoke.log.warn("The call.initiator flag is deprecated. Please use call.caller instead.");
             return that.caller;
         },
         set: function () {
@@ -392,7 +391,7 @@ module.exports = function (params) {
      * @private
      */
     function init() {
-        log.debug('Call.init');
+        respoke.log.debug('Call.init');
 
         if (defModify !== undefined) {
             defMedia = Q.defer();
@@ -648,7 +647,7 @@ module.exports = function (params) {
      */
     that.answer = function (params) {
         params = params || {};
-        log.debug('Call.answer', params);
+        respoke.log.debug('Call.answer', params);
 
         saveParameters(params);
 
@@ -718,7 +717,7 @@ module.exports = function (params) {
      * @fires respoke.Call#approve
      */
     that.approve = function () {
-        log.debug('Call.approve');
+        respoke.log.debug('Call.approve');
         /**
          * Fired when the local media access is approved.
          * @event respoke.Call#approve
@@ -745,7 +744,7 @@ module.exports = function (params) {
      * @param {object}
      */
     function onRemoteStreamRemoved(evt) {
-        log.debug('pc event: remote stream removed');
+        respoke.log.debug('pc event: remote stream removed');
     }
 
     /**
@@ -766,7 +765,7 @@ module.exports = function (params) {
         if (!pc) {
             return;
         }
-        log.debug('received remote media', evt);
+        respoke.log.debug('received remote media', evt);
 
         // This is the first remote media we have received. The one we currently have is a guess. Rip it
         // out and replace it with reality.
@@ -954,7 +953,7 @@ module.exports = function (params) {
      * @fires respoke.Call#local-stream-received
      */
     function doAddVideo(params) {
-        log.debug('Call.doAddVideo');
+        respoke.log.debug('Call.doAddVideo');
         saveParameters(params);
     }
 
@@ -979,7 +978,7 @@ module.exports = function (params) {
      * @returns {Promise<respoke.LocalMedia>}
      */
     that.addVideo = function (params) {
-        log.debug('Call.addVideo');
+        respoke.log.debug('Call.addVideo');
         params = params || {};
         if (!params.constraints || !params.constraints.length) {
             params.constraints = [{video: true, audio: true}];
@@ -1055,14 +1054,14 @@ module.exports = function (params) {
      */
     that.removeDirectConnection = function (params) {
         params = params || {};
-        log.debug('Call.removeDirectConnection');
+        respoke.log.debug('Call.removeDirectConnection');
 
         if (directConnection) {
             directConnection.close({skipRemove: true});
         }
 
         if (!that.hasMedia()) {
-            log.debug('Hanging up because there are no local streams.');
+            respoke.log.debug('Hanging up because there are no local streams.');
             that.hangup();
             return;
         }
@@ -1106,7 +1105,7 @@ module.exports = function (params) {
      * @returns {Promise<respoke.DirectConnection>}
      */
     that.addDirectConnection = function (params) {
-        log.debug('Call.addDirectConnection');
+        respoke.log.debug('Call.addDirectConnection');
         pc.startModify({
             directConnection: true
         });
@@ -1138,7 +1137,7 @@ module.exports = function (params) {
      * @fires respoke.Call#direct-connection
      */
     function actuallyAddDirectConnection(params) {
-        log.debug('Call.actuallyAddDirectConnection', params);
+        respoke.log.debug('Call.actuallyAddDirectConnection', params);
         params = params || {};
         defMedia.promise.then(params.onSuccess, params.onError);
 
@@ -1146,7 +1145,7 @@ module.exports = function (params) {
             if (defMedia.promise.isPending()) {
                 defMedia.resolve(directConnection);
             } else {
-                log.warn("Not creating a new direct connection.");
+                respoke.log.warn("Not creating a new direct connection.");
             }
             return defMedia.promise;
         }
@@ -1159,7 +1158,7 @@ module.exports = function (params) {
 
         directConnection.listen('close', function closeHandler() {
             if (!that.hasMedia()) {
-                log.debug('Hanging up because there are no local streams.');
+                respoke.log.debug('Hanging up because there are no local streams.');
                 that.hangup();
             } else {
                 that.removeDirectConnection({skipModify: true});
@@ -1168,7 +1167,7 @@ module.exports = function (params) {
 
         directConnection.listen('accept', function acceptHandler() {
             if (pc.state.caller === false) {
-                log.debug('Answering as a result of approval.');
+                respoke.log.debug('Answering as a result of approval.');
             } else {
                 defMedia.resolve(directConnection);
             }
@@ -1265,7 +1264,7 @@ module.exports = function (params) {
      * @private
      */
     var doHangup = function () {
-        log.debug('hangup', that.caller);
+        respoke.log.debug('hangup', that.caller);
 
         that.outgoingMediaStreams.forEach(function (stream) {
             stream.stop();
@@ -1335,7 +1334,7 @@ module.exports = function (params) {
      * @private
      */
     function listenAnswer(evt) {
-        log.debug('listenAnswer', evt.signal);
+        respoke.log.debug('listenAnswer', evt.signal);
 
         that.hasDataChannel = respoke.sdpHasDataChannel(evt.signal.sessionDescription.sdp);
         updateIncomingMediaEstimate({sdp: evt.signal.sessionDescription});
@@ -1433,7 +1432,7 @@ module.exports = function (params) {
      * @fires respoke.Call#modify
      */
     function listenOffer(evt) {
-        log.debug('listenOffer', evt.signal);
+        respoke.log.debug('listenOffer', evt.signal);
         var info = {};
 
         that.sessionId = evt.signal.sessionId;
@@ -1464,7 +1463,7 @@ module.exports = function (params) {
         } else {
             updateOutgoingMediaEstimate({sdp: evt.signal.sessionDescription});
         }
-        log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
+        respoke.log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
 
         if (pc.state.isModifying()) {
             if (pc.state.needDirectConnection === true) {
@@ -1504,7 +1503,7 @@ module.exports = function (params) {
      * @private
      */
     function listenModify(evt) {
-        log.debug('Call.listenModify', evt);
+        respoke.log.debug('Call.listenModify', evt);
         if (evt.signal.action === 'initiate') {
             defModify = Q.defer();
             pc.state.dispatch('modify', {receive: true});
@@ -1824,7 +1823,7 @@ module.exports = function (params) {
             throw new Error("Already hung up.");
         }
         if (!result) {
-            log.warn("Relay service not available.");
+            respoke.log.warn("Relay service not available.");
             pc.servers = {iceServers: []};
         } else {
             pc.servers = {iceServers: result};
@@ -1838,7 +1837,7 @@ module.exports = function (params) {
         });
     }).done(null, function (err) {
         if (err.message !== "Already hung up.") {
-            log.debug('Unexpected exception', err);
+            respoke.log.debug('Unexpected exception', err);
         }
     });
 

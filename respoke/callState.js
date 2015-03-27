@@ -10,7 +10,6 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var respoke = require('./respoke');
 var Statechart = require('statechart');
 var Q = require('q');

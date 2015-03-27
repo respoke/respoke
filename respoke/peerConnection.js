@@ -10,7 +10,6 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
 
@@ -257,9 +256,9 @@ module.exports = function (params) {
             makeOptionsSendOnly(offerOptions);
         }
 
-        log.info('creating offer', offerOptions);
+        respoke.log.info('creating offer', offerOptions);
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
-            log.error('createOffer failed');
+            respoke.log.error('createOffer failed');
         }, offerOptions);
     }
 
@@ -303,7 +302,7 @@ module.exports = function (params) {
         if (!pc) {
             return;
         }
-        log.debug('processOffer', oOffer);
+        respoke.log.debug('processOffer', oOffer);
 
         that.report.sdpsReceived.push(oOffer);
         that.report.lastSDPString = oOffer.sdp;
@@ -319,7 +318,7 @@ module.exports = function (params) {
                     }
 
                     processReceivingQueue();
-                    log.debug('set remote desc of offer succeeded');
+                    respoke.log.debug('set remote desc of offer succeeded');
                     pc.createAnswer(function successHandler(oSession) {
                         that.state.processedRemoteSDP = true;
                         saveAnswerAndSend(oSession);
@@ -337,7 +336,7 @@ module.exports = function (params) {
                         that.call.fire('error', {
                             message: err.message
                         });
-                        log.error('create answer failed');
+                        respoke.log.error('create answer failed');
                         that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
                         that.close();
                     });
@@ -446,7 +445,7 @@ module.exports = function (params) {
      * @method respoke.PeerConnection.init
      */
     that.init = function init() {
-        log.debug('PC.init');
+        respoke.log.debug('PC.init');
 
         if (pc) {
             return;
@@ -577,10 +576,10 @@ module.exports = function (params) {
         }
 
         if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
-            log.debug("Dropping candidate because forceTurn is on.");
+            respoke.log.debug("Dropping candidate because forceTurn is on.");
             return;
         } else if (that.disableTurn === true && candidate.candidate.indexOf("typ relay") !== -1) {
-            log.debug("Dropping candidate because disableTurn is on.");
+            respoke.log.debug("Dropping candidate because disableTurn is on.");
             return;
         }
 
@@ -618,7 +617,7 @@ module.exports = function (params) {
      * @private
      */
     function onNegotiationNeeded() {
-        log.warn("Negotiation needed.");
+        respoke.log.warn("Negotiation needed.");
     }
 
     /**
@@ -655,10 +654,10 @@ module.exports = function (params) {
             }
 
             pc.addIceCandidate(new RTCIceCandidate(can.candidate), function onSuccess() {
-                log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', can.candidate);
+                respoke.log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', can.candidate);
                 that.report.candidatesReceived.push(can.candidate);
             }, function onError(e) {
-                log.error("Couldn't add ICE candidate: " + e.message, can.candidate);
+                respoke.log.error("Couldn't add ICE candidate: " + e.message, can.candidate);
             });
         });
     }
@@ -676,7 +675,7 @@ module.exports = function (params) {
         if (!pc) {
             return;
         }
-        log.debug('setting and sending offer', oSession);
+        respoke.log.debug('setting and sending offer', oSession);
         that.report.sdpsSent.push(oSession);
 
         pc.setLocalDescription(oSession, function successHandler(p) {
@@ -727,7 +726,7 @@ module.exports = function (params) {
         }
 
         oSession.type = 'answer';
-        log.debug('setting and sending answer', oSession);
+        respoke.log.debug('setting and sending answer', oSession);
         that.report.sdpsSent.push(oSession);
 
         pc.setLocalDescription(oSession, function successHandler(p) {
@@ -779,7 +778,7 @@ module.exports = function (params) {
 
         toSendHangup = (typeof params.signal === 'boolean' ? params.signal : toSendHangup);
         if (toSendHangup) {
-            log.info('sending hangup');
+            respoke.log.info('sending hangup');
             signalHangup({
                 call: that.call
             });
@@ -837,7 +836,7 @@ module.exports = function (params) {
         if (!pc) {
             return;
         }
-        log.debug('got answer', evt.signal);
+        respoke.log.debug('got answer', evt.signal);
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
         that.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
@@ -872,7 +871,7 @@ module.exports = function (params) {
                 that.call.fire('error', {
                     message: newErr.message
                 });
-                log.error('set remote desc of answer failed', evt.signal.sessionDescription, p);
+                respoke.log.error('set remote desc of answer failed', evt.signal.sessionDescription, p);
                 that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
                 that.close();
             }
@@ -888,7 +887,7 @@ module.exports = function (params) {
      */
     function listenConnected(evt) {
         if (evt.signal.connectionId !== client.connectionId) {
-            log.debug("Hanging up because I didn't win the call.", evt.signal, client);
+            respoke.log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
     }
@@ -922,7 +921,7 @@ module.exports = function (params) {
      */
     function listenModify(evt) {
         var err;
-        log.debug('PC.listenModify', evt.signal);
+        respoke.log.debug('PC.listenModify', evt.signal);
 
         if (evt.signal.action === 'accept') {
             if (defModify.promise.isPending()) {
@@ -940,7 +939,7 @@ module.exports = function (params) {
         } else if (evt.signal.action === 'reject') {
             if (defModify.promise.isPending()) {
                 err = new Error("Remote party cannot negotiate.");
-                log.debug(err.message);
+                respoke.log.debug(err.message);
                 defModify.reject(err);
                 /**
                  * Indicate that the remote party has rejected our invitation to begin renegotiating media.
@@ -960,7 +959,7 @@ module.exports = function (params) {
             // TODO compare signal request ID and accept if we have the higher request ID,
             // reject if we have the lower request ID.
             err = new Error("Got modify in a negotiating state.");
-            log.debug(err.message);
+            respoke.log.debug(err.message);
             defModify.reject(err);
             /**
              * Indicate that the remote party has rejected our invitation to begin renegotiating media.
@@ -1029,7 +1028,7 @@ module.exports = function (params) {
         }
 
         if (!params || !params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
-            log.warn("addRemoteCandidate got wrong format!", params);
+            respoke.log.warn("addRemoteCandidate got wrong format!", params);
             return;
         }
 

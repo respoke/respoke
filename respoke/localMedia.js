@@ -10,7 +10,6 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var respoke = require('./respoke');
 
 /**
@@ -156,8 +155,8 @@ module.exports = function (params) {
          * @property {respoke.LocalMedia} target
          */
         that.fire('allow');
-        log.debug('User gave permission to use media.');
-        log.debug('onReceiveUserMedia');
+        respoke.log.debug('User gave permission to use media.');
+        respoke.log.debug('onReceiveUserMedia');
 
         that.element = that.element || document.createElement('video');
 
@@ -257,7 +256,7 @@ module.exports = function (params) {
             return;
         }
 
-        log.debug('requestMedia', that.state.caller);
+        respoke.log.debug('requestMedia', that.state.caller);
 
         if (!that.constraints) {
             throw new Error('No constraints.');
@@ -265,7 +264,7 @@ module.exports = function (params) {
 
         var theStream = getStream(that.constraints);
         if (theStream) {
-            log.debug('using old stream');
+            respoke.log.debug('using old stream');
             onReceiveUserMedia(theStream);
             return;
         }
@@ -306,7 +305,7 @@ module.exports = function (params) {
                         return;
                     }
                     that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
-                    log.debug("Running getUserMedia with constraints", that.constraints);
+                    respoke.log.debug("Running getUserMedia with constraints", that.constraints);
                     getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 });
                 return;
@@ -314,7 +313,7 @@ module.exports = function (params) {
                 throw new Error("Screen sharing not implemented on this platform yet.");
             }
         }
-        log.debug("Running getUserMedia with constraints", that.constraints);
+        respoke.log.debug("Running getUserMedia with constraints", that.constraints);
         getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
     }
 
@@ -326,9 +325,9 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
-        log.debug('onUserMediaError');
+        respoke.log.debug('onUserMediaError');
         if (p.code === 1) {
-            log.warn("Permission denied.");
+            respoke.log.warn("Permission denied.");
             /**
              * Indicate there has been an error obtaining media.
              * @event respoke.LocalMedia#error
@@ -339,7 +338,7 @@ module.exports = function (params) {
              */
             that.fire('error', {error: 'Permission denied.'});
         } else {
-            log.warn(p);
+            respoke.log.warn(p);
             /**
              * Indicate there has been an error obtaining media.
              * @event respoke.LocalMedia#error

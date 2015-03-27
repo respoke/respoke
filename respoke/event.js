@@ -11,7 +11,6 @@
 
 /* global respoke: true */
 var respoke = require('./respoke');
-var log = require('loglevel');
 
 /**
  * A generic class for emitting and listening to events. This is used internally by respoke.js
@@ -115,7 +114,7 @@ var EventEmitter = module.exports = function (params) {
         var invalidEventType = typeof eventType !== 'string' || !eventType;
         var invalidListener = typeof listener !== 'function';
         if (invalidEventType || invalidListener) {
-            log.error("Invalid request to add event listener to", eventType, listener);
+            respoke.log.error("Invalid request to add event listener to", eventType, listener);
             return;
         }
 
@@ -130,7 +129,7 @@ var EventEmitter = module.exports = function (params) {
         if (isNotAlreadyAdded) {
             eventList[eventType].push(listener);
         } else {
-            log.warn("Not adding duplicate listener to", eventType, listener);
+            respoke.log.warn("Not adding duplicate listener to", eventType, listener);
         }
     };
 
@@ -195,7 +194,7 @@ var EventEmitter = module.exports = function (params) {
         }
 
         if (!eventList[eventType]) {
-            log.debug("fired " + that.className + "#" + eventType + " 0 listeners called with params", evt);
+            respoke.log.debug("fired " + that.className + "#" + eventType + " 0 listeners called with params", evt);
             return;
         }
 
@@ -215,7 +214,7 @@ var EventEmitter = module.exports = function (params) {
             eventList[eventType].splice(toRemove[i], 1);
         }
 
-        log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
+        respoke.log.debug("fired " + that.className + "#" + eventType + " " + count + " listeners called with params", evt);
     };
 
     function listenerBuilder(listener, evt, eventType) {
@@ -223,7 +222,7 @@ var EventEmitter = module.exports = function (params) {
             try {
                 listener.call(that, evt);
             } catch (e) {
-                log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
+                respoke.log.error('Error in ' + that.className + "#" + eventType, e.message, e.stack);
             }
         };
     }
