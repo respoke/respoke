@@ -999,7 +999,7 @@ module.exports = function (params) {
             return;
         }
 
-       /**
+        /**
          * Indicate that the remote party has accepted our invitation to begin renegotiating media.
          * @event respoke.PeerConnection#modify-accept
          * @type {respoke.Event}

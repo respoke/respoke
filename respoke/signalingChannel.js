@@ -746,9 +746,9 @@ module.exports = function (params) {
                 }, function (err) {
                     saveDeferred.reject(err);
                 });
-            // We could even add a tiny delay like 10ms if we want to get more conservative and
-            // catch asychronous calls to client.getEndpoint() and other methods which call
-            // this method.
+                // We could even add a tiny delay like 10ms if we want to get more conservative and
+                // catch asychronous calls to client.getEndpoint() and other methods which call
+                // this method.
             });
 
             return deferred.promise;
