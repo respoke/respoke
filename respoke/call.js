@@ -1464,7 +1464,10 @@ module.exports = function (params) {
         } else {
             updateOutgoingMediaEstimate({sdp: evt.signal.sessionDescription});
         }
-        log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
+
+        if (that.outgoingMedia) {
+            log.info("Default outgoingMedia constraints", that.outgoingMedia.constraints);
+        }
 
         if (pc.state.isModifying()) {
             if (pc.state.needDirectConnection === true) {

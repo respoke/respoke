@@ -265,29 +265,33 @@ module.exports = function (params) {
 
     function makeOptionsReceiveOnly(options) {
         if (navigator.webkitGetUserMedia) {
-            offerOptions = {
-                mandatory: {
-                    OfferToReceiveVideo: true,
-                    OfferToReceiveAudio: true
-                }
+            options.mandatory = {
+                OfferToReceiveVideo: true,
+                OfferToReceiveAudio: true,
+                OfferToSendVideo: false,
+                OfferToSendAudio: false
             };
         } else {
-            offerOptions.offerToReceiveVideo = true;
-            offerOptions.offerToReceiveAudio = true;
+            options.offerToReceiveVideo = true;
+            options.offerToReceiveAudio = true;
+            options.offerToSendVideo = false;
+            options.offerToSendAudio = false;
         }
     }
 
     function makeOptionsSendOnly(options) {
         if (navigator.webkitGetUserMedia) {
-            offerOptions = {
-                mandatory: {
-                    OfferToSendVideo: true,
-                    OfferToSendAudio: true
-                }
+            options.mandatory = {
+                OfferToSendVideo: true,
+                OfferToSendAudio: true,
+                OfferToReceiveVideo: false,
+                OfferToReceiveAudio: false
             };
         } else {
-            offerOptions.offerToSendVideo = true;
-            offerOptions.offerToSendAudio = true;
+            options.offerToSendVideo = true;
+            options.offerToSendAudio = true;
+            options.offerToReceiveVideo = false;
+            options.offerToReceiveAudio = false;
         }
     }
 
