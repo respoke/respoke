@@ -13,8 +13,37 @@
  * @ignore
  */
 
+var Airbrake = require('airbrake-js');
+
 var log = require('loglevel');
-log.setLevel('warn');
+log.setLevel(log.levels.WARN);
+
+var originalFactory = log.methodFactory;
+log.methodFactory = function logMethodFactory(methodName, logLevel) {
+    var logMethod = originalFactory(methodName, logLevel);
+    var errorReporter;
+
+    if (!window.skipErrorReporting && methodName === 'error') {
+        var airbrake = new Airbrake({
+            projectId: '98133',
+            projectKey: 'cd3e085acc5e554658ebcdabd112a6f4'
+        });
+        errorReporter = function (message) {
+            airbrake.push({ error: { message: message } });
+        };
+    } else {
+        errorReporter = function () { };
+    }
+
+    return function (message) {
+        var args = Array.prototype.slice.call(arguments);
+        var reporterMessage = args.join(' ');
+
+        args.unshift('[Respoke]');
+        logMethod.apply(this, args);
+        errorReporter(reporterMessage);
+    };
+};
 
 var Q = require('q');
 Q.longStackSupport = true;
@@ -216,27 +245,6 @@ document.addEventListener('respoke-available', function (evt) {
     respoke.log.info("Respoke Screen Share Chrome extension available for use.");
 });
 
-if (!window.skipErrorReporting) {
-    // Use airbrake.
-    var airbrake = document.createElement('script');
-    var first = document.getElementsByTagName('script')[0];
-    first.parentNode.insertBefore(airbrake, first);
-
-    airbrake.src = "https://ssljscdn.airbrake.io/0.3/airbrake.min.js";
-    airbrake.setAttribute('data-airbrake-project-id', '98133');
-    airbrake.setAttribute('data-airbrake-project-key', 'cd3e085acc5e554658ebcdabd112a6f4');
-    airbrake.setAttribute('data-airbrake-project-environment-name', 'production');
-
-    airbrake.onload = function () {
-        window.onerror = function (message, file, line) {
-            //Only send errors from the respoke.js file to Airbrake
-            if (file.match(/respoke/) && !window.skipErrorReporting) {
-                Airbrake.push({error: {message: message, fileName: file, lineNumber: line}});
-            }
-        };
-    };
-}
-
 /**
  * This is one of two possible entry points for interating with the library.
  *
@@ -285,7 +293,7 @@ respoke.connect = function (params) {
  * @memberof respoke
  */
 respoke.chooseDesktopMedia = function () {
-    log.warn("Screen sharing is not implemented for this browser.");
+    respoke.log.warn("Screen sharing is not implemented for this browser.");
 };
 
 /**
@@ -300,10 +308,10 @@ respoke.chooseDesktopMedia = function () {
  */
 respoke.getClient = function (id) {
     if (id === undefined) {
-        log.debug("Can't call getClient with no client ID.", new Error().stack);
+        respoke.log.debug("Can't call getClient with no client ID.", new Error().stack);
     }
     if (!respoke.instances[id]) {
-        log.debug("No client instance with id", id);
+        respoke.log.debug("No client instance with id", id);
     }
     return respoke.instances[id];
 };
@@ -679,7 +687,7 @@ respoke.queueFactory = function () {
             try {
                 action(item);
             } catch (err) {
-                log.error("Error calling queue action.", err);
+                respoke.log.error("Error calling queue action.", err);
             }
         }
         queue.forEach(safeAction);
