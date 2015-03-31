@@ -175,6 +175,9 @@ module.exports = function (params) {
             that.element.muted = true;
             that.element.autoplay = true;
 
+            // perform cleanup on the LocalMedia instance if the underlying stream has ended
+            aStream.addEventListener('ended', that.stop, false);
+
             /**
              * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received
@@ -198,6 +201,8 @@ module.exports = function (params) {
             that.element.muted = true;
             that.element.autoplay = true;
 
+            // perform cleanup on the LocalMedia instance if the underlying stream has ended
+            that.stream.addEventListener('ended', that.stop, false);
             /**
              * Indicate that we've received media from the browser.
              * @event respoke.LocalMedia#stream-received

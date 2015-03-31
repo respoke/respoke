@@ -544,6 +544,20 @@ module.exports = function (params) {
             localMedia.element = that.videoLocalElement;
         }
 
+        localMedia.listen('stop', function stopHandler(/* evt */) {
+            // if the local media has stopped, it has already been removed from respoke.streams.
+            // just need to remove it from the call's streams, and hangup if no streams left.
+
+            var idx = that.outgoingMediaStreams.indexOf(localMedia);
+            if (idx > -1) {
+                that.outgoingMediaStreams.splice(idx, 1);
+            }
+
+            if (!that.outgoingMediaStreams.length && !that.incomingMediaStreams.length) {
+                that.hangup({ reason: 'last stream ended' });
+            }
+        });
+
         localMedia.listen('requesting-media', function waitAllowHandler(evt) {
             if (!pc) {
                 return;
