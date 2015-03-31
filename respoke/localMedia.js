@@ -115,8 +115,8 @@ module.exports = function (params) {
             var s = respoke.streams[i];
 
             var sConstraints = respoke.clone(s.constraints);
-            if (sConstraints.video && sConstraints.video.mandatory
-                && sConstraints.video.mandatory.chromeMediaSourceId) {
+            if (sConstraints.video && sConstraints.video.mandatory &&
+                sConstraints.video.mandatory.chromeMediaSourceId) {
                 delete sConstraints.video.mandatory.chromeMediaSourceId;
             }
 
