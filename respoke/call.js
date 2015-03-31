@@ -118,14 +118,6 @@ module.exports = function (params) {
         that.constraints = [];
     }
 
-    if (that.fromType === 'did') {
-        params.callerId = params.callerId || {};
-        that.callerId = {
-            name: params.callerId.name || null,
-            number: params.callerId.number || null
-        };
-    }
-
     /**
      * The call ID.
      * @memberof! respoke.Call
@@ -470,6 +462,14 @@ module.exports = function (params) {
 
         that.videoLocalElement = params.videoLocalElement ? params.videoLocalElement : that.videoLocalElement;
         that.videoRemoteElement = params.videoRemoteElement ? params.videoRemoteElement : that.videoRemoteElement;
+
+        if (that.toType === 'did' && !that.caller) {
+            params.callerId = params.callerId || {};
+            that.callerId = {
+                name: params.callerId.name || null,
+                number: params.callerId.number || null
+            };
+        }
 
         if (pc.state.receiveOnly) {
             that.outgoingMediaStreams.length = 0;
