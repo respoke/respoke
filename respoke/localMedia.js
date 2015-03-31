@@ -113,7 +113,15 @@ module.exports = function (params) {
     function getStream(theConstraints) {
         for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
-            if (respoke.isEqual(s.constraints, theConstraints)) {
+
+            var sConstraints = respoke.clone(s.constraints);
+            if (sConstraints.video && sConstraints.video.mandatory
+                && sConstraints.video.mandatory.chromeMediaSourceId) {
+                delete sConstraints.video.mandatory.chromeMediaSourceId;
+            }
+
+
+            if (respoke.isEqual(sConstraints, theConstraints)) {
                 return s.stream;
             }
         }
