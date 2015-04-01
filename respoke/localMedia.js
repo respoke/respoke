@@ -120,7 +120,6 @@ module.exports = function (params) {
                 delete sConstraints.video.mandatory.chromeMediaSourceId;
             }
 
-
             if (respoke.isEqual(sConstraints, theConstraints)) {
                 return s.stream;
             }
