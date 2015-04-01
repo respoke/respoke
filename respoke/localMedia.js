@@ -203,7 +203,6 @@ module.exports = function (params) {
             that.stream.numPc = 1;
             respoke.streams.push({stream: that.stream, constraints: that.constraints});
 
-            that.stream.id = that.streamId;
             attachMediaStream(that.element, that.stream);
             // We won't want our local video outputting audio.
             that.element.muted = true;
