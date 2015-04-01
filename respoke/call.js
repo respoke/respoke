@@ -1376,6 +1376,7 @@ module.exports = function (params) {
 
         if (that.incomingMediaStreams.length === 0) {
             that.incomingMediaStreams.push(respoke.RemoteMedia({
+                hasScreenShare: (that.target === 'screenshare'),
                 temporary: true
             }));
         }
