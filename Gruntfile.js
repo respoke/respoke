@@ -87,9 +87,13 @@ module.exports = function (grunt) {
                 singleRun: true,
                 configFile: './spec/karma-functional-firefox.conf.js'
             },
-            discovery: {
+            discoveryChrome: {
                 singleRun: false,
                 configFile: './spec/karma-discovery-chrome.conf.js'
+            },
+            discoveryFirefox: {
+                singleRun: false,
+                configFile: './spec/karma-discovery-firefox.conf.js'
             }
         },
         watch: {
@@ -265,9 +269,14 @@ module.exports = function (grunt) {
         killSaucerSection();
     });
 
-    grunt.registerTask('discovery', 'Run discovery specs', [
+    grunt.registerTask('discoveryChrome', 'Run discovery specs', [
         'dist',
-        'karma:discovery'
+        'karma:discoveryChrome'
+    ]);
+
+    grunt.registerTask('discoveryFirefox', 'Run discovery specs', [
+        'dist',
+        'karma:discoveryFirefox'
     ]);
 
     grunt.registerTask('functional', 'Run client-side functional tests', [

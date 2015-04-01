@@ -110,7 +110,7 @@ describe("Respoke audio conferencing", function () {
         });
 
         describe("when placing a call", function () {
-        this.timeout(30*60*60*1000);
+            this.timeout(30*60*60*1000);
             var localMedia;
             var remoteMedia;
 
