@@ -97,7 +97,7 @@ module.exports = function (params) {
 
     /**
      * Send a message to the endpoint through the infrastructure.
-     * 
+     *
      * ```
      * endpoint.sendMessage({
      *     message: "wassuuuuup"
@@ -290,6 +290,8 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
+     * @param {string} [params.source] - Pass in what type of mediaSource you want. If omitted, you'll have access
+     * to both the screen and windows. In firefox, you'll have access to the screen only.
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
@@ -298,7 +300,8 @@ module.exports = function (params) {
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
-        params.target = "screenshare";
+
+        params.target = 'screenshare';
         params.constraints = respoke.convertConstraints(params.constraints, [{
             audio: true,
             video: {},
@@ -308,7 +311,15 @@ module.exports = function (params) {
         screenConstraint = params.constraints[0];
 
         if (params.caller) {
-            if (respoke.needsChromeExtension || respoke.isNwjs) {
+
+            if (respoke.needsFirefoxExtension) {
+
+                screenConstraint.audio = false;
+                screenConstraint.video = {
+                    mediaSource: params.source || 'screen'
+                };
+
+            }else if (respoke.needsChromeExtension || respoke.isNwjs) {
                 screenConstraint.video = typeof screenConstraint.video === 'object' ? screenConstraint.video : {};
                 screenConstraint.video.optional = screenConstraint.video.optional || [];
                 screenConstraint.video.mandatory = typeof screenConstraint.video.mandatory === 'object' ?
@@ -337,13 +348,13 @@ module.exports = function (params) {
                 }
             } else {
                 screenConstraint.video = {
-                    mediaSource: params.source || "window"
+                    mediaSource: params.source || 'window'
                 };
             }
         } else {
             screenConstraint.video = false;
 
-            if (respoke.needsChromeExtension || respoke.isNwjs) {
+            if (respoke.needsFirefoxExtension || respoke.needsChromeExtension || respoke.isNwjs) {
                 params.receiveOnly = true;
                 screenConstraint.audio = false;
             } else {

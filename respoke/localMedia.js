@@ -59,6 +59,16 @@ module.exports = function (params) {
      */
     var hasScreenShare = params.hasScreenShare;
     delete params.hasScreenShare;
+
+    /**
+     * @memberof! respoke.LocalMedia
+     * @name screenShareSource
+     * @private
+     * @type {string}
+     */
+    var screenShareSource = params.source;
+    delete params.source;
+
     /**
      * @memberof! respoke.LocalMedia
      * @name sdpHasAudio
@@ -299,10 +309,10 @@ module.exports = function (params) {
         if (respoke.useFakeMedia === true) {
             that.constraints.fake = true;
         }
-        if (that.constraints.video.mandatory &&
-                that.constraints.video.mandatory.chromeMediaSource) {
+
+        if ((that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) || respoke.hasFirefoxExtension) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
-                respoke.chooseDesktopMedia(function (params) {
+                respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {
                         log.error("Error trying to get screensharing source.", params.error);
                         /**
@@ -320,6 +330,11 @@ module.exports = function (params) {
                     log.debug("Running getUserMedia with constraints", that.constraints);
                     getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 });
+                return;
+            } else if (respoke.needsFirefoxExtension && respoke.hasFirefoxExtension) {
+                that.constraints.video.mediaSource = screenShareSource || 'screen';
+                log.debug("Running getUserMedia with constraints", that.constraints);
+                getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 return;
             } else {
                 throw new Error("Screen sharing not implemented on this platform yet.");

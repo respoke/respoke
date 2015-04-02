@@ -167,6 +167,12 @@ respoke.instances = {};
 respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.webkitGetUserMedia);
 
 /**
+ * Indicate whether the user's browser is Firefox and requires the Respoke Firefox extension to do screen sharing.
+ * @type {boolean}
+ */
+respoke.needsFirefoxExtension = window.webrtcDetectedBrowser === 'firefox';
+
+ /**
  * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.
  * @type {boolean}
  * @private
@@ -224,7 +230,13 @@ respoke.isNwjs = (function () {
 })();
 
 /**
- * Create an Event. This is used in the Chrome extension to communicate between the library and extension.
+ * Indicate whether the user has a Respoke Firefox extension installed and running correcty on this domain.
+ * @type {boolean}
+ */
+respoke.hasFirefoxExtension = false;
+
+/**
+ * Create an Event. This is used in the Chrome/Firefox extensions to communicate between the library and extension.
  * @private
  * @type {function}
  */
@@ -267,14 +279,15 @@ respoke.Q = Q;
 /*
  * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
  */
-document.addEventListener('respoke-available', function (evt) {
+
+function chromeScreenSharingExtensionReady(evt) {
     var data = evt.detail;
     if (data.available !== true) {
         return;
     }
 
     respoke.hasChromeExtension = true;
-    respoke.chooseDesktopMedia = function (callback) {
+    respoke.chooseDesktopMedia = function (params, callback) {
         if (!callback) {
             throw new Error("Can't choose desktop media without callback parameter.");
         }
@@ -287,7 +300,10 @@ document.addEventListener('respoke-available', function (evt) {
             document.removeEventListener("respoke-source-id", sourceIdListener);
         }
 
-        document.dispatchEvent(respoke.extEvent('ct-respoke-source-id'));
+        document.dispatchEvent(respoke.extEvent('ct-respoke-source-id', {
+            source: params.source ? [params.source] : ['screen', 'window']
+        }));
+
         document.addEventListener("respoke-source-id", sourceIdListener);
     };
 
@@ -296,6 +312,26 @@ document.addEventListener('respoke-available', function (evt) {
     });
 
     log.info("Respoke Screen Share Chrome extension available for use.");
+}
+
+//leaving this event in here for the time being, but we'll remove it after a bit
+document.addEventListener('respoke-available', chromeScreenSharingExtensionReady);
+document.addEventListener('respoke-chrome-screen-sharing-available', chromeScreenSharingExtensionReady);
+
+document.addEventListener('respoke-firefox-screen-sharing-available', function (evt) {
+
+    var data = evt.detail;
+    if (data !== 'available') {
+        return;
+    }
+
+    respoke.hasFirefoxExtension = true;
+
+    respoke.fire('extension-loaded', {
+        type: 'screen-sharing'
+    });
+
+    log.info("Respoke Screen Share Firefox extension available for use.");
 });
 
 /**
@@ -484,6 +520,16 @@ respoke.hasRTCPeerConnection = function () {
  */
 respoke.hasWebsocket = function () {
     return (window.WebSocket || window.webkitWebSocket || window.MozWebSocket) instanceof Function;
+};
+
+/**
+ * Does the browser have Screen Sharing enabled via browser extensions?
+ * @static
+ * @memberof respoke
+ * @returns {boolean}
+ */
+respoke.hasScreenShare = function () {
+    return respoke.hasChromeExtension || respoke.hasFirefoxExtension;
 };
 
 /**

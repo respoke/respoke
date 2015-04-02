@@ -476,7 +476,7 @@ module.exports = function (params) {
             that.constraints = [];
         } else if (params.constraints) {
             that.constraints = respoke.convertConstraints(params.constraints);
-            updateOutgoingMediaEstimate({constraints: that.constraints[0]});
+            updateOutgoingMediaEstimate({constraints: that.constraints[0], source: params.source});
         }
 
         if (pc.state.sendOnly) {
@@ -531,7 +531,8 @@ module.exports = function (params) {
             localMedia = respoke.LocalMedia({
                 state: pc.state,
                 hasScreenShare: respoke.constraintsHasScreenShare(constraint),
-                constraints: constraint
+                constraints: constraint,
+                source: params.source
             });
             that.outgoingMediaStreams.push(localMedia);
         }
@@ -1419,7 +1420,8 @@ module.exports = function (params) {
             that.outgoingMediaStreams.push(respoke.LocalMedia({
                 instanceId: instanceId,
                 state: pc.state,
-                temporary: true
+                temporary: true,
+                source: params.source
             }));
         }
 
