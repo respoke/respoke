@@ -47,7 +47,8 @@ var respoke = require('./respoke');
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {Array<RTCConstraints>} params.constraints - Array of WebRTC constraints.
+ * @param {Array<RTCConstraints>} params.constraints - Array of WebRTC constraints. This is ignored when
+ * `params.outgoingMedia` is passed into the Call object.
  * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
  * media renegotiation.
  * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -70,7 +71,8 @@ var respoke = require('./respoke');
  * video attached to it.
  * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
  * @param {respoke.LocalMedia} params.outgoingMedia - Pass in an optional LocalMedia object to override the one that is
- * built automatically when establishing the call.
+ * built automatically when establishing the call. When this is defined then any constraints passed to the
+ * call are ignored since the media object already exists.
  * video attached to it.
  * @returns {respoke.Call}
  */
