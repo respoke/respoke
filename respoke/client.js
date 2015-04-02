@@ -623,7 +623,6 @@ module.exports = function (params) {
      */
     that.getCall = function (params) {
         var call = null;
-        var endpoint = null;
         var methods = {
             screenshare: "startScreenShare",
             did: "startPhoneCall",
@@ -657,6 +656,7 @@ module.exports = function (params) {
         callParams.caller = false;
         callParams.fromType = "web";
         callParams.callerId = params.callerId;
+        callParams.target = params.target;
 
         if (params.target === "conference") {
             callParams.conferenceId = params.conferenceId;
