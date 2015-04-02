@@ -11,6 +11,7 @@
 /* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * A direct connection via RTCDataChannel, including state and path negotation.
@@ -390,10 +391,10 @@ module.exports = function (params) {
      */
     that.accept = function (params) {
         params = params || {};
-        respoke.log.debug('DirectConnection.accept');
+        log.debug('DirectConnection.accept');
         saveParameters(params);
 
-        respoke.log.debug("I am " + (pc.state.caller ? '' : 'not ') + "the caller.");
+        log.debug("I am " + (pc.state.caller ? '' : 'not ') + "the caller.");
 
         if (pc.state.caller === true) {
             createDataChannel();
@@ -418,7 +419,7 @@ module.exports = function (params) {
      */
     that.close = function (params) {
         params = params || {};
-        respoke.log.debug("DirectConnection.close");
+        log.debug("DirectConnection.close");
 
         if (that.call && that.call.remoteEndpoint) {
             that.call.remoteEndpoint.directConnection = null;

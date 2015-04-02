@@ -12,6 +12,7 @@
 /* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using
@@ -176,7 +177,7 @@ module.exports = function (params) {
      * @type {array}
      */
     that.calls = [];
-    respoke.log.debug("Client ID is ", instanceId);
+    log.debug("Client ID is ", instanceId);
 
     /**
      * @memberof! respoke.Client
@@ -326,7 +327,7 @@ module.exports = function (params) {
         var promise;
         var retVal;
         params = params || {};
-        respoke.log.debug('Client.connect');
+        log.debug('Client.connect');
         that.connectTries += 1;
 
         saveParameters(params);
@@ -473,17 +474,17 @@ module.exports = function (params) {
              */
             that.listen('reconnect', clientSettings.onReconnect);
 
-            respoke.log.info('logged in as ' + that.endpointId, that);
+            log.info('logged in as ' + that.endpointId, that);
             deferred.resolve();
         }, function errorHandler(err) {
             deferred.reject(err);
             if (err.message && err.message.match(/Connection limit exceeded/)) {
-                respoke.log.error(
+                log.error(
                     'You have reached the connection limit on the account associated with this appId. ' +
                     'Please upgrade your account from the developer portal at https://portal.respoke.io ' +
                     'if you need more concurrent connections.', err);
             } else {
-                respoke.log.error(err.message, err.stack);
+                log.error(err.message, err.stack);
             }
         });
 
@@ -582,7 +583,7 @@ module.exports = function (params) {
             return respoke.handlePromise(promise, params.onSuccess, params.onError);
         }
 
-        respoke.log.info('sending my presence update ' + params.presence);
+        log.info('sending my presence update ' + params.presence);
 
         promise = signalingChannel.sendPresence({
             presence: params.presence
@@ -682,7 +683,7 @@ module.exports = function (params) {
         try {
             call = that[methods[params.type]](callParams);
         } catch (e) {
-            respoke.log.error("Couldn't create Call.", e.message, e.stack);
+            log.error("Couldn't create Call.", e.message, e.stack);
         }
         return call;
     };
@@ -697,7 +698,7 @@ module.exports = function (params) {
      * @private
      */
     function addCall(evt) {
-        respoke.log.debug('addCall');
+        log.debug('addCall');
         if (!evt.call) {
             throw new Error("Can't add call without a call parameter.");
         }
@@ -733,7 +734,7 @@ module.exports = function (params) {
         }
 
         if (match !== 1) {
-            respoke.log.warn("Something went wrong.", match, "calls were removed!");
+            log.warn("Something went wrong.", match, "calls were removed!");
         }
     }
 
@@ -980,7 +981,7 @@ module.exports = function (params) {
             signalingChannel.sendHangup(signalParams).done();
         };
         params.signalReport = function (signalParams) {
-            respoke.log.debug("Sending debug report", signalParams.report);
+            log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams).done();
         };
 
@@ -1333,7 +1334,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't answer the call.", err.message, err.stack);
+                log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
             });
         };
@@ -1344,7 +1345,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send connected.", err.message, err.stack);
+                log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
             });
         };
@@ -1354,7 +1355,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send modify.", err.message, err.stack);
+                log.error("Couldn't send modify.", err.message, err.stack);
             });
         };
         params.signalCandidate = function (signalParams) {
@@ -1363,7 +1364,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send candidate.", err.message, err.stack);
+                log.error("Couldn't send candidate.", err.message, err.stack);
             });
         };
         params.signalHangup = function (signalParams) {
@@ -1372,11 +1373,11 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send hangup.", err.message, err.stack);
+                log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {
-            respoke.log.debug("Sending debug report", signalParams.report);
+            log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams);
         };
 
@@ -1475,7 +1476,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't answer the call.", err.message, err.stack);
+                log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
             });
         };
@@ -1486,7 +1487,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send connected.", err.message, err.stack);
+                log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
             });
         };
@@ -1496,7 +1497,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send modify.", err.message, err.stack);
+                log.error("Couldn't send modify.", err.message, err.stack);
             });
         };
         params.signalCandidate = function (signalParams) {
@@ -1505,7 +1506,7 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send candidate.", err.message, err.stack);
+                log.error("Couldn't send candidate.", err.message, err.stack);
             });
         };
         params.signalHangup = function (signalParams) {
@@ -1514,11 +1515,11 @@ module.exports = function (params) {
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
             signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
-                respoke.log.error("Couldn't send hangup.", err.message, err.stack);
+                log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {
-            respoke.log.debug("Sending debug report", signalParams.report);
+            log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams);
         };
 
@@ -1827,7 +1828,7 @@ module.exports = function (params) {
             signalingChannel.registerPresence({
                 endpointList: [endpoint.id]
             }).done(null, function (err) {
-                respoke.log.error("Couldn't register for presence on", endpoint.id, err.message);
+                log.error("Couldn't register for presence on", endpoint.id, err.message);
             });
         }
         endpoint.listen('presence', params.onPresence);

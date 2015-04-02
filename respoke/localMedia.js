@@ -11,6 +11,7 @@
 
 /* global respoke: true */
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * A wrapper around the stream from `getUserMedia`,
@@ -155,8 +156,8 @@ module.exports = function (params) {
          * @property {respoke.LocalMedia} target
          */
         that.fire('allow');
-        respoke.log.debug('User gave permission to use media.');
-        respoke.log.debug('onReceiveUserMedia');
+        log.debug('User gave permission to use media.');
+        log.debug('onReceiveUserMedia');
 
         that.element = that.element || document.createElement('video');
 
@@ -256,7 +257,7 @@ module.exports = function (params) {
             return;
         }
 
-        respoke.log.debug('requestMedia', that.state.caller);
+        log.debug('requestMedia', that.state.caller);
 
         if (!that.constraints) {
             throw new Error('No constraints.');
@@ -264,7 +265,7 @@ module.exports = function (params) {
 
         var theStream = getStream(that.constraints);
         if (theStream) {
-            respoke.log.debug('using old stream');
+            log.debug('using old stream');
             onReceiveUserMedia(theStream);
             return;
         }
@@ -292,7 +293,7 @@ module.exports = function (params) {
             if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
                 respoke.chooseDesktopMedia(function (params) {
                     if (!params.sourceId) {
-                        respoke.log.error("Error trying to get screensharing source.", params.error);
+                        log.error("Error trying to get screensharing source.", params.error);
                         /**
                          * Indicate there has been an error obtaining media.
                          * @event respoke.LocalMedia#error
@@ -305,7 +306,7 @@ module.exports = function (params) {
                         return;
                     }
                     that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
-                    respoke.log.debug("Running getUserMedia with constraints", that.constraints);
+                    log.debug("Running getUserMedia with constraints", that.constraints);
                     getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 });
                 return;
@@ -313,7 +314,7 @@ module.exports = function (params) {
                 throw new Error("Screen sharing not implemented on this platform yet.");
             }
         }
-        respoke.log.debug("Running getUserMedia with constraints", that.constraints);
+        log.debug("Running getUserMedia with constraints", that.constraints);
         getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
     }
 
@@ -325,9 +326,9 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
-        respoke.log.debug('onUserMediaError');
+        log.debug('onUserMediaError');
         if (p.code === 1) {
-            respoke.log.warn("Permission denied.");
+            log.warn("Permission denied.");
             /**
              * Indicate there has been an error obtaining media.
              * @event respoke.LocalMedia#error
@@ -338,7 +339,7 @@ module.exports = function (params) {
              */
             that.fire('error', {error: 'Permission denied.'});
         } else {
-            respoke.log.warn(p);
+            log.warn(p);
             /**
              * Indicate there has been an error obtaining media.
              * @event respoke.LocalMedia#error

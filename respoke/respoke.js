@@ -242,7 +242,7 @@ document.addEventListener('respoke-available', function (evt) {
         document.addEventListener("respoke-source-id", sourceIdListener);
     };
 
-    respoke.log.info("Respoke Screen Share Chrome extension available for use.");
+    log.info("Respoke Screen Share Chrome extension available for use.");
 });
 
 /**
@@ -293,7 +293,7 @@ respoke.connect = function (params) {
  * @memberof respoke
  */
 respoke.chooseDesktopMedia = function () {
-    respoke.log.warn("Screen sharing is not implemented for this browser.");
+    log.warn("Screen sharing is not implemented for this browser.");
 };
 
 /**
@@ -308,10 +308,10 @@ respoke.chooseDesktopMedia = function () {
  */
 respoke.getClient = function (id) {
     if (id === undefined) {
-        respoke.log.debug("Can't call getClient with no client ID.", new Error().stack);
+        log.debug("Can't call getClient with no client ID.", new Error().stack);
     }
     if (!respoke.instances[id]) {
-        respoke.log.debug("No client instance with id", id);
+        log.debug("No client instance with id", id);
     }
     return respoke.instances[id];
 };
@@ -687,7 +687,7 @@ respoke.queueFactory = function () {
             try {
                 action(item);
             } catch (err) {
-                respoke.log.error("Error calling queue action.", err);
+                log.error("Error calling queue action.", err);
             }
         }
         queue.forEach(safeAction);

@@ -11,6 +11,7 @@
 /* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * `respoke.Endpoint`s are users of a Respoke app.
@@ -424,14 +425,14 @@ module.exports = function (params) {
 
         params.target = params.target || "call";
 
-        respoke.log.debug('Endpoint.call', params);
+        log.debug('Endpoint.call', params);
         client.verifyConnected();
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
 
         if (!that.id) {
-            respoke.log.error("Can't start a call without endpoint ID!");
+            log.error("Can't start a call without endpoint ID!");
             return;
         }
 
@@ -492,7 +493,7 @@ module.exports = function (params) {
             signalingChannel.sendHangup(signalParams).done();
         };
         params.signalReport = function (signalParams) {
-            respoke.log.debug("Sending debug report", signalParams.report);
+            log.debug("Sending debug report", signalParams.report);
             signalingChannel.sendReport(signalParams).done();
         };
 
@@ -612,8 +613,8 @@ module.exports = function (params) {
         };
         params.signalReport = function (signalParams) {
             signalParams.report.target = 'directConnection';
-            respoke.log.debug("Not sending report");
-            respoke.log.debug(signalParams.report);
+            log.debug("Not sending report");
+            log.debug(signalParams.report);
         };
         params.needDirectConnection = true;
         // Don't include audio in the offer SDP

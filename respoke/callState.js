@@ -11,6 +11,7 @@
 
 /* global respoke: true */
 var respoke = require('./respoke');
+var log = respoke.log;
 var Statechart = require('statechart');
 var Q = require('q');
 
@@ -155,17 +156,17 @@ module.exports = function (params) {
     function createTimer(func, name, time) {
         var id = setTimeout(function () {
             id = null;
-            respoke.log.error((that.caller ? "caller's" : "callee's"), name, "timer expired.");
+            log.error((that.caller ? "caller's" : "callee's"), name, "timer expired.");
             func();
         }, time);
-        respoke.log.debug('setting timer', name, 'for', time / 1000, 'secs');
+        log.debug('setting timer', name, 'for', time / 1000, 'secs');
         var timer  = {
             name: name,
             clear: function () {
                 if (id === null) {
                     return;
                 }
-                respoke.log.debug('clearing', (that.caller ? "caller's" : "callee's"), 'timer', name);
+                log.debug('clearing', (that.caller ? "caller's" : "callee's"), 'timer', name);
                 clearTimeout(id);
                 id = null;
             }
@@ -579,7 +580,7 @@ module.exports = function (params) {
             // So we can print the caller. Debug most often used when testing & tests run in the same tab.
             var args = Array.prototype.slice.call(arguments);
             args.splice(0, 0, that.caller);
-            respoke.log.debug.apply(respoke.log, args);
+            log.debug.apply(log, args);
         }
     });
 
@@ -613,14 +614,14 @@ module.exports = function (params) {
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
-            respoke.log.debug('error dispatching', evt, 'from', oldState, "with", args, err);
+            log.debug('error dispatching', evt, 'from', oldState, "with", args, err);
             throw err;
         }
         newState = that.getState();
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
-            respoke.log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
+            log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
         }
-        respoke.log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, args);
+        log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, args);
     };
 
     /**

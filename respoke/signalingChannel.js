@@ -14,6 +14,7 @@
 var Q = require('q');
 var io = require('socket.io-client');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * Returns a timestamp, measured in milliseconds.
@@ -312,7 +313,7 @@ module.exports = function (params) {
     that.open = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        respoke.log.debug('SignalingChannel.open', params, clientSettings);
+        log.debug('SignalingChannel.open', params, clientSettings);
         token = params.token || token;
         actuallyConnect = typeof params.actuallyConnect === 'function' ? params.actuallyConnect : actuallyConnect;
 
@@ -329,7 +330,7 @@ module.exports = function (params) {
             return doOpen({token: token});
         }).done(function successHandler() {
             deferred.resolve();
-            respoke.log.debug('client', client);
+            log.debug('client', client);
         }, function errorHandler(err) {
             deferred.reject(err);
         });
@@ -350,7 +351,7 @@ module.exports = function (params) {
     that.getToken = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        respoke.log.debug('SignalingChannel.getToken', params);
+        log.debug('SignalingChannel.getToken', params);
 
         var callParams = {
             path: '/v1/tokens',
@@ -387,7 +388,7 @@ module.exports = function (params) {
     function doOpen(params) {
         params = params || {};
         var deferred = Q.defer();
-        respoke.log.debug('SignalingChannel.doOpen', params);
+        log.debug('SignalingChannel.doOpen', params);
 
         if (!params.token) {
             deferred.reject(new Error("Can't open connection to Respoke without a token."));
@@ -404,12 +405,12 @@ module.exports = function (params) {
             if (response.code === 200) {
                 appToken = response.result.token;
                 deferred.resolve();
-                respoke.log.debug("Signaling connection open to", clientSettings.baseURL);
+                log.debug("Signaling connection open to", clientSettings.baseURL);
             } else {
                 deferred.reject(buildResponseError(response, "Couldn't authenticate app: " + response.error));
             }
         }, function (err) {
-            respoke.log.error("Network call failed:", err.message);
+            log.error("Network call failed:", err.message);
             deferred.reject(new Error("Couldn't authenticate app: " + err.message));
         });
 
@@ -461,7 +462,7 @@ module.exports = function (params) {
     that.sendPresence = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        respoke.log.debug("Signaling sendPresence");
+        log.debug("Signaling sendPresence");
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -498,7 +499,7 @@ module.exports = function (params) {
     that.getGroup = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        respoke.log.debug('signalingChannel.getGroup');
+        log.debug('signalingChannel.getGroup');
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -990,7 +991,7 @@ module.exports = function (params) {
         };
 
         if (!clientSettings.enableCallDebugReport) {
-            respoke.log.debug('not sending call debugs - disabled');
+            log.debug('not sending call debugs - disabled');
             deferred.resolve();
             return deferred.promise;
         }
@@ -1112,7 +1113,7 @@ module.exports = function (params) {
         var method = 'do';
 
         if (signal.signalType !== 'iceCandidates') { // Too many of these!
-            respoke.log.debug(signal.signalType, signal);
+            log.debug(signal.signalType, signal);
         }
 
         if (signal.target === undefined) {
@@ -1165,7 +1166,7 @@ module.exports = function (params) {
             }
             if (!target || target.id !== signal.sessionId) {
                 // orphaned signal
-                respoke.log.warn("Couldn't associate signal with a call.", signal);
+                log.warn("Couldn't associate signal with a call.", signal);
                 return;
             }
 
@@ -1327,7 +1328,7 @@ module.exports = function (params) {
      * @params {object} params.signal
      */
     routingMethods.doUnknown = function (params) {
-        respoke.log.error("Don't know what to do with", params.signal.target, "msg of unknown type", params.signal.signalType);
+        log.error("Don't know what to do with", params.signal.target, "msg of unknown type", params.signal.signalType);
     };
 
     /**
@@ -1456,7 +1457,7 @@ module.exports = function (params) {
             if (group && connection) {
                 group.addMember({connection: connection});
             } else {
-                respoke.log.error("Can't add endpoint to group:", message, group, endpoint, connection);
+                log.error("Can't add endpoint to group:", message, group, endpoint, connection);
             }
         }
     };
@@ -1574,7 +1575,7 @@ module.exports = function (params) {
                 path: '/v1/connections',
                 httpMethod: 'POST'
             }).done(function successHandler(res) {
-                respoke.log.debug('connections result', res);
+                log.debug('connections result', res);
                 client.endpointId = res.endpointId;
                 client.connectionId = res.id;
                 onSuccess();
@@ -1597,7 +1598,7 @@ module.exports = function (params) {
             // Skip ourselves
             return;
         }
-        respoke.log.debug('socket.on presence', message);
+        log.debug('socket.on presence', message);
 
         endpoint = client.getEndpoint({
             skipPresence: true,
@@ -1641,7 +1642,7 @@ module.exports = function (params) {
         setTimeout(function doReconnect() {
             actuallyConnect().then(function successHandler() {
                 reconnectTimeout = null;
-                respoke.log.debug('socket reconnected');
+                log.debug('socket reconnected');
                 return Q.all(client.getGroups().map(function iterGroups(group) {
                     client.join({
                         id: group.id,
@@ -1659,7 +1660,7 @@ module.exports = function (params) {
                  */
                 client.fire('reconnect');
             }, function (err) {
-                respoke.log.error("Couldn't rejoin previous groups.", err.message, err.stack);
+                log.error("Couldn't rejoin previous groups.", err.message, err.stack);
                 reconnect();
             });
         }, reconnectTimeout);
@@ -1727,13 +1728,13 @@ module.exports = function (params) {
         // connection timeout
         socket.on('connect_failed', function connectFailedHandler(res) {
             deferred.reject(new Error("WebSocket connection failed."));
-            respoke.log.error('Socket.io connect timeout.', res || "");
+            log.error('Socket.io connect timeout.', res || "");
             reconnect();
         });
 
         // handshake error, 403
         socket.on('error', function errorHandler(res) {
-            respoke.log.debug('Socket.io request failed.', res || "");
+            log.debug('Socket.io request failed.', res || "");
             reconnect();
         });
 
@@ -1750,7 +1751,7 @@ module.exports = function (params) {
                 }
 
                 if (!signal.target || !signal.signalType || knownSignals.indexOf(signal.signalType) === -1) {
-                    respoke.log.error("Got malformed signal.", signal);
+                    log.error("Got malformed signal.", signal);
                     throw new Error("Can't route signal without target or type.");
                 }
 
@@ -1760,7 +1761,7 @@ module.exports = function (params) {
 
         socket.on('disconnect', function onDisconnect() {
             pendingRequests.reset(function (pendingRequest) {
-                respoke.log.debug('Failing pending requests');
+                log.debug('Failing pending requests');
                 pendingRequest.reject(new Error("WebSocket disconnected"));
             });
 
@@ -1825,7 +1826,7 @@ module.exports = function (params) {
                 deferred.reject(new Error("Got no TURN credentials."));
             }
 
-            respoke.log.debug('TURN creds', result);
+            log.debug('TURN creds', result);
             deferred.resolve(result);
         }, function errorHandler(err) {
             deferred.reject(err);
@@ -1889,7 +1890,7 @@ module.exports = function (params) {
         }
 
         if (logRequest) {
-            respoke.log.debug('socket request', {
+            log.debug('socket request', {
                 method: params.httpMethod,
                 path: params.path,
                 parameters: params.parameters
@@ -1951,7 +1952,7 @@ module.exports = function (params) {
             }
 
             if (logRequest) {
-                respoke.log.debug('socket response', {
+                log.debug('socket response', {
                     method: request.method,
                     path: request.path,
                     durationMillis: request.durationMillis,
@@ -2054,7 +2055,7 @@ module.exports = function (params) {
             deferred.reject(new Error('Illegal HTTP request method ' + params.httpMethod));
             return;
         }
-        respoke.log.debug('request', {
+        log.debug('request', {
             method: params.httpMethod,
             uri: uri,
             params: paramString
@@ -2095,7 +2096,7 @@ module.exports = function (params) {
                         response.error = "Invalid JSON.";
                     }
                 }
-                respoke.log.debug('response', {
+                log.debug('response', {
                     method: params.httpMethod,
                     durationMillis: durationMillis,
                     response: response
