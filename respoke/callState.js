@@ -401,10 +401,6 @@ module.exports = function (params) {
                                 // Event
                                 entry: function () {
                                     that.fire('offering:entry');
-
-                                    if (that.hasLocalMedia) {
-                                        that.dispatch('receiveLocalMedia');
-                                    }
                                 },
                                 // Event
                                 exit: function () {
