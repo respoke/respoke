@@ -131,12 +131,14 @@ respoke.instances = {};
 /**
  * Indicate whether the user's browser is Chrome and requires the Respoke Chrome extension to do screen sharing.
  * @type {boolean}
+ * @private
  */
 respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.webkitGetUserMedia);
 
 /**
  * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.
  * @type {boolean}
+ * @private
  */
 respoke.hasChromeExtension = false;
 
@@ -154,6 +156,7 @@ respoke.chooseDesktopMedia = function () {
 /**
  * Indicate whether we are dealing with node-webkit, and expose chooseDesktopMedia if so
  * @type {boolean}
+ * @private
  */
 respoke.isNwjs = (function () {
     var gui;
