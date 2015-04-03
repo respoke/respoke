@@ -2,25 +2,9 @@
 var respokeStyle = require('respoke-style');
 
 module.exports = function (grunt) {
-    var saucerSection;
-    var webhookService;
     var jsHintFiles = ['**/*.js'];
     if (grunt.option('file')) {
         jsHintFiles = [grunt.option('file').split(' ')];
-    }
-
-    function killSaucerSection() {
-        if (saucerSection) {
-            saucerSection.kill();
-            saucerSection = null;
-        }
-    }
-
-    function killWebhookService() {
-        if (webhookService) {
-            webhookService.kill();
-            webhookService = null;
-        }
     }
 
     grunt.initConfig({
@@ -47,18 +31,6 @@ module.exports = function (grunt) {
         },
         webpack: {
             all: require('./webpack.dist')
-        },
-        stratos: {
-            liftSails: true,
-            sailsDir: '../../../collective/',
-            sailsPort: 3001
-        },
-        saucerSection: {
-            dir: '../../../saucer-section',
-            port: 3000
-        },
-        webhookService: {
-            dir: '../../../webhook-service'
         },
         mochaTest: {
             unit: {
@@ -200,7 +172,6 @@ module.exports = function (grunt) {
 
     grunt.loadNpmTasks('grunt-webpack');
     grunt.loadNpmTasks('grunt-karma');
-    grunt.loadNpmTasks('grunt-stratos');
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-env');
@@ -225,49 +196,6 @@ module.exports = function (grunt) {
         'karma:unitChrome',
         'karma:unitFirefox'
     ]);
-
-    grunt.registerTask('start-webhook-service', 'Start webhook-service', function () {
-        if (!grunt.file.isDir(grunt.config('webhookService.dir'))) {
-            throw grunt.util.error('webhook-service dir not available.  Please setup webhook-service.');
-        }
-        process.on('exit', function () {
-            //ensure webhook-service child process is dead
-            killWebhookService();
-        });
-        webhookService = grunt.util.spawn({
-            cmd: 'node',
-            args: ['app.js'],
-            opts: {
-                cwd: grunt.config('webhookService.dir')
-            }
-        });
-    });
-
-    grunt.registerTask('stop-webhook-service', 'Stop webhook-service', function () {
-        killWebhookService();
-    });
-
-    grunt.registerTask('start-saucer-section', 'Start saucer-section', function () {
-        process.env.CONNECT_PORT = grunt.config('saucerSection.port');
-        if (!grunt.file.isDir(grunt.config('saucerSection.dir'))) {
-            throw grunt.util.error('saucer-section dir not available.  Please setup saucer-section.');
-        }
-        process.on('exit', function () {
-            //ensure saucer-section child process is dead
-            killSaucerSection();
-        });
-        saucerSection = grunt.util.spawn({
-            grunt: true,
-            args: ['default'],
-            opts: {
-                cwd: grunt.config('saucerSection.dir')
-            }
-        });
-    });
-
-    grunt.registerTask('stop-saucer-section', 'Start saucer-section', function () {
-        killSaucerSection();
-    });
 
     grunt.registerTask('discoveryChrome', 'Run discovery specs', [
         'dist',
