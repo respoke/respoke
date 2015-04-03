@@ -46,7 +46,7 @@ module.exports = function (grunt) {
             }
         },
         webpack: {
-            all: require('./webpack.config')
+            all: require('./webpack.dist')
         },
         stratos: {
             liftSails: true,
