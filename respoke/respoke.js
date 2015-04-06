@@ -214,7 +214,7 @@ respoke.isNwjs = (function () {
                     sourceId: sourceId
                 });
             });
-        }
+        };
     }
 
     return isNwjs;
