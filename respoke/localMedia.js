@@ -266,6 +266,9 @@ module.exports = function (params) {
      * @private
      */
     function requestMedia() {
+        var theStream;
+        var requestingScreenShare;
+
         if (that.state.receiveOnly === true) {
             /**
              * Indicate there is no need to obtain media at this time.
@@ -284,7 +287,7 @@ module.exports = function (params) {
             throw new Error('No constraints.');
         }
 
-        var theStream = getStream(that.constraints);
+        theStream = getStream(that.constraints);
         if (theStream) {
             log.debug('using old stream');
             onReceiveUserMedia(theStream);
@@ -310,7 +313,11 @@ module.exports = function (params) {
             that.constraints.fake = true;
         }
 
-        if ((that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) || respoke.hasFirefoxExtension) {
+        requestingScreenShare =
+            (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) ||
+            (that.constraints.video.chromeMediaSource) || (that.constraints.video.mediaSource);
+
+        if (requestingScreenShare) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
                 respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {
@@ -332,7 +339,6 @@ module.exports = function (params) {
                 });
                 return;
             } else if (respoke.needsFirefoxExtension && respoke.hasFirefoxExtension) {
-                that.constraints.video.mediaSource = screenShareSource || 'screen';
                 log.debug("Running getUserMedia with constraints", that.constraints);
                 getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 return;

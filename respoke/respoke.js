@@ -169,6 +169,7 @@ respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.we
 /**
  * Indicate whether the user's browser is Firefox and requires the Respoke Firefox extension to do screen sharing.
  * @type {boolean}
+ * @private
  */
 respoke.needsFirefoxExtension = window.webrtcDetectedBrowser === 'firefox';
 
@@ -210,7 +211,7 @@ respoke.isNwjs = (function () {
                 data = null;
             }
 
-            /**
+            /*
              * mediaSources can be one of 'window', 'screen', or 'tab', or an array with multiples
              * https://developer.chrome.com/extensions/desktopCapture
              */
@@ -232,13 +233,14 @@ respoke.isNwjs = (function () {
 /**
  * Indicate whether the user has a Respoke Firefox extension installed and running correcty on this domain.
  * @type {boolean}
+ * @private
  */
 respoke.hasFirefoxExtension = false;
 
 /**
  * Create an Event. This is used in the Chrome/Firefox extensions to communicate between the library and extension.
- * @private
  * @type {function}
+ * @private
  */
 respoke.extEvent = function (type, data) {
     var evt = document.createEvent("CustomEvent");
@@ -279,7 +281,6 @@ respoke.Q = Q;
 /*
  * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
  */
-
 function chromeScreenSharingExtensionReady(evt) {
     var data = evt.detail;
     if (data.available !== true) {
@@ -314,10 +315,9 @@ function chromeScreenSharingExtensionReady(evt) {
     log.info("Respoke Screen Share Chrome extension available for use.");
 }
 
-//leaving this event in here for the time being, but we'll remove it after a bit
+// TODO: remove 'respoke-available' event listener on next major version bump
 document.addEventListener('respoke-available', chromeScreenSharingExtensionReady);
 document.addEventListener('respoke-chrome-screen-sharing-available', chromeScreenSharingExtensionReady);
-
 document.addEventListener('respoke-firefox-screen-sharing-available', function (evt) {
 
     var data = evt.detail;

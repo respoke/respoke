@@ -1039,7 +1039,7 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
-     * @param {string} [params.mediaSource] - Pass in what type of mediaSource you want. If omitted, you'll have access
+     * @param {string} [params.source] - Pass in what type of mediaSource you want. If omitted, you'll have access
      * to both the screen and windows. In firefox, you'll have access to the screen only.
      * @returns {respoke.Call}
      */

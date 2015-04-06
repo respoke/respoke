@@ -308,18 +308,16 @@ module.exports = function (params) {
             mandatory: {},
             optional: []
         }]);
+
         screenConstraint = params.constraints[0];
 
         if (params.caller) {
-
             if (respoke.needsFirefoxExtension) {
-
                 screenConstraint.audio = false;
                 screenConstraint.video = {
                     mediaSource: params.source || 'screen'
                 };
-
-            }else if (respoke.needsChromeExtension || respoke.isNwjs) {
+            } else if (respoke.needsChromeExtension || respoke.isNwjs) {
                 screenConstraint.video = typeof screenConstraint.video === 'object' ? screenConstraint.video : {};
                 screenConstraint.video.optional = screenConstraint.video.optional || [];
                 screenConstraint.video.mandatory = typeof screenConstraint.video.mandatory === 'object' ?
