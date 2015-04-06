@@ -10,8 +10,8 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * A wrapper around the stream from `getUserMedia`,
@@ -304,7 +304,7 @@ module.exports = function (params) {
             if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
                 respoke.chooseDesktopMedia(function (params) {
                     if (!params.sourceId) {
-                        respoke.log.error("Error trying to get screensharing source.", params.error);
+                        log.error("Error trying to get screensharing source.", params.error);
                         /**
                          * Indicate there has been an error obtaining media.
                          * @event respoke.LocalMedia#error

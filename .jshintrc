@@ -118,7 +118,6 @@
         "async",
         "fixture",
         "done",
-        "Airbrake",
         "respoke",
         "createIceServer",
         "attachMediaStream",

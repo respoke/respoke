@@ -9,9 +9,9 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * A direct connection via RTCDataChannel, including state and path negotation.

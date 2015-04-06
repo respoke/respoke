@@ -14,7 +14,7 @@
 var Q = require('q');
 var io = require('socket.io-client');
 var respoke = require('./respoke');
-var log = require('loglevel');
+var log = respoke.log;
 
 /**
  * Returns a timestamp, measured in milliseconds.

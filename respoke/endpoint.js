@@ -9,9 +9,9 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * `respoke.Endpoint`s are users of a Respoke app.

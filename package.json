@@ -67,7 +67,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "loglevel": "^0.3.1",
+    "airbrake-js": "^0.4.0-alpha.2",
+    "loglevel": "^1.2.0",
     "q": "^1.0.1",
     "socket.io-client": "^0.9.16",
     "statechart": "DavidDurman/statechart#1.1.0"

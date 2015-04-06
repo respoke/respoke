@@ -10,9 +10,9 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
@@ -693,7 +693,7 @@ module.exports = function (params) {
                     processSendingQueue();
                 },
                 onError: function (err) {
-                    respoke.log.error('offer could not be sent', err);
+                    log.error('offer could not be sent', err);
                     that.call.hangup({signal: false});
                 }
             });

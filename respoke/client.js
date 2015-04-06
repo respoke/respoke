@@ -10,9 +10,9 @@
  */
 
 /* global respoke: true */
-var log = require('loglevel');
 var Q = require('q');
 var respoke = require('./respoke');
+var log = respoke.log;
 
 /**
  * `respoke.Client` is the top-level interface to the API. Interacting with Respoke should be done using

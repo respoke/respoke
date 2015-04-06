@@ -11,7 +11,7 @@
 
 /* global respoke: true */
 var respoke = require('./respoke');
-var log = require('loglevel');
+var log = respoke.log;
 
 /**
  * A generic class for emitting and listening to events. This is used internally by respoke.js

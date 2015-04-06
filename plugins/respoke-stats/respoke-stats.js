@@ -19,6 +19,8 @@
     }
 }(function (respoke) {
     "use strict";
+    var log = respoke.log;
+
     /**
      * A report containing statistical information about the flow of media with the latest live statistics.
      *
@@ -374,7 +376,7 @@
             var sdp = {};
             if (!pc || !pc.remoteDescription || !pc.remoteDescription.sdp ||
                 !pc.localDescription || !pc.localDescription.sdp) {
-                respoke.log.warn("missing info.");
+                log.warn("missing info.");
                 return;
             }
 
@@ -418,11 +420,11 @@
             if (params.onStats) {
                 timer = setInterval(function statsTimerHandler() {
                     that.getStats().done(params.onStats, function errorHandler(err) {
-                        respoke.log.error("error in getStats", err.message, err.stack);
+                        log.error("error in getStats", err.message, err.stack);
                     });
                 }, statsInterval);
             } else {
-                respoke.log.warn("Not starting stats, no onStats callback provided.");
+                log.warn("Not starting stats, no onStats callback provided.");
             }
         }
 
@@ -457,7 +459,7 @@
                 deferred.resolve(respoke.MediaStats(buildStats(stats)));
             });
             args.push(function errorHandler(err) {
-                respoke.log.error(err);
+                log.error(err);
                 deferred.reject(new Error("Can't get stats."));
             });
             pc.getStats.apply(pc, args);
