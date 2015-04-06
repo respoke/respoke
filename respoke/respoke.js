@@ -145,10 +145,12 @@ require('./deps/adapter');
  * @global
  * @link https://cdn.respoke.io/respoke.min.js
  */
-var respoke = module.exports = {
+
+var EventEmitter = require('./event');
+var respoke = module.exports = EventEmitter({
     buildNumber: 'NO BUILD NUMBER',
     streams: []
-};
+});
 
 /**
  * A map of respoke.Client instances available for use. This is useful if you would like to separate some
@@ -241,7 +243,7 @@ respoke.extEvent = function (type, data) {
  */
 respoke.version = respoke.buildNumber + "";
 
-respoke.EventEmitter = require('./event');
+respoke.EventEmitter = EventEmitter;
 respoke.Client = require('./client');
 respoke.Presentable = require('./presentable');
 respoke.Connection = require('./connection');
@@ -286,6 +288,10 @@ document.addEventListener('respoke-available', function (evt) {
         document.dispatchEvent(respoke.extEvent('ct-respoke-source-id'));
         document.addEventListener("respoke-source-id", sourceIdListener);
     };
+
+    respoke.fire('extension-loaded', {
+        type: 'screen-sharing'
+    });
 
     log.info("Respoke Screen Share Chrome extension available for use.");
 });
@@ -384,7 +390,7 @@ respoke.createClient = function (params) {
  * @param {function} func
  * @return {function}
  */
-respoke.once = function (func) {
+respoke.callOnce = function (func) {
     return (function () {
         var called = false;
         return function () {
@@ -446,30 +452,6 @@ respoke.handlePromise = function (promise, onSuccess, onError) {
     promise.done(onSuccess, onError);
     return (returnUndef ? undefined : promise);
 };
-
-/**
- * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
- * params that were passed in onto the base object. Add the class name.
- * @class respoke.Class
- * @classdesc Empty base class.
- * @constructor
- * @private
- */
-respoke.Class = function (params) {
-    params = params || {};
-    var that = params.that || {};
-    var client = params.client;
-
-    that.className = 'respoke.Class';
-    delete params.that;
-    delete that.client;
-
-    Object.keys(params).forEach(function copyParam(name) {
-        that[name] = params[name];
-    });
-
-    return that;
-}; // end of respoke.Class
 
 /**
  * Does the browser support `UserMedia`?

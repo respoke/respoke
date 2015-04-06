@@ -160,7 +160,7 @@ module.exports = function (params) {
      * @type {function}
      * @desc A signaling function constructed by the signaling channel.
      */
-    var signalHangup = respoke.once(params.signalHangup);
+    var signalHangup = respoke.callOnce(params.signalHangup);
     /**
      * @memberof! respoke.PeerConnection
      * @name signalReport
@@ -816,7 +816,7 @@ module.exports = function (params) {
         }
         that.report = null;
     };
-    that.close = respoke.once(that.close);
+    that.close = respoke.callOnce(that.close);
 
     /**
      * Indicate whether a call is being setup or is in progress.

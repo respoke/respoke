@@ -9,9 +9,48 @@
  * @ignore
  */
 
-/* global respoke: true */
-var respoke = require('./respoke');
-var log = respoke.log;
+var log = require('loglevel');
+
+/**
+ * Higher order function to wrap a passed in function. The returned function will only execute
+ * the passed in function the first time it is called, then be a no-op any subsequent tries.
+ *
+ * @private
+ */
+var callOnce = function (func) {
+    "use strict";
+    return (function () {
+        var called = false;
+        return function () {
+            if (!called) {
+                func.apply(null, arguments);
+                called = true;
+            }
+        };
+    })();
+};
+
+/**
+ * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
+ * params that were passed in onto the base object. Add the class name.
+ * @private
+ */
+var respokeClass = function (params) {
+    "use strict";
+    params = params || {};
+    var that = params.that || {};
+    var client = params.client;
+
+    that.className = 'respoke.Class';
+    delete params.that;
+    delete that.client;
+
+    Object.keys(params).forEach(function copyParam(name) {
+        that[name] = params[name];
+    });
+
+    return that;
+};
 
 /**
  * A generic class for emitting and listening to events. This is used internally by respoke.js
@@ -42,7 +81,7 @@ var log = respoke.log;
 var EventEmitter = module.exports = function (params) {
     "use strict";
     params = params || {};
-    var that = respoke.Class(params);
+    var that = respokeClass(params);
     /**
      * A name to identify the type of this object.
      * @memberof! respoke.EventEmitter
@@ -80,7 +119,7 @@ var EventEmitter = module.exports = function (params) {
      */
     that.once = function (eventType, listener, isInternal) {
         var string = listener.toString();
-        listener = respoke.once(listener);
+        listener = callOnce(listener);
         listener.toString = function () { return string; };
         listener.once = true;
         that.listen(eventType, listener, isInternal);
