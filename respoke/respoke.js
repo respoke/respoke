@@ -165,9 +165,21 @@ respoke.isNwjs = (function () {
     if (isNwjs) {
         // expose native node-webkit chooseDesktopMedia (requires nw.js 0.12+)
         gui = window.nwDispatcher.requireNwGui();
-        respoke.chooseDesktopMedia = function (callback) {
+        respoke.chooseDesktopMedia = function (data, callback) {
+            // make data param optional
+            if (!callback && (typeof data === 'function')) {
+                callback = data;
+                data = null;
+            }
+
+            /**
+             * mediaSources can be one of 'window', 'screen', or 'tab', or an array with multiples
+             * https://developer.chrome.com/extensions/desktopCapture
+             */
+            var mediaSources = data && data.source ? [data.source] : ['window', 'screen'];
+
             gui.Screen.Init();
-            gui.Screen.chooseDesktopMedia(['window', 'screen'], function (sourceId) {
+            gui.Screen.chooseDesktopMedia(mediaSources, function (sourceId) {
                 callback({
                     type: 'respoke-source-id',
                     sourceId: sourceId
