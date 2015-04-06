@@ -299,9 +299,9 @@ module.exports = function (params) {
         if (respoke.useFakeMedia === true) {
             that.constraints.fake = true;
         }
-        if (!respoke.isNwjs && that.constraints.video.mandatory &&
+        if (that.constraints.video.mandatory &&
                 that.constraints.video.mandatory.chromeMediaSource) {
-            if (respoke.needsChromeExtension && respoke.hasChromeExtension) {
+            if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
                 respoke.chooseDesktopMedia(function (params) {
                     if (!params.sourceId) {
                         log.error("Error trying to get screensharing source.", params.error);

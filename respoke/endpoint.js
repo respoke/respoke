@@ -322,21 +322,17 @@ module.exports = function (params) {
                     screenConstraint.video.mandatory.maxHeight : 2000;
                 screenConstraint.audio = false;
 
-                if (respoke.isNwjs) {
-                    screenConstraint.video.mandatory.chromeMediaSource = 'screen';
-                } else {
-                    params.sendOnly = true;
-                    if (typeof screenConstraint.video.optional === 'object' &&
-                            screenConstraint.video.optional.length !== undefined) {
-                        if (screenConstraint.length > 0) {
-                            screenConstraint.forEach(function (thing) {
-                                thing.googTemporalLayeredScreencast = true;
-                            });
-                        } else {
-                            screenConstraint.video.optional[0] = {
-                                googTemporalLayeredScreencast: true
-                            };
-                        }
+                params.sendOnly = true;
+                if (typeof screenConstraint.video.optional === 'object' &&
+                    screenConstraint.video.optional.length !== undefined) {
+                    if (screenConstraint.length > 0) {
+                        screenConstraint.forEach(function (thing) {
+                            thing.googTemporalLayeredScreencast = true;
+                        });
+                    } else {
+                        screenConstraint.video.optional[0] = {
+                            googTemporalLayeredScreencast: true
+                        };
                     }
                 }
             } else {

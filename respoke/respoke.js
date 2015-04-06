@@ -160,20 +160,65 @@ respoke.instances = {};
 /**
  * Indicate whether the user's browser is Chrome and requires the Respoke Chrome extension to do screen sharing.
  * @type {boolean}
+ * @private
  */
 respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.webkitGetUserMedia);
 
 /**
- * Indicate whether we are dealing with node-webkit
- * @type {boolean}
- */
-respoke.isNwjs = (typeof process !== 'undefined');
-
-/**
  * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.
  * @type {boolean}
+ * @private
  */
 respoke.hasChromeExtension = false;
+
+/**
+ * This method will be overridden in the case that an extension or plugin is available for screen sharing.
+ *
+ * @static
+ * @private
+ * @memberof respoke
+ */
+respoke.chooseDesktopMedia = function () {
+    log.warn("Screen sharing is not implemented for this browser.");
+};
+
+/**
+ * Indicate whether we are dealing with node-webkit, and expose chooseDesktopMedia if so
+ * @type {boolean}
+ * @private
+ */
+respoke.isNwjs = (function () {
+    var gui;
+    var isNwjs = !!(process && global && global.window && global.window.nwDispatcher);
+
+    if (isNwjs) {
+        // expose native node-webkit chooseDesktopMedia (requires nw.js 0.12+)
+        gui = window.nwDispatcher.requireNwGui();
+        respoke.chooseDesktopMedia = function (data, callback) {
+            // make data param optional
+            if (!callback && (typeof data === 'function')) {
+                callback = data;
+                data = null;
+            }
+
+            /**
+             * mediaSources can be one of 'window', 'screen', or 'tab', or an array with multiples
+             * https://developer.chrome.com/extensions/desktopCapture
+             */
+            var mediaSources = data && data.source ? [data.source] : ['window', 'screen'];
+
+            gui.Screen.Init();
+            gui.Screen.chooseDesktopMedia(mediaSources, function (sourceId) {
+                callback({
+                    type: 'respoke-source-id',
+                    sourceId: sourceId
+                });
+            });
+        }
+    }
+
+    return isNwjs;
+})();
 
 /**
  * Create an Event. This is used in the Chrome extension to communicate between the library and extension.
@@ -283,17 +328,6 @@ respoke.connect = function (params) {
     var client = respoke.Client(params);
     client.connect(params);
     return client;
-};
-
-/**
- * This method will be overridden in the case that an extension or plugin is available for screen sharing.
- *
- * @static
- * @private
- * @memberof respoke
- */
-respoke.chooseDesktopMedia = function () {
-    log.warn("Screen sharing is not implemented for this browser.");
 };
 
 /**
