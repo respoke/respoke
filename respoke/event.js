@@ -10,6 +10,7 @@
  */
 
 var log = require('loglevel');
+var respokeClass = require('./class');
 
 /**
  * Higher order function to wrap a passed in function. The returned function will only execute
@@ -28,28 +29,6 @@ var callOnce = function (func) {
             }
         };
     })();
-};
-
-/**
- * Empty base class. Use params.that (if exists) for the base object, but delete it from the instance.  Copy all
- * params that were passed in onto the base object. Add the class name.
- * @private
- */
-var respokeClass = function (params) {
-    "use strict";
-    params = params || {};
-    var that = params.that || {};
-    var client = params.client;
-
-    that.className = 'respoke.Class';
-    delete params.that;
-    delete that.client;
-
-    Object.keys(params).forEach(function copyParam(name) {
-        that[name] = params[name];
-    });
-
-    return that;
 };
 
 /**

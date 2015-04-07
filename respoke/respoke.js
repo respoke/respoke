@@ -244,8 +244,9 @@ respoke.extEvent = function (type, data) {
  */
 respoke.version = respoke.buildNumber + "";
 
-respoke.EventEmitter = EventEmitter;
 respoke.log = log;
+respoke.Class = require('./class');
+respoke.EventEmitter = EventEmitter;
 respoke.Client = require('./client');
 respoke.Presentable = require('./presentable');
 respoke.Connection = require('./connection');
