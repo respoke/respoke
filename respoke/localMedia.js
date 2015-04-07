@@ -256,20 +256,6 @@ module.exports = function (params) {
      * @private
      */
     function requestMedia() {
-        if (that.state.receiveOnly === true) {
-            /**
-             * Indicate there is no need to obtain media at this time.
-             * @event respoke.LocalMedia#no-local-media
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             */
-            that.fire('no-local-media');
-            return;
-        }
-
-        log.debug('requestMedia', that.state.caller);
-
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
@@ -627,10 +613,6 @@ module.exports = function (params) {
      * @private
      */
     that.start = function () {
-        if (that.state.receiveOnly) {
-            throw new Error("Local media started when receiveOnly is set!");
-        }
-
         if (that.temporary) {
             throw new Error("Temporary local media started!");
         }

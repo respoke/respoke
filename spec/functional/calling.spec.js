@@ -131,6 +131,50 @@ describe("Respoke calling", function () {
             });
         });
 
+        describe("when passed outgoingMedia", function (done) {
+            var stream;
+            var localMedia;
+
+            beforeEach(function (done) {
+                var doneOnce = doneOnceBuilder(done);
+
+                localMedia = respoke.LocalMedia({
+                    hasScreenShare: false,
+                    streamId: 'foo-bar',
+                    constraints: {
+                        audio: true,
+                        video: true,
+                        mandatory: [],
+                        optional: {}
+                    }
+                });
+
+                localMedia.listen('stream-received', function (evt) {
+                    followeeClient.listen('call', callListener);
+
+                    call = followeeEndpoint.startCall({
+                        onLocalMedia: function (evt) {
+                            stream = evt.stream;
+                        },
+                        onConnect: function (evt) {
+                            doneOnce();
+                        },
+                        onHangup: function (evt) {
+                            doneOnce(new Error("Call got hung up"));
+                        },
+                        outgoingMedia: localMedia
+                    });
+                });
+
+                localMedia.start();
+            });
+
+            it("has outgoingMedia with the given LocalMedia object", function () {
+                expect(call.outgoingMedia).to.equal(localMedia);
+                expect(stream).to.deep.equal(localMedia);
+            });
+        });
+
         describe("when passing in our own video element", function () {
             var local;
             var remote;
@@ -1245,8 +1289,8 @@ describe("Respoke calling", function () {
         describe("with only audio", function () {
             describe("by constraints in answer()", function () {
                 var constraints = {
-                    video : false,
-                    audio : true,
+                    video: false,
+                    audio: true,
                     optional: [],
                     mandatory: {
                         offerToReceiveVideo: true

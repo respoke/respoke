@@ -47,7 +47,8 @@ var log = respoke.log;
  * @param {function} params.signalHangup - Signaling action from SignalingChannel.
  * @param {function} params.signalReport - Signaling action from SignalingChannel.
  * @param {function} params.signalCandidate - Signaling action from SignalingChannel.
- * @param {Array<RTCConstraints>} params.constraints - Array of WebRTC constraints.
+ * @param {Array<RTCConstraints>} params.constraints - Array of WebRTC constraints. This is ignored when
+ * `params.outgoingMedia` is passed into the Call object.
  * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
  * media renegotiation.
  * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
@@ -69,6 +70,9 @@ var log = respoke.log;
  * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local
  * video attached to it.
  * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
+ * @param {respoke.LocalMedia} params.outgoingMedia - Pass in an optional LocalMedia object to override the one that is
+ * built automatically when establishing the call. When this is defined then any constraints passed to the
+ * call are ignored since the media object already exists.
  * video attached to it.
  * @returns {respoke.Call}
  */
@@ -84,6 +88,8 @@ module.exports = function (params) {
     var instanceId = params.instanceId;
     var that = respoke.EventEmitter(params);
     delete that.instanceId;
+    delete that.outgoingMedia;
+
     /**
      * A name to identify the type of object.
      * @memberof! respoke.Call
@@ -250,6 +256,10 @@ module.exports = function (params) {
             return stream.getVideoTracks().length === 0;
         });
     };
+
+    if (params.outgoingMedia) {
+        that.outgoingMediaStreams.push(params.outgoingMedia);
+    }
 
     /**
      * Local media that we are sending to the remote party. This will be undefined if we are sending no media.
@@ -529,7 +539,6 @@ module.exports = function (params) {
             localMedia = constraint;
         } else {
             localMedia = respoke.LocalMedia({
-                state: pc.state,
                 hasScreenShare: respoke.constraintsHasScreenShare(constraint),
                 constraints: constraint
             });
@@ -595,7 +604,6 @@ module.exports = function (params) {
             });
         }, true);
         localMedia.listen('stream-received', streamReceivedHandler, true);
-        localMedia.listen('no-local-media', noLocalMediaHandler, true);
         localMedia.listen('error', function errorHandler(evt) {
             pc.state.dispatch('reject', {reason: 'media stream error'});
             pc.report.callStoppedReason = evt.reason;
@@ -939,15 +947,6 @@ module.exports = function (params) {
                 muted: evt.muted
             });
         });
-    }
-
-    function noLocalMediaHandler(evt) {
-        if (!pc) {
-            return;
-        }
-
-        defMedia.resolve();
-        pc.state.dispatch('receiveLocalMedia');
     }
 
     /**
@@ -1418,7 +1417,6 @@ module.exports = function (params) {
         if (that.outgoingMediaStreams.length === 0) {
             that.outgoingMediaStreams.push(respoke.LocalMedia({
                 instanceId: instanceId,
-                state: pc.state,
                 temporary: true
             }));
         }
@@ -1775,6 +1773,11 @@ module.exports = function (params) {
             that.outgoingMediaStreams.shift();
         }
 
+        // If outgoingMedia is passed into the Call then there is no need to build the LocalMedia here
+        if (params.outgoingMedia) {
+            return;
+        }
+
         if (that.constraints.length > 0) {
             that.outgoingMediaStreams.length = 0;
             that.constraints.forEach(buildLocalMedia);
@@ -1810,6 +1813,14 @@ module.exports = function (params) {
 
     pc.state.listen('preparing:entry', function (evt) {
         init();
+
+        if (params.outgoingMedia) {
+            streamReceivedHandler({
+                stream: params.outgoingMedia.stream,
+                target: params.outgoingMedia,
+                element: params.outgoingMedia.element
+            });
+        }
 
         if (pc.state.caller === true) {
             that.answer();
