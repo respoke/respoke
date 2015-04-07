@@ -6,7 +6,23 @@ describe("Respoke local media", function () {
     this.timeout(30000);
     respoke.useFakeMedia = true;
 
-    var call;
+    it('re-uses streams when using fake media', function (done) {
+        var localMedia1 = respoke.LocalMedia({ constraints: { audio: false, video: true } });
+        var localMedia2 = respoke.LocalMedia({ constraints: { audio: false, video: true } });
+
+        function localMedia2StreamReceivedHandler() {
+            expect(localMedia1.stream).to.deep.equal(localMedia2.stream);
+            done();
+        }
+
+        function localMedia1StreamReceivedHandler() {
+            localMedia2.start();
+        }
+
+        localMedia1.listen('stream-received', localMedia1StreamReceivedHandler);
+        localMedia2.listen('stream-received', localMedia2StreamReceivedHandler);
+        localMedia1.start();
+    });
 
     describe("when obtaining local media", function () {
         var localMedia;
