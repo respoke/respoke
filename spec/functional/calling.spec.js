@@ -79,6 +79,37 @@ describe("Respoke calling", function () {
         }, done);
     });
 
+    it("LocalMedia stop hangs up the call when it is the last stream on the call", function (done) {
+        var localMedia = respoke.LocalMedia({
+            constraints: { audio: false, video: true }
+        });
+
+        function followeeCallHandler(evt) {
+            evt.call.answer();
+        }
+
+        function followerCallConnectHandler() {
+            localMedia.stop();
+        }
+
+        function followerCallHangupHandler() {
+            done();
+        }
+
+        function localMediaStreamReceived() {
+            followeeEndpoint.startCall({
+                sendOnly: true,
+                onConnect: followerCallConnectHandler,
+                onHangup: followerCallHangupHandler,
+                outgoingMedia: localMedia
+            });
+        }
+
+        followeeClient.listen('call', followeeCallHandler);
+        localMedia.listen('stream-received', localMediaStreamReceived);
+        localMedia.start();
+    });
+
     describe("when placing a call", function () {
         function callListener(evt) {
             if (evt.call.caller !== true) {
@@ -131,7 +162,7 @@ describe("Respoke calling", function () {
             });
         });
 
-        describe("when passed outgoingMedia", function (done) {
+        describe("when passed outgoingMedia", function () {
             var stream;
             var localMedia;
 
