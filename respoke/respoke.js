@@ -191,7 +191,8 @@ respoke.chooseDesktopMedia = function () {
  */
 respoke.isNwjs = (function () {
     var gui;
-    var isNwjs = !!(process && global && global.window && global.window.nwDispatcher);
+    var isNwjs = !!((typeof process !== 'undefined') && (typeof global !== 'undefined') &&
+        global.window && global.window.nwDispatcher);
 
     if (isNwjs) {
         // expose native node-webkit chooseDesktopMedia (requires nw.js 0.12+)
@@ -244,6 +245,7 @@ respoke.extEvent = function (type, data) {
 respoke.version = respoke.buildNumber + "";
 
 respoke.EventEmitter = EventEmitter;
+respoke.log = log;
 respoke.Client = require('./client');
 respoke.Presentable = require('./presentable');
 respoke.Connection = require('./connection');
@@ -259,7 +261,6 @@ respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.Conference = require('./conference');
-respoke.log = log;
 respoke.Q = Q;
 
 /*
