@@ -1281,7 +1281,10 @@ module.exports = function (params) {
         log.debug('hangup', that.caller);
 
         that.outgoingMediaStreams.forEach(function (stream) {
-            stream.stop();
+            // only call stop on the stream if it was constructed explicitly for the call
+            if (stream !== params.outgoingMedia) {
+                stream.stop();
+            }
         });
 
         if (directConnection) {

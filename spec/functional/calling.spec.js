@@ -8,6 +8,7 @@ describe("Respoke calling", function () {
 
     var testEnv;
     var call;
+    var _actualSinon = sinon;
     var followerClient = {};
     var followeeClient = {};
     var groupId = respoke.makeGUID();
@@ -37,6 +38,8 @@ describe("Respoke calling", function () {
     var roleId;
 
     beforeEach(function (done) {
+        sinon = sinon.sandbox.create();
+
         respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
             testEnv = env;
 
@@ -79,9 +82,32 @@ describe("Respoke calling", function () {
         }, done);
     });
 
+    afterEach(function (done) {
+        sinon.restore();
+        sinon = _actualSinon;
+
+        var promises = [];
+
+        [followerClient, followeeClient].forEach(function (client) {
+            if (client) {
+                if (client.calls) {
+                    for (var i = client.calls.length - 1; i >= 0; i -= 1) {
+                        client.calls[i].hangup();
+                    }
+                }
+                client.ignore('call');
+                promises.push(client.disconnect());
+            }
+        });
+
+        respoke.Q.all(promises).fin(function () {
+            testFixture.afterTest(done);
+        }).done();
+    });
+
     it("LocalMedia stop hangs up the call when it is the last stream on the call", function (done) {
         var localMedia = respoke.LocalMedia({
-            constraints: { audio: false, video: true }
+            constraints: {audio: false, video: true}
         });
 
         function followeeCallHandler(evt) {
@@ -108,6 +134,68 @@ describe("Respoke calling", function () {
         followeeClient.listen('call', followeeCallHandler);
         localMedia.listen('stream-received', localMediaStreamReceived);
         localMedia.start();
+    });
+
+    describe("effect of hangup on LocalMedia streams", function () {
+
+        it("hanging up a call does not call stop on the LocalMedia if it was passed to startCall", function (done) {
+            var call;
+            var localMedia = respoke.LocalMedia({
+                constraints: { audio: false, video: true }
+            });
+
+            function followerCallConnectHandler() {
+                sinon.spy(localMedia, 'stop');
+                call.hangup();
+            }
+
+            function followerCallHangupHandler() {
+                expect(localMedia.stop.calledOnce).to.equal(false);
+                done();
+            }
+
+            function followeeClientCallHandler(evt) {
+                evt.call.accept();
+            }
+
+            function localStreamReceivedHandler() {
+                call = followeeEndpoint.startCall({
+                    onConnect: followerCallConnectHandler,
+                    onHangup: followerCallHangupHandler,
+                    outgoingMedia: localMedia
+                });
+            }
+
+            followeeClient.listen('call', followeeClientCallHandler);
+            localMedia.listen('stream-received', localStreamReceivedHandler);
+            localMedia.start();
+        });
+
+        it("hanging up a call calls stop on the LocalMedia if the call created it", function (done) {
+            var call;
+            var localMedia;
+
+            function followerCallConnectHandler() {
+                localMedia = call.outgoingMediaStreams[0];
+                sinon.spy(localMedia, 'stop');
+                call.hangup();
+            }
+
+            function followerCallHangupHandler() {
+                expect(localMedia.stop.calledOnce).to.equal(true);
+                done();
+            }
+
+            function followeeClientCallHandler(evt) {
+                evt.call.accept();
+            }
+
+            followeeClient.listen('call', followeeClientCallHandler);
+            call = followeeEndpoint.startCall({
+                onConnect: followerCallConnectHandler,
+                onHangup: followerCallHangupHandler
+            });
+        });
     });
 
     describe("when placing a call", function () {
@@ -1669,25 +1757,5 @@ describe("Respoke calling", function () {
                 expect(remoteElement.id).to.equal("my-remote-video-element");
             });
         });
-    });
-
-    afterEach(function (done) {
-        var promises = [];
-
-        [followerClient, followeeClient].forEach(function (client) {
-            if (client) {
-                if (client.calls) {
-                    for (var i = client.calls.length - 1; i >= 0; i -= 1) {
-                        client.calls[i].hangup();
-                    }
-                }
-                client.ignore('call');
-                promises.push(client.disconnect());
-            }
-        });
-
-        respoke.Q.all(promises).fin(function () {
-            testFixture.afterTest(done);
-        }).done();
     });
 });
