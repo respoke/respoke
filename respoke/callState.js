@@ -125,8 +125,12 @@ module.exports = function (params) {
         }
     };
 
-    function needToObtainMedia(params) {
-        return (that.needDirectConnection !== true && that.receiveOnly !== true);
+    function needToObtainMedia() {
+        return (
+            that.needDirectConnection !== true &&
+            that.receiveOnly !== true &&
+            that.hasLocalMedia !== true
+        );
     }
 
     function needToApproveDirectConnection(params) {
@@ -138,7 +142,8 @@ module.exports = function (params) {
             return false;
         }
 
-        if (!that.needDirectConnection && that.receiveOnly) {
+        // TODO: this will need to be change with media negotiation
+        if ((!that.needDirectConnection && that.receiveOnly) || that.hasLocalMedia) {
             return true;
         }
         return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
@@ -177,9 +182,6 @@ module.exports = function (params) {
 
     var stateParams = {
         initialState: 'idle',
-        receiveLocalMedia: function () {
-            that.hasLocalMedia = true;
-        },
         states: {
             // State
             idle: {
@@ -200,6 +202,9 @@ module.exports = function (params) {
                         return (params.caller !== true && !hasListener());
                     }
                 }],
+                receiveLocalMedia: function () {
+                    that.hasLocalMedia = true;
+                },
                 // Event
                 receiveOffer: {
                     action: function (params) {
@@ -216,6 +221,10 @@ module.exports = function (params) {
                 hangup: hangupEvent,
                 // Event
                 modify: rejectModify,
+                // Event
+                receiveLocalMedia: function () {
+                    that.hasLocalMedia = true;
+                },
                 states: {
                     preparing: {
                         // Event
@@ -287,7 +296,7 @@ module.exports = function (params) {
                                     return false;
                                 }
 
-                                if (needToObtainMedia(params) || needToApproveDirectConnection(params) ||
+                                if (needToObtainMedia() || needToApproveDirectConnection(params) ||
                                         automaticOffering(params)) {
                                     return false;
                                 }

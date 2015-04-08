@@ -648,10 +648,6 @@ module.exports = function (params) {
      * @private
      */
     that.start = function () {
-        if (that.state.receiveOnly) {
-            throw new Error("Local media started when receiveOnly is set!");
-        }
-
         if (that.temporary) {
             throw new Error("Temporary local media started!");
         }
