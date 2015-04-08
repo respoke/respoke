@@ -59,6 +59,16 @@ module.exports = function (params) {
      */
     var hasScreenShare = params.hasScreenShare;
     delete params.hasScreenShare;
+
+    /**
+     * @memberof! respoke.LocalMedia
+     * @name screenShareSource
+     * @private
+     * @type {string}
+     */
+    var screenShareSource = params.source;
+    delete params.source;
+
     /**
      * @memberof! respoke.LocalMedia
      * @name sdpHasAudio
@@ -256,11 +266,28 @@ module.exports = function (params) {
      * @private
      */
     function requestMedia() {
+        var theStream;
+        var requestingScreenShare;
+
+        if (that.state.receiveOnly === true) {
+            /**
+             * Indicate there is no need to obtain media at this time.
+             * @event respoke.LocalMedia#no-local-media
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.LocalMedia} target
+             */
+            that.fire('no-local-media');
+            return;
+        }
+
+        log.debug('requestMedia', that.state.caller);
+
         if (!that.constraints) {
             throw new Error('No constraints.');
         }
 
-        var theStream = getStream(that.constraints);
+        theStream = getStream(that.constraints);
         if (theStream) {
             log.debug('using old stream');
             onReceiveUserMedia(theStream);
@@ -285,10 +312,14 @@ module.exports = function (params) {
         if (respoke.useFakeMedia === true) {
             that.constraints.fake = true;
         }
-        if (that.constraints.video.mandatory &&
-                that.constraints.video.mandatory.chromeMediaSource) {
+
+        requestingScreenShare =
+            (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) ||
+            (that.constraints.video.chromeMediaSource) || (that.constraints.video.mediaSource);
+
+        if (requestingScreenShare) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
-                respoke.chooseDesktopMedia(function (params) {
+                respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {
                         log.error("Error trying to get screensharing source.", params.error);
                         /**
@@ -306,6 +337,10 @@ module.exports = function (params) {
                     log.debug("Running getUserMedia with constraints", that.constraints);
                     getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 });
+                return;
+            } else if (respoke.needsFirefoxExtension && respoke.hasFirefoxExtension) {
+                log.debug("Running getUserMedia with constraints", that.constraints);
+                getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 return;
             } else {
                 throw new Error("Screen sharing not implemented on this platform yet.");
