@@ -269,20 +269,6 @@ module.exports = function (params) {
         var theStream;
         var requestingScreenShare;
 
-        if (that.state.receiveOnly === true) {
-            /**
-             * Indicate there is no need to obtain media at this time.
-             * @event respoke.LocalMedia#no-local-media
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             */
-            that.fire('no-local-media');
-            return;
-        }
-
-        log.debug('requestMedia', that.state.caller);
-
         if (!that.constraints) {
             throw new Error('No constraints.');
         }

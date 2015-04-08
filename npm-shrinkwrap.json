@@ -1,6 +1,6 @@
 {
   "name": "respoke",
-  "version": "1.28.3",
+  "version": "1.28.4",
   "dependencies": {
     "airbrake-js": {
       "version": "0.4.0-alpha.2",
