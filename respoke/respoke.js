@@ -173,12 +173,19 @@ respoke.needsChromeExtension = !!(window.chrome && !window.opera && navigator.we
  */
 respoke.needsFirefoxExtension = window.webrtcDetectedBrowser === 'firefox';
 
- /**
+/**
  * Indicate whether the user has a Respoke Chrome extension installed and running correcty on this domain.
  * @type {boolean}
  * @private
  */
 respoke.hasChromeExtension = false;
+
+/**
+ * Indicate whether the user has a Respoke Firefox extension installed and running correcty on this domain.
+ * @type {boolean}
+ * @private
+ */
+respoke.hasFirefoxExtension = false;
 
 /**
  * This method will be overridden in the case that an extension or plugin is available for screen sharing.
@@ -229,13 +236,6 @@ respoke.isNwjs = (function () {
 
     return isNwjs;
 })();
-
-/**
- * Indicate whether the user has a Respoke Firefox extension installed and running correcty on this domain.
- * @type {boolean}
- * @private
- */
-respoke.hasFirefoxExtension = false;
 
 /**
  * Create an Event. This is used in the Chrome/Firefox extensions to communicate between the library and extension.
