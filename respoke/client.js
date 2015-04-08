@@ -1364,9 +1364,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send candidate.", err.message, err.stack);
-            });
+            signalingChannel.sendCandidate(signalParams).done();
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
@@ -1506,9 +1504,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendCandidate(signalParams).done(null, function errorHandler(err) {
-                log.error("Couldn't send candidate.", err.message, err.stack);
-            });
+            signalingChannel.sendCandidate(signalParams).done();
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
