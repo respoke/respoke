@@ -1644,10 +1644,13 @@ describe("Respoke calling", function () {
         var promises = [];
 
         [followerClient, followeeClient].forEach(function (client) {
-            if (client && client.calls) {
-                for (var i = client.calls.length - 1; i >= 0; i -= 1) {
-                    client.calls[i].hangup();
+            if (client) {
+                if (client.calls) {
+                    for (var i = client.calls.length - 1; i >= 0; i -= 1) {
+                        client.calls[i].hangup();
+                    }
                 }
+                client.ignore('call');
                 promises.push(client.disconnect());
             }
         });
