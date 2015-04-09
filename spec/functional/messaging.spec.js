@@ -311,17 +311,21 @@ describe("Messaging", function () {
     });
 
     afterEach(function (done) {
-        Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
+        var promises = [];
+        if (followerClient.connected) {
+            promises.push(followerClient.disconnect());
+        }
+        if (followeeClient.connected) {
+            promises.push(followeeClient.disconnect());
+        }
+
+        Q.all(promises).fin(function () {
             testFixture.afterTest(function (err) {
-            var messagesFollowerReceived = [];
-            var messagesFolloweeReceived = [];
-            var messagesFollowerSent = [];
-            var messagesFolloweeSent = [];
                 if (err) {
                     return done(err);
                 }
                 done();
-            });
+            })
         }).done();
     });
 });
