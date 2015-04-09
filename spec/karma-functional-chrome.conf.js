@@ -18,10 +18,6 @@ module.exports = function (config) {
         },
 
         webpack: {
-            node: {
-                // disable bundling process shim that would otherwise be detected as needed from Q library
-                process: false
-            },
             devtool: 'source-map',
             resolve: {
                 modulesDirectories: [
@@ -35,6 +31,13 @@ module.exports = function (config) {
                         loader: 'json'
                     }
                 ]
+            },
+            // this allows us to pack the request module in respoke-admin
+            externals: {
+                fs: '{}',
+                tls: '{}',
+                net: '{}',
+                console: '{}'
             }
         },
 

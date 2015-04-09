@@ -8,12 +8,20 @@ window.skipErrorReporting = true;
 
 var respoke = require('../');
 // TODO: require respoke-stats
+var RespokeAdmin = require('respoke-admin');
+
+var respokeAdmin = new RespokeAdmin({
+    baseURL: config.baseURL + '/v1',
+    appId: config.appId,
+    'App-Secret': config.appSecret
+});
 
 respoke.log.setLevel('silent');
 
 module.exports = {
     config: config,
-    respoke: respoke
+    respoke: respoke,
+    respokeAdmin: respokeAdmin
 };
 
 window.doneOnceBuilder = function (done) {
