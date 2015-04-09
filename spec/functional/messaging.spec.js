@@ -124,7 +124,7 @@ describe("Messaging", function () {
                     return done(err);
                 }
                 done();
-            })
+            });
         }).done();
     });
 
