@@ -7,11 +7,6 @@
       "from": "https://registry.npmjs.org/airbrake-js/-/airbrake-js-0.4.0-alpha.2.tgz",
       "resolved": "https://registry.npmjs.org/airbrake-js/-/airbrake-js-0.4.0-alpha.2.tgz"
     },
-    "grunt-stratos": {
-      "version": "1.5.0",
-      "from": "git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git",
-      "resolved": "git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git#5c43d337c6ccc59bcc1f7da9b38c81419dc05d2e"
-    },
     "loglevel": {
       "version": "1.2.0",
       "from": "https://registry.npmjs.org/loglevel/-/loglevel-1.2.0.tgz",
