@@ -14,11 +14,11 @@ module.exports = function (config) {
         ],
 
         preprocessors: {
-            'functional/**/*.spec.js': ['webpack']
+            'functional/**/*.spec.js': ['webpack', 'sourcemap']
         },
 
         webpack: {
-            devtool: 'source-map',
+            devtool: 'inline-source-map',
             resolve: {
                 modulesDirectories: [
                     'node_modules'
@@ -43,6 +43,7 @@ module.exports = function (config) {
 
         plugins: [
             require('karma-webpack'),
+            require('karma-sourcemap-loader'),
             require('karma-mocha'),
             require('karma-chai'),
             require('karma-chai-sinon'),
