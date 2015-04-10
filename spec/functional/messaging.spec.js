@@ -1,27 +1,27 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+var uuid = require('uuid');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+var respokeAdmin = testHelper.respokeAdmin;
+var Q = testHelper.respoke.Q;
 
 describe("Messaging", function () {
     this.timeout(30000);
-    var now = function () {
-        return new Date().getTime();
-    };
-    var Q = respoke.Q;
-    var testEnv;
+
     var followerClient = {};
     var followeeClient = {};
     var followerEndpoint;
     var followeeEndpoint;
     var followerGroup;
     var followeeGroup;
-    var followerToken;
-    var followeeToken;
     var groupId = respoke.makeGUID();
-    var appId;
     var roleId;
     var groupRole = {
-        name: 'fixturerole',
+        name: uuid.v4(),
+        appId: testHelper.config.appId,
         groups: {
             "*": {
                 create: true,
@@ -32,12 +32,8 @@ describe("Messaging", function () {
             }
         }
     };
-    var testFixture = fixture("Messaging Functional test", {
-        roleParams: groupRole
-    });
 
     function sendNumMessagesEach(num, thing1, thing2) {
-        var message;
         var sendPromises = [];
         var receiveDeferreds = [];
         num = num || 5;
@@ -67,46 +63,78 @@ describe("Messaging", function () {
         };
     }
 
-    beforeEach(function (done) {
-        Q.nfcall(testFixture.beforeTest).then(function (env) {
-            testEnv = env;
+    before(function () {
+        return respokeAdmin.auth.admin({
+            username: testHelper.config.username,
+            password: testHelper.config.password
+        }).then(function () {
+            return respokeAdmin.roles.create(groupRole);
+        }).then(function (role) {
+            roleId = role.id;
+        });
+    });
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
-        }).then(function (params) {
-            // create 2 tokens
-            roleId = params.role.id;
-            appId = params.app.id;
-            return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            })];
-        }).spread(function (token1, token2) {
+    after(function () {
+        if (roleId) {
+            return respokeAdmin.roles.delete({
+                roleId: roleId
+            });
+        }
+    });
+
+    beforeEach(function () {
+        var followerToken;
+        var followeeToken;
+
+        return respoke.Q.all([
+            respoke.Q(respokeAdmin.auth.endpoint({
+                endpointId: 'follower',
+                appId: testHelper.config.appId,
+                roleId: roleId
+            })),
+            respoke.Q(respokeAdmin.auth.endpoint({
+                endpointId: 'followee',
+                appId: testHelper.config.appId,
+                roleId: roleId
+            }))
+        ]).spread(function (token1, token2) {
             followerToken = token1;
             followeeToken = token2;
 
             followerClient = respoke.createClient();
             followeeClient = respoke.createClient();
 
-            return Q.all([followerClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: followerToken.tokenId
-            }), followeeClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: followeeToken.tokenId
-            })]);
-        }).then(function () {
+            return respoke.Q.all([
+                followerClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: followerToken.tokenId
+                }),
+                followeeClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: followeeToken.tokenId
+                })
+            ]);
+        }).finally(function () {
+            expect(followerClient.endpointId).not.to.be.undefined;
             expect(followerClient.endpointId).to.equal(followerToken.endpointId);
+            expect(followeeClient.endpointId).not.to.be.undefined;
             expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
-        }).then(function () {
             followerEndpoint = followeeClient.getEndpoint({id: followerClient.endpointId});
             followeeEndpoint = followerClient.getEndpoint({id: followeeClient.endpointId});
-            done();
-        }).done(null, done);
+        });
+    });
+
+    afterEach(function () {
+        var disconnections = [];
+
+        [followerClient, followeeClient].forEach(function (client) {
+            if (client.isConnected()) {
+                disconnections.push(client.disconnect());
+            }
+        });
+        return Q.all(disconnections);
     });
 
     afterEach(function (done) {
@@ -136,15 +164,15 @@ describe("Messaging", function () {
             followerEndpoint.ignore();
         });
 
-        it("can send and receive messages", function (done) {
+        it("can send and receive messages", function () {
             params = sendNumMessagesEach(5, followerEndpoint, followeeEndpoint);
-            params.send.then(function () {
+
+            return params.send.then(function () {
                 return params.receive;
             }).done(function (messages) {
                 expect(messages).to.exist();
                 expect(messages.length).to.equal(10);
-                done();
-            }, done);
+            });
         });
 
         describe("message metadata", function () {
@@ -172,15 +200,14 @@ describe("Messaging", function () {
         });
 
         describe("in the same group", function () {
-            beforeEach(function (done) {
-                Q.all([
-                    followerClient.join({id: groupId}),
-                    followeeClient.join({id: groupId})
+            beforeEach(function () {
+                return Q.all([
+                    followerClient.join({ id: groupId }),
+                    followeeClient.join({ id: groupId })
                 ]).spread(function (group1, group2) {
                     followerGroup = group1;
                     followeeGroup = group2;
-                    done();
-                }, done).done();
+                });
             });
 
             it("can send and receive messages directly", function (done) {
@@ -239,15 +266,14 @@ describe("Messaging", function () {
         });
 
         describe("in different groups", function () {
-            beforeEach(function (done) {
-                Q.all([
-                    followerClient.join({id: groupId}),
-                    followeeClient.join({id: "something different"})
+            beforeEach(function () {
+                return Q.all([
+                    followerClient.join({ id: groupId }),
+                    followeeClient.join({ id: "something different" })
                 ]).spread(function (group1, group2) {
                     followerGroup = group1;
                     followeeGroup = group2;
-                    done();
-                }, done).done();
+                });
             });
 
             it("can send and receive messages directly", function (done) {
@@ -272,7 +298,7 @@ describe("Messaging", function () {
                 params = sendNumMessagesEach(5, followerGroup, followeeGroup);
                 params.send.then(function () {
                     return params.receive;
-                }).done(function (messages) {
+                }).done(function () {
                     done(new Error("Something went wrong, wasn't supposed to receive any messages."));
                 }, function () {
                     // who cares?
@@ -283,13 +309,11 @@ describe("Messaging", function () {
 
     describe("an endpoint", function () {
         describe("that is disconnected and trying to send", function () {
-            beforeEach(function (done) {
-                followerClient.disconnect().done(function () {
-                    done();
-                }, done);
+            beforeEach(function () {
+                return followerClient.disconnect();
             });
 
-            it("can not send messages to another endpoint", function (done) {
+            it("cannot send messages to another endpoint", function (done) {
                 var params;
 
                 this.timeout(4000);
@@ -305,10 +329,8 @@ describe("Messaging", function () {
         });
 
         describe("that is disconnected and trying to receive", function () {
-            beforeEach(function (done) {
-                followeeClient.disconnect().done(function () {
-                    done();
-                }, done);
+            beforeEach(function () {
+                return followeeClient.disconnect();
             });
 
             it("can not receive messages from another endpoint", function (done) {
