@@ -37,6 +37,8 @@ describe("The respoke namespace", function() {
         expect(typeof respoke.isEqual).to.equal('function');
         expect(typeof respoke.clone).to.equal('function');
         expect(typeof respoke.queueFactory).to.equal('function');
+        expect(typeof respoke.getScreenShareConstraints).to.equal('function');
+        expect(typeof respoke.getScreenShareMedia).to.equal('function');
     });
 
     it("contains event emitter methods.", function () {
@@ -871,6 +873,506 @@ describe("The respoke namespace", function() {
                     it("the action gets called immediately", function () {
                         expect(spy.calledWith('baz')).to.equal(true);
                         expect(spy.calledWith('bam')).to.equal(true);
+                    });
+                });
+            });
+        });
+    });
+
+    describe("getScreenShareConstraints", function () {
+
+        describe("when called without params", function () {
+
+            var previousFlags = {};
+
+            beforeEach(function () {
+                previousFlags.needsChromeExtension = respoke.needsChromeExtension;
+                previousFlags.isNwjs = respoke.isNwjs;
+            });
+
+            afterEach(function () {
+                respoke.needsChromeExtension = previousFlags.needsChromeExtension;
+                respoke.isNwjs = previousFlags.isNwjs;
+            });
+
+            it("in chrome, returns constraints appropriate for chrome", function () {
+                respoke.isNwjs = false;
+                respoke.needsChromeExtension = true;
+
+                var constraints = respoke.getScreenShareConstraints();
+
+                expect(constraints).to.deep.equal([{
+                    mandatory: {},
+                    optional: [],
+                    audio: false,
+                    video: {
+                        mandatory: {
+                            chromeMediaSource: 'desktop',
+                            maxHeight: 2000,
+                            maxWidth: 2000
+                        },
+                        optional: [
+                            { googTemporalLayeredScreencast: true }
+                        ]
+                    }
+                }]);
+            });
+
+            it("in node-webkit, returns constraints appropriate for node-webkit", function () {
+                respoke.isNwjs = true;
+                respoke.needsChromeExtension = false;
+
+                var constraints = respoke.getScreenShareConstraints();
+
+                expect(constraints).to.deep.equal([{
+                    mandatory: {},
+                    optional: [],
+                    audio: false,
+                    video: {
+                        mandatory: {
+                            chromeMediaSource: 'desktop',
+                            maxHeight: 2000,
+                            maxWidth: 2000
+                        },
+                        optional: [
+                            { googTemporalLayeredScreencast: true }
+                        ]
+                    }
+                }]);
+            });
+
+            it("in other browsers, returns constraints appropriate for firefox", function () {
+                respoke.isNwjs = false;
+                respoke.needsChromeExtension = false;
+
+                var constraints = respoke.getScreenShareConstraints();
+
+                expect(constraints).to.deep.equal([{
+                    mandatory: {},
+                    optional: [],
+                    audio: false,
+                    video: {
+                        mediaSource: 'screen'
+                    }
+                }]);
+            });
+        });
+
+        describe("when called with params", function () {
+
+            it("converts constraints to an array if they aren't already one", function () {
+                var constraints = respoke.getScreenShareConstraints({ constraints: { foo: 'bar' } });
+
+                expect(constraints).to.be.an('Array');
+            });
+
+            it("always sets audio constraint to false", function () {
+                var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
+
+                expect(constraints[0].audio).to.equal(false);
+            });
+
+            it("keeps params.constraints.video if available", function () {
+                var constraints = respoke.getScreenShareConstraints({
+                    constraints: {
+                        video: { foo: 'bar' }
+                    }
+                });
+
+                expect(constraints[0]).to.include.deep.property('video.foo', 'bar');
+            });
+
+            it("creates constraints.video if not provided in params.constraints", function () {
+                var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
+
+                expect(constraints[0].video).to.be.an('object');
+            });
+
+            describe("in chrome", function () {
+
+                it("keeps params.constraints.video.mandatory if available", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { foo: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.foo', 'bar');
+                });
+
+                it("creates constraints.video.mandatory if not provided in params.constraints", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: { foo: 'bar' }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory');
+                    expect(constraints[0].video.mandatory).to.be.an('object');
+                });
+
+                it("keeps params.constraints.video.optional if available", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                optional: [{ foo: 'bar' }]
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.optional');
+                    expect(constraints[0].video.optional.length).to.equal(1);
+                    expect(constraints[0].video.optional[0]).to.include.property('foo', 'bar');
+                });
+
+                it("creates constraints.video.optional if not provided in params.constraints", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: { foo: 'bar' }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.optional');
+                    expect(constraints[0].video.optional).to.be.an('Array');
+                });
+
+                it("keeps params.constraints.video.mandatory.maxHeight if available", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: {
+                                    maxHeight: 320
+                                }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 320);
+                });
+
+                it("defaults constraints.video.mandatory.maxHeight if not provided in params.constraints", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { foo: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 2000);
+                });
+
+                it("keeps params.constraints.video.mandatory.maxWidth if available", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: {
+                                    maxWidth: 240
+                                }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 240);
+                });
+
+                it("defaults constraints.video.mandatory.maxWidth if not provided in params.constraints", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { foo: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 2000);
+                });
+
+                it("forces constraints.video.mandatory.chromeMediaSource to 'desktop'", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { chromeMediaSource: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.chromeMediaSource', 'desktop');
+                });
+
+                it("sets 'googTemporalLayeredScreencast' true on any existing optional vid constraints", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                optional: [{
+                                    foo: 'bar'
+                                }, {
+                                    bar: 'baz'
+                                }]
+                            }
+                        }
+                    });
+
+                    expect(constraints[0].video.optional).to.deep.equal([{
+                        googTemporalLayeredScreencast: true,
+                        foo: 'bar'
+                    }, {
+                        googTemporalLayeredScreencast: true,
+                        bar: 'baz'
+                    }]);
+                });
+
+                it("creates a single optional video constraint with 'googTemporalLayeredScreencast' true " +
+                   "if non previously existed", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = true;
+
+                    var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
+
+                    expect(constraints[0]).to.include.deep.property('video.optional');
+                    expect(constraints[0].video.optional.length).to.equal(1);
+                    expect(constraints[0].video.optional[0]).to.include.property('googTemporalLayeredScreencast', true);
+                });
+            });
+
+            describe("in node-webkit", function () {
+
+                it("keeps params.constraints.video.mandatory if available", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { foo: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.foo', 'bar');
+                });
+
+                it("creates constraints.video.mandatory if not provided in params.constraints", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: { foo: 'bar' }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory');
+                    expect(constraints[0].video.mandatory).to.be.an('object');
+                });
+
+                it("keeps params.constraints.video.optional if available", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                optional: [{ foo: 'bar' }]
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.optional');
+                    expect(constraints[0].video.optional.length).to.equal(1);
+                    expect(constraints[0].video.optional[0]).to.include.property('foo', 'bar');
+                });
+
+                it("creates constraints.video.optional if not provided in params.constraints", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: { foo: 'bar' }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.optional');
+                    expect(constraints[0].video.optional).to.be.an('Array');
+                });
+
+                it("keeps params.constraints.video.mandatory.maxHeight if available", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: {
+                                    maxHeight: 320
+                                }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 320);
+                });
+
+                it("defaults constraints.video.mandatory.maxHeight if not provided in params.constraints", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { foo: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 2000);
+                });
+
+                it("keeps params.constraints.video.mandatory.maxWidth if available", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: {
+                                    maxWidth: 240
+                                }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 240);
+                });
+
+                it("defaults constraints.video.mandatory.maxWidth if not provided in params.constraints", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { foo: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 2000);
+                });
+
+                it("forces constraints.video.mandatory.chromeMediaSource to 'desktop'", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mandatory: { chromeMediaSource: 'bar' }
+                            }
+                        }
+                    });
+
+                    expect(constraints[0]).to.include.deep.property('video.mandatory.chromeMediaSource', 'desktop');
+                });
+
+                it("sets 'googTemporalLayeredScreencast' true on any existing optional vid constraints", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                optional: [{
+                                    foo: 'bar'
+                                }, {
+                                    bar: 'baz'
+                                }]
+                            }
+                        }
+                    });
+
+                    expect(constraints[0].video.optional).to.deep.equal([{
+                        googTemporalLayeredScreencast: true,
+                        foo: 'bar'
+                    }, {
+                        googTemporalLayeredScreencast: true,
+                        bar: 'baz'
+                    }]);
+                });
+
+                it("creates a single optional video constraint with 'googTemporalLayeredScreencast' true " +
+                "if non previously existed", function () {
+                    respoke.isNwjs = true;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
+
+                    expect(constraints[0]).to.include.deep.property('video.optional');
+                    expect(constraints[0].video.optional.length).to.equal(1);
+                    expect(constraints[0].video.optional[0]).to.include.property('googTemporalLayeredScreencast', true);
+                });
+            });
+
+            describe("in other browsers", function () {
+
+                it("sets video.mediaSource constraint to params.source when available", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({ source: 'foobar' });
+
+                    expect(constraints[0].video).to.deep.equal({
+                        mediaSource: 'foobar'
+                    });
+                });
+
+                it("sets video.mediaSource constraint to 'screen' when params.source is unavailable", function () {
+                    respoke.isNwjs = false;
+                    respoke.needsChromeExtension = false;
+
+                    var constraints = respoke.getScreenShareConstraints({
+                        constraints: {
+                            video: {
+                                mediaSource: 'foobar'
+                            }
+                        }
+                    });
+
+                    expect(constraints[0].video).to.deep.equal({
+                        mediaSource: 'screen'
                     });
                 });
             });

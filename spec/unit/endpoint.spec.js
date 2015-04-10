@@ -1,7 +1,7 @@
 "use strict";
 
 var expect = chai.expect;
-
+var _actualSinon = sinon;
 var instanceId = respoke.makeGUID();
 var connectionId = respoke.makeGUID();
 
@@ -14,12 +14,19 @@ describe("A respoke.Endpoint", function () {
     var endpointId;
 
     beforeEach(function () {
+        sinon = sinon.sandbox.create();
         endpointId = respoke.makeGUID();
         endpoint = client.getEndpoint({
             connectionId: connectionId,
             id: endpointId,
             gloveColor: "white"
         });
+    });
+
+    afterEach(function () {
+        sinon.restore();
+        sinon = _actualSinon;
+
     });
 
     describe("it's object structure", function () {
@@ -45,6 +52,7 @@ describe("A respoke.Endpoint", function () {
             expect(typeof endpoint.startVideoCall).to.equal('function');
             expect(typeof endpoint.startCall).to.equal('function');
             expect(typeof endpoint.startDirectConnection).to.equal('function');
+            expect(typeof endpoint.startScreenShare).to.equal('function');
         });
 
         it("can set and get presence and fires the correct event.", function () {
@@ -264,6 +272,76 @@ describe("A respoke.Endpoint", function () {
                     });
                 });
             });
+        });
+    });
+
+    describe("startScreenShare", function () {
+
+        it("calls startCall", function () {
+            sinon.stub(endpoint, 'startCall');
+
+            endpoint.startScreenShare();
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+        });
+
+        it("sets target = 'screenshare' on params passed to startCall", function () {
+            sinon.stub(endpoint, 'startCall');
+
+            endpoint.startScreenShare();
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            var startCallArgs = endpoint.startCall.firstCall.args[0];
+            expect(startCallArgs).to.include.property('target', 'screenshare');
+        });
+
+        it("sets caller = true on params passed to startCall when params.caller not a boolean", function () {
+            // test against a bunch of non-bool things
+            ['beef', 1, [], {}, undefined, null].forEach(function (val) {
+                sinon.stub(endpoint, 'startCall');
+
+                endpoint.startScreenShare({ caller: val });
+
+                expect(endpoint.startCall.calledOnce).to.equal(true);
+                var startCallArgs = endpoint.startCall.firstCall.args[0];
+                expect(startCallArgs).to.include.property('caller', true);
+                endpoint.startCall.restore();
+            });
+        });
+
+        it("sets params.sendOnly = true when params.caller = true", function () {
+            sinon.stub(respoke, 'getScreenShareConstraints').returns({ foo: 'bar' });
+            sinon.stub(endpoint, 'startCall');
+
+            endpoint.startScreenShare({ caller: true });
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            var startCallArgs = endpoint.startCall.firstCall.args[0];
+            expect(startCallArgs).to.include.property('sendOnly', true);
+        });
+
+        it("sets constraints to result of getScreenShareConstraints when params.caller = true", function () {
+            sinon.stub(respoke, 'getScreenShareConstraints').returns({ foo: 'bar' });
+            sinon.stub(endpoint, 'startCall');
+
+            endpoint.startScreenShare();
+
+            expect(respoke.getScreenShareConstraints.calledOnce).to.equal(true);
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            var startCallArgs = endpoint.startCall.firstCall.args[0];
+            expect(startCallArgs).to.include.property('constraints');
+            expect(startCallArgs.constraints).to.deep.equal({ foo: 'bar' });
+        });
+
+        it("sets params.receiveOnly = true when !params.caller", function () {
+            sinon.stub(respoke, 'getScreenShareConstraints').returns({ foo: 'bar' });
+            sinon.stub(endpoint, 'startCall');
+
+            endpoint.startScreenShare({ caller: false });
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            var startCallArgs = endpoint.startCall.firstCall.args[0];
+            expect(startCallArgs).to.include.property('receiveOnly', true);
         });
     });
 });
