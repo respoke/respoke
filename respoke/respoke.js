@@ -761,3 +761,59 @@ respoke.queueFactory = function () {
 
     return queue;
 };
+
+/**
+ *
+ * Retrieve browser-specific WebRTC getUserMedia constraints needed to start a screen sharing call.
+ *
+ * @param {object} [params]
+ * @param {string} [params.source] The media source name to pass to firefox
+ * @param {RTCConstraints|Array<RTCConstraints>} [params.constraints] constraints to use as a base
+ * @returns {Array<RTCConstraints>}
+ * @private
+ */
+respoke.getScreenShareConstraints = function (params) {
+    params = params || {};
+    var convertedConstraints = respoke.convertConstraints(params.constraints, [{
+        audio: true,
+        video: {},
+        mandatory: {},
+        optional: []
+    }]);
+
+    var screenConstraint = convertedConstraints[0];
+    screenConstraint.audio = false;
+    screenConstraint.video = typeof screenConstraint.video === 'object' ? screenConstraint.video : {};
+
+    if (respoke.needsChromeExtension || respoke.isNwjs) {
+        screenConstraint.audio = false;
+        screenConstraint.video.optional = Array.isArray(screenConstraint.video.optional) ?
+            screenConstraint.video.optional : [];
+        screenConstraint.video.mandatory = typeof screenConstraint.video.mandatory === 'object' ?
+            screenConstraint.video.mandatory : {};
+        screenConstraint.video.mandatory.chromeMediaSource = 'desktop';
+        screenConstraint.video.mandatory.maxWidth = typeof screenConstraint.video.mandatory.maxWidth === 'number' ?
+            screenConstraint.video.mandatory.maxWidth : 2000;
+        screenConstraint.video.mandatory.maxHeight = typeof screenConstraint.video.mandatory.maxHeight === 'number' ?
+            screenConstraint.video.mandatory.maxHeight : 2000;
+
+        if (screenConstraint.video.optional.length > 0) {
+            screenConstraint.video.optional.forEach(function (thing) {
+                thing.googTemporalLayeredScreencast = true;
+            });
+        } else {
+            screenConstraint.video.optional[0] = {
+                googTemporalLayeredScreencast: true
+            };
+        }
+    } else {
+        // firefox, et. al.
+        screenConstraint.video.mediaSource = params.source || 'screen';
+    }
+
+    return convertedConstraints;
+};
+
+respoke.getScreenShareMedia = function () {
+
+};
