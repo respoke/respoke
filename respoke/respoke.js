@@ -589,6 +589,33 @@ respoke.isEqual = function (a, b) {
 };
 
 /*
+ * Count the number of MediaStreams indicated by the SDP
+ * @static
+ * @memberof respoke
+ * @params {string}
+ * @returns {number}
+ */
+respoke.sdpStreamCount = function (sdp) {
+    var matches;
+    var resolvedMatches = {};
+
+    if (!sdp) {
+        throw new Error("respoke.sdpHasAudio called with no parameters.");
+    }
+
+    matches = sdp.match(/mslabel:(.*)/gi);
+
+    if (!matches) {
+        return 0;
+    }
+
+    matches.forEach(function (line) {
+        resolvedMatches[line] = true;
+    });
+    return Object.keys(resolvedMatches).length;
+};
+
+/*
  * Does the sdp indicate an audio stream?
  * @static
  * @memberof respoke
