@@ -1,18 +1,21 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+var uuid = require('uuid');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+var respokeAdmin = testHelper.respokeAdmin;
 
 describe("Respoke groups", function () {
     this.timeout(10000);
 
-    var Q = respoke.Q;
-    var testEnv;
     var followerClient = {};
     var followeeClient = {};
-    var app;
-    var role;
+    var roleId;
     var groupRole = {
-        name: 'fixturerole',
+        name: uuid.v4(),
+        appId: testHelper.config.appId,
         groups: {
             "*": {
                 create: true,
@@ -23,54 +26,74 @@ describe("Respoke groups", function () {
             }
         }
     };
-    var testFixture = fixture("Groups Functional test", {
-        roleParams: groupRole
-    });
 
-    before(function (done) {
-        Q.nfcall(testFixture.beforeTest).then(function (env) {
-            testEnv = env;
-            testEnv.tokens = [];
+    before(function () {
+        var followerToken;
+        var followeeToken;
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
-        }).then(function (params) {
-            app = params.app;
-            role = params.role;
-            // create 2 tokens
-            return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: params.role.id,
-                appId: params.app.id
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: params.role.id,
-                appId: params.app.id
-            })];
+        return respoke.Q(respokeAdmin.auth.admin({
+            username: testHelper.config.username,
+            password: testHelper.config.password
+        })).then(function () {
+            return respokeAdmin.roles.create(groupRole);
+        }).then(function (role) {
+            roleId = role.id;
+
+            return respoke.Q.all([
+                respoke.Q(respokeAdmin.auth.endpoint({
+                    endpointId: 'follower',
+                    appId: testHelper.config.appId,
+                    roleId: roleId
+                })),
+                respoke.Q(respokeAdmin.auth.endpoint({
+                    endpointId: 'followee',
+                    appId: testHelper.config.appId,
+                    roleId: roleId
+                }))
+            ]);
         }).spread(function (token1, token2) {
-            testEnv.tokens.push(token1);
-            testEnv.tokens.push(token2);
+            followerToken = token1;
+            followeeToken = token2;
 
             followerClient = respoke.createClient();
             followeeClient = respoke.createClient();
 
-            return Q.all([followerClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: testEnv.tokens[0].tokenId
-            }), followeeClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: testEnv.tokens[1].tokenId
-            })]);
-        }).then(function () {
+            return respoke.Q.all([
+                followerClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: followerToken.tokenId
+                }),
+                followeeClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: followeeToken.tokenId
+                })
+            ]);
+        }).finally(function () {
             expect(followerClient.endpointId).not.to.be.undefined;
-            expect(followerClient.endpointId).to.equal(testEnv.tokens[0].endpointId);
+            expect(followerClient.endpointId).to.equal(followerToken.endpointId);
             expect(followeeClient.endpointId).not.to.be.undefined;
-            expect(followeeClient.endpointId).to.equal(testEnv.tokens[1].endpointId);
-            done();
-        }).done(null, done);
+            expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
+        }).catch(function (error) {
+            expect(error).to.be.defined;
+            expect(error.message).to.be.defined;
+        });
+    });
+
+    after(function () {
+        return respoke.Q.all([followerClient.disconnect(), followeeClient.disconnect()])
+            .finally(function () {
+                if (roleId) {
+                    return respokeAdmin.roles.delete({
+                        roleId: roleId
+                    });
+                }
+            });
     });
 
     describe("when an endpoint logs in", function () {
-        var groupId = respoke.makeGUID();
+        var groupId = uuid.v4();
         var followerGroup;
         var followeeGroup;
 
@@ -81,14 +104,14 @@ describe("Respoke groups", function () {
         });
 
         describe("and joins a group", function () {
-            beforeEach(function (done) {
+            before(function (done) {
                 followerClient.join({id: groupId}).done(function (theGroup) {
                     followerGroup = theGroup;
                     done();
                 }, done);
             });
 
-            afterEach(function (done) {
+            after(function (done) {
                 followerGroup.leave().done(function () {
                     followerGroup = undefined;
                     done();
@@ -132,7 +155,7 @@ describe("Respoke groups", function () {
                 var onLeaveSpy;
                 var onMessageSpy;
 
-                beforeEach(function (done) {
+                before(function (done) {
                     joinEventSpy = sinon.spy();
                     onLeaveSpy = sinon.spy();
                     onJoinSpy = sinon.spy();
@@ -164,17 +187,15 @@ describe("Respoke groups", function () {
                     }, done);
                 });
 
-                afterEach(function (done) {
+                after(function () {
                     followerGroup.ignore('join', onJoinSpy);
                     followerGroup.ignore('leave', onLeaveSpy);
                     followerGroup.ignore('message', onMessageSpy);
 
-                    Q.all([
+                    return respoke.Q.all([
                         followerGroup.leave(),
                         followeeGroup.leave()
-                    ]).done(function () {
-                        done();
-                    }, done);
+                    ]);
                 });
 
                 it("the group is given back", function () {
@@ -223,14 +244,14 @@ describe("Respoke groups", function () {
 
                 describe("sending a message", function () {
                     var messageEventSpy;
-                    var doneListener;
 
-                    beforeEach(function (done) {
+                    before(function (done) {
                         messageEventSpy = sinon.spy();
-                        doneListener = function () {
+                        var doneListener = function () {
                             messageEventSpy();
                             done();
                         };
+
                         followeeGroup.once('message', doneListener);
                         followerGroup.sendMessage({
                             message: 'test'
@@ -251,7 +272,7 @@ describe("Respoke groups", function () {
                     var doneNum;
                     var invalidSpy = sinon.spy();
 
-                    beforeEach(function (done) {
+                    before(function (done) {
                         expect(followerGroup.isJoined()).to.equal(true);
                         expect(followeeGroup.isJoined()).to.equal(true);
 
@@ -268,14 +289,12 @@ describe("Respoke groups", function () {
                         }, doneNum);
                     });
 
-                    afterEach(function (done) {
-                        followeeGroup.join({id: followeeGroup.id}).done(function () {
-                            done();
-                        }, done);
+                    after(function () {
+                        return followeeGroup.join({id: followeeGroup.id});
                     });
 
                     it("group.getMembers() returns an error", function (done) {
-                        followeeGroup.getMembers().done(function (members) {
+                        followeeGroup.getMembers().done(function () {
                             done(new Error("A group we're not a member of should error when getMembers() is called."));
                         }, function (err) {
                             expect(err).to.be.an.Error;
@@ -305,15 +324,21 @@ describe("Respoke groups", function () {
                     });
 
                     describe("when the first endpoint leaves the group", function () {
-                        beforeEach(function (done) {
+                        before(function (done) {
                             followeeGroup.listen('leave', invalidSpy);
-                            followerGroup.leave().done(function() {
+                            followerGroup.leave().done(function () {
                                 setTimeout(done, 1000);
                             }, done);
                         });
 
+                        after(function (done) {
+                            followerGroup.join().finally(function () {
+                                done();
+                            });
+                        });
+
                         it("first endpoint's group.getMembers() returns an error", function (done) {
-                            followerGroup.getMembers().done(function (members) {
+                            followerGroup.getMembers().done(function () {
                                 done(new Error("A group we're not a member of should error when getMembers() is called."));
                             }, function (err) {
                                 expect(err).to.be.an.Error;
@@ -328,68 +353,62 @@ describe("Respoke groups", function () {
                         it("isJoined() returns false", function () {
                             expect(followerGroup.isJoined()).to.be.false;
                         });
-
-                        afterEach(function (done) {
-                            followerGroup.join().done(function() {
-                                done();
-                            }, done);
-                        });
                     });
                 });
             });
         });
 
         xdescribe("when an admin administers groups for an endpoint", function () {
-            var groupName = respoke.makeGUID();
-            var params;
-            var client;
+            // var groupName = uuid.v4();
+            // var params;
+            // var client;
 
-            before(function (done) {
-                var tokenOptions = { roleId: role.id, appId: app.id };
-                testFixture.createToken(testEnv.httpClient, tokenOptions, function (err, token) {
-                    params = {
-                        username: testEnv.accountParams.username,
-                        password: testEnv.accountParams.password,
-                        endpointId: token.endpointId,
-                        groupName: groupName,
-                        appId: app.id
-                    };
-                    client = respoke.createClient();
-                    client.connect({
-                        appId: app.id,
-                        baseURL: respokeTestConfig.baseURL,
-                        token: token.tokenId
-                    }).then(done);
-                });
-            });
+            // before(function (done) {
+            //     var tokenOptions = { roleId: roleId, appId: testHelper.config.appId };
+            //     testFixture.createToken(testEnv.httpClient, tokenOptions, function (err, token) {
+            //         params = {
+            //             username: testEnv.accountParams.username,
+            //             password: testEnv.accountParams.password,
+            //             endpointId: token.endpointId,
+            //             groupName: groupName,
+            //             appId: testHelper.config.appId
+            //         };
+            //         client = respoke.createClient();
+            //         client.connect({
+            //             appId: testHelper.config.appId,
+            //             baseURL: testHelper.config.baseURL,
+            //             token: token.tokenId
+            //         }).then(done);
+            //     });
+            // });
 
-            describe("and adds an endpoint to a group", function () {
-                it("the endpoint should receive join notification", function (done) {
-                    var onJoin = function (evt) {
-                        expect(evt.group).to.not.be.undefined;
-                        expect(evt.group.id).to.equal(groupName);
-                        done();
-                    };
-                    client.listen('join', onJoin);
-                    testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
-                        expect(err).to.be.undefined;
-                    });
-                });
-            });
+            // describe("and adds an endpoint to a group", function () {
+            //     it("the endpoint should receive join notification", function (done) {
+            //         var onJoin = function (evt) {
+            //             expect(evt.group).to.not.be.undefined;
+            //             expect(evt.group.id).to.equal(groupName);
+            //             done();
+            //         };
+            //         client.listen('join', onJoin);
+            //         testFixture.adminJoinEndpointToGroup(testEnv.httpClient, params, function (err) {
+            //             expect(err).to.be.undefined;
+            //         });
+            //     });
+            // });
 
-            describe("and removes an endpoint from a group", function () {
-                it("endpoint should receive leave notification", function (done) {
-                    var onLeave = function (evt) {
-                        expect(evt.group).to.not.be.undefined;
-                        expect(evt.group.id).to.equal(groupName);
-                        done();
-                    };
-                    client.listen('leave', onLeave);
-                    testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
-                        expect(err).to.be.undefined;
-                    });
-                });
-            });
+            // describe("and removes an endpoint from a group", function () {
+            //     it("endpoint should receive leave notification", function (done) {
+            //         var onLeave = function (evt) {
+            //             expect(evt.group).to.not.be.undefined;
+            //             expect(evt.group.id).to.equal(groupName);
+            //             done();
+            //         };
+            //         client.listen('leave', onLeave);
+            //         // testFixture.adminRemoveEndpointFromGroup(testEnv.httpClient, params, function (err) {
+            //         //     expect(err).to.be.undefined;
+            //         // });
+            //     });
+            // });
         });
     });
 
@@ -398,7 +417,7 @@ describe("Respoke groups", function () {
         var followeeGroup;
 
         before(function () {
-            var groupId = respoke.makeGUID();
+            var groupId = uuid.v4();
             return followerClient.join({
                 id: groupId
             }).then(function () {
@@ -410,30 +429,18 @@ describe("Respoke groups", function () {
 
         describe("and then client.getEndpoint is called on one of the group members", function () {
 
-            it("registers for that endpoint's presence", function (done) {
-                followeeGroup.getMembers().then(function (members) {
+            it("registers for that endpoint's presence", function () {
+                return followeeGroup.getMembers().then(function (members) {
                     expect(members.length).to.equal(2);
                     return followeeClient.getEndpoint({ id: followerClient.endpointId });
                 }).then(function (followerEndpoint) {
                     followerEndpoint.once('presence', function (evt) {
                         expect(evt).to.include.property('presence');
                         expect(evt.presence).to.equal('away');
-                        done();
                     });
                     followerClient.setPresence({ presence: 'away' });
-                }).catch(done);
+                });
             });
         });
-    });
-
-    after(function (done) {
-        Q.all([followerClient.disconnect(), followeeClient.disconnect()]).fin(function () {
-            testFixture.afterTest(function (err) {
-                if (err) {
-                    return done(err);
-                }
-                done();
-            });
-        }).done();
     });
 });
