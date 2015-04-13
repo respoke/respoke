@@ -1,89 +1,107 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+var uuid = require('uuid');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+var respokeAdmin = testHelper.respokeAdmin;
+var Q = testHelper.respoke.Q;
 
 describe("Respoke presence", function () {
     this.timeout(10000);
 
-    var Q = respoke.Q;
-    var testFixture = fixture("Presence Functional test");
-    var testEnv;
     var followerClient;
     var followeeClient;
     var followerToken;
     var followeeToken;
     var roleId;
-    var appId;
 
-    function disconnectAll(callback) {
-        async.each([followerClient, followeeClient], function (client, done) {
+    function disconnectAll() {
+        var clients = [followeeClient, followerClient].map(function (client) {
             if (client.isConnected()) {
-                client.disconnect().fin(done);
-            } else {
-                done();
+                return client.disconnect();
             }
-        }, callback);
+        });
+        return Q.all(clients);
     }
 
-    function doReconnect(done) {
-        Q.nfcall(
-            disconnectAll
-        ).done(function () {
-            Q.all([Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            })]).spread(function (token1, token2) {
-                followerToken = token1;
-                followeeToken = token2;
-
-                return Q.all([followerClient.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
+    function doReconnect() {
+        return disconnectAll().then(function () {
+            return Q.all([
+                followerClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
                     token: followerToken.tokenId
-                }), followeeClient.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
+                }),
+                followeeClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
                     token: followeeToken.tokenId
-                })]);
-            }).done(function () {
-                expect(followerClient.endpointId).not.to.be.undefined;
-                expect(followerClient.endpointId).to.equal(followerToken.endpointId);
-                expect(followeeClient.endpointId).not.to.be.undefined;
-                expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
-                done();
-            }, done);
-        }, done);
+                })
+            ]);
+        }).finally(function () {
+            expect(followerClient.endpointId).not.to.be.undefined;
+            expect(followerClient.endpointId).to.equal(followerToken.endpointId);
+            expect(followeeClient.endpointId).not.to.be.undefined;
+            expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
+        });
     }
 
-    beforeEach(function (done) {
-        Q.nfcall(testFixture.beforeTest).then(function (env) {
-            testEnv = env;
+    before(function () {
+        return respokeAdmin.auth.admin({
+            username: testHelper.config.username,
+            password: testHelper.config.password
+        }).then(function () {
+            return respokeAdmin.roles.create({
+                appId: testHelper.config.appId,
+                name: uuid.v4(),
+                groups: {
+                    "*": {
+                        create: true,
+                        publish: true,
+                        subscribe: true,
+                        unsubscribe: true,
+                        getsubscribers: true
+                    }
+                }
+            });
+        }).then(function (role) {
+            roleId = role.id;
+        });
+    });
 
-            return Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, {});
-        }).then(function (params) {
-            // create 2 tokens
-            roleId = params.role.id;
-            appId = params.app.id;
+    after(function () {
+        if (roleId) {
+            return respokeAdmin.roles.delete({
+                roleId: roleId
+            });
+        }
+    });
 
-            return [Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            }), Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            })];
-        }).spread(function (token1, token2) {
+    beforeEach(function () {
+        return Q.all([
+            Q(respokeAdmin.auth.endpoint({
+                endpointId: uuid.v4(),
+                appId: testHelper.config.appId,
+                roleId: roleId
+            })),
+            Q(respokeAdmin.auth.endpoint({
+                endpointId: uuid.v4(),
+                appId: testHelper.config.appId,
+                roleId: roleId
+            }))
+        ]).spread(function (token1, token2) {
             followerToken = token1;
             followeeToken = token2;
 
             followerClient = respoke.createClient();
             followeeClient = respoke.createClient();
-        }).done(function () {
-            done();
-        }, done);
+        });
+    });
+
+    afterEach(function () {
+        return disconnectAll();
     });
 
     describe("with a resolveEndpointPresence function", function () {
@@ -91,23 +109,23 @@ describe("Respoke presence", function () {
         var endpoint2;
 
         beforeEach(function (done) {
-            presence = respoke.makeGUID();
+            presence = uuid.v4();
             followerClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
+                appId: testHelper.config.appId,
+                baseURL: testHelper.config.baseURL,
                 token: followerToken.tokenId,
-                resolveEndpointPresence: function (presenceList) {
+                resolveEndpointPresence: function () {
                     return presence;
                 }
             }).then(function () {
                 return followeeClient.connect({
-                    appId: Object.keys(testEnv.allApps)[0],
-                    baseURL: respokeTestConfig.baseURL,
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
                     token: followeeToken.tokenId
                 });
             }).then(function () {
                 endpoint2 = followerClient.getEndpoint({id: followeeToken.endpointId});
-                endpoint2.once('presence', function (evt) {
+                endpoint2.once('presence', function () {
                     done();
                 });
                 return followeeClient.setPresence({presence: 'nacho presence2'});
@@ -122,12 +140,12 @@ describe("Respoke presence", function () {
     describe("without a resolveEndpointPresence function", function () {
         beforeEach(function (done) {
             Q.all([followerClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
+                appId: testHelper.config.appId,
+                baseURL: testHelper.config.baseURL,
                 token: followerToken.tokenId
             }), followeeClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
+                appId: testHelper.config.appId,
+                baseURL: testHelper.config.baseURL,
                 token: followeeToken.tokenId
             })]).done(function () {
                 expect(followerClient.endpointId).not.to.be.undefined;
@@ -145,7 +163,7 @@ describe("Respoke presence", function () {
 
             describe("and sets itself online", function () {
                 beforeEach(function (done) {
-                    followerClient.setOnline().done(function() {
+                    followerClient.setOnline().done(function () {
                         done();
                     }, done);
                 });
@@ -157,7 +175,7 @@ describe("Respoke presence", function () {
 
                 describe("and sets itself offline", function () {
                     beforeEach(function (done) {
-                        followerClient.setOffline().done(function() {
+                        followerClient.setOffline().done(function () {
                             done();
                         }, done);
                     });
@@ -170,7 +188,7 @@ describe("Respoke presence", function () {
             });
 
             describe("and sets its presence to a string", function () {
-                var presence = respoke.makeGUID();
+                var presence = uuid.v4();
 
                 beforeEach(function (done) {
                     followerClient.setPresence({presence: presence}).done(function () {
@@ -186,9 +204,9 @@ describe("Respoke presence", function () {
 
             describe("and sets its presence to an object", function () {
                 var presence = {
-                    hey: respoke.makeGUID(),
-                    hi: respoke.makeGUID(),
-                    ho: respoke.makeGUID()
+                    hey: uuid.v4(),
+                    hi: uuid.v4(),
+                    ho: uuid.v4()
                 };
 
                 beforeEach(function (done) {
@@ -224,7 +242,7 @@ describe("Respoke presence", function () {
 
                 describe("and sets itself online", function () {
                     beforeEach(function (done) {
-                        endpoint.once("presence", function (evt) {
+                        endpoint.once("presence", function () {
                             done();
                         });
 
@@ -238,10 +256,10 @@ describe("Respoke presence", function () {
                 });
 
                 describe("and sets its presence to a string", function () {
-                    var presence = respoke.makeGUID();
+                    var presence = uuid.v4();
 
                     beforeEach(function (done) {
-                        endpoint.once("presence", function (evt) {
+                        endpoint.once("presence", function () {
                             done();
                         });
 
@@ -256,13 +274,13 @@ describe("Respoke presence", function () {
 
                 describe("and sets its presence to an object", function () {
                     var presence = {
-                        hey: respoke.makeGUID(),
-                        hi: respoke.makeGUID(),
-                        ho: respoke.makeGUID()
+                        hey: uuid.v4(),
+                        hi: uuid.v4(),
+                        ho: uuid.v4()
                     };
 
                     beforeEach(function (done) {
-                        endpoint.once("presence", function (evt) {
+                        endpoint.once("presence", function () {
                             done();
                         });
 
@@ -284,13 +302,13 @@ describe("Respoke presence", function () {
 
                 describe("a presence callback", function () {
                     var presenceListener;
-                    var presence = respoke.makeGUID();
+                    var presence = uuid.v4();
 
                     describe("when the second user changes its presence", function () {
                         beforeEach(function (done) {
                             presenceListener = sinon.spy();
                             endpoint.once('presence', presenceListener);
-                            endpoint.once('presence', function (evt) {
+                            endpoint.once('presence', function () {
                                 done();
                             });
                             followeeClient.setPresence({presence: presence}).done();
@@ -306,7 +324,7 @@ describe("Respoke presence", function () {
                         beforeEach(function (done) {
                             presenceListener = sinon.spy();
                             endpoint.once('presence', presenceListener);
-                            endpoint.once('presence', function (evt) {
+                            endpoint.once('presence', function () {
                                 done();
                             });
                             followeeClient.disconnect().done();
@@ -321,7 +339,7 @@ describe("Respoke presence", function () {
 
                 describe("and then disconnects", function () {
                     beforeEach(function (done) {
-                        endpoint.once('presence', function (evt) {
+                        endpoint.once('presence', function () {
                             done();
                         });
                         followeeClient.disconnect().done();
@@ -350,13 +368,6 @@ describe("Respoke presence", function () {
 
                 afterEach(doReconnect);
             });
-        });
-
-        afterEach(function (done) {
-            async.series({
-                disconnectClients: disconnectAll,
-                fixtureCleanup: testFixture.afterTest
-            }, done);
         });
     });
 });
