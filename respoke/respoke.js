@@ -14,7 +14,6 @@
  */
 
 var Airbrake = require('airbrake-js');
-
 var log = require('loglevel');
 log.setLevel(log.levels.WARN);
 
@@ -763,9 +762,10 @@ respoke.queueFactory = function () {
 };
 
 /**
- *
  * Retrieve browser-specific WebRTC getUserMedia constraints needed to start a screen sharing call.
  *
+ * @memberof respoke
+ * @static
  * @param {object} [params]
  * @param {string} [params.source] The media source name to pass to firefox
  * @param {RTCConstraints|Array<RTCConstraints>} [params.constraints] constraints to use as a base
@@ -814,6 +814,64 @@ respoke.getScreenShareConstraints = function (params) {
     return convertedConstraints;
 };
 
-respoke.getScreenShareMedia = function () {
+/**
+ * Retrieve a started instance of `respoke.LocalMedia` containing a screen share stream. Useful if you
+ * want to prepare the stream prior to starting a screen share.
+ *
+ *     respoke.getScreenShareMedia().then(function (localMedia) {
+ *         document.getElementById('#video').appendChild(localMedia.element);
+ *         group.listen('join', function (evt) {
+ *             evt.connection.startScreenShare({
+ *                 outgoingMedia: localMedia
+ *             });
+ *         });
+ *     }).catch(function (err) {
+ *         console.log(err);
+ *     });
+ *
+ * @static
+ * @memberof respoke
+ * @param {object} params
+ * @param {string} [params.source] - The source you would like to use for your screen share. Values vary by browser.
+ *  In Chrome, acceptable values are one of 'screen', 'window', or 'tab'.
+ *  In Firefox, acceptable values are one of 'screen', 'window', or 'application'.
+ * @param {RTCConstraints|Array<RTCConstraints>} [params.constraints] - constraints to use as a base
+ * @param {HTMLVideoElement} [params.element] - Pass in an optional html video element to have local
+ *  video attached to it.
+ * @param {function} [params.onSuccess] Upon success, called with instance of `respoke.LocalMedia`
+ * @param {function} [params.onError] Upon failure, called with the error that occurred.
+ * @returns {Promise|undefined}
+ */
+respoke.getScreenShareMedia = function (params) {
+    params = params || {};
 
+    var deferred = Q.defer();
+
+    var criteria = {
+        source: params.source,
+        constraints: respoke.clone(params.constraints)
+    };
+
+    var localMedia = respoke.LocalMedia({
+        hasScreenShare: true,
+        constraints: respoke.getScreenShareConstraints(criteria)[0],
+        source: params.source,
+        element: params.element
+    });
+
+    function localMediaStreamReceivedHandler() {
+        localMedia.ignore('error', localMediaErrorHandler);
+        deferred.resolve(localMedia);
+    }
+
+    function localMediaErrorHandler(evt) {
+        localMedia.ignore('stream-received', localMediaStreamReceivedHandler);
+        deferred.reject(evt);
+    }
+
+    localMedia.once('stream-received', localMediaStreamReceivedHandler);
+    localMedia.once('error', localMediaErrorHandler);
+    localMedia.start();
+
+    return respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 };

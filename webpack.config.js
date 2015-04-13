@@ -13,7 +13,8 @@ module.exports = {
     },
     node: {
         // disable bundling process shim that would otherwise be detected as needed from Q library
-        process: false
+        process: false,
+        setImmediate: false
     },
     devtool: "source-map",
     plugins: [
