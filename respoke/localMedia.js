@@ -273,6 +273,10 @@ module.exports = function (params) {
             throw new Error('No constraints.');
         }
 
+        if (respoke.useFakeMedia === true) {
+            that.constraints.fake = true;
+        }
+
         theStream = getStream(that.constraints);
         if (theStream) {
             log.debug('using old stream');
@@ -295,9 +299,6 @@ module.exports = function (params) {
              */
             that.fire('requesting-media');
         }, 500);
-        if (respoke.useFakeMedia === true) {
-            that.constraints.fake = true;
-        }
 
         requestingScreenShare =
             (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) ||
