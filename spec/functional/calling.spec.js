@@ -2,6 +2,7 @@
 
 var expect = chai.expect;
 
+/* global sinon: true */
 describe("Respoke calling", function () {
     this.timeout(30000);
     respoke.useFakeMedia = true;
