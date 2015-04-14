@@ -368,13 +368,14 @@ describe("respoke.Client", function () {
                 var startCallStub;
 
                 beforeEach(function () {
+                    startCallStub = sinon.spy();
                     callStub = sinon.stub(respoke, "Call", function () {
+                        startCallStub();
                         return {
                             className: 'respoke.MockCall',
                             listen: function () {}
                         };
                     });
-                    startCallStub = sinon.spy();
                     getEndpointStub = sinon.stub(client, "getEndpoint", function () {
                         return {
                             startCall: callStub,
