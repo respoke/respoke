@@ -12,15 +12,6 @@ module.exports = function (config) {
 
         frameworks: ['mocha', 'chai', 'chai-sinon'],
 
-        // list of files / patterns to load in the browser
-        files: [
-            'unit/index.js'
-        ],
-
-        preprocessors: {
-            'unit/index.js': ['webpack', 'sourcemap']
-        },
-
         webpack: {
             devtool: 'inline-source-map',
             resolve: {
