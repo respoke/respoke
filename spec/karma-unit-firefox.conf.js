@@ -2,7 +2,7 @@
 
 var sharedConfig = require('./karma-unit.conf');
 
-// Karma configuration
+// Karma firefox unit configuration
 module.exports = function (config) {
     sharedConfig(config);
 
