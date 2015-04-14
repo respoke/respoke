@@ -1,21 +1,64 @@
+var path = require('path');
+
 // Karma shared configuration
 module.exports = function (config) {
     "use strict";
+
+    var respokePath = path.dirname(__dirname);
 
     config.set({
         // base path, that will be used to resolve files and exclude
         basePath: '',
 
-        frameworks: ['mocha'],
+        frameworks: ['mocha', 'chai', 'chai-sinon'],
 
         // list of files / patterns to load in the browser
         files: [
-          '../node_modules/chai/chai.js',
-          '../node_modules/sinon/pkg/sinon.js',
-          '../respoke.min.js',
-          '../respoke-stats.min.js',
-          'util/mockSignalingChannel.js',
-          'unit/*.spec.js'
+            'unit/index.js'
+        ],
+
+        preprocessors: {
+            'unit/index.js': ['webpack', 'sourcemap']
+        },
+
+        webpack: {
+            devtool: 'inline-source-map',
+            resolve: {
+                modulesDirectories: [
+                    'node_modules'
+                ],
+                alias: {
+                    respoke: respokePath,
+                    'respoke-stats': path.join(respokePath, 'plugins', 'respoke-stats', 'respoke-stats')
+                }
+            },
+            module: {
+                loaders: [
+                    {
+                        test: /\.json$/,
+                        loader: 'json'
+                    }
+                ]
+            },
+            // this allows us to pack the request module in respoke-admin
+            externals: {
+                fs: '{}',
+                tls: '{}',
+                net: '{}',
+                console: '{}'
+            }
+        },
+
+        plugins: [
+            require('karma-webpack'),
+            require('karma-sourcemap-loader'),
+            require('karma-mocha'),
+            require('karma-chai'),
+            require('karma-chai-sinon'),
+            require('karma-junit-reporter'),
+            require('karma-spec-reporter'),
+            require('karma-chrome-launcher'),
+            require('karma-firefox-launcher')
         ],
 
         // test results reporter to use
@@ -31,7 +74,7 @@ module.exports = function (config) {
             '/': 'https://localhost/'
         },
 
-        urlRoot: '__karma__',
+        urlRoot: '/__karma__/',
 
         // web server port
         port: 9876,

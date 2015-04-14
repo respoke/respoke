@@ -1,8 +1,12 @@
 "use strict";
 /* global sinon: true */
 
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
 var _actualSinon = sinon;
+var respoke = testHelper.respoke;
+
 var instanceId = respoke.makeGUID();
 var connectionId = respoke.makeGUID();
 
@@ -161,14 +165,14 @@ describe("A respoke.Endpoint", function () {
                 var presenceStrings = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
                 for (var i = 0; i < presenceStrings.length; i += 1) {
                     var presString1 = presenceStrings[i];
-                    for (var j = i+1; j < presenceStrings.length; j += 1) {
+                    for (var j = i + 1; j < presenceStrings.length; j += 1) {
                         var presString2 = presenceStrings[j];
 
                         if (presString1 === presString2) {
                             return;
-                       }
+                        }
 
-                        describe("when presence is set to '" + presString1 + "' and '" + presString2 + "'", function (){
+                        describe("when presence is set to '" + presString1 + "' and '" + presString2 + "'", function () {
                             it("endpoint.presence equals the one that appears first in the array", function () {
                                 var presenceToFind;
                                 if (presenceStrings.indexOf(presString1) > presenceStrings.indexOf(presString2)) {
@@ -223,7 +227,7 @@ describe("A respoke.Endpoint", function () {
                             var expectedPresence = 'always and forever';
                             var tempClient = respoke.createClient({
                                 instanceId: tempInstanceId,
-                                resolveEndpointPresence: function (presenceList) {
+                                resolveEndpointPresence: function () {
                                     return expectedPresence;
                                 }
                             });

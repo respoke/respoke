@@ -6,7 +6,9 @@ var config = require('./test-config.json');
 // this is used in the respoke setup so it must come before requiring it
 window.skipErrorReporting = true;
 
-var respoke = require('../');
+var respoke = require('respoke');
+require('respoke-stats');
+
 // TODO: require respoke-stats
 var RespokeAdmin = require('respoke-admin');
 

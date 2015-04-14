@@ -192,7 +192,6 @@ module.exports = function (grunt) {
     grunt.registerTask('default', 'karma:devOrig');
 
     grunt.registerTask('unit', 'Run unit specs', [
-        'dist',
         'karma:unitChrome',
         'karma:unitFirefox'
     ]);

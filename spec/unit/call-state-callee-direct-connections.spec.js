@@ -1,5 +1,9 @@
 "use strict";
+
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
 
 xdescribe("respoke.CallState for direct connections as the callee", function () {
     var caller = false;
@@ -50,7 +54,6 @@ xdescribe("respoke.CallState for direct connections as the callee", function () 
     });
 
     describe("when starting from 'idle'", function () {
-        var idleSpy;
 
         afterEach(function () {
             state.dispatch('hangup');

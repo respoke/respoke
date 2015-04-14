@@ -110,7 +110,6 @@
         "xdescribe",
         "chai",
         "sinon",
-        "MockSignalingChannel",
         "doneOnceBuilder",
         "doneCountBuilder",
         "done",

@@ -1,9 +1,11 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
 
 var instanceId = respoke.makeGUID();
-var connectionId = respoke.makeGUID();
 var endpointId = respoke.makeGUID();
 
 var client = respoke.createClient({

@@ -1,6 +1,10 @@
+var path = require('path');
+
 // Karma shared configuration
 module.exports = function (config) {
     'use strict';
+
+    var respokePath = path.dirname(__dirname);
 
     config.set({
         // base path, that will be used to resolve files and exclude
@@ -22,7 +26,11 @@ module.exports = function (config) {
             resolve: {
                 modulesDirectories: [
                     'node_modules'
-                ]
+                ],
+                alias: {
+                    respoke: respokePath,
+                    'respoke-stats': path.join(respokePath, 'plugins', 'respoke-stats', 'respoke-stats')
+                }
             },
             module: {
                 loaders: [
