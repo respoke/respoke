@@ -1,6 +1,9 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
 
 /* global sinon: true */
 describe("Respoke calling", function () {
@@ -25,9 +28,11 @@ describe("Respoke calling", function () {
             }
         }
     };
-    var testFixture = fixture("Calling Functional test", {
-        roleParams: groupRole
-    });
+    // TODO: replace fixture with test config and node-respoke setup
+    // var testFixture = fixture("Calling Functional test", {
+    //     roleParams: groupRole
+    // });
+    var testFixture = {};
 
     var followerEndpoint;
     var followeeEndpoint;
@@ -65,11 +70,11 @@ describe("Respoke calling", function () {
 
             return respoke.Q.all([followerClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
+                baseURL: testHelper.config.baseURL,
                 token: followerToken.tokenId
             }), followeeClient.connect({
                 appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
+                baseURL: testHelper.config.baseURL,
                 token: followeeToken.tokenId
             })]);
         }).done(function () {
@@ -1198,7 +1203,7 @@ describe("Respoke calling", function () {
 
                     follower_nodebug.connect({
                         appId: Object.keys(testEnv.allApps)[0],
-                        baseURL: respokeTestConfig.baseURL,
+                        baseURL: testHelper.config.baseURL,
                         token: followerToken.tokenId,
                         onConnect: function () {
                             followeeEndpoint_nodebug = follower_nodebug.getEndpoint({id: followeeClient.endpointId});

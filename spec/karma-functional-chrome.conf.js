@@ -1,36 +1,56 @@
 // Karma configuration
-module.exports = function(config) {
-    "use strict";
+module.exports = function (config) {
+    'use strict';
 
     config.set({
         // base path, that will be used to resolve files and exclude
         basePath: '',
 
-        frameworks: ['mocha'],
+        frameworks: ['mocha', 'chai', 'chai-sinon'],
 
         // list of files / patterns to load in the browser
         files: [
-            '../node_modules/chai/chai.js',
-            '../node_modules/sinon/pkg/sinon.js',
-            '../node_modules/async/lib/async.js',
-            '../respoke.min.js',
-            '../respoke-stats.min.js',
-            'util/config.js',
-            'util/mock_module.js', // Must be loaded after loglevel.js b/c of `module` check.
-            '../../../../collective/lib/seeds_data.js',
-            '../../../../collective/assets/js/jquery.js',
-            '../../../../collective/spec/util/api_client.js',
-            '../../../../collective/spec/util/fixture.js',
-            'functional/*.spec.js',
-            {
-                pattern: '../*.min.map',
-                included: false
+            'functional/**/*.spec.js'
+        ],
+
+        preprocessors: {
+            'functional/**/*.spec.js': ['webpack']
+        },
+
+        webpack: {
+            node: {
+                // disable bundling process shim that would otherwise be detected as needed from Q library
+                process: false
+            },
+            devtool: 'source-map',
+            resolve: {
+                modulesDirectories: [
+                    'node_modules'
+                ]
+            },
+            module: {
+                loaders: [
+                    {
+                        test: /\.json$/,
+                        loader: 'json'
+                    }
+                ]
             }
+        },
+
+        plugins: [
+            require('karma-webpack'),
+            require('karma-mocha'),
+            require('karma-chai'),
+            require('karma-chai-sinon'),
+            require('karma-junit-reporter'),
+            require('karma-spec-reporter'),
+            require('karma-chrome-launcher')
         ],
 
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit'
-        reporters: ['spec','junit'],
+        reporters: ['spec', 'junit'],
         junitReporter: {
             outputFile: 'build/functional-test-results.xml'
         },
@@ -41,7 +61,7 @@ module.exports = function(config) {
             '/': 'https://localhost/'
         },
 
-        urlRoot: '__karma__',
+        urlRoot: '/__karma__/',
 
         // web server port
         port: 9876,

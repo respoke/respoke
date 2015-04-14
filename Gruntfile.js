@@ -280,33 +280,18 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('functional', 'Run client-side functional tests', [
-        'dist',
         'env:test',
-        'start-saucer-section',
-        'start-webhook-service',
-        'liftSails',
-        'karma:functionalChrome',
-        'karma:functionalFirefox',
-        'lowerSails',
-        'stop-saucer-section',
-        'stop-webhook-service'
+        'karma:functionalChrome'
     ]);
 
     grunt.registerTask('lint', 'run jshint', ['jshint:pretty']);
     grunt.registerTask('ci', 'Run all tests', [
         'jshint:ci',
-        'dist',
         'env:test',
-        'start-saucer-section',
-        'start-webhook-service',
-        'liftSails',
         'karma:unitChrome',
         'karma:unitFirefox',
         'karma:functionalChrome',
-        'karma:functionalFirefox',
-        'lowerSails',
-        'stop-saucer-section',
-        'stop-webhook-service'
+        'karma:functionalFirefox'
     ]);
 
     grunt.registerTask('docs', 'Build the documentation HTML pages', [
