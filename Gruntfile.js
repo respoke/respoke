@@ -60,11 +60,11 @@ module.exports = function (grunt) {
                 configFile: './spec/karma-functional-firefox.conf.js'
             },
             discoveryChrome: {
-                singleRun: false,
+                singleRun: true,
                 configFile: './spec/karma-discovery-chrome.conf.js'
             },
             discoveryFirefox: {
-                singleRun: false,
+                singleRun: true,
                 configFile: './spec/karma-discovery-firefox.conf.js'
             }
         },
@@ -197,12 +197,10 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('discoveryChrome', 'Run discovery specs', [
-        'dist',
         'karma:discoveryChrome'
     ]);
 
     grunt.registerTask('discoveryFirefox', 'Run discovery specs', [
-        'dist',
         'karma:discoveryFirefox'
     ]);
 
