@@ -196,11 +196,16 @@ module.exports = function (grunt) {
         'karma:unitFirefox'
     ]);
 
-    grunt.registerTask('discoveryChrome', 'Run discovery specs', [
+    grunt.registerTask('discovery', 'Run discovery specs', [
+        'karma:discoveryChrome',
+        'karma:discoveryFirefox'
+    ]);
+
+    grunt.registerTask('discovery:chrome', 'Run discovery specs for Chrome', [
         'karma:discoveryChrome'
     ]);
 
-    grunt.registerTask('discoveryFirefox', 'Run discovery specs', [
+    grunt.registerTask('discovery:firefox', 'Run discovery specs for Firefox', [
         'karma:discoveryFirefox'
     ]);
 
