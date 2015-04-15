@@ -6,17 +6,34 @@ apps.
 
 ## Usage
 
-    npm install respoke
+### NPM
+
+```bash
+npm install respoke
+```
 
 then
 
-    require('respoke');
+```javascript
+require('respoke');
+```
 
-Or grab a release from the CDN:
+### CDN
+
+Grab a release from the CDN:
 
 * [Latest respoke.min.js](https://cdn.respoke.io/respoke.min.js)
 * [Latest respoke-stats.min.js](https://cdn.respoke.io/respoke-stats.min.js)
 * [List](https://cdn.respoke.io/list.html)
+
+### Prebuilt / Bower
+
+```bash
+bower install --save respoke
+```
+
+Prebuilt and minified versions of respoke.js can be found at [github.com/respoke/respoke-dist](https://github.com/respoke/respoke-dist).
+
 
 ## Documentation
 
@@ -30,7 +47,7 @@ We welcome [discussion on our community](http://community.respoke.io/) and contr
 community. To get started contributing back, you'll need to clone this repo and run the following
 commands.
 
-```
+```bash
 brew install node
 # or
 # apt-get install nodejs
@@ -47,19 +64,19 @@ Respoke.js uses CommonJS to manage its dependencies, and the [Webpack](http://we
 module bundler to bundle the library. To create the bundled and minified library suitable for
 distribution, you can run
 
-```
+```bash
 grunt dist
 ```
 
 or
 
-```
+```bash
 webpack && npm run build-stats
 ```
 
 If you want to have the source files watched and built automatically when changes are made, run
 
-```
+```bash
 webpack --watch
 ```
 
@@ -70,22 +87,24 @@ If you want the watch task to rebuild faster, you can comment out the uglify plu
 
 This project uses jshint.  The configuration for jshint can be found in the repo at `.jshintrc` and `.jshintignore`.
 
-```
+```bash
 npm run jshint
 ```
 
 Point your editor to `.jscsrc` to follow the project's
 [JavaScript Code Style (JSCS)](https://github.com/jscs-dev/node-jscs) rules.
 
-```
+```bash
 npm run jscs
 ```
 
 ### Known Issues
 
 ```bash
-$  npm install
+npm install
+```
 
+```text
 npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) Permission denied (publickey).
 npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) fatal: Could not read from remote repository.
 npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git)
