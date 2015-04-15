@@ -123,9 +123,12 @@ module.exports = function (params) {
      * @type {RTCMediaStream}
      */
     that.stream = params.stream;
-    attachMediaStream(that.element, that.stream);
-    that.element.autoplay = true;
-    setTimeout(that.element.play.bind(that.element)); // stupid Firefox requires this.
+
+    if (!that.temporary) {
+        attachMediaStream(that.element, that.stream);
+        that.element.autoplay = true;
+        setTimeout(that.element.play.bind(that.element)); // stupid Firefox requires this.
+    }
 
     /**
      * Indicate whether we are receiving a screenshare.
