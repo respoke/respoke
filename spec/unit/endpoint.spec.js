@@ -1,4 +1,5 @@
 "use strict";
+/* global sinon: true */
 
 var expect = chai.expect;
 var _actualSinon = sinon;
