@@ -1,5 +1,5 @@
 /* global sinon: true */
-describe.only("remoteMedia", function () {
+describe("remoteMedia", function () {
     'use strict';
     var _actualSinon = sinon;
     var expect = chai.expect;
