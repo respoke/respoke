@@ -1,5 +1,5 @@
 /* global sinon: false */
-describe.only("remoteMedia", function () {
+describe("remoteMedia", function () {
     'use strict';
     var _actualSinon = sinon;
 
