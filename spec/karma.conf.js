@@ -40,6 +40,13 @@ module.exports = function (config) {
             }
         },
 
+        webpackMiddleware: {
+            // disable verbose output from webpack-dev-middleware
+            noInfo: true,
+            // disable displaying stats about the compiled package
+            stats: false
+        },
+
         plugins: [
             require('karma-webpack'),
             require('karma-sourcemap-loader'),

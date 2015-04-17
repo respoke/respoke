@@ -86,14 +86,15 @@ describe("A Direct Connection", function () {
         }).then(function () {
             followerEndpoint = followeeClient.getEndpoint({ id: followerClient.endpointId });
             followeeEndpoint = followerClient.getEndpoint({ id: followeeClient.endpointId });
+        }, function (err) {
+            expect(err).to.not.exist();
         }).finally(function () {
+            expect(followerEndpoint).to.exist();
+            expect(followeeEndpoint).to.exist();
             expect(followerClient.endpointId).not.to.be.undefined;
             expect(followerClient.endpointId).to.equal(followerToken.endpointId);
             expect(followeeClient.endpointId).not.to.be.undefined;
             expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
-        }).catch(function (error) {
-            expect(error).to.be.defined;
-            expect(error.message).to.be.defined;
         });
     });
 
