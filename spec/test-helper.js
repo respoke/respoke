@@ -9,7 +9,6 @@ window.skipErrorReporting = true;
 var respoke = require('respoke');
 require('respoke-stats');
 
-// TODO: require respoke-stats
 var RespokeAdmin = require('respoke-admin');
 
 var respokeAdmin = new RespokeAdmin({

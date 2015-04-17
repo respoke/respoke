@@ -10,7 +10,7 @@ module.exports = function (config) {
         // base path, that will be used to resolve files and exclude
         basePath: '',
 
-        frameworks: ['mocha', 'chai', 'chai-sinon'],
+        frameworks: ['mocha', 'dirty-chai', 'chai-sinon'],
 
         webpack: {
             devtool: 'inline-source-map',
@@ -45,6 +45,7 @@ module.exports = function (config) {
             require('karma-sourcemap-loader'),
             require('karma-mocha'),
             require('karma-chai'),
+            require('karma-dirty-chai'),
             require('karma-chai-sinon'),
             require('karma-junit-reporter'),
             require('karma-spec-reporter'),
