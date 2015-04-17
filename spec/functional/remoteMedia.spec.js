@@ -1,7 +1,8 @@
-/* global sinon: false */
+/* global sinon: true */
 describe("remoteMedia", function () {
     'use strict';
     var _actualSinon = sinon;
+    var expect = chai.expect;
 
     beforeEach(function () {
         sinon = sinon.sandbox.create();
