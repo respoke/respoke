@@ -1,4 +1,6 @@
 /* global sinon: true */
+var testHelper = require('../test-helper');
+
 describe("remoteMedia", function () {
     'use strict';
     var _actualSinon = sinon;
