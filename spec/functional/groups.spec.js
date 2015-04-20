@@ -8,7 +8,7 @@ var respoke = testHelper.respoke;
 var respokeAdmin = testHelper.respokeAdmin;
 
 describe("Respoke groups", function () {
-    this.timeout(10000);
+    this.timeout(30000);
 
     var followerClient = {};
     var followeeClient = {};

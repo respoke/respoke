@@ -68,33 +68,35 @@ describe("A Direct Connection", function () {
             followerToken = token1;
             followeeToken = token2;
 
+            expect(followerToken.tokenId).to.exist();
+            expect(followeeToken.tokenId).to.exist();
+
             followerClient = respoke.createClient();
+
+            return followerClient.connect({
+                appId: testHelper.config.appId,
+                baseURL: testHelper.config.baseURL,
+                token: followerToken.tokenId
+            });
+        }).then(function () {
             followeeClient = respoke.createClient();
 
-            return respoke.Q.all([
-                followerClient.connect({
-                    appId: testHelper.config.appId,
-                    baseURL: testHelper.config.baseURL,
-                    token: followerToken.tokenId
-                }),
-                followeeClient.connect({
-                    appId: testHelper.config.appId,
-                    baseURL: testHelper.config.baseURL,
-                    token: followeeToken.tokenId
-                })
-            ]);
+            return followeeClient.connect({
+                appId: testHelper.config.appId,
+                baseURL: testHelper.config.baseURL,
+                token: followeeToken.tokenId
+            });
         }).then(function () {
             followerEndpoint = followeeClient.getEndpoint({ id: followerClient.endpointId });
             followeeEndpoint = followerClient.getEndpoint({ id: followeeClient.endpointId });
-        }, function (err) {
-            expect(err).to.not.exist();
-        }).finally(function () {
             expect(followerEndpoint).to.exist();
             expect(followeeEndpoint).to.exist();
             expect(followerClient.endpointId).not.to.be.undefined;
             expect(followerClient.endpointId).to.equal(followerToken.endpointId);
             expect(followeeClient.endpointId).not.to.be.undefined;
             expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
+        }, function (err) {
+            expect(err).to.not.exist();
         });
     });
 
@@ -136,7 +138,9 @@ describe("A Direct Connection", function () {
                         hangupReason = evt.reason;
                         done();
                     }
-                }).done(null, done);
+                }).done(null, function (err) {
+                    done(err);
+                });
             });
 
             afterEach(function () {

@@ -9,7 +9,7 @@ var respokeAdmin = testHelper.respokeAdmin;
 var Q = testHelper.respoke.Q;
 
 describe("Respoke presence", function () {
-    this.timeout(10000);
+    this.timeout(30000);
 
     var followerClient;
     var followeeClient;

@@ -67,7 +67,7 @@ describe("respoke.Client", function () {
             });
         });
 
-        describe("with connectionLimit error", function () {
+        xdescribe("with connectionLimit error", function () {
             it("returns advert with connection limit error", function (done) {
                 var clients = [];
                 var tokens = [];
