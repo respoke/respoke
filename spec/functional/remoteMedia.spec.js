@@ -2,6 +2,7 @@
 describe("remoteMedia", function () {
     'use strict';
     var _actualSinon = sinon;
+    var respoke = testHelper.respoke;
     var expect = chai.expect;
 
     beforeEach(function () {
@@ -83,7 +84,9 @@ describe("remoteMedia", function () {
         });
 
         afterEach(function () {
-            localMedia.stop();
+            if (localMedia) {
+                localMedia.stop();
+            }
         });
 
         it("attaches the stream to the element", function () {

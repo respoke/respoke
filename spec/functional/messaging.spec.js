@@ -137,25 +137,6 @@ describe("Messaging", function () {
         return Q.all(disconnections);
     });
 
-    afterEach(function (done) {
-        var promises = [];
-        if (followerClient.connected) {
-            promises.push(followerClient.disconnect());
-        }
-        if (followeeClient.connected) {
-            promises.push(followeeClient.disconnect());
-        }
-
-        Q.all(promises).fin(function () {
-            testFixture.afterTest(function (err) {
-                if (err) {
-                    return done(err);
-                }
-                done();
-            });
-        }).done();
-    });
-
     describe("two endpoints", function () {
         var params;
 
