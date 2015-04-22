@@ -273,8 +273,8 @@ describe("Messaging", function () {
             });
 
             it("can not send and receive messages via that group", function (done) {
-                this.timeout(4000);
-                setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
+                this.timeout(6000);
+                setTimeout(done, 5990); // sure wish I could do expect(this).to.timeout();
 
                 params = sendNumMessagesEach(5, followerGroup, followeeGroup);
                 params.send.then(function () {
