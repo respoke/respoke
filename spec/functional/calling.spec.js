@@ -123,18 +123,16 @@ describe("Respoke calling", function () {
             done();
         }
 
-        function localMediaStreamReceived() {
+        followeeClient.listen('call', followeeCallHandler);
+
+        localMedia.start().done(function () {
             followeeEndpoint.startCall({
                 sendOnly: true,
                 onConnect: followerCallConnectHandler,
                 onHangup: followerCallHangupHandler,
                 outgoingMedia: localMedia
             });
-        }
-
-        followeeClient.listen('call', followeeCallHandler);
-        localMedia.listen('stream-received', localMediaStreamReceived);
-        localMedia.start();
+        }, done);
     });
 
     describe("effect of hangup on LocalMedia streams", function () {
@@ -159,17 +157,14 @@ describe("Respoke calling", function () {
                 evt.call.accept();
             }
 
-            function localStreamReceivedHandler() {
+            followeeClient.listen('call', followeeClientCallHandler);
+            localMedia.start().done(function () {
                 call = followeeEndpoint.startCall({
                     onConnect: followerCallConnectHandler,
                     onHangup: followerCallHangupHandler,
                     outgoingMedia: localMedia
                 });
-            }
-
-            followeeClient.listen('call', followeeClientCallHandler);
-            localMedia.listen('stream-received', localStreamReceivedHandler);
-            localMedia.start();
+            }, done);
         });
 
         it("hanging up a call calls stop on the LocalMedia if the call created it", function (done) {
@@ -213,19 +208,21 @@ describe("Respoke calling", function () {
 
             beforeEach(function (done) {
                 followeeClient.listen('call', callListener);
-                var doneOnce = doneOnceBuilder(done);
+                done = doneCountBuilder(2, done);
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
+                        console.log('onLocalMedia', evt);
                         localElement = evt.element;
                         stream = evt.stream;
+                        done();
                     },
                     onConnect: function (evt) {
                         remoteElement = evt.element;
-                        doneOnce();
+                        done();
                     },
                     onHangup: function (evt) {
-                        doneOnce(new Error("Call got hung up"));
+                        done(new Error("Call got hung up"));
                     }
                 });
 
@@ -269,7 +266,7 @@ describe("Respoke calling", function () {
                     }
                 });
 
-                localMedia.listen('stream-received', function (evt) {
+                localMedia.start().done(function () {
                     followeeClient.listen('call', callListener);
 
                     call = followeeEndpoint.startCall({
@@ -284,9 +281,7 @@ describe("Respoke calling", function () {
                         },
                         outgoingMedia: localMedia
                     });
-                });
-
-                localMedia.start();
+                }, done);
             });
 
             it("has outgoingMedia with the given LocalMedia object", function () {
