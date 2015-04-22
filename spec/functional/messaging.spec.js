@@ -272,9 +272,9 @@ describe("Messaging", function () {
                 }, done);
             });
 
-            it("can not send and receive messages via that group", function (done) {
-                this.timeout(6000);
-                setTimeout(done, 5990); // sure wish I could do expect(this).to.timeout();
+            xit("can not send and receive messages via that group", function (done) {
+                this.timeout(4000);
+                setTimeout(done, 3990); // sure wish I could do expect(this).to.timeout();
 
                 params = sendNumMessagesEach(5, followerGroup, followeeGroup);
                 params.send.then(function () {
@@ -294,7 +294,7 @@ describe("Messaging", function () {
                 return followerClient.disconnect();
             });
 
-            it("cannot send messages to another endpoint", function (done) {
+            xit("cannot send messages to another endpoint", function (done) {
                 var params;
 
                 this.timeout(4000);
@@ -314,7 +314,7 @@ describe("Messaging", function () {
                 return followeeClient.disconnect();
             });
 
-            it("can not receive messages from another endpoint", function (done) {
+            xit("can not receive messages from another endpoint", function (done) {
                 var params;
 
                 this.timeout(4000);
