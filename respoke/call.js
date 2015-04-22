@@ -607,7 +607,7 @@ module.exports = function (params) {
             });
         }, true);
 
-        localMedia.start();
+        localMedia.start().done();
     }
 
     /**

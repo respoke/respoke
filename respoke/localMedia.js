@@ -30,6 +30,7 @@ module.exports = function (params) {
     "use strict";
     params = params || {};
     var that = respoke.EventEmitter(params);
+    var Q = respoke.Q;
 
     /**
      * @memberof! respoke.LocalMedia
@@ -120,6 +121,14 @@ module.exports = function (params) {
      */
     that.stream = null;
 
+    /**
+     * The deferred
+     * @memberof! respoke.LocalMedia
+     * @name deferred
+     * @type {object}
+     */
+    var deferred = Q.defer();
+
     function getStream(theConstraints) {
         for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
@@ -208,6 +217,7 @@ module.exports = function (params) {
                 element: that.element,
                 stream: that.stream
             });
+            deferred.resolve(that.stream);
         } else {
             that.stream.numPc = 1;
             respoke.streams.push({stream: that.stream, constraints: that.constraints});
@@ -232,6 +242,7 @@ module.exports = function (params) {
                 element: that.element,
                 stream: that.stream
             });
+            deferred.resolve(that.stream);
         }
     }
 
@@ -268,9 +279,13 @@ module.exports = function (params) {
     function requestMedia() {
         var theStream;
         var requestingScreenShare;
+        var error;
 
         if (!that.constraints) {
-            throw new Error('No constraints.');
+            error = new Error('No constraints.');
+            that.fire('error', {error: error.message});
+            deferred.reject(error);
+            return;
         }
 
         if (respoke.useFakeMedia === true) {
@@ -308,7 +323,7 @@ module.exports = function (params) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
                 respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {
-                        log.error("Error trying to get screensharing source.", params.error);
+                        error = new Error("Error trying to get screensharing source: " + params.error);
                         /**
                          * Indicate there has been an error obtaining media.
                          * @event respoke.LocalMedia#error
@@ -317,7 +332,8 @@ module.exports = function (params) {
                          * @property {respoke.LocalMedia} target
                          * @property {string} message - a textual description of the error.
                          */
-                        that.fire('error', {error: 'Permission denied.'});
+                        that.fire('error', {error: error.message});
+                        deferred.reject(error);
                         return;
                     }
                     that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
@@ -330,7 +346,10 @@ module.exports = function (params) {
                 getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 return;
             } else {
-                throw new Error("Screen sharing not implemented on this platform yet.");
+                error = new Error("Screen sharing not implemented on this platform yet.");
+                that.fire('error', {error: error.message});
+                deferred.reject(error);
+                return;
             }
         }
         log.debug("Running getUserMedia with constraints", that.constraints);
@@ -345,30 +364,19 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
-        log.debug('onUserMediaError');
-        if (p.code === 1) {
-            log.warn("Permission denied.");
-            /**
-             * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#error
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             * @property {string} message - a textual description of the error.
-             */
-            that.fire('error', {error: 'Permission denied.'});
-        } else {
-            log.warn(p);
-            /**
-             * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#error
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             * @property {string} message - a textual description of the error.
-             */
-            that.fire('error', {error: p.code});
-        }
+        var errorMessage = p.code === 1 ? "Permission denied." : "Unknown.";
+        var error = new Error("Error getting user media: " + errorMessage);
+        log.warn(error.message);
+        /**
+         * Indicate there has been an error obtaining media.
+         * @event respoke.LocalMedia#error
+         * @type {respoke.Event}
+         * @property {string} name - the event name.
+         * @property {respoke.LocalMedia} target
+         * @property {string} message - a textual description of the error.
+         */
+        that.fire('error', {error: error.message});
+        deferred.reject(error);
     }
 
     /**
@@ -636,22 +644,12 @@ module.exports = function (params) {
      */
     that.start = function () {
         if (that.temporary) {
-            throw new Error("Temporary local media started!");
+            deferred.reject(new Error("Temporary local media started!"));
+        } else {
+            requestMedia();
         }
 
-        try {
-            requestMedia();
-        } catch (err) {
-            clearTimeout(allowTimer);
-            /**
-             * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#error
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             * @property {string} message - a textual description of the error.
-             */
-            that.fire('error', {reason: err.message});
-        }
+        return deferred.promise;
     };
 
     return that;
