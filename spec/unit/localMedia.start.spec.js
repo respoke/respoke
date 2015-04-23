@@ -1,4 +1,4 @@
-describe.only("LocalMedia.start", function () {
+describe("LocalMedia.start", function () {
     'use strict';
 
     /* global sinon: true */
@@ -33,7 +33,7 @@ describe.only("LocalMedia.start", function () {
 
             var localMedia = respoke.LocalMedia({
                 constraints: { audio: false, video: true }
-            })
+            });
             localMedia.start().done(null, done);
 
             localMedia.listen('requesting-media', function (evt) {

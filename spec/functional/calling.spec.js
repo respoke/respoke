@@ -1576,6 +1576,62 @@ describe("Respoke calling", function () {
             });
         });
 
+        describe("with audio and video", function () {
+            describe("in separate multiple streams", function (done) {
+                var localMediaSpy;
+                var remoteMediaSpy;
+                var localEvt;
+
+                beforeEach(function () {
+                    followeeEndpoint.startCall();
+                });
+
+                it("gets all the media", function (done) {
+                    var doneOnce = doneOnceBuilder(done);
+
+                    followeeClient.listen('call', function (evt) {
+                        call = evt.call;
+                        call.answer({
+                            constraints: [{
+                                video: false,
+                                audio: true,
+                                optional: [],
+                                 mandatory: {}
+                            }, {
+                                video: true,
+                                audio: false,
+                                optional: [],
+                                mandatory: {}
+                            }],
+                            onLocalMedia: function (evt) {
+                                expect(localEvt.stream).to.be.ok;
+                                expect(localEvt.element).to.be.ok;
+                                expect(localEvt.stream.getAudioTracks()).to.be.ok;
+                                expect(localEvt.stream.getVideoTracks()).to.be.ok;
+                                expect(call.outgoingMediaStreams.length).to.equal(2);
+                                expect(call.outgoingMediaStreams.hasVideo()).to.equal(true);
+                                expect(call.outgoingMediaStreams.hasAudio()).to.equal(true);
+                                expect(localEvt.element).to.be.ok;
+                                expect(localEvt.element).to.be.ok;
+                                expect(localEvt.stream.getAudioTracks()).to.be.ok;
+                                expect(localEvt.stream.getVideoTracks()).to.be.ok;
+                            },
+                            onConnect: function (evt) {
+                                expect(call.isActive()).to.equal(true);
+                                expect(call.incomingMediaStreams.length).to.equal(1);
+                                expect(call.incomingMediaStreams.hasVideo()).to.equal(true);
+                                expect(call.incomingMediaStreams.hasAudio()).to.equal(true);
+                                expect(call.hasMedia()).to.equal(true);
+                                expect(call.hasAudio).to.equal(true);
+                                expect(call.hasVideo).to.equal(true);
+                                done();
+                            }
+                        });
+                    });
+                });
+            });
+        });
+
         describe("with only video", function () {
             var constraints = {
                 video: true,
