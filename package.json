@@ -1,6 +1,6 @@
 {
   "name": "respoke",
-  "version": "1.29.3",
+  "version": "1.30.0",
   "description": "Client-side JavaScript library for Respoke.",
   "main": "respoke/respoke.js",
   "scripts": {

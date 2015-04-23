@@ -262,6 +262,10 @@ module.exports = function (params) {
             that.constraints.fake = true;
         }
 
+        if (respoke.useFakeMedia === true) {
+            that.constraints.fake = true;
+        }
+
         theStream = getStream(that.constraints);
         if (theStream) {
             log.debug('using old stream');
