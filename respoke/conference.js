@@ -18,7 +18,7 @@ var respoke = require('./respoke');
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {string} params.conferenceId - The id that should be used to create the conference call or the ID
+ * @param {string} params.id - The id that should be used to create the conference call or the ID
  * of the call to join.
  * @param {string} params.instanceId - client id
  * @param {string} params.key - The key that indicates an endpoint can join.
@@ -86,7 +86,7 @@ module.exports = function (params) {
     var that = respoke.EventEmitter({
         open: params.open,
         key: params.key,
-        id: params.conferenceId
+        id: params.id
     });
 
     that.listen('join', params.onJoin);
@@ -103,7 +103,8 @@ module.exports = function (params) {
     delete params.onPresenter;
 
     params.caller = true;
-    delete params.conferenceId;
+    params.conferenceId = params.id;
+    delete params.id;
     delete params.key;
     params.remoteEndpoint = that;
     that.call = respoke.Call(params);
@@ -135,11 +136,11 @@ module.exports = function (params) {
     var client = respoke.getClient(instanceId);
 
     /**
-     * Hang up on the conference call.
+     * Leave the conference.
      * @memberof! respoke.Conference
-     * @method respoke.Conference.hangup
+     * @method respoke.Conference.leave
      */
-    that.hangup = that.call.hangup;
+    that.leave = that.call.hangup;
 
     /**
      * Mute local user's audio.

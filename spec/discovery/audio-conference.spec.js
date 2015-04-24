@@ -10,6 +10,9 @@ describe("Respoke audio conferencing", function () {
     var appId = "";
     var appSecret = "";
     var roleId = "";
+    var appId = "c52e066a-d08c-408b-81c8-e887a31f78cb";
+    var appSecret = "adda3af0-021b-4429-938b-350907cab43b";
+    var roleId = "DEC61209-F2BD-4FC8-A775-9C4355523B88";
 
     it("is configured", function () {
         expect(appId).not.to.equal("");
@@ -106,7 +109,7 @@ describe("Respoke audio conferencing", function () {
                     done();
                 }).done();
             });
-            conf.hangup();
+            conf.leave();
         });
 
         describe("when placing a call", function () {
@@ -117,9 +120,8 @@ describe("Respoke audio conferencing", function () {
             beforeEach(function (done) {
                 var doneOnce = doneOnceBuilder(done);
 
-                conf = client.startConferenceCall({
-                    conferenceId: "conference-service",
-                    open: true,
+                conf = client.joinConference({
+                    id: "conference-service",
                     onLocalMedia: function (evt) {
                         localMedia = evt.stream;
                     },
