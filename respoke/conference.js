@@ -110,7 +110,10 @@ module.exports = function (params) {
     that.call = respoke.Call(params);
 
     // Redirect a bunch of events.
-    ['mute', 'hangup', 'connect'].forEach(function (eventName) {
+    [
+        'mute', 'hangup', 'connect', 'stats', 'error', 'local-stream-received',
+         'remote-stream-received', 'requesting-media', 'approve', 'allow'
+    ].forEach(function (eventName) {
         that.call.listen(eventName, function (evt) {
             evt.call = that.call; // target will be updated to point to this conference object.
             that.fire(eventName, evt);
@@ -148,6 +151,42 @@ module.exports = function (params) {
      * @method respoke.Conference.muteAudio
      */
     that.muteAudio = that.call.muteAudio;
+
+    /**
+     * ## The plugin `respoke.MediaStats` must be loaded before using this method.
+     *
+     * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
+     * Since we have to wait for both the answer and offer to be available before starting
+     * statistics, the library returns a promise for the stats object. The statistics object does not contain the
+     * statistics; rather it contains methods of interacting with the actions of obtaining statistics. To obtain
+     * the actual statistics one time, use stats.getStats(); use the onStats callback to obtain a continuous
+     * stream of statistics every `interval` seconds.  Returns null if stats module is not loaded.
+     *
+     *     conference.getStats({
+     *         onStats: function (evt) {
+     *             console.log('Stats', evt.stats);
+     *         }
+     *     }).done(function () {
+     *         console.log('Stats started');
+     *     }, function (err) {
+     *         console.log('Call is already hung up.');
+     *     });
+     *
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.getStats
+     * @param {object} params
+     * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive
+     * the stats. If no callback is provided, the call's report will contain stats but the developer will not
+     * receive them on the client-side.
+     * @param {respoke.Call.statsSuccessHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Call.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<object>|null}
+     */
+    if (respoke.MediaStats) {
+        that.getStats = that.call.getStats;
+    }
 
     return that;
 };
