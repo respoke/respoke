@@ -98,7 +98,7 @@ describe("Respoke calling", function () {
         });
     });
 
-    afterEach(function (done) {
+    afterEach(function () {
         sinon.restore();
         sinon = _actualSinon;
 
@@ -116,9 +116,7 @@ describe("Respoke calling", function () {
             }
         });
 
-        respoke.Q.all(promises).done(function () {
-            done();
-        }, done);
+        return respoke.Q.all(promises);
     });
 
     it("LocalMedia stop hangs up the call when it is the last stream on the call", function (done) {
