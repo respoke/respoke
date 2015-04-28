@@ -114,8 +114,8 @@ module.exports = function (params) {
 
     // Redirect a bunch of events.
     [
-        'mute', 'hangup', 'connect', 'stats', 'error', 'local-stream-received',
-         'remote-stream-received', 'requesting-media', 'approve', 'allow'
+        'mute', 'hangup', 'connect', 'stats', 'error', 'local-media',
+         'remote-media', 'requesting-media', 'approve', 'allow'
     ].forEach(function (eventName) {
         that.call.listen(eventName, function (evt) {
             evt.call = that.call; // target will be updated to point to this conference object.
