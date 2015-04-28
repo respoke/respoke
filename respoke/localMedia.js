@@ -122,7 +122,7 @@ module.exports = function (params) {
     that.stream = null;
 
     /**
-     * The deferred
+     * The media deferred whose promise is returned from localMedia.start and resolved with the stream.
      * @memberof! respoke.LocalMedia
      * @name deferred
      * @type {object}
