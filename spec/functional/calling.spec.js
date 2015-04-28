@@ -161,7 +161,7 @@ describe("Respoke calling", function () {
 
             function localStreamReceivedHandler() {
                 call = followeeEndpoint.startCall({
-                    onConnect: followerCallConnectHandler,
+                    onRemoteMedia: followerCallConnectHandler,
                     onHangup: followerCallHangupHandler,
                     outgoingMedia: localMedia
                 });
@@ -193,7 +193,7 @@ describe("Respoke calling", function () {
 
             followeeClient.listen('call', followeeClientCallHandler);
             call = followeeEndpoint.startCall({
-                onConnect: followerCallConnectHandler,
+                onRemoteMedia: followerCallConnectHandler,
                 onHangup: followerCallHangupHandler
             });
         });
@@ -220,7 +220,7 @@ describe("Respoke calling", function () {
                         localElement = evt.element;
                         stream = evt.stream;
                     },
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         remoteElement = evt.element;
                         doneOnce();
                     },
@@ -276,7 +276,7 @@ describe("Respoke calling", function () {
                         onLocalMedia: function (evt) {
                             stream = evt.stream;
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             doneOnce();
                         },
                         onHangup: function (evt) {
@@ -334,7 +334,7 @@ describe("Respoke calling", function () {
                             doneOnce(e);
                         }
                     },
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         try {
                             expect(evt.stream).to.be.ok;
                             expect(evt.element).to.be.ok;
@@ -382,7 +382,7 @@ describe("Respoke calling", function () {
                 });
 
                 call = followeeEndpoint.startCall({
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         setTimeout(doneOnce, 200);
                     },
                     onHangup: function (evt) {
@@ -423,7 +423,7 @@ describe("Respoke calling", function () {
 
                 call = followeeEndpoint.startCall({
                     forceTurn: true,
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         setTimeout(doneOnce, 200);
                     }
                 });
@@ -479,7 +479,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             try {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream).to.be.ok;
@@ -525,7 +525,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             try {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream).to.be.ok;
@@ -581,7 +581,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             try {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream).to.be.ok;
@@ -637,7 +637,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             try {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.element).to.be.ok;
@@ -683,7 +683,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             try {
                                 expect(evt.element).to.be.ok;
                                 expect(evt.stream).to.be.ok;
@@ -714,6 +714,11 @@ describe("Respoke calling", function () {
         describe("with one-way media", function () {
             describe("originating from caller", function () {
                 describe("with constraints as well as receiveOnly flag", function () {
+                    var remoteMediaError;
+                    var localElement;
+                    var localStream;
+                    var connectElement;
+                    var onRemoteMedia = sinon.spy();
                     var noMediaCallListener = function (evt) {
                         if (evt.call.caller !== true) {
                             evt.call.answer({
@@ -726,15 +731,9 @@ describe("Respoke calling", function () {
                         }
                     };
 
-                    beforeEach(function () {
+                    beforeEach(function (done) {
                         followeeClient.listen('call', noMediaCallListener);
-                    });
 
-                    afterEach(function () {
-                        followeeClient.ignore('call', noMediaCallListener);
-                    });
-
-                    it("caller and callee send and receive the right things", function (done) {
                         var doneOnce = doneOnceBuilder(done);
 
                         call = followeeEndpoint.startCall({
@@ -745,43 +744,56 @@ describe("Respoke calling", function () {
                                 mandatory: {}
                             },
                             onLocalMedia: function (evt) {
-                                try {
-                                    expect(evt.stream).to.be.ok;
-                                    expect(evt.element).to.be.ok;
-                                    expect(evt.stream.getAudioTracks()).to.be.ok;
-                                    expect(evt.stream.getVideoTracks()).to.be.ok;
-                                    expect(call.outgoingMediaStreams.length).to.equal(1);
-                                    expect(call.outgoingMedia.hasVideo()).to.equal(true);
-                                    expect(call.outgoingMedia.hasAudio()).to.equal(true);
-                                    expect(call.outgoingMediaStreams.hasVideo()).to.equal(true);
-                                    expect(call.outgoingMediaStreams.hasAudio()).to.equal(true);
-                                } catch (e) {
-                                    doneOnce(e);
-                                }
+                                localStream = evt.stream;
+                                localElement = evt.element;
                             },
+                            onRemoteMedia: onRemoteMedia,
                             onConnect: function (evt) {
-                                try {
-                                    expect(evt.element).to.be.undefined;
-                                    expect(call.incomingMedia).to.equal(undefined);
-                                    expect(call.incomingMediaStreams.length).to.equal(0);
-                                    expect(call.incomingMediaStreams.hasVideo()).to.equal(false);
-                                    expect(call.incomingMediaStreams.hasAudio()).to.equal(false);
-                                    expect(call.hasMedia()).to.equal(true);
-                                    expect(call.hasAudio).to.equal(false);
-                                    expect(call.hasVideo).to.equal(false);
+                                connectElement = evt.element;
+                                // give time to catch remote media event.
+                                setTimeout(function () {
                                     doneOnce();
-                                } catch (e) {
-                                    doneOnce(e);
-                                }
+                                }, 1000);
                             },
                             onHangup: function (evt) {
                                 doneOnce(new Error("Call got hung up"));
                             }
                         });
                     });
+
+                    afterEach(function () {
+                        followeeClient.ignore('call', noMediaCallListener);
+                    });
+
+                    it("caller and callee send and receive the right things", function () {
+                        expect(localStream).to.be.ok;
+                        expect(localElement).to.be.ok;
+                        expect(localStream.getAudioTracks()).to.be.ok;
+                        expect(localStream.getVideoTracks()).to.be.ok;
+                        expect(call.outgoingMediaStreams.length).to.equal(1);
+                        expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                        expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                        expect(call.outgoingMediaStreams.hasVideo()).to.equal(true);
+                        expect(call.outgoingMediaStreams.hasAudio()).to.equal(true);
+
+                        expect(connectElement).to.be.undefined;
+                        expect(call.incomingMedia).to.equal(undefined);
+                        expect(call.incomingMediaStreams.length).to.equal(0);
+                        expect(call.incomingMediaStreams.hasVideo()).to.equal(false);
+                        expect(call.incomingMediaStreams.hasAudio()).to.equal(false);
+                        expect(call.hasMedia()).to.equal(true);
+                        expect(call.hasAudio).to.equal(false);
+                        expect(call.hasVideo).to.equal(false);
+                        expect(onRemoteMedia.called).to.equal(false);
+                    });
                 });
 
                 describe("with only the receiveOnly flag", function () {
+                    var remoteMediaError;
+                    var localElement;
+                    var localStream;
+                    var connectElement;
+                    var onRemoteMedia = sinon.spy();
                     var noMediaCallListener = function (evt) {
                         if (evt.call.caller !== true) {
                             evt.call.answer({
@@ -790,50 +802,60 @@ describe("Respoke calling", function () {
                         }
                     };
 
-                    beforeEach(function () {
+                    beforeEach(function (done) {
                         followeeClient.listen('call', noMediaCallListener);
+
+                        var doneOnce = doneOnceBuilder(done);
+
+                        call = followeeEndpoint.startCall({
+                            constraints: {
+                                video: true,
+                                audio: true,
+                                optional: [],
+                                mandatory: {}
+                            },
+                            onLocalMedia: function (evt) {
+                                localStream = evt.stream;
+                                localElement = evt.element;
+                            },
+                            onRemoteMedia: onRemoteMedia,
+                            onConnect: function (evt) {
+                                connectElement = evt.element;
+                                // give time to catch remote media event.
+                                setTimeout(function () {
+                                    doneOnce();
+                                }, 1000);
+                            },
+                            onHangup: function (evt) {
+                                doneOnce(new Error("Call got hung up"));
+                            }
+                        });
                     });
 
                     afterEach(function () {
                         followeeClient.ignore('call', noMediaCallListener);
                     });
 
-                    it("caller and callee send and receive the right things", function (done) {
-                        var doneOnce = doneOnceBuilder(done);
+                    it("caller and callee send and receive the right things", function () {
+                        expect(localStream).to.be.ok;
+                        expect(localElement).to.be.ok;
+                        expect(localStream.getAudioTracks()).to.be.ok;
+                        expect(localStream.getVideoTracks()).to.be.ok;
+                        expect(call.outgoingMediaStreams.length).to.equal(1);
+                        expect(call.outgoingMedia.hasVideo()).to.equal(true);
+                        expect(call.outgoingMedia.hasAudio()).to.equal(true);
+                        expect(call.outgoingMediaStreams.hasVideo()).to.equal(true);
+                        expect(call.outgoingMediaStreams.hasAudio()).to.equal(true);
 
-                        call = followeeEndpoint.startCall({
-                            onLocalMedia: function (evt) {
-                                try {
-                                    expect(evt.stream).to.be.ok;
-                                    expect(evt.element).to.be.ok;
-                                    expect(evt.stream.getAudioTracks()).to.be.ok;
-                                    expect(evt.stream.getVideoTracks()).to.be.ok;
-                                    expect(call.outgoingMediaStreams.length).to.equal(1);
-                                    expect(call.outgoingMedia.hasVideo()).to.equal(true);
-                                    expect(call.outgoingMedia.hasAudio()).to.equal(true);
-                                } catch (e) {
-                                    doneOnce(e);
-                                }
-                            },
-                            onConnect: function (evt) {
-                                try {
-                                    expect(evt.element).to.be.undefined;
-                                    expect(call.incomingMediaStreams.length).to.equal(0);
-                                    expect(call.incomingMedia).to.equal(undefined);
-                                    expect(call.incomingMediaStreams.hasVideo()).to.equal(false);
-                                    expect(call.incomingMediaStreams.hasAudio()).to.equal(false);
-                                    expect(call.hasMedia()).to.equal(true);
-                                    expect(call.hasAudio).to.equal(false);
-                                    expect(call.hasVideo).to.equal(false);
-                                    doneOnce();
-                                } catch (e) {
-                                    doneOnce(e);
-                                }
-                            },
-                            onHangup: function (evt) {
-                                doneOnce(new Error("Call got hung up"));
-                            }
-                        });
+                        expect(connectElement).to.be.undefined;
+                        expect(call.incomingMedia).to.equal(undefined);
+                        expect(call.incomingMediaStreams.length).to.equal(0);
+                        expect(call.incomingMediaStreams.hasVideo()).to.equal(false);
+                        expect(call.incomingMediaStreams.hasAudio()).to.equal(false);
+                        expect(call.hasMedia()).to.equal(true);
+                        expect(call.hasAudio).to.equal(false);
+                        expect(call.hasVideo).to.equal(false);
+                        expect(onRemoteMedia.called).to.equal(false);
                     });
                 });
             });
@@ -871,7 +893,7 @@ describe("Respoke calling", function () {
                             optional: [],
                             mandatory: {}
                         },
-                        onConnect: function (evt) {
+                        onRemoteMedia: function (evt) {
                             try {
                                 expect(evt.stream).to.be.ok;
                                 expect(evt.element).to.be.ok;
@@ -917,7 +939,7 @@ describe("Respoke calling", function () {
                             doneOnce(e);
                         }
                     },
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         doneOnce();
                     },
                     onHangup: function (evt) {
@@ -930,7 +952,7 @@ describe("Respoke calling", function () {
                 var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startVideoCall({
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         try {
                             expect(call.incomingMediaStreams.length).to.equal(0);
                             expect(call.incomingMedia).to.equal(undefined);
@@ -987,7 +1009,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("succeeds", function (done) {
-                    call.listen('local-stream-received', function (evt) {
+                    call.listen('local-media', function (evt) {
                         done();
                     });
                     call.listen('requesting-media', function (evt) {
@@ -1040,7 +1062,7 @@ describe("Respoke calling", function () {
                 followeeClient.listen('call', callListener);
             });
 
-            it("gets called before onApprove and onConnect", function (done) {
+            it("gets called before onApprove and onRemoteMedia", function (done) {
                 var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
@@ -1050,8 +1072,8 @@ describe("Respoke calling", function () {
                     onApprove: function (evt) {
                         doneOnce(new Error("onApprove got called first."));
                     },
-                    onConnect: function (evt) {
-                        doneOnce(new Error("onConnect got called first."));
+                    onRemoteMedia: function (evt) {
+                        doneOnce(new Error("onRemoteMedia got called first."));
                     },
                     onHangup: function (evt) {
                         doneOnce(new Error("Call got hung up"));
@@ -1196,7 +1218,7 @@ describe("Respoke calling", function () {
                         localStream = evt.stream;
                         call.outgoingMedia.listen('mute', muteSpy2);
                     },
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         remoteStream = evt.stream;
                         done();
                     },
@@ -1312,7 +1334,7 @@ describe("Respoke calling", function () {
                     optional: [],
                     mandatory: {}
                 },
-                onConnect: function (evt) {
+                onRemoteMedia: function (evt) {
                     done();
                 }
             });
@@ -1336,7 +1358,7 @@ describe("Respoke calling", function () {
                     optional: [],
                     mandatory: {}
                 },
-                onConnect: function (evt) {
+                onRemoteMedia: function (evt) {
                     try {
                         expect(evt.stream).to.be.ok;
                         expect(evt.element).to.be.ok;
@@ -1428,7 +1450,7 @@ describe("Respoke calling", function () {
                         call = evt.call;
                         call.answer({
                             constraints: constraints,
-                            onConnect: function (evt) {
+                            onRemoteMedia: function (evt) {
                                 try {
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
@@ -1497,7 +1519,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onConnect: function (evt) {
+                            onRemoteMedia: function (evt) {
                                 try {
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
@@ -1562,7 +1584,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onConnect: function (evt) {
+                            onRemoteMedia: function (evt) {
                                 try {
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
@@ -1617,7 +1639,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onConnect: function (evt) {
+                            onRemoteMedia: function (evt) {
                                 try {
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.empty;
@@ -1680,7 +1702,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onConnect: function (evt) {
+                            onRemoteMedia: function (evt) {
                                 try {
                                     expect(evt.stream).to.be.ok;
                                     expect(evt.stream.getAudioTracks()).to.be.ok;
@@ -1727,7 +1749,7 @@ describe("Respoke calling", function () {
                             onLocalMedia: function (evt) {
                                 localElement = evt.element;
                             },
-                            onConnect: function (evt) {
+                            onRemoteMedia: function (evt) {
                                 remoteElement = evt.element;
                                 doneOnce();
                             },

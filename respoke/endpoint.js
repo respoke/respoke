@@ -145,9 +145,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
-     * element with the remote
-     * audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
@@ -202,9 +203,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
-     * element with the remote
-     * audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
@@ -270,8 +272,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
-     * and the remote party has received the video.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
@@ -326,9 +330,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video
-     * element with the remote
-     * audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
