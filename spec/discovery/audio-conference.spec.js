@@ -6,15 +6,11 @@ describe("Respoke audio conferencing", function () {
 
     var conf;
     var client;
-    var baseURL = "https://api-int.respoke.io";
-    var appId = "";
-    var appSecret = "";
-    var roleId = "";
 
     it("is configured", function () {
-        expect(appId).not.to.equal("");
-        expect(appSecret).not.to.equal("");
-        expect(roleId).not.to.equal("");
+        expect(respokeTestConfig.appId).not.to.equal("");
+        expect(respokeTestConfig.appSecret).not.to.equal("");
+        expect(respokeTestConfig.roleId).not.to.equal("");
     });
 
     function request(params, callback) {
@@ -22,10 +18,10 @@ describe("Respoke audio conferencing", function () {
         var paramString;
         var response = {};
 
-        xhr.open(params.method, baseURL + params.path);
+        xhr.open(params.method, respokeTestConfig.baseURL + params.path);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         if (params.appSecret) {
-            xhr.setRequestHeader("App-Secret", appSecret);
+            xhr.setRequestHeader("App-Secret", respokeTestConfig.appSecret);
         }
 
         if (['POST', 'PUT'].indexOf(params.method) > -1) {
@@ -39,7 +35,7 @@ describe("Respoke audio conferencing", function () {
             return;
         }
 
-        console.log(params.method, baseURL + params.path, paramString);
+        console.log(params.method, respokeTestConfig.baseURL + params.path, paramString);
         xhr.onreadystatechange = function () {
             if (this.readyState !== 4) {
                 return;
@@ -76,9 +72,9 @@ describe("Respoke audio conferencing", function () {
                 path: "/v1/tokens",
                 appSecret: true,
                 parameters: {
-                    appId: appId,
+                    appId: respokeTestConfig.appId,
                     endpointId: "test",
-                    roleId: roleId,
+                    roleId: respokeTestConfig.roleId,
                     ttl: 84600
                 }
             }, function (err, response) {
@@ -89,8 +85,8 @@ describe("Respoke audio conferencing", function () {
 
                 client = respoke.createClient();
                 client.connect({
-                    appId: appId,
-                    baseURL: baseURL,
+                    appId: respokeTestConfig.appId,
+                    baseURL: respokeTestConfig.baseURL,
                     token:  response.result.tokenId
                 }).done(function () {
                     expect(client.endpointId).not.to.be.undefined;
@@ -146,6 +142,16 @@ describe("Respoke audio conferencing", function () {
                 expect(conf.call.hasMedia()).to.equal(true);
                 expect(conf.call.hasAudio).to.equal(true);
                 expect(conf.call.hasVideo).to.equal(false);
+            });
+
+            describe("the getParticipants method", function () {
+                it("returns an array of connections", function (done) {
+                    conf.getParticipants().done(function (participants) {
+                        expect(participants).to.be.an.Array;
+                        expect(participants.length).to.equal(2);
+                        expect(participants[0].className).to.equal("respoke.Connection");
+                    }, done);
+                });
             });
         });
     });

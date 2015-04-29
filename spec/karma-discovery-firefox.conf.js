@@ -16,6 +16,7 @@ module.exports = function(config) {
           '../respoke.min.js',
           '../respoke-stats.min.js',
           'util/config.js',
+          'util/discovery-conf.js',
           'util/mock_module.js', // Must be loaded after loglevel.js b/c of `module` check.
           '../../../../collective/lib/seeds_data.js',
           '../../../../collective/assets/js/jquery.js',
