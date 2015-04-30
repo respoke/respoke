@@ -44,12 +44,6 @@ log.methodFactory = function logMethodFactory(methodName, logLevel) {
     };
 };
 
-var Q = require('q');
-Q.longStackSupport = true;
-Q.stackJumpLimit = 5;
-Q.longStackJumpLimit = 20;
-Q.stopUnhandledRejectionTracking();
-
 require('./deps/adapter');
 
 /**
@@ -148,8 +142,14 @@ require('./deps/adapter');
 var EventEmitter = require('./event');
 var respoke = module.exports = EventEmitter({
     buildNumber: 'NO BUILD NUMBER',
-    streams: []
+    streams: [],
+    Q: require('q')
 });
+
+respoke.Q.longStackSupport = true;
+respoke.Q.stackJumpLimit = 5;
+respoke.Q.longStackJumpLimit = 20;
+respoke.Q.stopUnhandledRejectionTracking();
 
 /**
  * A map of respoke.Client instances available for use. This is useful if you would like to separate some
@@ -275,7 +275,6 @@ respoke.Call = require('./call');
 respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.Conference = require('./conference');
-respoke.Q = Q;
 
 /*
  * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
@@ -872,7 +871,7 @@ respoke.getScreenShareConstraints = function (params) {
 respoke.getScreenShareMedia = function (params) {
     params = params || {};
 
-    var deferred = Q.defer();
+    var deferred = respoke.Q.defer();
 
     var criteria = {
         source: params.source,

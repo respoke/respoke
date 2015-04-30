@@ -12,6 +12,7 @@
 /* global respoke: true */
 var respoke = require('./respoke');
 var log = respoke.log;
+var Q = respoke.Q;
 
 /**
  * A wrapper around the stream from `getUserMedia`,
@@ -30,7 +31,6 @@ module.exports = function (params) {
     "use strict";
     params = params || {};
     var that = respoke.EventEmitter(params);
-    var Q = respoke.Q;
 
     /**
      * @memberof! respoke.LocalMedia
@@ -126,6 +126,7 @@ module.exports = function (params) {
      * @memberof! respoke.LocalMedia
      * @name deferred
      * @type {object}
+     * @private
      */
     var deferred = Q.defer();
 
@@ -256,10 +257,6 @@ module.exports = function (params) {
         if (!that.constraints) {
             deferred.reject(new Error('No constraints.'));
             return;
-        }
-
-        if (respoke.useFakeMedia === true) {
-            that.constraints.fake = true;
         }
 
         if (respoke.useFakeMedia === true) {
