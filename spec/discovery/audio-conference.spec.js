@@ -150,6 +150,7 @@ describe("Respoke audio conferencing", function () {
                         expect(participants).to.be.an.Array;
                         expect(participants.length).to.equal(2);
                         expect(participants[0].className).to.equal("respoke.Connection");
+                        done();
                     }, done);
                 });
             });
