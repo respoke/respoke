@@ -55,7 +55,7 @@ describe("respoke.Client", function () {
 
             it("succeeds and assigns an endpointId", function (done) {
                 client.connect({
-                    baseURL: testHelper.baseURL,
+                    baseURL: testHelper.config.baseURL,
                     token: token.tokenId
                 }).done(function onSuccess() {
                     expect(client.endpointId).not.to.be.undefined;
@@ -75,7 +75,7 @@ describe("respoke.Client", function () {
 
                 for (var i = 1; i <= goal; i += 1) {
                     clients.push(respoke.createClient({
-                        baseURL: testHelper.baseURL,
+                        baseURL: testHelper.config.baseURL,
                         appId: testEnv.app.id
                     }));
                 }
@@ -113,7 +113,7 @@ describe("respoke.Client", function () {
 
             //     for (var i = 1; i <= goal; i += 1) {
             //         clients.push(respoke.createClient({
-            //             baseURL: testHelper.baseURL,
+            //             baseURL: testHelper.config.baseURL,
             //             appId: testEnv.app.id
             //         }));
             //     }
@@ -172,7 +172,7 @@ describe("respoke.Client", function () {
 
             it("fails to connect", function (done) {
                 client.connect({
-                    baseURL: testHelper.baseURL,
+                    baseURL: testHelper.config.baseURL,
                     token: 'blahblahblahblah'
                 }).done(function onSuccess() {
                     done(new Error("Connect with invalid token should not work!"));
