@@ -532,7 +532,7 @@ module.exports = function (params) {
         var localMedia;
 
         if (pc.state.receiveOnly) {
-            return;
+            return Q.reject(new Error("Shouldn't have requested local media when receiveOnly is true."));
         }
 
         if (constraint.className === 'respoke.LocalMedia') {
@@ -546,7 +546,7 @@ module.exports = function (params) {
             that.outgoingMediaStreams.push(localMedia);
         }
 
-        // Use the element for only one set of constraints, and make sure its one that has video.
+        // Use the element for only one set of constraints, and make sure it's one that has video.
         if (respoke.constraintsHasVideo(localMedia.constraints) &&
                 that.videoLocalElement && !that.videoLocalElement.used) {
             that.videoLocalElement.used = true;
@@ -590,24 +590,10 @@ module.exports = function (params) {
                 previewLocalMedia: previewLocalMedia
             });
         }, true);
-        localMedia.listen('stream-received', streamReceivedHandler, true);
-        localMedia.listen('error', function errorHandler(evt) {
-            pc.state.dispatch('reject', {reason: 'media stream error'});
-            pc.report.callStoppedReason = evt.reason;
-            /**
-             * This event is fired on errors that occur during call setup or media negotiation.
-             * @event respoke.Call#error
-             * @type {respoke.Event}
-             * @property {string} reason - A human readable description about the error.
-             * @property {respoke.Call} target
-             * @property {string} name - the event name.
-             */
-            that.fire('error', {
-                reason: evt.reason
-            });
-        }, true);
 
-        localMedia.start();
+        return localMedia.start().then(function () {
+            streamReceivedHandler(localMedia);
+        });
     }
 
     /**
@@ -806,6 +792,24 @@ module.exports = function (params) {
         that.incomingMediaStreams.push(remoteMedia);
 
         /**
+         * Indicates that remote media stream has been added to the call.
+         * @event respoke.Call#remote-stream-received
+         * @type {respoke.Event}
+         * @property {Element} element - The HTML5 Video element with the remote stream attached.
+         * @property {respoke.RemoteMedia} stream - The incomingMedia property on the call.
+         * @property {string} name - The event name.
+         * @property {respoke.Call} target
+         */
+        that.fire('remote-stream-received', {
+            stream: remoteMedia
+        });
+
+        if (that.incomingMediaStreams.length < pc.sdpExpectedStreamCount) {
+            // there are more streams left to receive before we can dispatch the event to the state machine.
+            return;
+        }
+
+        /**
          * Indicates that either remote media stream has been added to the call or if no
          * media is expected, the other side is receiving our media.
          * @event respoke.Call#connect
@@ -893,23 +897,28 @@ module.exports = function (params) {
         return that.incomingMediaStreams[0] ? that.incomingMediaStreams[0].element : undefined;
     };
 
-    function streamReceivedHandler(evt) {
+    /**
+     * Set up the local media.
+     * @memberof! respoke.Call
+     * @method respoke.Call.streamReceivedHandler
+     * @param {respoke.LocalMedia} The local media.
+     * @private
+     */
+    function streamReceivedHandler(localMedia) {
         if (!pc) {
             return;
         }
 
-        defMedia.resolve(evt.target);
-        pc.addStream(evt.stream);
-        pc.state.dispatch('receiveLocalMedia');
-        if (typeof previewLocalMedia === 'function') {
-            previewLocalMedia(evt.element, that);
+        pc.addStream(localMedia.stream);
+        if (typeof previewLocalMedia === 'function' && localMedia.element) {
+            previewLocalMedia(localMedia.element, that);
         }
 
-        evt.target.listen('stop', function stopHandler(/* evt */) {
+        localMedia.listen('stop', function stopHandler(/* evt */) {
             // if the local media has stopped, it has already been removed from respoke.streams.
             // just need to remove it from the call's streams, and hangup if no streams left.
 
-            var idx = that.outgoingMediaStreams.indexOf(evt.target);
+            var idx = that.outgoingMediaStreams.indexOf(localMedia);
             if (idx > -1) {
                 that.outgoingMediaStreams.splice(idx, 1);
             }
@@ -929,8 +938,8 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         that.fire('local-stream-received', {
-            element: evt.element,
-            stream: evt.target
+            element: localMedia.element,
+            stream: localMedia
         });
 
         /**
@@ -942,7 +951,7 @@ module.exports = function (params) {
          * has been changed.
          * @property {boolean} muted - Whether the stream is now muted. Will be set to false if mute was turned off.
          */
-        evt.target.listen('mute', function (evt) {
+        localMedia.listen('mute', function (evt) {
             that.fire('mute', {
                 type: evt.type,
                 muted: evt.muted
@@ -1745,6 +1754,8 @@ module.exports = function (params) {
     }, true);
 
     that.listen('answer', function (evt) {
+        var mediaPromises = [];
+
         if (pc.state.receiveOnly || pc.state.needDirectConnection) {
             that.outgoingMediaStreams.length = 0;
             return;
@@ -1785,12 +1796,35 @@ module.exports = function (params) {
 
         if (that.constraints.length > 0) {
             that.outgoingMediaStreams.length = 0;
-            that.constraints.forEach(buildLocalMedia);
+            that.constraints.forEach(function (constraint) {
+                mediaPromises.push(buildLocalMedia(constraint));
+            });
         } else if (that.outgoingMediaStreams.length > 0) {
-            that.outgoingMediaStreams.forEach(buildLocalMedia);
+            that.outgoingMediaStreams.forEach(function (stream) {
+                mediaPromises.push(buildLocalMedia(stream));
+            });
         } else {
             throw new Error("I have no idea what type of media I am supposed to build.");
         }
+
+        // These errors are handled elsewhere.
+        Q.all(mediaPromises).done(function () {
+            pc.state.dispatch('receiveLocalMedia');
+        }, function (err) {
+            pc.state.dispatch('reject', {reason: 'media stream error'});
+            pc.report.callStoppedReason = err.message;
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event respoke.Call#error
+             * @type {respoke.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {respoke.Call} target
+             * @property {string} name - the event name.
+             */
+            that.fire('error', {
+                reason: err.message
+            });
+        });
     }, true);
 
     if (pc.state.needDirectConnection !== true) {
@@ -1820,11 +1854,8 @@ module.exports = function (params) {
         init();
 
         if (params.outgoingMedia) {
-            streamReceivedHandler({
-                stream: params.outgoingMedia.stream,
-                target: params.outgoingMedia,
-                element: params.outgoingMedia.element
-            });
+            streamReceivedHandler(params.outgoingMedia);
+            pc.state.dispatch('receiveLocalMedia');
         }
 
         if (pc.state.caller === true) {

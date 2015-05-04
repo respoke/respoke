@@ -16,12 +16,10 @@ describe("Respoke local media", function () {
         }
 
         function localMedia1StreamReceivedHandler() {
-            localMedia2.start();
+            localMedia2.start().done(localMedia2StreamReceivedHandler, done);
         }
 
-        localMedia1.listen('stream-received', localMedia1StreamReceivedHandler);
-        localMedia2.listen('stream-received', localMedia2StreamReceivedHandler);
-        localMedia1.start();
+        localMedia1.start().done(localMedia1StreamReceivedHandler, done);
     });
 
     describe("when obtaining local media", function () {
@@ -30,13 +28,13 @@ describe("Respoke local media", function () {
         var errorSpy;
         var audioTracks;
         var videoTracks;
-        var streamReceivedSpy;
+        var promiseResolvedSpy;
         var requestingMediaSpy;
 
         beforeEach(function () {
             sinon.stub(respoke, 'getClient').returns({endpointId: 'blah'});
             allowSpy = sinon.spy();
-            streamReceivedSpy = sinon.spy();
+            promiseResolvedSpy = sinon.spy();
             requestingMediaSpy = sinon.spy();
             errorSpy = sinon.spy();
         });
@@ -44,7 +42,7 @@ describe("Respoke local media", function () {
         afterEach(function () {
             respoke.getClient.restore();
             allowSpy = null;
-            streamReceivedSpy = null;
+            promiseResolvedSpy = null;
             errorSpy = null;
             audioTracks = null;
             videoTracks = null;
@@ -62,20 +60,16 @@ describe("Respoke local media", function () {
                     }
                 });
                 localMedia.listen('allow', allowSpy);
-                localMedia.listen('stream-received', function (evt) {
-                    audioTracks = evt.stream.getAudioTracks();
-                    videoTracks = evt.stream.getVideoTracks();
-                    streamReceivedSpy();
-                    done();
-                });
                 /*
                  * Can't test "requesting-media" eventbc we put a 500ms timeout on it as to not flash UI
                  * when auto-answered.
                  */
-                localMedia.listen('error', function () {
-                    errorSpy();
-                });
-                localMedia.start();
+                localMedia.start().done(function () {
+                    audioTracks = localMedia.getAudioTracks();
+                    videoTracks = localMedia.getVideoTracks();
+                    promiseResolvedSpy();
+                    setTimeout(done);
+                }, done);
             });
 
             afterEach(function () {
@@ -93,8 +87,8 @@ describe("Respoke local media", function () {
                 expect(allowSpy.called).to.equal(true);
             });
 
-            it("fires the 'stream-received' event", function () {
-                expect(streamReceivedSpy.called).to.equal(true);
+            it("resolves the promise", function () {
+                expect(promiseResolvedSpy.called).to.equal(true);
             });
 
             it("does not fire the 'error' event", function () {
@@ -234,20 +228,16 @@ describe("Respoke local media", function () {
                     }
                 });
                 localMedia.listen('allow', allowSpy);
-                localMedia.listen('stream-received', function (evt) {
-                    audioTracks = evt.stream.getAudioTracks();
-                    videoTracks = evt.stream.getVideoTracks();
-                    streamReceivedSpy();
-                    done();
-                });
                 /*
                  * Can't test "requesting-media" eventbc we put a 500ms timeout on it as to not flash UI
                  * when auto-answered.
                  */
-                localMedia.listen('error', function () {
-                    errorSpy();
-                });
-                localMedia.start();
+                localMedia.start().done(function () {
+                    audioTracks = localMedia.getAudioTracks();
+                    videoTracks = localMedia.getVideoTracks();
+                    promiseResolvedSpy();
+                    setTimeout(done);
+                }, errorSpy);
             });
 
             afterEach(function () {
@@ -265,8 +255,8 @@ describe("Respoke local media", function () {
                 expect(allowSpy.called).to.equal(true);
             });
 
-            it("fires the 'stream-received' event", function () {
-                expect(streamReceivedSpy.called).to.equal(true);
+            it("resolves the promise", function () {
+                expect(promiseResolvedSpy.called).to.equal(true);
             });
 
             it("does not fire the 'error' event", function () {
@@ -352,20 +342,16 @@ describe("Respoke local media", function () {
                     }
                 });
                 localMedia.listen('allow', allowSpy);
-                localMedia.listen('stream-received', function (evt) {
-                    audioTracks = evt.stream.getAudioTracks();
-                    videoTracks = evt.stream.getVideoTracks();
-                    streamReceivedSpy();
-                    done();
-                });
                 /*
                  * Can't test "requesting-media" eventbc we put a 500ms timeout on it as to not flash UI
                  * when auto-answered.
                  */
-                localMedia.listen('error', function () {
-                    errorSpy();
-                });
-                localMedia.start();
+                localMedia.start().done(function () {
+                    audioTracks = localMedia.getAudioTracks();
+                    videoTracks = localMedia.getVideoTracks();
+                    promiseResolvedSpy();
+                    setTimeout(done);
+                }, errorSpy);
             });
 
             afterEach(function () {
@@ -383,8 +369,8 @@ describe("Respoke local media", function () {
                 expect(allowSpy.called).to.equal(true);
             });
 
-            it("fires the 'stream-received' event", function () {
-                expect(streamReceivedSpy.called).to.equal(true);
+            it("resolves the promise", function () {
+                expect(promiseResolvedSpy.called).to.equal(true);
             });
 
             it("does not fire the 'error' event", function () {

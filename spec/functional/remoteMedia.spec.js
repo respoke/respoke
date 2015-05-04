@@ -77,11 +77,9 @@ describe("remoteMedia", function () {
                 constraints: { audio: false, video: true, fake: true }
             });
 
-            localMedia.once('stream-received', function () {
+            localMedia.start().done(function () {
                 done();
-            });
-
-            localMedia.start();
+            }, done);
         });
 
         afterEach(function () {
