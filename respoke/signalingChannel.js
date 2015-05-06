@@ -488,6 +488,42 @@ module.exports = function (params) {
     };
 
     /**
+     * Retrieve the list of participants in the specified conference.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.getConferenceParticipants
+     * @private
+     * @returns {Promise<respoke.Connection>}
+     * @param {object} params
+     * @param {string} params.id
+     */
+    that.getConferenceParticipants = function (params) {
+        params = params || {};
+        var deferred = Q.defer();
+
+        if (!that.isConnected()) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
+        wsCall({
+            httpMethod: 'GET',
+            path: '/v1/conferences/%s/participants/',
+            objectId: params.id
+        }).then(function successHandler(participants) {
+            deferred.resolve(participants.map(function (par) {
+                return client.getConnection({
+                    connectionId: par.connectionId,
+                    endpointId: par.endpointId
+                });
+            }));
+        }, function errorHandler(err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    };
+
+    /**
      * Get or create a group in the infrastructure.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getGroup
@@ -499,7 +535,6 @@ module.exports = function (params) {
     that.getGroup = function (params) {
         params = params || {};
         var deferred = Q.defer();
-        log.debug('signalingChannel.getGroup');
 
         if (!that.isConnected()) {
             deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));

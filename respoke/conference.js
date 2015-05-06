@@ -191,5 +191,16 @@ module.exports = function (params) {
         that.getStats = that.call.getStats;
     }
 
+    /**
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.getParticipants
+     * @returns {Promise<Array>}
+     */
+    that.getParticipants = function () {
+        return signalingChannel.getConferenceParticipants({
+            id: that.id
+        });
+    };
+
     return that;
 };
