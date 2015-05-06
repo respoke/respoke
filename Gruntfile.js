@@ -9,13 +9,6 @@ module.exports = function (grunt) {
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
-        env: {
-            test: {
-                NODE_ENV: 'test',
-                API_TESTS: 'true',
-                CLEAR_DB: 'true'
-            }
-        },
         uglify: {
             'respoke-stats': {
                 options: {
@@ -210,25 +203,21 @@ module.exports = function (grunt) {
     ]);
 
     grunt.registerTask('functional', 'Run client-side functional tests', [
-        'env:test',
         'karma:functionalChrome',
         'karma:functionalFirefox'
     ]);
 
     grunt.registerTask('functional:chrome', 'Run client-side functional tests in Chrome', [
-        'env:test',
         'karma:functionalChrome'
     ]);
 
     grunt.registerTask('functional:firefox', 'Run client-side functional tests in Firefox', [
-        'env:test',
         'karma:functionalFirefox'
     ]);
 
     grunt.registerTask('lint', 'run jshint', ['jshint:pretty']);
     grunt.registerTask('ci', 'Run all tests', [
         'jshint:ci',
-        'env:test',
         'karma:unitChrome',
         'karma:unitFirefox',
         'karma:functionalChrome',
