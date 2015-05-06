@@ -507,11 +507,14 @@ module.exports = function (params) {
 
         wsCall({
             httpMethod: 'GET',
-            path: '/v1/conferences/%s/participants/?',
+            path: '/v1/conferences/%s/participants/',
             objectId: params.id
         }).then(function successHandler(participants) {
             deferred.resolve(participants.map(function (par) {
-                return client.getConnection({id: par.connectionId});
+                return client.getConnection({
+                    connectionId: par.connectionId,
+                    endpointId: par.endpointId
+                });
             }));
         }, function errorHandler(err) {
             deferred.reject(err);

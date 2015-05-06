@@ -106,7 +106,6 @@ describe("Respoke audio conferencing", function () {
         });
 
         describe("when placing a call", function () {
-            this.timeout(30*60*60*1000);
             var localMedia;
             var remoteMedia;
 
@@ -114,11 +113,11 @@ describe("Respoke audio conferencing", function () {
                 var doneOnce = doneOnceBuilder(done);
 
                 conf = client.joinConference({
-                    id: "conference-service",
+                    id: "my-super-cool-meetup",
                     onLocalMedia: function (evt) {
                         localMedia = evt.stream;
                     },
-                    onConnect: function (evt) {
+                    onRemoteMedia: function (evt) {
                         doneOnce();
                     },
                     onHangup: function (evt) {
@@ -127,7 +126,7 @@ describe("Respoke audio conferencing", function () {
                 });
             });
 
-            it("succeeds and sets up outgoingMedia", function () {
+            it("succeeds and sets up outgoingMedia", function (done) {
                 expect(localMedia).to.be.ok;
                 expect(conf.call.outgoingMediaStreams.length).to.equal(1);
                 expect(conf.call.incomingMediaStreams.length).to.equal(1);
@@ -142,17 +141,13 @@ describe("Respoke audio conferencing", function () {
                 expect(conf.call.hasMedia()).to.equal(true);
                 expect(conf.call.hasAudio).to.equal(true);
                 expect(conf.call.hasVideo).to.equal(false);
-            });
 
-            describe("the getParticipants method", function () {
-                it("returns an array of connections", function (done) {
-                    conf.getParticipants().done(function (participants) {
-                        expect(participants).to.be.an.Array;
-                        expect(participants.length).to.equal(2);
-                        expect(participants[0].className).to.equal("respoke.Connection");
-                        done();
-                    }, done);
-                });
+                conf.getParticipants().done(function (participants) {
+                    expect(participants).to.be.an.Array;
+                    expect(participants.length).to.equal(1);
+                    expect(participants[0].className).to.equal("respoke.Connection");
+                    done();
+                }, done);
             });
         });
     });
