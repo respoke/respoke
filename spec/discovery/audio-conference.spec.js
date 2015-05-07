@@ -5,7 +5,12 @@ describe("Respoke audio conferencing", function () {
     this.timeout(30000);
 
     var conf;
-    var client;
+    var conf2;
+    var client1;
+    var client2;
+    var endpointId1 = "user1";
+    var endpointId2 = "user2";
+    var conferenceId = "my-super-cool-meetup";
 
     it("is configured", function () {
         expect(respokeTestConfig.appId).not.to.equal("");
@@ -73,7 +78,7 @@ describe("Respoke audio conferencing", function () {
                 appSecret: true,
                 parameters: {
                     appId: respokeTestConfig.appId,
-                    endpointId: "test",
+                    endpointId: endpointId1,
                     roleId: respokeTestConfig.roleId,
                     ttl: 84600
                 }
@@ -82,27 +87,44 @@ describe("Respoke audio conferencing", function () {
                     done(err);
                     return;
                 }
-
-                client = respoke.createClient();
-                client.connect({
+                client1 = respoke.createClient();
+                client1.connect({
                     appId: respokeTestConfig.appId,
                     baseURL: respokeTestConfig.baseURL,
                     token:  response.result.tokenId
                 }).done(function () {
-                    expect(client.endpointId).not.to.be.undefined;
-                    expect(client.endpointId).to.equal("test");
-                    done();
-                }, done);
+                    request({
+                        method: "POST",
+                        path: "/v1/tokens",
+                        appSecret: true,
+                        parameters: {
+                            appId: respokeTestConfig.appId,
+                            endpointId: endpointId2,
+                            roleId: respokeTestConfig.roleId,
+                            ttl: 84600
+                        }
+                    }, function (err, response) {
+                        if (err) {
+                            done(err);
+                            return;
+                        }
+
+                        client2 = respoke.createClient();
+                        client2.connect({
+                            appId: respokeTestConfig.appId,
+                            baseURL: respokeTestConfig.baseURL,
+                            token:  response.result.tokenId
+                        }).done(function () {
+                            done();
+                        }, done);
+                    });
+                });
             });
         });
 
-        afterEach(function (done) {
-            conf.listen('hangup', function () {
-                client.disconnect().fin(function () {
-                    done();
-                }).done();
-            });
+        afterEach(function () {
             conf.leave();
+            conf2.leave();
         });
 
         describe("when placing a call", function () {
@@ -110,18 +132,24 @@ describe("Respoke audio conferencing", function () {
             var remoteMedia;
 
             beforeEach(function (done) {
-                var doneOnce = doneOnceBuilder(done);
+                done = doneCountBuilder(2, done);
 
-                conf = client.joinConference({
-                    id: "my-super-cool-meetup",
+                conf = client1.joinConference({
+                    id: conferenceId,
                     onLocalMedia: function (evt) {
                         localMedia = evt.stream;
                     },
                     onRemoteMedia: function (evt) {
-                        doneOnce();
-                    },
-                    onHangup: function (evt) {
-                        doneOnce(new Error("Call got hung up"));
+                        done();
+                    }
+                });
+
+                conf2 = client2.joinConference({
+                    id: conferenceId,
+                    onRemoteMedia: function (evt) {
+                        setTimeout(function () {
+                            done();
+                        }, 1000);
                     }
                 });
             });
@@ -141,12 +169,26 @@ describe("Respoke audio conferencing", function () {
                 expect(conf.call.hasMedia()).to.equal(true);
                 expect(conf.call.hasAudio).to.equal(true);
                 expect(conf.call.hasVideo).to.equal(false);
+                conf.call.muteAudio();
+                conf2.call.muteAudio();
 
                 conf.getParticipants().done(function (participants) {
                     expect(participants).to.be.an.Array;
-                    expect(participants.length).to.equal(1);
+                    expect(participants.length).to.equal(2);
                     expect(participants[0].className).to.equal("respoke.Connection");
-                    done();
+
+                    conf2.listen('hangup', function () {
+                        done();
+                    });
+
+                    conf.removeParticipant({
+                        endpointId: endpointId2
+                    }).done(function () {
+                        conf.getParticipants().done(function (participants) {
+                            expect(participants).to.be.an.Array;
+                            expect(participants.length).to.equal(1);
+                        }, done);
+                    }, done);
                 }, done);
             });
         });

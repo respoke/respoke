@@ -488,6 +488,55 @@ module.exports = function (params) {
     };
 
     /**
+     * If the logged-in endpoint has permission through its Respoke role, forcibly remove another participant
+     * from the conference, ending its conference call.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.removeConferenceParticipant
+     * @private
+     * @param {object} params
+     * @param {string} [endpointId] - The endpoint id of the endpoint to be removed
+     * @param {string} [connectionId] - The connection id of the connection to be removed
+     * @returns {Promise}
+     */
+    that.removeConferenceParticipant = function (params) {
+        params = params || {};
+        var deferred = Q.defer();
+        var endpointId = params.endpointId;
+
+        if (!that.isConnected()) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
+        if (!endpointId && params.connectionId) {
+            try {
+                endpointId = client.getConnection({
+                    connectionId: params.connectionId
+                }).getEndpoint().id;
+            } catch (err) {}
+
+            if (!endpointId) {
+                deferred.reject(new Error("conference.removeParticipant can't figure out what endpoint to remove!"));
+                return deferred.promise;
+            }
+        }
+
+        wsCall({
+            httpMethod: 'DELETE',
+            path: '/v1/conferences/' + params.conferenceId + '/participants/' + endpointId,
+            parameters: {
+                connectionId: params.connectionId
+            }
+        }).then(function successHandler() {
+            deferred.resolve();
+        }, function errorHandler(err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    };
+
+    /**
      * Retrieve the list of participants in the specified conference.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getConferenceParticipants
