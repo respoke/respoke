@@ -1,9 +1,14 @@
+/* global sinon: true */
+'use strict';
+
+var testHelper = require('../test-helper');
+
+var expect = chai.expect;
+var assert = chai.assert;
+var respoke = testHelper.respoke;
+
 describe("respoke.getScreenShareMedia", function () {
-    'use strict';
-    /* global sinon: true */
     var _actualSinon = sinon;
-    var expect = chai.expect;
-    var assert = chai.assert;
 
     function fakeLocalMedia(params) {
         params = params || {};
