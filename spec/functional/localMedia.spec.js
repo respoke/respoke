@@ -1,6 +1,9 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
 
 describe("Respoke local media", function () {
     this.timeout(30000);

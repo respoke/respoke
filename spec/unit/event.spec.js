@@ -1,5 +1,9 @@
 "use strict";
+
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
 
 describe("A respoke.EventEmitter", function () {
     var results = [];

@@ -1,8 +1,12 @@
-"use strict";
-var expect = chai.expect;
+'use strict';
 
-describe("The respoke namespace", function() {
-    it("contains all the library's classes.", function() {
+var testHelper = require('../test-helper');
+
+var expect = chai.expect;
+var respoke = testHelper.respoke;
+
+describe("The respoke namespace", function () {
+    it("contains all the library's classes.", function () {
         expect(typeof respoke).to.equal('object');
         expect(typeof respoke.Call).to.equal('function');
         expect(typeof respoke.Client).to.equal('function');

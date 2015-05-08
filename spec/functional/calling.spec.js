@@ -1,20 +1,24 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+var uuid = require('uuid');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+var respokeAdmin = testHelper.respokeAdmin;
 
 /* global sinon: true */
 describe("Respoke calling", function () {
     this.timeout(30000);
     respoke.useFakeMedia = true;
 
-    var testEnv;
     var call;
     var _actualSinon = sinon;
     var followerClient = {};
     var followeeClient = {};
-    var groupId = respoke.makeGUID();
     var groupRole = {
-        name: 'fixturerole',
+        appId: testHelper.config.appId,
+        name: uuid.v4(),
         groups: {
             "*": {
                 create: true,
@@ -25,65 +29,76 @@ describe("Respoke calling", function () {
             }
         }
     };
-    var testFixture = fixture("Calling Functional test", {
-        roleParams: groupRole
-    });
 
     var followerEndpoint;
     var followeeEndpoint;
-    var followerGroup;
-    var followeeGroup;
     var followerToken;
     var followeeToken;
-    var appId;
     var roleId;
 
-    beforeEach(function (done) {
+    before(function () {
+        return respokeAdmin.auth.admin({
+            username: testHelper.config.username,
+            password: testHelper.config.password
+        }).then(function () {
+            return respokeAdmin.roles.create(groupRole);
+        }).then(function (role) {
+            roleId = role.id;
+        });
+    });
+
+    after(function () {
+        if (roleId) {
+            return respokeAdmin.roles.delete({
+                roleId: roleId
+            });
+        }
+    });
+
+    beforeEach(function () {
         sinon = sinon.sandbox.create();
 
-        respoke.Q.nfcall(testFixture.beforeTest).then(function (env) {
-            testEnv = env;
-
-            return respoke.Q.nfcall(testFixture.createApp, testEnv.httpClient, {}, groupRole);
-        }).then(function (params) {
-            // create 2 tokens
-            roleId = params.role.id;
-            appId = params.app.id;
-            return [respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            }), respoke.Q.nfcall(testFixture.createToken, testEnv.httpClient, {
-                roleId: roleId,
-                appId: appId
-            })];
-        }).spread(function (token1, token2) {
+        return respoke.Q.all([
+            respoke.Q(respokeAdmin.auth.endpoint({
+                endpointId: 'follower',
+                appId: testHelper.config.appId,
+                roleId: roleId
+            })),
+            respoke.Q(respokeAdmin.auth.endpoint({
+                endpointId: 'followee',
+                appId: testHelper.config.appId,
+                roleId: roleId
+            }))
+        ]).spread(function (token1, token2) {
             followerToken = token1;
             followeeToken = token2;
 
             followerClient = respoke.createClient();
             followeeClient = respoke.createClient();
 
-            return respoke.Q.all([followerClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: followerToken.tokenId
-            }), followeeClient.connect({
-                appId: Object.keys(testEnv.allApps)[0],
-                baseURL: respokeTestConfig.baseURL,
-                token: followeeToken.tokenId
-            })]);
-        }).done(function () {
+            return respoke.Q.all([
+                followerClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: followerToken.tokenId
+                }),
+                followeeClient.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: followeeToken.tokenId
+                })
+            ]);
+        }).finally(function () {
             expect(followerClient.endpointId).not.to.be.undefined;
             expect(followerClient.endpointId).to.equal(followerToken.endpointId);
             expect(followeeClient.endpointId).not.to.be.undefined;
             expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
             followerEndpoint = followeeClient.getEndpoint({id: followerClient.endpointId});
             followeeEndpoint = followerClient.getEndpoint({id: followeeClient.endpointId});
-            done();
-        }, done);
+        });
     });
 
-    afterEach(function (done) {
+    afterEach(function () {
         sinon.restore();
         sinon = _actualSinon;
 
@@ -101,9 +116,7 @@ describe("Respoke calling", function () {
             }
         });
 
-        respoke.Q.all(promises).fin(function () {
-            testFixture.afterTest(done);
-        }).done();
+        return respoke.Q.all(promises);
     });
 
     it("LocalMedia stop hangs up the call when it is the last stream on the call", function (done) {
@@ -221,7 +234,7 @@ describe("Respoke calling", function () {
                         remoteElement = evt.element;
                         done();
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         done(new Error("Call got hung up"));
                     }
                 });
@@ -273,10 +286,10 @@ describe("Respoke calling", function () {
                         onLocalMedia: function (evt) {
                             stream = evt.stream;
                         },
-                        onConnect: function (evt) {
+                        onConnect: function () {
                             doneOnce();
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         },
                         outgoingMedia: localMedia
@@ -351,7 +364,7 @@ describe("Respoke calling", function () {
                             doneOnce(e);
                         }
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
@@ -377,10 +390,10 @@ describe("Respoke calling", function () {
                 });
 
                 call = followeeEndpoint.startCall({
-                    onConnect: function (evt) {
+                    onConnect: function () {
                         setTimeout(doneOnce, 200);
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call hung up automatically."));
                     }
                 });
@@ -418,7 +431,7 @@ describe("Respoke calling", function () {
 
                 call = followeeEndpoint.startCall({
                     forceTurn: true,
-                    onConnect: function (evt) {
+                    onConnect: function () {
                         setTimeout(doneOnce, 200);
                     }
                 });
@@ -436,7 +449,7 @@ describe("Respoke calling", function () {
         describe("without a call listener specified", function () {
             it("gets hung up automatically", function (done) {
                 call = followeeEndpoint.startCall({
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         done();
                     }
                 });
@@ -493,7 +506,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -539,7 +552,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -593,7 +606,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -651,15 +664,13 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
-                describe("in separate multiple streams", function (done) {
-                    var localMediaSpy;
-                    var remoteMediaSpy;
+                describe("in separate multiple streams", function () {
                     var localEvt;
 
                     beforeEach(function (done) {
@@ -681,10 +692,10 @@ describe("Respoke calling", function () {
                                 localEvt = evt;
                                 doneOnce();
                             },
-                            onConnect: function (evt) {
+                            onConnect: function () {
                                 doneOnce();
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up"));
                             }
                         });
@@ -754,7 +765,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -825,7 +836,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up"));
                             }
                         });
@@ -881,7 +892,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up"));
                             }
                         });
@@ -942,7 +953,7 @@ describe("Respoke calling", function () {
                                 doneOnce(e);
                             }
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -968,10 +979,10 @@ describe("Respoke calling", function () {
                             doneOnce(e);
                         }
                     },
-                    onConnect: function (evt) {
+                    onConnect: function () {
                         doneOnce();
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
@@ -981,7 +992,7 @@ describe("Respoke calling", function () {
                 var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startVideoCall({
-                    onConnect: function (evt) {
+                    onConnect: function () {
                         try {
                             expect(call.incomingMediaStreams.length).to.equal(0);
                             expect(call.incomingMedia).to.equal(undefined);
@@ -994,7 +1005,7 @@ describe("Respoke calling", function () {
                             doneOnce(e);
                         }
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
@@ -1010,14 +1021,14 @@ describe("Respoke calling", function () {
                 var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
-                    onApprove: function (evt) {
+                    onApprove: function () {
                         doneOnce(new Error("Approve was called immediately!"));
                     },
                     previewLocalMedia: function (element, call) {
                         call.ignore('approve');
                         doneOnce();
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
@@ -1028,20 +1039,20 @@ describe("Respoke calling", function () {
                     var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
-                        previewLocalMedia: function (element, call) {
+                        previewLocalMedia: function () {
                             doneOnce();
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
                 });
 
                 it("succeeds", function (done) {
-                    call.listen('local-stream-received', function (evt) {
+                    call.listen('local-stream-received', function () {
                         done();
                     });
-                    call.listen('requesting-media', function (evt) {
+                    call.listen('requesting-media', function () {
                         call.approve();
                     });
                 });
@@ -1056,13 +1067,13 @@ describe("Respoke calling", function () {
                     var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
-                        onRequestingMedia: function (evt) {
+                        onRequestingMedia: function () {
                             doneOnce();
                         },
-                        onLocalMedia: function (evt) {
+                        onLocalMedia: function () {
                             doneOnce(new Error("onLocalMedia got called first."));
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -1072,13 +1083,13 @@ describe("Respoke calling", function () {
                     var doneOnce = doneOnceBuilder(done);
 
                     call = followeeEndpoint.startCall({
-                        onRequestingMedia: function (evt) {
+                        onRequestingMedia: function () {
                             doneOnce();
                         },
-                        onAllow: function (evt) {
+                        onAllow: function () {
                             doneOnce(new Error("onAllow got called first."));
                         },
-                        onHangup: function (evt) {
+                        onHangup: function () {
                             doneOnce(new Error("Call got hung up"));
                         }
                     });
@@ -1095,16 +1106,16 @@ describe("Respoke calling", function () {
                 var doneOnce = doneOnceBuilder(done);
 
                 call = followeeEndpoint.startCall({
-                    onLocalMedia: function (evt) {
+                    onLocalMedia: function () {
                         doneOnce();
                     },
-                    onApprove: function (evt) {
+                    onApprove: function () {
                         doneOnce(new Error("onApprove got called first."));
                     },
-                    onConnect: function (evt) {
+                    onConnect: function () {
                         doneOnce(new Error("onConnect got called first."));
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
@@ -1129,7 +1140,7 @@ describe("Respoke calling", function () {
             });
 
             it("causes the hangup event to fire & the call not to be active", function (done) {
-                call.listen('hangup', function (evt) {
+                call.listen('hangup', function () {
                     try {
                         expect(call.isActive()).to.be.false;
                         done();
@@ -1164,7 +1175,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("is call debugs enabled and signalReport gets called", function (done) {
-                    call.listen('hangup', function (evt) {
+                    call.listen('hangup', function () {
                         try {
                             expect(call.enableCallDebugReport).to.equal(true);
                             expect(iSpy.calledOnce).to.equal(true);
@@ -1197,8 +1208,8 @@ describe("Respoke calling", function () {
                     });
 
                     follower_nodebug.connect({
-                        appId: Object.keys(testEnv.allApps)[0],
-                        baseURL: respokeTestConfig.baseURL,
+                        appId: testHelper.config.appId,
+                        baseURL: testHelper.config.baseURL,
                         token: followerToken.tokenId,
                         onConnect: function () {
                             followeeEndpoint_nodebug = follower_nodebug.getEndpoint({id: followeeClient.endpointId});
@@ -1216,7 +1227,7 @@ describe("Respoke calling", function () {
                 });
 
                 it("the flag is set to false and signalReport does not get called", function (done) {
-                    call.listen('hangup', function (evt) {
+                    call.listen('hangup', function () {
                         try {
                             expect(iSpy.called).to.equal(false);
                             expect(call.enableCallDebugReport).to.equal(false);
@@ -1363,7 +1374,7 @@ describe("Respoke calling", function () {
                     optional: [],
                     mandatory: {}
                 },
-                onConnect: function (evt) {
+                onConnect: function () {
                     done();
                 }
             });
@@ -1371,7 +1382,7 @@ describe("Respoke calling", function () {
 
         afterEach(function (done) {
             followeeClient.ignore('call', callListener);
-            call2.listen('hangup', function (evt) {
+            call2.listen('hangup', function () {
                 done();
             });
             call2.hangup();
@@ -1436,7 +1447,7 @@ describe("Respoke calling", function () {
                         doneOnce(e);
                     }
                 },
-                onHangup: function (evt) {
+                onHangup: function () {
                     doneOnce(new Error("Call got hung up"));
                 }
             });
@@ -1514,7 +1525,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up on."));
                             }
                         });
@@ -1567,7 +1578,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up on."));
                             }
                         });
@@ -1577,9 +1588,7 @@ describe("Respoke calling", function () {
         });
 
         describe("with audio and video", function () {
-            describe("in separate multiple streams", function (done) {
-                var localMediaSpy;
-                var remoteMediaSpy;
+            describe("in separate multiple streams", function () {
                 var localEvt;
 
                 beforeEach(function () {
@@ -1587,8 +1596,6 @@ describe("Respoke calling", function () {
                 });
 
                 it("gets all the media", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
-
                     followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
@@ -1603,7 +1610,7 @@ describe("Respoke calling", function () {
                                 optional: [],
                                 mandatory: {}
                             }],
-                            onLocalMedia: function (evt) {
+                            onLocalMedia: function () {
                                 expect(localEvt.stream).to.be.ok;
                                 expect(localEvt.element).to.be.ok;
                                 expect(localEvt.stream.getAudioTracks()).to.be.ok;
@@ -1616,7 +1623,7 @@ describe("Respoke calling", function () {
                                 expect(localEvt.stream.getAudioTracks()).to.be.ok;
                                 expect(localEvt.stream.getVideoTracks()).to.be.ok;
                             },
-                            onConnect: function (evt) {
+                            onConnect: function () {
                                 expect(call.isActive()).to.equal(true);
                                 expect(call.incomingMediaStreams.length).to.equal(1);
                                 expect(call.incomingMediaStreams.hasVideo()).to.equal(true);
@@ -1688,7 +1695,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up on."));
                             }
                         });
@@ -1743,7 +1750,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up on."));
                             }
                         });
@@ -1806,7 +1813,7 @@ describe("Respoke calling", function () {
                                     doneOnce(e);
                                 }
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up on."));
                             }
                         });
@@ -1838,7 +1845,7 @@ describe("Respoke calling", function () {
                                 remoteElement = evt.element;
                                 doneOnce();
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up"));
                             }
                         });
