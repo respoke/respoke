@@ -245,7 +245,6 @@ module.exports = function (params) {
         that.stream.numPc -= 1;
         if (that.stream.numPc === 0) {
             that.stream.stop();
-            delete respoke.streams[that.constraints];
         }
         that.stream = null;
         /**

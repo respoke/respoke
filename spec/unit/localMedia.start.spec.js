@@ -11,34 +11,32 @@ describe("LocalMedia.start", function () {
     });
 
     afterEach(function () {
+        // blow away the stream cache
+        respoke.streams = [];
+
         sinon.restore();
         sinon = _actualSinon;
     });
 
-    it("throws an error if called on a temporary instance", function () {
-        var localMedia = respoke.LocalMedia({
-            temporary: true
+    it("rejects the promise if called on a temporary instance", function () {
+        return respoke.LocalMedia({ temporary: true }).start().then(function () {
+            assert.fail('should not resolve');
+        }, function (err) {
+            expect(err.message).to.contain('Temporary');
         });
-
-        expect(function () {
-            localMedia.start();
-        }).to.throw(Error);
     });
 
     describe("if userMedia is not received within 500ms", function () {
 
         it("fires 'requesting-media' event", function (done) {
-            var localMedia = respoke.LocalMedia({
-                constraints: { audio: false, video: true }
-            });
+            var constructorParams = { constraints: { audio: false, video: true } };
+            var localMedia = respoke.LocalMedia(constructorParams);
             sinon.stub(window, 'getUserMedia');
+            localMedia.start().catch(done);
 
-            localMedia.once('requesting-media', function () {
-                // should be called
+            localMedia.listen('requesting-media', function () {
                 done();
             });
-
-            localMedia.start();
         });
     });
 
@@ -46,14 +44,20 @@ describe("LocalMedia.start", function () {
 
         it("calls window.getUserMedia with constraints passed to the constructor", function () {
             var constructorParams = { constraints: { audio: false, video: true } };
-            var localMedia = respoke.LocalMedia(constructorParams);
-            sinon.stub(window, 'getUserMedia');
+            var fakeStream = { addEventListener: function () {} };
+            sinon.stub(window, 'attachMediaStream');
+            sinon.stub(window, 'getUserMedia', function (constraints, successCallback) {
+                setTimeout(function () {
+                    successCallback(fakeStream);
+                });
+            });
 
-            localMedia.start();
-            expect(window.getUserMedia.calledOnce).to.equal(true);
-            var getUserMediaArgs = window.getUserMedia.firstCall.args[0];
-            expect(getUserMediaArgs).to.be.an('object');
-            expect(getUserMediaArgs).to.deep.equal(constructorParams.constraints);
+            return respoke.LocalMedia(constructorParams).start().then(function () {
+                expect(window.getUserMedia.calledOnce).to.equal(true);
+                var getUserMediaArgs = window.getUserMedia.firstCall.args[0];
+                expect(getUserMediaArgs).to.be.an('object');
+                expect(getUserMediaArgs).to.deep.equal(constructorParams.constraints);
+            });
         });
     });
 
@@ -89,16 +93,22 @@ describe("LocalMedia.start", function () {
                         }
                     }
                 };
-                var chooseDesktopMediaResult = { };
-                var localMedia = respoke.LocalMedia(constructorParams);
+                var chooseDesktopMediaResult = { sourceId: 'foo' };
+                var fakeStream = { addEventListener: function () {} };
                 sinon.stub(respoke, 'chooseDesktopMedia').yields(chooseDesktopMediaResult);
-                sinon.stub(window, 'getUserMedia');
+                sinon.stub(window, 'attachMediaStream');
+                sinon.stub(window, 'getUserMedia', function (constraints, successCallback) {
+                    setTimeout(function () {
+                        successCallback(fakeStream);
+                    });
+                });
 
-                localMedia.start();
-                expect(respoke.chooseDesktopMedia.calledOnce).to.equal(true);
+                return respoke.LocalMedia(constructorParams).start().then(function () {
+                    expect(respoke.chooseDesktopMedia.calledOnce).to.equal(true);
+                });
             });
 
-            it("fires an error if respoke.chooseDesktopMedia does not return a valid sourceId", function (done) {
+            it("rejects the promise if respoke.chooseDesktopMedia does not return a valid sourceId", function () {
                 var constructorParams = {
                     constraints: {
                         audio: false,
@@ -107,18 +117,15 @@ describe("LocalMedia.start", function () {
                         }
                     }
                 };
-                var chooseDesktopMediaResult = { };
-                var localMedia = respoke.LocalMedia(constructorParams);
+                var chooseDesktopMediaResult = { error: 'no source' };
                 sinon.stub(respoke, 'chooseDesktopMedia').yields(chooseDesktopMediaResult);
-                sinon.stub(window, 'getUserMedia');
 
-                localMedia.once('error', function (evt) {
-                    expect(evt).to.be.an('object');
-                    expect(evt.error).to.equal('Permission denied.');
-                    done();
+                return respoke.LocalMedia(constructorParams).start().then(function () {
+                    assert.fail('should not resolve promise');
+                }, function (err) {
+                    expect(err).to.be.an.instanceof(Error);
+                    expect(err.message).to.equal('Error trying to get screensharing source: no source');
                 });
-
-                localMedia.start();
             });
 
             it("calls window.getUserMedia with the sourceId from chooseDesktopMedia in the constraints", function (done) {
@@ -131,7 +138,6 @@ describe("LocalMedia.start", function () {
                     }
                 };
                 var chooseDesktopMediaResult = { sourceId: 'foo' };
-                var localMedia = respoke.LocalMedia(constructorParams);
                 sinon.stub(respoke, 'chooseDesktopMedia').yields(chooseDesktopMediaResult);
                 sinon.stub(window, 'getUserMedia', function (constraints) {
                     expect(constraints).to.be.an('object');
@@ -142,7 +148,7 @@ describe("LocalMedia.start", function () {
                     done();
                 });
 
-                localMedia.start();
+                respoke.LocalMedia(constructorParams).start().catch(done);
             });
         });
 
@@ -180,7 +186,7 @@ describe("LocalMedia.start", function () {
                     respoke.hasChromeExtension = previousHasChromeExtension;
                 });
 
-                it("fires an error event on the localMedia instance", function (done) {
+                it("rejects the promise with an error", function () {
                     var constructorParams = {
                         constraints: {
                             audio: false,
@@ -189,16 +195,16 @@ describe("LocalMedia.start", function () {
                             }
                         }
                     };
-                    var localMedia = respoke.LocalMedia(constructorParams);
-                    localMedia.once('error', function (evt) {
-                        expect(evt).to.be.an('object');
-                        expect(evt).to.include.property('reason');
-                        done();
+
+                    return respoke.LocalMedia(constructorParams).start().then(function () {
+                        assert.fail('should not resolve');
+                    }, function (err) {
+                        expect(err).to.be.an.instanceof(Error);
+                        expect(err.message).to.contain('implemented');
                     });
-                    localMedia.start();
                 });
 
-                it("does not fire a 'requesting-media' event on the localMedia instance", function (done) {
+                it("does not fire a 'requesting-media' event on the localMedia instance", function () {
                     var constructorParams = {
                         constraints: {
                             audio: false,
@@ -207,15 +213,13 @@ describe("LocalMedia.start", function () {
                             }
                         }
                     };
-                    var localMedia = respoke.LocalMedia(constructorParams);
                     var fakeRequestingMediaHandler = sinon.stub();
+                    var localMedia = respoke.LocalMedia(constructorParams);
                     localMedia.once('requesting-media', fakeRequestingMediaHandler);
-                    localMedia.start();
 
-                    setTimeout(function () {
+                    return localMedia.start().catch(function () {
                         expect(fakeRequestingMediaHandler.calledOnce).to.equal(false);
-                        done();
-                    }, 750);
+                    });
                 });
             });
 
@@ -241,16 +245,22 @@ describe("LocalMedia.start", function () {
                             }
                         }
                     };
-                    var chooseDesktopMediaResult = { };
-                    var localMedia = respoke.LocalMedia(constructorParams);
+                    var chooseDesktopMediaResult = { sourceId: 'foo' };
+                    var fakeStream = { addEventListener: function () {} };
                     sinon.stub(respoke, 'chooseDesktopMedia').yields(chooseDesktopMediaResult);
-                    sinon.stub(window, 'getUserMedia');
+                    sinon.stub(window, 'attachMediaStream');
+                    sinon.stub(window, 'getUserMedia', function (constraints, successCallback) {
+                        setTimeout(function () {
+                            successCallback(fakeStream);
+                        });
+                    });
 
-                    localMedia.start();
-                    expect(respoke.chooseDesktopMedia.calledOnce).to.equal(true);
+                    return respoke.LocalMedia(constructorParams).start().then(function () {
+                        expect(respoke.chooseDesktopMedia.calledOnce).to.equal(true);
+                    });
                 });
 
-                it("fires an error if respoke.chooseDesktopMedia does not return a valid sourceId", function (done) {
+                it("rejects the promise if respoke.chooseDesktopMedia does not return a valid sourceId", function () {
                     var constructorParams = {
                         constraints: {
                             audio: false,
@@ -259,18 +269,15 @@ describe("LocalMedia.start", function () {
                             }
                         }
                     };
-                    var chooseDesktopMediaResult = { };
-                    var localMedia = respoke.LocalMedia(constructorParams);
+                    var chooseDesktopMediaResult = { error: 'no source' };
                     sinon.stub(respoke, 'chooseDesktopMedia').yields(chooseDesktopMediaResult);
-                    sinon.stub(window, 'getUserMedia');
 
-                    localMedia.once('error', function (evt) {
-                        expect(evt).to.be.an('object');
-                        expect(evt.error).to.equal('Permission denied.');
-                        done();
+                    return respoke.LocalMedia(constructorParams).start().then(function () {
+                        assert.fail('should not resolve');
+                    }, function (err) {
+                        expect(err).to.be.an.instanceof(Error);
+                        expect(err.message).to.equal('Error trying to get screensharing source: no source');
                     });
-
-                    localMedia.start();
                 });
 
                 it("calls window.getUserMedia with the sourceId from chooseDesktopMedia in the constraints", function (done) {
@@ -283,7 +290,6 @@ describe("LocalMedia.start", function () {
                         }
                     };
                     var chooseDesktopMediaResult = { sourceId: 'foo' };
-                    var localMedia = respoke.LocalMedia(constructorParams);
                     sinon.stub(respoke, 'chooseDesktopMedia').yields(chooseDesktopMediaResult);
                     sinon.stub(window, 'getUserMedia', function (constraints) {
                         expect(constraints).to.be.an('object');
@@ -294,7 +300,7 @@ describe("LocalMedia.start", function () {
                         done();
                     });
 
-                    localMedia.start();
+                    respoke.LocalMedia(constructorParams).start().catch(done);
                 });
             });
         });
@@ -333,7 +339,7 @@ describe("LocalMedia.start", function () {
                     respoke.hasFirefoxExtension = previousHasFirefoxExtension;
                 });
 
-                it("fires an error event on the localMedia instance", function (done) {
+                it("rejects the promise", function () {
                     var constructorParams = {
                         constraints: {
                             audio: false,
@@ -342,16 +348,16 @@ describe("LocalMedia.start", function () {
                             }
                         }
                     };
-                    var localMedia = respoke.LocalMedia(constructorParams);
-                    localMedia.once('error', function (evt) {
-                        expect(evt).to.be.an('object');
-                        expect(evt).to.include.property('reason');
-                        done();
+
+                    return respoke.LocalMedia(constructorParams).start().then(function () {
+                        assert.fail('should not resolve');
+                    }, function (err) {
+                        expect(err).to.be.an.instanceof(Error);
+                        expect(err.message).to.contain('implemented');
                     });
-                    localMedia.start();
                 });
 
-                it("does not fire a 'requesting-media' event on the localMedia instance", function (done) {
+                it("does not fire a 'requesting-media' event on the localMedia instance", function () {
                     var constructorParams = {
                         constraints: {
                             audio: false,
@@ -363,12 +369,10 @@ describe("LocalMedia.start", function () {
                     var localMedia = respoke.LocalMedia(constructorParams);
                     var fakeRequestingMediaHandler = sinon.stub();
                     localMedia.once('requesting-media', fakeRequestingMediaHandler);
-                    localMedia.start();
 
-                    setTimeout(function () {
+                    return localMedia.start().catch(function () {
                         expect(fakeRequestingMediaHandler.calledOnce).to.equal(false);
-                        done();
-                    }, 750);
+                    });
                 });
             });
 
@@ -385,7 +389,7 @@ describe("LocalMedia.start", function () {
                     respoke.hasFirefoxExtension = previousHasFirefoxExtension;
                 });
 
-                it("calls window.getUserMedia with the constraints passed to the constructor", function () {
+                it("calls window.getUserMedia with the constraints passed to the constructor", function (done) {
                     var constructorParams = {
                         constraints: {
                             audio: false,
@@ -394,7 +398,7 @@ describe("LocalMedia.start", function () {
                             }
                         }
                     };
-                    var localMedia = respoke.LocalMedia(constructorParams);
+
                     sinon.stub(window, 'getUserMedia', function (constraints) {
                         expect(constraints).to.be.an('object');
                         expect(constraints.audio).to.equal(constructorParams.constraints.audio);
@@ -402,7 +406,7 @@ describe("LocalMedia.start", function () {
                         done();
                     });
 
-                    localMedia.start();
+                    respoke.LocalMedia(constructorParams).start().catch(done);
                 });
             });
         });
@@ -428,7 +432,7 @@ describe("LocalMedia.start", function () {
                 respoke.needsFirefoxExtension = previousNeedsFirefoxExtension;
             });
 
-            it("fires an error event on the localMedia instance", function (done) {
+            it("rejects the promise", function () {
                 var constructorParams = {
                     constraints: {
                         audio: false,
@@ -437,16 +441,16 @@ describe("LocalMedia.start", function () {
                         }
                     }
                 };
-                var localMedia = respoke.LocalMedia(constructorParams);
-                localMedia.once('error', function (evt) {
-                    expect(evt).to.be.an('object');
-                    expect(evt).to.include.property('reason');
-                    done();
+
+                return respoke.LocalMedia(constructorParams).start().then(function () {
+                    assert.fail('should not resolve');
+                }, function (err) {
+                    expect(err).to.be.an.instanceof(Error);
+                    expect(err.message).to.equal('Screen sharing not implemented on this platform yet.');
                 });
-                localMedia.start();
             });
 
-            it("does not fire a 'requesting-media' event on the localMedia instance", function (done) {
+            it("does not fire a 'requesting-media' event on the localMedia instance", function () {
                 var constructorParams = {
                     constraints: {
                         audio: false,
@@ -455,15 +459,13 @@ describe("LocalMedia.start", function () {
                         }
                     }
                 };
+
                 var localMedia = respoke.LocalMedia(constructorParams);
                 var fakeRequestingMediaHandler = sinon.stub();
                 localMedia.once('requesting-media', fakeRequestingMediaHandler);
-                localMedia.start();
-
-                setTimeout(function () {
+                return localMedia.start().catch(function () {
                     expect(fakeRequestingMediaHandler.calledOnce).to.equal(false);
-                    done();
-                }, 750);
+                });
             });
         });
     });
