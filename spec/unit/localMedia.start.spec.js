@@ -1,14 +1,14 @@
 /* global sinon: true */
-"use strict";
+'use strict';
 
 var testHelper = require('../test-helper');
 
 var expect = chai.expect;
+var assert = chai.assert;
 var respoke = testHelper.respoke;
 
 describe("LocalMedia.start", function () {
     var _actualSinon = sinon;
-    var assert = chai.assert;
 
     beforeEach(function () {
         sinon = sinon.sandbox.create();
