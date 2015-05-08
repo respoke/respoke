@@ -670,9 +670,7 @@ describe("Respoke calling", function () {
                     });
                 });
 
-                describe("in separate multiple streams", function (done) {
-                    var localMediaSpy;
-                    var remoteMediaSpy;
+                describe("in separate multiple streams", function () {
                     var localEvt;
 
                     beforeEach(function (done) {
@@ -694,10 +692,10 @@ describe("Respoke calling", function () {
                                 localEvt = evt;
                                 doneOnce();
                             },
-                            onConnect: function (evt) {
+                            onConnect: function () {
                                 doneOnce();
                             },
-                            onHangup: function (evt) {
+                            onHangup: function () {
                                 doneOnce(new Error("Call got hung up"));
                             }
                         });
@@ -1590,9 +1588,7 @@ describe("Respoke calling", function () {
         });
 
         describe("with audio and video", function () {
-            describe("in separate multiple streams", function (done) {
-                var localMediaSpy;
-                var remoteMediaSpy;
+            describe("in separate multiple streams", function () {
                 var localEvt;
 
                 beforeEach(function () {
@@ -1600,8 +1596,6 @@ describe("Respoke calling", function () {
                 });
 
                 it("gets all the media", function (done) {
-                    var doneOnce = doneOnceBuilder(done);
-
                     followeeClient.listen('call', function (evt) {
                         call = evt.call;
                         call.answer({
@@ -1616,7 +1610,7 @@ describe("Respoke calling", function () {
                                 optional: [],
                                 mandatory: {}
                             }],
-                            onLocalMedia: function (evt) {
+                            onLocalMedia: function () {
                                 expect(localEvt.stream).to.be.ok;
                                 expect(localEvt.element).to.be.ok;
                                 expect(localEvt.stream.getAudioTracks()).to.be.ok;
@@ -1629,7 +1623,7 @@ describe("Respoke calling", function () {
                                 expect(localEvt.stream.getAudioTracks()).to.be.ok;
                                 expect(localEvt.stream.getVideoTracks()).to.be.ok;
                             },
-                            onConnect: function (evt) {
+                            onConnect: function () {
                                 expect(call.isActive()).to.equal(true);
                                 expect(call.incomingMediaStreams.length).to.equal(1);
                                 expect(call.incomingMediaStreams.hasVideo()).to.equal(true);
