@@ -6,7 +6,7 @@ var testHelper = require('../test-helper');
 var expect = chai.expect;
 var respoke = testHelper.respoke;
 
-describe.only("LocalMedia.start", function () {
+describe("LocalMedia.start", function () {
     var _actualSinon = sinon;
     var assert = chai.assert;
 
