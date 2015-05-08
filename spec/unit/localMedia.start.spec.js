@@ -1,9 +1,13 @@
-describe("LocalMedia.start", function () {
-    'use strict';
+/* global sinon: true */
+"use strict";
 
-    /* global sinon: true */
+var testHelper = require('../test-helper');
+
+var expect = chai.expect;
+var respoke = testHelper.respoke;
+
+describe.only("LocalMedia.start", function () {
     var _actualSinon = sinon;
-    var expect = chai.expect;
     var assert = chai.assert;
 
     beforeEach(function () {
