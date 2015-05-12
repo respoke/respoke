@@ -8,7 +8,6 @@
  * For all details and documentation:  https://www.respoke.io
  */
 
-/* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
 

@@ -1,5 +1,4 @@
 "use strict";
-/*global respoke: true */
 /*jshint bitwise: false*/
 
 /*!
@@ -217,7 +216,7 @@ respoke.isNwjs = (function () {
                 data = null;
             }
 
-            /*
+            /*!
              * mediaSources can be one of 'window', 'screen', or 'tab', or an array with multiples
              * https://developer.chrome.com/extensions/desktopCapture
              */
@@ -276,7 +275,7 @@ respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.Conference = require('./conference');
 
-/*
+/*!
  * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
  */
 function chromeScreenSharingExtensionReady(evt) {
@@ -586,12 +585,13 @@ respoke.isEqual = function (a, b) {
     return a === b;
 };
 
-/*
+/**
  * Count the number of MediaStreams indicated by the SDP
  * @static
  * @memberof respoke
  * @params {string}
  * @returns {number}
+ * @private
  */
 respoke.sdpStreamCount = function (sdp) {
     var matches;
@@ -613,12 +613,13 @@ respoke.sdpStreamCount = function (sdp) {
     return Object.keys(resolvedMatches).length;
 };
 
-/*
+/**
  * Does the sdp indicate an audio stream?
  * @static
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasAudio = function (sdp) {
     if (!sdp) {
@@ -633,6 +634,7 @@ respoke.sdpHasAudio = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasVideo = function (sdp) {
     if (!sdp) {
@@ -647,6 +649,7 @@ respoke.sdpHasVideo = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasDataChannel = function (sdp) {
     if (!sdp) {
@@ -661,6 +664,7 @@ respoke.sdpHasDataChannel = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasSendOnly = function (sdp) {
     if (!sdp) {
@@ -675,6 +679,7 @@ respoke.sdpHasSendOnly = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasReceiveOnly = function (sdp) {
     if (!sdp) {
@@ -689,6 +694,7 @@ respoke.sdpHasReceiveOnly = function (sdp) {
  * @memberof respoke
  * @params {RTCConstraints}
  * @returns {boolean}
+ * @private
  */
 respoke.constraintsHasAudio = function (constraints) {
     if (!constraints) {
@@ -703,6 +709,7 @@ respoke.constraintsHasAudio = function (constraints) {
  * @memberof respoke
  * @params {RTCConstraints}
  * @returns {boolean}
+ * @private
  */
 respoke.constraintsHasVideo = function (constraints) {
     if (!constraints) {
@@ -717,6 +724,7 @@ respoke.constraintsHasVideo = function (constraints) {
  * @memberof respoke
  * @params {RTCConstraints}
  * @returns {boolean}
+ * @private
  */
 respoke.constraintsHasScreenShare = function (constraints) {
     if (!constraints) {
@@ -734,6 +742,7 @@ respoke.constraintsHasScreenShare = function (constraints) {
  * @params {Array<RTCConstraints>|RTCConstraints} [constraints]
  * @params {Array<RTCConstraints>} [defaults]
  * @returns {Array<RTCConstraints>}
+ * @private
  */
 respoke.convertConstraints = function (constraints, defaults) {
     constraints = constraints || [];
@@ -765,6 +774,7 @@ respoke.convertConstraints = function (constraints, defaults) {
 respoke.queueFactory = function () {
     var queue = [];
     /**
+     * @private
      * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
      */
     queue.trigger = function (action) {
@@ -867,6 +877,7 @@ respoke.getScreenShareConstraints = function (params) {
  * @param {function} [params.onSuccess] Upon success, called with instance of `respoke.LocalMedia`
  * @param {function} [params.onError] Upon failure, called with the error that occurred.
  * @returns {Promise|undefined}
+ * @private
  */
 respoke.getScreenShareMedia = function (params) {
     params = params || {};
