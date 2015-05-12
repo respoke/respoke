@@ -263,7 +263,7 @@ module.exports = function (params) {
      *          token: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX", // if not developmentMode
      *          developmentMode: false || true,
      *          // if developmentMode, otherwise your server will set endpointId
-     *          endpointId: "billy"
+     *          endpointId: "daveops"
      *      });
      *      client.listen("connect", function () { } );
      *

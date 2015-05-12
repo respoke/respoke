@@ -65,7 +65,7 @@ require('./deps/adapter');
  *      var client = respoke.createClient({
  *          appId: "XXXXXXX-my-app-id-XXXXXX",
  *          developmentMode: true,
- *          endpointId: "billy"
+ *          endpointId: "daveops"
  *      });
  *
  *      client.listen('connect', function () {
