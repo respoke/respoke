@@ -5,7 +5,7 @@ var testHelper = require('../test-helper');
 var expect = chai.expect;
 var respoke = testHelper.respoke;
 
-var signalingMock = require('../util/MockSignalingChannel')(respoke);
+var signalingMock = require('../util/mockSignalingChannel')(respoke);
 
 describe("respoke.Client", function () {
     var instanceId;
