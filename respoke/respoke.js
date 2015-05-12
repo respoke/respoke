@@ -261,7 +261,6 @@ respoke.log = log;
 respoke.Class = require('./class');
 respoke.EventEmitter = EventEmitter;
 respoke.Client = require('./client');
-respoke.Presentable = require('./presentable');
 respoke.Connection = require('./connection');
 respoke.Endpoint = require('./endpoint');
 respoke.TextMessage = require('./textMessage');

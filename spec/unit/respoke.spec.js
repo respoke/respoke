@@ -19,7 +19,6 @@ describe("The respoke namespace", function () {
         expect(typeof respoke.MediaStats).to.equal('function');
         expect(typeof respoke.MediaStatsParser).to.equal('function');
         expect(typeof respoke.PeerConnection).to.equal('function');
-        expect(typeof respoke.Presentable).to.equal('function');
         expect(typeof respoke.SignalingChannel).to.equal('function');
         expect(typeof respoke.SignalingMessage).to.equal('function');
         expect(typeof respoke.TextMessage).to.equal('function');

@@ -33,11 +33,6 @@ describe("A respoke.Connection", function () {
             expect(typeof connection.fire).to.equal('function');
         });
 
-        it("extends respoke.Presentable.", function () {
-            expect(typeof connection.getPresence).to.equal('function');
-            expect(typeof connection.setPresence).to.equal('function');
-        });
-
         it("has the correct class name.", function () {
             expect(connection.className).to.equal('respoke.Connection');
         });
@@ -61,7 +56,7 @@ describe("A respoke.Connection", function () {
                     connectionId: connectionId
                 });
 
-                expect(connection.getPresence()).to.equal(newPresence);
+                expect(connection.presence).to.equal(newPresence);
                 expect(connection.fire.calledWith('presence')).to.equal(true);
             } finally {
                 connection.fire.restore();

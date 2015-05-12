@@ -41,16 +41,12 @@ describe("A respoke.Endpoint", function () {
             expect(typeof endpoint.fire).to.equal('function');
         });
 
-        it("extends respoke.Presentable.", function () {
-            expect(typeof endpoint.getPresence).to.equal('function');
-            expect(typeof endpoint.setPresence).to.equal('function');
-        });
-
         it("has the correct class name.", function () {
             expect(endpoint.className).to.equal('respoke.Endpoint');
         });
 
         it("contains some important methods.", function () {
+            expect(typeof endpoint.setPresence).to.equal('function');
             expect(typeof endpoint.sendMessage).to.equal('function');
             expect(typeof endpoint.resolvePresence).to.equal('function');
             expect(typeof endpoint.startAudioCall).to.equal('function');
@@ -70,7 +66,7 @@ describe("A respoke.Endpoint", function () {
                     connectionId: connectionId
                 });
 
-                expect(endpoint.getPresence()).to.equal(newPresence);
+                expect(endpoint.presence).to.equal(newPresence);
                 expect(endpoint.fire.calledWith('presence')).to.equal(true);
             } finally {
                 endpoint.fire.restore();

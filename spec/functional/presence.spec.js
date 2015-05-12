@@ -45,7 +45,7 @@ describe("Respoke presence", function () {
             expect(followerClient.endpointId).to.equal(followerToken.endpointId);
             expect(followeeClient.endpointId).not.to.be.undefined;
             expect(followeeClient.endpointId).to.equal(followeeToken.endpointId);
-        });
+        }).done();
     }
 
     before(function () {
@@ -100,8 +100,15 @@ describe("Respoke presence", function () {
         });
     });
 
-    afterEach(function () {
-        return disconnectAll();
+    afterEach(function (done) {
+        var timer = setTimeout(function () {
+            done();
+        }, 5000);
+
+        disconnectAll().finally(function () {
+            clearTimeout(timer);
+            done();
+        }).done();
     });
 
     describe("with a resolveEndpointPresence function", function () {
@@ -158,7 +165,7 @@ describe("Respoke presence", function () {
 
         describe("when an endpoint logs in", function () {
             it("presence is 'unavailable' by default", function () {
-                expect(followerClient.getPresence()).to.equal('unavailable');
+                expect(followerClient.presence).to.equal('unavailable');
             });
 
             describe("and sets itself online", function () {
@@ -170,7 +177,6 @@ describe("Respoke presence", function () {
 
                 it("presence is set to 'available'", function () {
                     expect(followerClient.presence).to.equal('available');
-                    expect(followerClient.getPresence()).to.equal('available');
                 });
 
                 describe("and sets itself offline", function () {
@@ -182,7 +188,6 @@ describe("Respoke presence", function () {
 
                     it("presence is set to 'unavailable'", function () {
                         expect(followerClient.presence).to.equal('unavailable');
-                        expect(followerClient.getPresence()).to.equal('unavailable');
                     });
                 });
             });
@@ -198,7 +203,6 @@ describe("Respoke presence", function () {
 
                 it("presence is set to " + presence, function () {
                     expect(followerClient.presence).to.equal(presence);
-                    expect(followerClient.getPresence()).to.equal(presence);
                 });
             });
 
@@ -221,7 +225,7 @@ describe("Respoke presence", function () {
                         expect(shownPresence[key]).to.equal(presence[key]);
                     });
 
-                    shownPresence = followerClient.getPresence();
+                    shownPresence = followerClient.presence;
                     Object.keys(presence).forEach(function (key) {
                         expect(shownPresence[key]).to.equal(presence[key]);
                     });
@@ -237,7 +241,6 @@ describe("Respoke presence", function () {
 
                 it("presence is 'unavailable' by default", function () {
                     expect(endpoint.presence).to.equal('unavailable');
-                    expect(endpoint.getPresence()).to.equal('unavailable');
                 });
 
                 describe("and sets itself online", function () {
@@ -251,7 +254,6 @@ describe("Respoke presence", function () {
 
                     it("presence is set to 'available'", function () {
                         expect(endpoint.presence).to.equal('available');
-                        expect(endpoint.getPresence()).to.equal('available');
                     });
                 });
 
@@ -268,7 +270,6 @@ describe("Respoke presence", function () {
 
                     it("presence is set to " + presence, function () {
                         expect(endpoint.presence).to.equal(presence);
-                        expect(endpoint.getPresence()).to.equal(presence);
                     });
                 });
 
@@ -293,7 +294,7 @@ describe("Respoke presence", function () {
                             expect(shownPresence[key]).to.equal(presence[key]);
                         });
 
-                        shownPresence = endpoint.getPresence();
+                        shownPresence = endpoint.presence;
                         Object.keys(presence).forEach(function (key) {
                             expect(shownPresence[key]).to.equal(presence[key]);
                         });
@@ -347,7 +348,6 @@ describe("Respoke presence", function () {
 
                     it("presence is set to 'unavailable'", function () {
                         expect(endpoint.presence).to.equal('unavailable');
-                        expect(endpoint.getPresence()).to.equal('unavailable');
                     });
 
                     afterEach(doReconnect);
@@ -363,7 +363,6 @@ describe("Respoke presence", function () {
 
                 it("presence is set to 'unavailable'", function () {
                     expect(followerClient.presence).to.equal('unavailable');
-                    expect(followerClient.getPresence()).to.equal('unavailable');
                 });
 
                 afterEach(doReconnect);

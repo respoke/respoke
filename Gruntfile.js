@@ -110,7 +110,6 @@ module.exports = function (grunt) {
                     "respoke/event.js",
                     "respoke/group.js",
                     "respoke/localMedia.js",
-                    "respoke/presentable.js",
                     "respoke/remoteMedia.js",
                     "respoke/respoke.js",
                     "plugins/respoke-stats/respoke-stats.js"

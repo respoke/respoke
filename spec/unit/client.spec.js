@@ -27,16 +27,12 @@ describe("respoke.Client", function () {
                 expect(typeof client.fire).to.equal('function');
             });
 
-            it("extends respoke.Presentable.", function () {
-                expect(typeof client.getPresence).to.equal('function');
-                expect(typeof client.setPresence).to.equal('function');
-            });
-
             it("has the correct class name.", function () {
                 expect(client.className).to.equal('respoke.Client');
             });
 
             it("contains some important methods.", function () {
+                expect(typeof client.setPresence).to.equal('function');
                 expect(typeof client.connect).to.equal('function');
                 expect(typeof client.disconnect).to.equal('function');
                 expect(typeof client.getCall).to.equal('function');
