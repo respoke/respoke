@@ -9,7 +9,6 @@
  * @ignore
  */
 
-/* global respoke: true */
 var respoke = require('./respoke');
 var log = respoke.log;
 var Statechart = require('statechart');

@@ -9,7 +9,6 @@
  * @ignore
  */
 
-/* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
 var log = respoke.log;

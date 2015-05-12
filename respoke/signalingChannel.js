@@ -1,5 +1,4 @@
 'use strict';
-/* global respoke: true */
 /*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.

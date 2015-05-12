@@ -1,5 +1,4 @@
 "use strict";
-/*global respoke: true */
 /*jshint bitwise: false*/
 
 /*!
@@ -775,6 +774,7 @@ respoke.convertConstraints = function (constraints, defaults) {
 respoke.queueFactory = function () {
     var queue = [];
     /**
+     * @private
      * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
      */
     queue.trigger = function (action) {
