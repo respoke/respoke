@@ -1123,7 +1123,7 @@ module.exports = function (params) {
         // Only create if this signal is an offer.
         Q.fcall(function makePromise() {
             var endpoint;
-            /*
+            /*!
              * This will return calls regardless of whether they are associated
              * with a direct connection or not, and it will create a call if no
              * call is found and this signal is an offer. Direct connections get
@@ -1623,7 +1623,7 @@ module.exports = function (params) {
         }
     }
 
-    /*
+    /*!
      * On reconnect, start with a reconnect interval of 2000ms. Every time reconnect fails, the interval
      * is doubled up to a maximum of 5 minutes. From then on, it will attempt to reconnect every 5 minutes forever.
      * @memberof! respoke.SignalingChannel
@@ -1692,7 +1692,7 @@ module.exports = function (params) {
         host = pieces[0];
         port = pieces[1];
 
-        /*
+        /*!
          * Try to connect for 2 seconds before failing.
          * @private
          */
@@ -1909,7 +1909,7 @@ module.exports = function (params) {
 
         function handleResponse(response) {
             var thisHandler = this; // jshint ignore:line
-            /*
+            /*!
              * Response:
              *  {
              *      body: {},

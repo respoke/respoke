@@ -217,7 +217,7 @@ respoke.isNwjs = (function () {
                 data = null;
             }
 
-            /*
+            /*!
              * mediaSources can be one of 'window', 'screen', or 'tab', or an array with multiples
              * https://developer.chrome.com/extensions/desktopCapture
              */
@@ -276,7 +276,7 @@ respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.Conference = require('./conference');
 
-/*
+/*!
  * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
  */
 function chromeScreenSharingExtensionReady(evt) {
@@ -586,7 +586,7 @@ respoke.isEqual = function (a, b) {
     return a === b;
 };
 
-/*
+/**
  * Count the number of MediaStreams indicated by the SDP
  * @static
  * @memberof respoke
@@ -613,7 +613,7 @@ respoke.sdpStreamCount = function (sdp) {
     return Object.keys(resolvedMatches).length;
 };
 
-/*
+/**
  * Does the sdp indicate an audio stream?
  * @static
  * @memberof respoke

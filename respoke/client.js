@@ -398,7 +398,7 @@ module.exports = function (params) {
                 that.setPresence({presence: clientSettings.presence});
             }
 
-            /*
+            /*!
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */
