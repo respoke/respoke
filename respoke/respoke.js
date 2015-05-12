@@ -592,6 +592,7 @@ respoke.isEqual = function (a, b) {
  * @memberof respoke
  * @params {string}
  * @returns {number}
+ * @private
  */
 respoke.sdpStreamCount = function (sdp) {
     var matches;
@@ -619,6 +620,7 @@ respoke.sdpStreamCount = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasAudio = function (sdp) {
     if (!sdp) {
@@ -633,6 +635,7 @@ respoke.sdpHasAudio = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasVideo = function (sdp) {
     if (!sdp) {
@@ -647,6 +650,7 @@ respoke.sdpHasVideo = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasDataChannel = function (sdp) {
     if (!sdp) {
@@ -661,6 +665,7 @@ respoke.sdpHasDataChannel = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasSendOnly = function (sdp) {
     if (!sdp) {
@@ -675,6 +680,7 @@ respoke.sdpHasSendOnly = function (sdp) {
  * @memberof respoke
  * @params {string}
  * @returns {boolean}
+ * @private
  */
 respoke.sdpHasReceiveOnly = function (sdp) {
     if (!sdp) {
@@ -689,6 +695,7 @@ respoke.sdpHasReceiveOnly = function (sdp) {
  * @memberof respoke
  * @params {RTCConstraints}
  * @returns {boolean}
+ * @private
  */
 respoke.constraintsHasAudio = function (constraints) {
     if (!constraints) {
@@ -703,6 +710,7 @@ respoke.constraintsHasAudio = function (constraints) {
  * @memberof respoke
  * @params {RTCConstraints}
  * @returns {boolean}
+ * @private
  */
 respoke.constraintsHasVideo = function (constraints) {
     if (!constraints) {
@@ -717,6 +725,7 @@ respoke.constraintsHasVideo = function (constraints) {
  * @memberof respoke
  * @params {RTCConstraints}
  * @returns {boolean}
+ * @private
  */
 respoke.constraintsHasScreenShare = function (constraints) {
     if (!constraints) {
@@ -734,6 +743,7 @@ respoke.constraintsHasScreenShare = function (constraints) {
  * @params {Array<RTCConstraints>|RTCConstraints} [constraints]
  * @params {Array<RTCConstraints>} [defaults]
  * @returns {Array<RTCConstraints>}
+ * @private
  */
 respoke.convertConstraints = function (constraints, defaults) {
     constraints = constraints || [];
@@ -867,6 +877,7 @@ respoke.getScreenShareConstraints = function (params) {
  * @param {function} [params.onSuccess] Upon success, called with instance of `respoke.LocalMedia`
  * @param {function} [params.onError] Upon failure, called with the error that occurred.
  * @returns {Promise|undefined}
+ * @private
  */
 respoke.getScreenShareMedia = function (params) {
     params = params || {};
