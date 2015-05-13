@@ -521,7 +521,9 @@ module.exports = function (params) {
         }
 
         var leaveGroups = groups.map(function eachGroup(group) {
-            return group.leave();
+            if (group.isJoined()) {
+                return group.leave();
+            }
         });
 
         Q.all(leaveGroups).fin(function successHandler() {
