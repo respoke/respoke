@@ -17,9 +17,5 @@ module.exports = {
         setImmediate: false
     },
     devtool: "source-map",
-    plugins: [
-        // run the bundle through UglifyJS2
-        new webpack.optimize.UglifyJsPlugin(),
-        new webpack.BannerPlugin('Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For details and documentation visit https://www.respoke.io')
-    ]
+    plugins: []
 };

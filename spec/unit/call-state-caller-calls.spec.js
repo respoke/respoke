@@ -1,5 +1,9 @@
 "use strict";
+
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
 
 xdescribe("respoke.CallState for calls as the caller", function () {
     var caller = true;
@@ -53,7 +57,6 @@ xdescribe("respoke.CallState for calls as the caller", function () {
     });
 
     describe("when starting from 'idle'", function () {
-        var idleSpy;
 
         beforeEach(function () {
             params = {
@@ -706,7 +709,7 @@ xdescribe("respoke.CallState for calls as the caller", function () {
                                                     'sentOffer',
                                                     'accept',
                                                     'receiveRemoteMedia',
-                                                    'receiveAnswer',
+                                                    'receiveAnswer'
                                                 ];
 
                                                 invalidEvents.forEach(function (evt) {

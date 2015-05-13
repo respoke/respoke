@@ -1,153 +1,115 @@
-"use strict";
+'use strict';
+
+var testHelper = require('../test-helper');
+var uuid = require('uuid');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+var respokeAdmin = testHelper.respokeAdmin;
 
 describe("Respoke audio conferencing", function () {
     this.timeout(30000);
 
-    var conf;
     var client;
+    var roleId;
+    var conference;
 
-    it("is configured", function () {
-        expect(respokeTestConfig.appId).not.to.equal("");
-        expect(respokeTestConfig.appSecret).not.to.equal("");
-        expect(respokeTestConfig.roleId).not.to.equal("");
-    });
-
-    function request(params, callback) {
-        var xhr = new XMLHttpRequest();
-        var paramString;
-        var response = {};
-
-        xhr.open(params.method, respokeTestConfig.baseURL + params.path);
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        if (params.appSecret) {
-            xhr.setRequestHeader("App-Secret", respokeTestConfig.appSecret);
-        }
-
-        if (['POST', 'PUT'].indexOf(params.method) > -1) {
-            paramString = JSON.stringify(params.parameters);
-        }
-
-        try {
-            xhr.send(paramString);
-        } catch (err) {
-            callback(err, null);
-            return;
-        }
-
-        console.log(params.method, respokeTestConfig.baseURL + params.path, paramString);
-        xhr.onreadystatechange = function () {
-            if (this.readyState !== 4) {
-                return;
-            }
-
-            if (this.status === 0) {
-                callback(new Error("Status is 0: Incomplete request, SSL error, or CORS error."));
-                return;
-            }
-
-            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
-                response.code = this.status;
-                if (this.response) {
-                    try {
-                        response.result = JSON.parse(this.response);
-                    } catch (e) {
-                        response.result = this.response;
-                        response.error = "Invalid JSON.";
+    before(function () {
+        return respokeAdmin.auth.admin({
+            username: testHelper.config.username,
+            password: testHelper.config.password
+        }).then(function () {
+            return respokeAdmin.roles.create({
+                name: uuid.v4(),
+                appId: testHelper.config.appId,
+                groups: {
+                    "*": {
+                        create: true,
+                        publish: true,
+                        subscribe: true,
+                        unsubscribe: true,
+                        getsubscribers: true
                     }
                 }
-                callback(null, response);
-            } else if (this.status === 429) {
-                callback(new Error("Rate limit exceeded."), null);
-            } else {
-                callback(new Error('unexpected response ' + this.status), null);
-            }
-        };
-    }
+            });
+        }).then(function (role) {
+            roleId = role.id;
+        });
+    });
+
+    after(function () {
+        if (roleId) {
+            return respokeAdmin.roles.delete({
+                roleId: roleId
+            });
+        }
+    });
 
     describe('when the test is configured', function () {
-        beforeEach(function (done) {
-            request({
-                method: "POST",
-                path: "/v1/tokens",
-                appSecret: true,
-                parameters: {
-                    appId: respokeTestConfig.appId,
-                    endpointId: "test",
-                    roleId: respokeTestConfig.roleId,
-                    ttl: 84600
-                }
-            }, function (err, response) {
-                if (err) {
-                    done(err);
-                    return;
-                }
+        beforeEach(function () {
+            var endpointId = uuid.v4();
 
+            return respokeAdmin.auth.endpoint({
+                endpointId: endpointId,
+                appId: testHelper.config.appId,
+                roleId: roleId
+            }).then(function (token) {
                 client = respoke.createClient();
-                client.connect({
-                    appId: respokeTestConfig.appId,
-                    baseURL: respokeTestConfig.baseURL,
-                    token:  response.result.tokenId
-                }).done(function () {
-                    expect(client.endpointId).not.to.be.undefined;
-                    expect(client.endpointId).to.equal("test");
-                    done();
-                }, done);
+
+                return client.connect({
+                    appId: testHelper.config.appId,
+                    baseURL: testHelper.config.baseURL,
+                    token: token.tokenId
+                });
             });
         });
 
         afterEach(function (done) {
-            conf.listen('hangup', function () {
-                client.disconnect().fin(function () {
+            conference.listen('hangup', function () {
+                client.disconnect().finally(function () {
                     done();
                 }).done();
             });
-            conf.leave();
+            conference.hangup();
         });
 
         describe("when placing a call", function () {
+            this.timeout(30 * 60 * 60 * 1000);
             var localMedia;
-            var remoteMedia;
 
             beforeEach(function (done) {
                 var doneOnce = doneOnceBuilder(done);
 
-                conf = client.joinConference({
-                    id: "my-super-cool-meetup",
+                conference = client.startConferenceCall({
+                    conferenceId: "conference-service",
+                    open: true,
                     onLocalMedia: function (evt) {
                         localMedia = evt.stream;
                     },
-                    onRemoteMedia: function (evt) {
+                    onConnect: function () {
                         doneOnce();
                     },
-                    onHangup: function (evt) {
+                    onHangup: function () {
                         doneOnce(new Error("Call got hung up"));
                     }
                 });
             });
 
-            it("succeeds and sets up outgoingMedia", function (done) {
+            it("succeeds and sets up outgoingMedia", function () {
                 expect(localMedia).to.be.ok;
-                expect(conf.call.outgoingMediaStreams.length).to.equal(1);
-                expect(conf.call.incomingMediaStreams.length).to.equal(1);
-                expect(conf.call.outgoingMedia).to.be.ok;
-                expect(conf.call.outgoingMedia.className).to.equal('respoke.LocalMedia');
-                expect(conf.call.incomingMedia).to.be.ok;
-                expect(conf.call.incomingMedia.className).to.equal('respoke.RemoteMedia');
-                expect(conf.call.outgoingMedia.hasVideo()).to.equal(false);
-                expect(conf.call.outgoingMedia.hasAudio()).to.equal(true);
-                expect(conf.call.incomingMedia.hasVideo()).to.equal(false);
-                expect(conf.call.incomingMedia.hasAudio()).to.equal(true);
-                expect(conf.call.hasMedia()).to.equal(true);
-                expect(conf.call.hasAudio).to.equal(true);
-                expect(conf.call.hasVideo).to.equal(false);
-
-                conf.getParticipants().done(function (participants) {
-                    expect(participants).to.be.an.Array;
-                    expect(participants.length).to.equal(1);
-                    expect(participants[0].className).to.equal("respoke.Connection");
-                    done();
-                }, done);
+                expect(conference.call.outgoingMediaStreams.length).to.equal(1);
+                expect(conference.call.incomingMediaStreams.length).to.equal(1);
+                expect(conference.call.outgoingMedia).to.be.ok;
+                expect(conference.call.outgoingMedia.className).to.equal('respoke.LocalMedia');
+                expect(conference.call.incomingMedia).to.be.ok;
+                expect(conference.call.incomingMedia.className).to.equal('respoke.RemoteMedia');
+                expect(conference.call.outgoingMedia.hasVideo()).to.equal(false);
+                expect(conference.call.outgoingMedia.hasAudio()).to.equal(true);
+                expect(conference.call.incomingMedia.hasVideo()).to.equal(false);
+                expect(conference.call.incomingMedia.hasAudio()).to.equal(true);
+                expect(conference.call.hasMedia()).to.equal(true);
+                expect(conference.call.hasAudio).to.equal(true);
+                expect(conference.call.hasVideo).to.equal(false);
             });
         });
     });
