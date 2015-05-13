@@ -773,10 +773,7 @@ respoke.convertConstraints = function (constraints, defaults) {
  */
 respoke.queueFactory = function () {
     var queue = [];
-    /**
-     * @private
-     * @param {function} action - the action to perform on each item. Thrown errors will be caught and logged.
-     */
+    // action replaces Array.push when trigger is called. Thrown errors will be caught and logged.
     queue.trigger = function (action) {
         if (!action) {
             throw new Error("Trigger function requires an action parameter.");
