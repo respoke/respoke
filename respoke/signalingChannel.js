@@ -26,9 +26,8 @@ var log = respoke.log;
  * @private
  */
 var now;
-var performance;
-if (performance && performance.now) {
-    now = performance.now.bind(performance);
+if (window.performance && window.performance.now) {
+    now = window.performance.now.bind(window.performance);
 } else if (Date.now) {
     now = Date.now.bind(Date);
 } else {
