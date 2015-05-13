@@ -33,11 +33,6 @@ describe("A respoke.Connection", function () {
             expect(typeof connection.fire).to.equal('function');
         });
 
-        it("extends respoke.Presentable.", function () {
-            expect(typeof connection.getPresence).to.equal('function');
-            expect(typeof connection.setPresence).to.equal('function');
-        });
-
         it("has the correct class name.", function () {
             expect(connection.className).to.equal('respoke.Connection');
         });
@@ -49,23 +44,6 @@ describe("A respoke.Connection", function () {
             expect(typeof connection.startCall).to.equal('function');
             expect(typeof connection.startDirectConnection).to.equal('function');
             expect(typeof connection.getEndpoint).to.equal('function');
-        });
-
-        it("can set and get presence and fires the correct event.", function () {
-            var newPresence = 'xa';
-
-            sinon.spy(connection, "fire");
-            try {
-                connection.setPresence({
-                    presence: newPresence,
-                    connectionId: connectionId
-                });
-
-                expect(connection.getPresence()).to.equal(newPresence);
-                expect(connection.fire.calledWith('presence')).to.equal(true);
-            } finally {
-                connection.fire.restore();
-            }
         });
 
         it("saves unexpected developer-specified parameters.", function () {

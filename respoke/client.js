@@ -44,7 +44,7 @@ var log = respoke.log;
  *
  * @class respoke.Client
  * @constructor
- * @augments respoke.Presentable
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} [params.appId] - The ID of your Respoke app. This must be passed either to
  * respoke.connect, respoke.createClient, or to client.connect.
@@ -80,7 +80,7 @@ module.exports = function (params) {
      */
     var instanceId = params.instanceId || respoke.makeGUID();
     params.instanceId = instanceId;
-    var that = respoke.Presentable(params);
+    var that = respoke.EventEmitter(params);
     respoke.instances[instanceId] = that;
     delete that.instanceId;
     that.connectTries = 0;
@@ -105,16 +105,7 @@ module.exports = function (params) {
      * @private
      */
     var port = window.location.port;
-    /**
-     * A simple POJO to store some methods we will want to override but reference later.
-     * @memberof! respoke.Client
-     * @name superClass
-     * @private
-     * @type {object}
-     */
-    var superClass = {
-        setPresence: that.setPresence
-    };
+
     /**
      * A container for baseURL, token, and appId so they won't be accidentally viewable in any JavaScript debugger.
      * @memberof! respoke.Client
@@ -191,6 +182,18 @@ module.exports = function (params) {
     });
 
     /**
+     * Represents the presence status. Typically a string, but other types are supported.
+     * Defaults to `'unavailable'`.
+     *
+     * **Do not modify this directly** - it won't update presence with Respoke. Use `setPresence()`.
+     *
+     * @memberof! respoke.Client
+     * @name presence
+     * @type {string|number|object|Array}
+     */
+    that.presence = params.presence || 'unavailable';
+
+    /**
      * Save parameters of the constructor or client.connect() onto the clientSettings object
      * @memberof! respoke.Client
      * @method respoke.saveParameters
@@ -228,7 +231,7 @@ module.exports = function (params) {
      */
     function saveParameters(params) {
         Object.keys(params).forEach(function eachParam(key) {
-            if (['onSuccess', 'onError', 'reconnect'].indexOf(key) === -1 && params[key] !== undefined) {
+            if (['onSuccess', 'onError', 'reconnect', 'presence'].indexOf(key) === -1 && params[key] !== undefined) {
                 clientSettings[key] = params[key];
             }
         });
@@ -238,7 +241,8 @@ module.exports = function (params) {
             clientSettings.enableCallDebugReport : true;
 
         if (typeof params.reconnect !== 'boolean') {
-            clientSettings.reconnect = typeof clientSettings.developmentMode === 'boolean' ? clientSettings.developmentMode : false;
+            clientSettings.reconnect = typeof clientSettings.developmentMode === 'boolean' ?
+                clientSettings.developmentMode : false;
         } else {
             clientSettings.reconnect = !!params.reconnect;
         }
@@ -259,7 +263,7 @@ module.exports = function (params) {
      *          token: "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX", // if not developmentMode
      *          developmentMode: false || true,
      *          // if developmentMode, otherwise your server will set endpointId
-     *          endpointId: "billy"
+     *          endpointId: "daveops"
      *      });
      *      client.listen("connect", function () { } );
      *
@@ -394,8 +398,8 @@ module.exports = function (params) {
             return signalingChannel.authenticate();
         }).done(function successHandler() {
             // set initial presence for the connection
-            if (clientSettings.presence) {
-                that.setPresence({presence: clientSettings.presence});
+            if (that.presence) {
+                that.setPresence({presence: that.presence});
             }
 
             /*
@@ -517,7 +521,9 @@ module.exports = function (params) {
         }
 
         var leaveGroups = groups.map(function eachGroup(group) {
-            group.leave();
+            if (group.isJoined()) {
+                return group.leave();
+            }
         });
 
         Q.all(leaveGroups).fin(function successHandler() {
@@ -568,13 +574,13 @@ module.exports = function (params) {
      * this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
-     * @overrides Presentable.setPresence
      * @return {Promise|undefined}
      */
     that.setPresence = function (params) {
         var promise;
         var retVal;
         params = params || {};
+        params.presence = params.presence || 'available';
 
         try {
             that.verifyConnected();
@@ -587,11 +593,20 @@ module.exports = function (params) {
 
         promise = signalingChannel.sendPresence({
             presence: params.presence
-        });
+        }).then(function successHandler(p) {
+            that.presence = params.presence;
 
-        promise.then(function successHandler(p) {
-            superClass.setPresence(params);
-            clientSettings.presence = params.presence;
+            /**
+             * This event indicates that the presence for this endpoint has been updated.
+             * @event respoke.Client#presence
+             * @type {respoke.Event}
+             * @property {string|number|object|Array} presence
+             * @property {string} name - the event name.
+             * @property {respoke.Client} target
+             */
+            that.fire('presence', {
+                presence: that.presence
+            });
         });
         retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
         return retVal;

@@ -435,12 +435,16 @@ describe("Respoke groups", function () {
                     expect(members.length).to.equal(2);
                     return followeeClient.getEndpoint({ id: followerClient.endpointId });
                 }).then(function (followerEndpoint) {
-                    followerEndpoint.once('presence', function (evt) {
-                        expect(evt).to.include.property('presence');
-                        expect(evt.presence).to.equal('away');
-                        done();
-                    });
-                    followerClient.setPresence({ presence: 'away' });
+                    // Wait for asynchronous presence registration call to complete.
+                    setTimeout(function () {
+                        followerEndpoint.once('presence', function (evt) {
+                            expect(evt).to.include.property('presence');
+                            expect(evt.presence).to.equal('away');
+                            done();
+                        });
+
+                        followerClient.setPresence({ presence: 'away' });
+                    }, 2000);
                 });
             });
         });

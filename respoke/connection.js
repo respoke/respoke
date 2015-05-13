@@ -21,7 +21,7 @@ var respoke = require('./respoke');
  *
  * @constructor
  * @class respoke.Connection
- * @augments respoke.Presentable
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.id
  * @returns {respoke.Connection}
@@ -36,7 +36,7 @@ module.exports = function (params) {
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = respoke.Presentable(params);
+    var that = respoke.EventEmitter(params);
     /**
      * @memberof! respoke.DirectConnection
      * @name client
@@ -65,6 +65,19 @@ module.exports = function (params) {
      * @type {string}
      */
     that.className = 'respoke.Connection';
+
+    /**
+     * Represents the presence status. Typically a string, but other types are supported.
+     * Defaults to `'unavailable'`.
+     *
+     * **Do not modify this directly** - it won't update presence with Respoke. Presence must be updated
+     * by the remote endpoint.
+     *
+     * @memberof! respoke.Connection
+     * @name presence
+     * @type {string|number|object|Array}
+     */
+    that.presence = 'unavailable';
 
     /**
      * Send a message to this connection of an endpoint. If the endpoint has multiple connections,

@@ -26,7 +26,7 @@ var log = respoke.log;
  *
  * @constructor
  * @class respoke.Endpoint
- * @augments respoke.Presentable
+ * @augments respoke.EventEmitter
  * @param {object} params
  * @param {string} params.id
  * @param {string} params.instanceId
@@ -44,7 +44,7 @@ module.exports = function (params) {
      * @type {string}
      */
     var instanceId = params.instanceId;
-    var that = respoke.Presentable(params);
+    var that = respoke.EventEmitter(params);
     /**
      * @memberof! respoke.DirectConnection
      * @name client
@@ -94,6 +94,70 @@ module.exports = function (params) {
 
     var resolveEndpointPresence = params.resolveEndpointPresence;
     delete that.resolveEndpointPresence;
+
+    /**
+     * Represents the presence status. Typically a string, but other types are supported.
+     * Defaults to `'unavailable'`.
+     *
+     * **Do not modify this directly** - it won't update presence with Respoke. Presence must be updated
+     * by the remote endpoint.
+     *
+     * @memberof! respoke.Endpoint
+     * @name presence
+     * @type {string|number|object|Array}
+     */
+    that.presence = 'unavailable';
+
+    /**
+     * Internally set the presence on the object for this session upon receipt of a presence notification from
+     * the backend. Respoke developers shouldn't use this.
+     *
+     * ```
+     * client.setPresence({ presence: 'busy' });
+     * ```
+     *
+     * While technically available on an Endpoint or Connection, this will not trigger
+     * any API changes. The changes will only be reflected locally.
+     *
+     * @memberof! respoke.Endpoint
+     * @method respoke.Endpoint.setPresence
+     * @param {object} params
+     * @param {string|number|object|Array} [params.presence=available]
+     * @param {string} params.connectionId
+     * @fires respoke.Endpoint#presence
+     * @private
+     */
+    that.setPresence = function (params) {
+        var connection;
+        params = params || {};
+        params.presence = params.presence || 'available';
+        params.connectionId = params.connectionId || that.connectionId;
+
+        if (!params.connectionId) {
+            throw new Error("Can't set Endpoint presence without a connectionId.");
+        }
+
+        connection = that.getConnection({connectionId: params.connectionId}) || client.getConnection({
+            connectionId: params.connectionId,
+            skipCreate: false,
+            endpointId: that.id
+        });
+
+        connection.presence = params.presence;
+        that.resolvePresence();
+
+        /**
+         * This event indicates that the presence for this endpoint has been updated.
+         * @event respoke.Endpoint#presence
+         * @type {respoke.Event}
+         * @property {string|number|object|Array} presence
+         * @property {string} name - the event name.
+         * @property {respoke.Endpoint} target
+         */
+        that.fire('presence', {
+            presence: that.presence
+        });
+    };
 
     /**
      * Send a message to the endpoint through the infrastructure.

@@ -1697,7 +1697,7 @@ module.exports = function (params) {
             presence: message.type
         });
 
-        if (endpoint.getPresence() === 'unavailable') {
+        if (endpoint.presence === 'unavailable') {
             groups = client.getGroups();
             if (groups) {
                 groups.forEach(function eachGroup(group) {

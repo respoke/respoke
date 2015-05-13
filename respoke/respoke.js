@@ -65,7 +65,7 @@ require('./deps/adapter');
  *      var client = respoke.createClient({
  *          appId: "XXXXXXX-my-app-id-XXXXXX",
  *          developmentMode: true,
- *          endpointId: "billy"
+ *          endpointId: "daveops"
  *      });
  *
  *      client.listen('connect', function () {
@@ -261,7 +261,6 @@ respoke.log = log;
 respoke.Class = require('./class');
 respoke.EventEmitter = EventEmitter;
 respoke.Client = require('./client');
-respoke.Presentable = require('./presentable');
 respoke.Connection = require('./connection');
 respoke.Endpoint = require('./endpoint');
 respoke.TextMessage = require('./textMessage');
