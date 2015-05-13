@@ -525,7 +525,7 @@ module.exports = function (params) {
             httpMethod: 'DELETE',
             path: '/v1/conferences/' + params.conferenceId + '/participants/' + endpointId,
             parameters: {
-                connectionId: params.connectionId
+                connectionId: params.connectionId // Optional; It's OK if it's undefined here.
             }
         }).then(function successHandler() {
             deferred.resolve();
@@ -1932,7 +1932,8 @@ module.exports = function (params) {
      * @param {string} params.httpMethod
      * @param {string} params.path
      * @param {string} params.objectId
-     * @param {object} params.parameters
+     * @param {object} params.parameters - These are request body parameters that get converted to JSON before
+     * being sent over the websocket. Undefined parameters and functions are removed by JSON.stringify.
      * @return {Promise<object>}
      */
     function wsCall(params) {
