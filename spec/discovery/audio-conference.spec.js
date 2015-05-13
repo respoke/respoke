@@ -70,7 +70,7 @@ describe("Respoke audio conferencing", function () {
                     done();
                 }).done();
             });
-            conference.hangup();
+            conference.leave();
         });
 
         describe("when placing a call", function () {
@@ -80,13 +80,12 @@ describe("Respoke audio conferencing", function () {
             beforeEach(function (done) {
                 var doneOnce = doneOnceBuilder(done);
 
-                conference = client.startConferenceCall({
-                    conferenceId: "conference-service",
-                    open: true,
+                conference = client.joinConference({
+                    id: "conference-service",
                     onLocalMedia: function (evt) {
                         localMedia = evt.stream;
                     },
-                    onConnect: function () {
+                    onRemoteMedia: function () {
                         doneOnce();
                     },
                     onHangup: function () {
@@ -110,6 +109,16 @@ describe("Respoke audio conferencing", function () {
                 expect(conference.call.hasMedia()).to.equal(true);
                 expect(conference.call.hasAudio).to.equal(true);
                 expect(conference.call.hasVideo).to.equal(false);
+            });
+
+            describe("the getParticipants method", function () {
+                it("returns an array of connections", function () {
+                    return conference.getParticipants().then(function (participants) {
+                        expect(participants).to.be.an.Array;
+                        expect(participants.length).to.equal(1);
+                        expect(participants[0].className).to.equal("respoke.Connection");
+                    });
+                });
             });
         });
     });
