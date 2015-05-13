@@ -46,23 +46,6 @@ describe("A respoke.Connection", function () {
             expect(typeof connection.getEndpoint).to.equal('function');
         });
 
-        it("can set and get presence and fires the correct event.", function () {
-            var newPresence = 'xa';
-
-            sinon.spy(connection, "fire");
-            try {
-                connection.setPresence({
-                    presence: newPresence,
-                    connectionId: connectionId
-                });
-
-                expect(connection.presence).to.equal(newPresence);
-                expect(connection.fire.calledWith('presence')).to.equal(true);
-            } finally {
-                connection.fire.restore();
-            }
-        });
-
         it("saves unexpected developer-specified parameters.", function () {
             expect(connection.gloveColor).to.equal('white');
         });
