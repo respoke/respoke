@@ -187,6 +187,7 @@ module.exports = function (params) {
     }
 
     /**
+     * Get an array containing a Connection object for each participant in the conference.
      * @memberof! respoke.Conference
      * @method respoke.Conference.getParticipants
      * @returns {Promise<Array>}
@@ -195,6 +196,22 @@ module.exports = function (params) {
         return signalingChannel.getConferenceParticipants({
             id: that.id
         });
+    };
+
+    /**
+     * If the logged-in endpoint has permission through its Respoke role, forcibly remove another participant
+     * from the conference, ending its conference call.
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.removeParticipant
+     * @param {object} params
+     * @param {string} [endpointId] - The endpoint id of the endpoint to be removed
+     * @param {string} [connectionId] - The connection id of the connection to be removed
+     * @returns {Promise}
+     */
+    that.removeParticipant = function (params) {
+        params = params || {};
+        params.conferenceId = that.id;
+        return signalingChannel.removeConferenceParticipant(params);
     };
 
     return that;

@@ -225,7 +225,6 @@ describe("Respoke calling", function () {
 
                 call = followeeEndpoint.startCall({
                     onLocalMedia: function (evt) {
-                        console.log('onLocalMedia', evt);
                         localElement = evt.element;
                         stream = evt.stream;
                         done();
