@@ -445,14 +445,22 @@ module.exports = function (params) {
      * Experimental. Create a new conference call. The ID will be the group name. Only members of this group will
      * be permitted to participate in the conference call.
      *
-     *     group.startConferenceCall({
+     *     group.joinConference({
      *         onConnect: function (evt) {}
      *     });
      *
      * @memberof! respoke.Group
-     * @method respoke.Group.startConferenceCall
+     * @method respoke.Group.joinConference
      * @private
      * @param {object} params
+     * @param {string|boolean} params.audio - Whether participant should send and receive audio. Boolean `true`
+     * indicates send and receive. Boolean `false` indicates neither send nor receive. Strings `send` and `receive`
+     * indicate send only and receive only respectively.
+     * @param {string|boolean} params.video - Whether participant should send and receive audio. Boolean `true`
+     * indicates send and receive. Boolean `false` indicates neither send nor receive. Strings `send` and `receive`
+     * indicate send only and receive only respectively.
+     * @param {boolean} params.mixAudio - Whether Respoke should mix all the audio streams together to save bandwidth
+     * for this one participant.
      * @arg {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
      * @arg {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
      * @arg {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
@@ -463,8 +471,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
-     * and the remote party has received the video.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
@@ -483,12 +493,12 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @returns {respoke.Conference}
      */
-    that.startConferenceCall = function (params) {
+    that.joinConference = function (params) {
         var conference = null;
         params = params || {};
-        params.conferenceId = that.id;
+        params.id = that.id;
 
-        conference = client.startConferenceCall(params);
+        conference = client.joinConference(params);
         return conference;
     };
 

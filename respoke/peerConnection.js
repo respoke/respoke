@@ -419,8 +419,8 @@ module.exports = function (params) {
                     }
 
                     /**
-                     * This event is fired every 5 seconds by default, configurable by the 'interval' property to
-                     * `call.startStats` and reports the current state of media statistics.
+                     * This event is fired every 5 seconds by default, configurable by the `interval` parameter to
+                     * `call.getStats` and reports the current state of media statistics.
                      * @event respoke.PeerConnection#stats
                      * @type {respoke.Event}
                      * @property {object} stats - an object with stats in it.
@@ -433,7 +433,6 @@ module.exports = function (params) {
                 }
             });
             that.listen('close', function closeHandler(evt) {
-
                 stats.stopStats();
             }, true);
             deferred.resolve();
@@ -473,12 +472,13 @@ module.exports = function (params) {
         pc.onaddstream = function onaddstream(evt) {
             /**
              * Indicate the RTCPeerConnection has received remote media.
-             * @event respoke.PeerConnection#remote-stream-received
+             * @event respoke.PeerConnection#remote-media
              * @type {respoke.Event}
              * @property {string} name - the event name.
+             * @property {MediaStream} stream
              * @property {respoke.PeerConnection}
              */
-            that.fire('remote-stream-received', {
+            that.fire('remote-media', {
                 stream: evt.stream
             });
         };

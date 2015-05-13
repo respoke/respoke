@@ -628,7 +628,7 @@ module.exports = function (params) {
             did: "startPhoneCall",
             web: "startCall",
             sip: "startSIPCall",
-            conference: "startConferenceCall"
+            conference: "joinConference"
         };
         var callParams = {};
         params.fromType = params.type || "web";
@@ -652,14 +652,13 @@ module.exports = function (params) {
         }
 
         callParams.id = params.id;
-        callParams.conferenceId = params.conferenceId;
         callParams.caller = false;
         callParams.fromType = "web";
         callParams.callerId = params.callerId;
         callParams.target = params.target;
 
         if (params.target === "conference") {
-            callParams.conferenceId = params.conferenceId;
+            callParams.id = params.conferenceId;
             switchType = params.target;
         } else if (params.target === "screenshare") {
             switchType = params.target;
@@ -843,22 +842,28 @@ module.exports = function (params) {
     };
 
     /**
-     * Experimental. Create a new conference call with the specified conferenceId.
+     * Experimental. Create a new conference call with the specified id.
      *
-     *     client.startConferenceCall({
-     *         conferenceId: "javascript-meetup",
+     *     client.joinConference({
+     *         id: "javascript-meetup",
      *         onConnect: function (evt) {}
      *     });
      *
      * @memberof! respoke.Client
-     * @method respoke.Client.startConferenceCall
+     * @method respoke.Client.joinConference
      * @private
      * @param {object} params
-     * @param {string} params.conferenceId - The id that should be used to create the conference call or the ID
+     * @param {string} params.id - The id that should be used to create the conference call or the ID
      * of the call to join.
-     * @arg {string} [params.key] - The access key to use. If not set, the conference call will be open such
-     * that any endpoint can join.
-     * @arg {boolean} [params.open] - whether endpoints can join this conference without a key.
+     * @param {string|boolean} params.audio - Whether participant should send and receive audio. Boolean `true`
+     * indicates send and receive. Boolean `false` indicates neither send nor receive. Strings `send` and `receive`
+     * indicate send only and receive only respectively.
+     * @param {string|boolean} params.video - Whether participant should send and receive audio. Boolean `true`
+     * indicates send and receive. Boolean `false` indicates neither send nor receive. Strings `send` and `receive`
+     * indicate send only and receive only respectively.
+     * @param {boolean} params.mixAudio - Whether Respoke should mix all the audio streams together to save bandwidth
+     * for this one participant.
+     * @param {Array<RTCConstraints>} [params.constraints]
      * @arg {respoke.Conference.onJoin} [params.onJoin] - Callback for when a participant joins the conference.
      * @arg {respoke.Conference.onLeave} [params.onLeave] - Callback for when a participant leaves the conference.
      * @arg {respoke.Conference.onMessage} [params.onMessage] - Callback for when a message is sent to the conference.
@@ -869,8 +874,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
-     * and the remote party has received the video.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
@@ -889,7 +896,7 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @returns {respoke.Conference}
      */
-    that.startConferenceCall = function (params) {
+    that.joinConference = function (params) {
         var conference = null;
         var recipient;
 
@@ -898,11 +905,11 @@ module.exports = function (params) {
 
         that.verifyConnected();
 
-        if (!params.conferenceId) {
-            params.conferenceId = respoke.makeGUID();
+        if (!params.id) {
+            params.id = respoke.makeGUID();
         }
 
-        recipient = {id: params.conferenceId};
+        recipient = {id: params.id};
 
         if (params.open) {
             params.key = undefined;
@@ -1019,8 +1026,10 @@ module.exports = function (params) {
      * media renegotiation.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when the screenshare is connected
-     * and the remote party has received the video.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been
      * hung up.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
@@ -1059,7 +1068,7 @@ module.exports = function (params) {
      *     // defaults to video when no constraints are supplied
      *     client.startCall({
      *         endpointId: 'erin',
-     *         onConnect: function (evt) { },
+     *         onRemoteMedia: function (evt) { },
      *         onLocalMedia: function (evt) { }
      *     });
      *
@@ -1068,12 +1077,14 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {Array<RTCConstraints>} [params.constraints]
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
-     * with the local audio and/or video attached.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
-     * with the remote audio and/or video attached.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
@@ -1120,7 +1131,7 @@ module.exports = function (params) {
      *
      *     client.startAudioCall({
      *         endpointId: 'erin',
-     *         onConnect: function (evt) { },
+     *         onRemoteMedia: function (evt) { },
      *         onLocalMedia: function (evt) { }
      *     });
      *
@@ -1130,12 +1141,14 @@ module.exports = function (params) {
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {string} [params.connectionId]
      * @param {Array<RTCConstraints>} [params.constraints]
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 element
-     * with the local audio and/or video attached.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 element
-     * with the remote audio and/or video attached.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
@@ -1182,7 +1195,7 @@ module.exports = function (params) {
      *
      *     client.startVideoCall({
      *         endpointId: 'erin',
-     *         onConnect: function (evt) { },
+     *         onRemoteMedia: function (evt) { },
      *         onLocalMedia: function (evt) { }
      *     });
      *
@@ -1192,12 +1205,14 @@ module.exports = function (params) {
      * @param {string} params.endpointId - The id of the endpoint that should be called.
      * @param {Array<RTCConstraints>} [params.constraints]
      * @param {string} [params.connectionId]
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
-     * with the local audio and/or video attached.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
-     * with the remote audio and/or video attached.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
@@ -1249,12 +1264,14 @@ module.exports = function (params) {
      * be a phone number listed in your Respoke account, associated with your app, and allowed by the role
      * that this client is authenticated with. If the role contains a list of numbers and the token does not contain
      * callerId, this field must be used to set caller ID selected from the list of numbers or no caller ID will be set.
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
-     * with the local audio and/or video attached.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
-     * with the remote audio and/or video attached.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung
@@ -1394,12 +1411,14 @@ module.exports = function (params) {
      * @method respoke.Client.startSIPCall
      * @param {object} params
      * @param {string} params.uri - The SIP URI to call.
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
-     * with the local audio and/or video attached.
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * element with the local audio and/or video attached.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+     * element with the remote audio and/or video attached.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+     * to the other party and we're reasonably sure the media will start flowing soon.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
      * media renegotiation.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for receiving an HTML5 Video element
-     * with the remote audio and/or video attached.
      * @param {respoke.Call.onAllow} [params.onAllow] - When setting up a call, receive notification that the
      * browser has granted access to media.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for being notified when the call has been hung

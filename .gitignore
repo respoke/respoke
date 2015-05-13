@@ -9,6 +9,7 @@ respoke.min.map
 respoke-stats.min.js
 respoke-stats.min.map
 .sass-cache/
+spec/util/discovery-conf.js
 spec/test-config.json
 spec/test-config.*.json
 -spec/test-config.example.json

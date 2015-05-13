@@ -18,11 +18,9 @@ var respoke = require('./respoke');
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {string} params.conferenceId - The id that should be used to create the conference call or the ID
+ * @param {string} params.id - The id that should be used to create the conference call or the ID
  * of the call to join.
  * @param {string} params.instanceId - client id
- * @param {string} params.key - The key that indicates an endpoint can join.
- * @param {boolean} params.open - whether endpoints can join this conference without a key.
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -52,7 +50,10 @@ var respoke = require('./respoke');
  * media renegotiation.
  * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
  * element with the local audio and/or video attached.
- * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
+ * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
+ * element with the remote audio and/or video attached.
+ * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
+ * to the other party and we're reasonably sure the media will start flowing soon.
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
  * it was ended in a graceful manner.
  * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -84,9 +85,7 @@ module.exports = function (params) {
     var instanceId = params.instanceId;
     var signalingChannel = params.signalingChannel;
     var that = respoke.EventEmitter({
-        open: params.open,
-        key: params.key,
-        id: params.conferenceId
+        id: params.id
     });
 
     that.listen('join', params.onJoin);
@@ -103,13 +102,16 @@ module.exports = function (params) {
     delete params.onPresenter;
 
     params.caller = true;
-    delete params.conferenceId;
-    delete params.key;
+    params.conferenceId = params.id;
+    delete params.id;
     params.remoteEndpoint = that;
     that.call = respoke.Call(params);
 
     // Redirect a bunch of events.
-    ['mute', 'hangup', 'connect'].forEach(function (eventName) {
+    [
+        'mute', 'hangup', 'connect', 'stats', 'error', 'local-media',
+         'remote-media', 'requesting-media', 'approve', 'allow'
+    ].forEach(function (eventName) {
         that.call.listen(eventName, function (evt) {
             evt.call = that.call; // target will be updated to point to this conference object.
             that.fire(eventName, evt);
@@ -135,11 +137,11 @@ module.exports = function (params) {
     var client = respoke.getClient(instanceId);
 
     /**
-     * Hang up on the conference call.
+     * Leave the conference.
      * @memberof! respoke.Conference
-     * @method respoke.Conference.hangup
+     * @method respoke.Conference.leave
      */
-    that.hangup = that.call.hangup;
+    that.leave = that.call.hangup;
 
     /**
      * Mute local user's audio.
@@ -147,6 +149,70 @@ module.exports = function (params) {
      * @method respoke.Conference.muteAudio
      */
     that.muteAudio = that.call.muteAudio;
+
+    /**
+     * ## The plugin `respoke.MediaStats` must be loaded before using this method.
+     *
+     * Start the process of listening for a continuous stream of statistics about the flow of audio and/or video.
+     * Since we have to wait for both the answer and offer to be available before starting
+     * statistics, the library returns a promise for the stats object. The statistics object does not contain the
+     * statistics; rather it contains methods of interacting with the actions of obtaining statistics. To obtain
+     * the actual statistics one time, use stats.getStats(); use the onStats callback to obtain a continuous
+     * stream of statistics every `interval` seconds.  Returns null if stats module is not loaded.
+     *
+     *     conference.getStats({
+     *         onStats: function (evt) {
+     *             console.log('Stats', evt.stats);
+     *         }
+     *     }).done(function () {
+     *         console.log('Stats started');
+     *     }, function (err) {
+     *         console.log('Call is already hung up.');
+     *     });
+     *
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.getStats
+     * @param {object} params
+     * @param {number} [params.interval=5000] - How often in milliseconds to fetch statistics.
+     * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - An optional callback to receive
+     * the stats. If no callback is provided, the call's report will contain stats but the developer will not
+     * receive them on the client-side.
+     * @param {respoke.Call.statsSuccessHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Call.errorHandler} [params.onError] - Error handler for this invocation of this method only.
+     * @returns {Promise<object>|null}
+     */
+    if (respoke.MediaStats) {
+        that.getStats = that.call.getStats;
+    }
+
+    /**
+     * Get an array containing a Connection object for each participant in the conference.
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.getParticipants
+     * @returns {Promise<Array>}
+     */
+    that.getParticipants = function () {
+        return signalingChannel.getConferenceParticipants({
+            id: that.id
+        });
+    };
+
+    /**
+     * If the logged-in endpoint has permission through its Respoke role, forcibly remove another participant
+     * from the conference, ending its conference call.
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.removeParticipant
+     * @param {object} params
+     * @param {string} [endpointId] - The endpoint id of the endpoint to be removed
+     * @param {string} [connectionId] - The connection id of the connection to be removed
+     * @returns {Promise}
+     */
+    that.removeParticipant = function (params) {
+        params = params || {};
+        params.conferenceId = that.id;
+        return signalingChannel.removeConferenceParticipant(params);
+    };
 
     return that;
 };
