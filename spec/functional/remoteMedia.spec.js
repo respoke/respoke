@@ -1,7 +1,10 @@
 /* global sinon: true */
+var testHelper = require('../test-helper');
+
 describe("remoteMedia", function () {
     'use strict';
     var _actualSinon = sinon;
+    var respoke = testHelper.respoke;
     var expect = chai.expect;
 
     beforeEach(function () {
@@ -77,15 +80,15 @@ describe("remoteMedia", function () {
                 constraints: { audio: false, video: true, fake: true }
             });
 
-            localMedia.once('stream-received', function () {
+            localMedia.start().done(function () {
                 done();
-            });
-
-            localMedia.start();
+            }, done);
         });
 
         afterEach(function () {
-            localMedia.stop();
+            if (localMedia) {
+                localMedia.stop();
+            }
         });
 
         it("attaches the stream to the element", function () {

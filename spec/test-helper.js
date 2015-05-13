@@ -1,9 +1,30 @@
-"use strict";
-window.respokeTestConfig = {
-    baseURL: 'http://testing.digiumlabs.com:3001'
-};
+'use strict';
+
+var config = require('./test-config.json');
+
+// TODO: Replace this with something that is _not_ global.
+// this is used in the respoke setup so it must come before requiring it
 window.skipErrorReporting = true;
+
+var respoke = require('respoke');
+require('respoke-stats');
+
+var RespokeAdmin = require('respoke-admin');
+
+var respokeAdmin = new RespokeAdmin({
+    baseURL: config.baseURL + '/v1',
+    appId: config.appId,
+    'App-Secret': config.appSecret
+});
+
 respoke.log.setLevel('silent');
+
+module.exports = {
+    config: config,
+    respoke: respoke,
+    respokeAdmin: respokeAdmin
+};
+
 window.doneOnceBuilder = function (done) {
     var called = false;
     return function (err) {
@@ -18,7 +39,7 @@ window.doneOnceBuilder = function (done) {
 //   1. immediately if there is an error passed to it
 //   2. when the function has been called $num times.
 window.doneCountBuilder = function (num, done) {
-   return (function () {
+    return (function () {
         var called = false;
         var count = 0;
         if (!num || num < 0) {

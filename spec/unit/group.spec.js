@@ -1,6 +1,10 @@
 "use strict";
 
+var testHelper = require('../test-helper');
+
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+
 var client;
 var instanceId;
 var group;

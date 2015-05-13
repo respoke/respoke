@@ -12,6 +12,7 @@
 /* global respoke: true */
 var respoke = require('./respoke');
 var log = respoke.log;
+var Q = respoke.Q;
 
 /**
  * A wrapper around the stream from `getUserMedia`,
@@ -120,6 +121,15 @@ module.exports = function (params) {
      */
     that.stream = null;
 
+    /**
+     * The media deferred whose promise is returned from localMedia.start and resolved with the stream.
+     * @memberof! respoke.LocalMedia
+     * @name deferred
+     * @type {object}
+     * @private
+     */
+    var deferred = Q.defer();
+
     function getStream(theConstraints) {
         for (var i = 0; i < respoke.streams.length; i++) {
             var s = respoke.streams[i];
@@ -157,7 +167,6 @@ module.exports = function (params) {
      * @method respoke.LocalMedia.onReceiveUserMedia
      * @private
      * @param {RTCMediaStream} theStream
-     * @fires respoke.LocalMedia#stream-received
      */
     function onReceiveUserMedia(theStream) {
         that.stream = theStream;
@@ -195,19 +204,7 @@ module.exports = function (params) {
             // perform cleanup on the LocalMedia instance if the underlying stream has ended
             aStream.addEventListener('ended', that.stop, false);
 
-            /**
-             * Indicate that we've received media from the browser.
-             * @event respoke.LocalMedia#stream-received
-             * @type {respoke.Event}
-             * @property {Element} element - the HTML5 Video element with the new stream attached.
-             * @property {RTCMediaStream} stream - the HTML5 Video stream
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             */
-            that.fire('stream-received', {
-                element: that.element,
-                stream: that.stream
-            });
+            deferred.resolve();
         } else {
             that.stream.numPc = 1;
             respoke.streams.push({stream: that.stream, constraints: that.constraints});
@@ -219,19 +216,7 @@ module.exports = function (params) {
 
             // perform cleanup on the LocalMedia instance if the underlying stream has ended
             that.stream.addEventListener('ended', that.stop, false);
-            /**
-             * Indicate that we've received media from the browser.
-             * @event respoke.LocalMedia#stream-received
-             * @type {respoke.Event}
-             * @property {Element} element - the HTML5 Video element with the new stream attached.
-             * @property {RTCMediaStream} stream - the HTML5 Video stream
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             */
-            that.fire('stream-received', {
-                element: that.element,
-                stream: that.stream
-            });
+            deferred.resolve();
         }
     }
 
@@ -270,7 +255,8 @@ module.exports = function (params) {
         var requestingScreenShare;
 
         if (!that.constraints) {
-            throw new Error('No constraints.');
+            deferred.reject(new Error('No constraints.'));
+            return;
         }
 
         if (respoke.useFakeMedia === true) {
@@ -308,16 +294,7 @@ module.exports = function (params) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
                 respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {
-                        log.error("Error trying to get screensharing source.", params.error);
-                        /**
-                         * Indicate there has been an error obtaining media.
-                         * @event respoke.LocalMedia#error
-                         * @type {respoke.Event}
-                         * @property {string} name - the event name.
-                         * @property {respoke.LocalMedia} target
-                         * @property {string} message - a textual description of the error.
-                         */
-                        that.fire('error', {error: 'Permission denied.'});
+                        deferred.reject(new Error("Error trying to get screensharing source: " + params.error));
                         return;
                     }
                     that.constraints.video.mandatory.chromeMediaSourceId = params.sourceId;
@@ -330,7 +307,8 @@ module.exports = function (params) {
                 getUserMedia(that.constraints, onReceiveUserMedia, onUserMediaError);
                 return;
             } else {
-                throw new Error("Screen sharing not implemented on this platform yet.");
+                deferred.reject(new Error("Screen sharing not implemented on this platform yet."));
+                return;
             }
         }
         log.debug("Running getUserMedia with constraints", that.constraints);
@@ -345,30 +323,8 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
-        log.debug('onUserMediaError');
-        if (p.code === 1) {
-            log.warn("Permission denied.");
-            /**
-             * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#error
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             * @property {string} message - a textual description of the error.
-             */
-            that.fire('error', {error: 'Permission denied.'});
-        } else {
-            log.warn(p);
-            /**
-             * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#error
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             * @property {string} message - a textual description of the error.
-             */
-            that.fire('error', {error: p.code});
-        }
+        var errorMessage = p.code === 1 ? "Permission denied." : "Unknown.";
+        deferred.reject(new Error("Error getting user media: " + errorMessage));
     }
 
     /**
@@ -632,26 +588,25 @@ module.exports = function (params) {
      * @memberof! respoke.LocalMedia
      * @method respoke.LocalMedia.start
      * @fires respoke.LocalMedia#start
-     * @private
+     * @param {object} [params]
+     * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @returns {Promise|undefined}
      */
-    that.start = function () {
+    that.start = function (params) {
+        var retVal;
+        params = params || {};
+
         if (that.temporary) {
-            throw new Error("Temporary local media started!");
+            deferred.reject(new Error("Temporary local media started!"));
+        } else {
+            requestMedia();
         }
 
-        try {
-            requestMedia();
-        } catch (err) {
-            clearTimeout(allowTimer);
-            /**
-             * Indicate there has been an error obtaining media.
-             * @event respoke.LocalMedia#error
-             * @property {string} name - the event name.
-             * @property {respoke.LocalMedia} target
-             * @property {string} message - a textual description of the error.
-             */
-            that.fire('error', {reason: err.message});
-        }
+        retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
+        return retVal;
     };
 
     return that;

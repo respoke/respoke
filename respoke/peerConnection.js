@@ -194,6 +194,13 @@ module.exports = function (params) {
         signalCandidateOrig(params);
         that.report.candidatesSent.push({candidate: params.candidate});
     }
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name sdpExpectedStreamCount
+     * @private
+     * @type {number}
+     */
+    that.sdpExpectedStreamCount = 0;
 
     /**
      * @memberof! respoke.PeerConnection
@@ -313,6 +320,7 @@ module.exports = function (params) {
         that.report.lastSDPString = oOffer.sdp;
 
         //set flags for audio / video being offered
+        that.sdpExpectedStreamCount = respoke.sdpStreamCount(oOffer.sdp);
         that.call.hasDataChannel = respoke.sdpHasDataChannel(oOffer.sdp);
 
         try {
@@ -845,6 +853,7 @@ module.exports = function (params) {
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
         that.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
+        that.sdpExpectedStreamCount = respoke.sdpStreamCount(evt.signal.sessionDescription.sdp);
         that.report.lastSDPString = evt.signal.sessionDescription.sdp;
 
         if (that.state.caller) {

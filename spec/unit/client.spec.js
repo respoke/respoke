@@ -1,6 +1,11 @@
-"use strict";
+'use strict';
+
+var testHelper = require('../test-helper');
 
 var expect = chai.expect;
+var respoke = testHelper.respoke;
+
+var signalingMock = require('../util/mockSignalingChannel')(respoke);
 
 describe("respoke.Client", function () {
     var instanceId;
@@ -292,6 +297,7 @@ describe("respoke.Client", function () {
     });
 
     describe("when connected", function () {
+        var originalSignalingChannel;
         var methodsWhichReturnPromises = { // and don't require lots of other stubbing
             'disconnect': 'close',
             'setPresence': 'sendPresence',
@@ -309,44 +315,40 @@ describe("respoke.Client", function () {
             id: 'test'
         };
 
-        beforeEach(function (done) {
+        beforeEach(function () {
             instanceId = respoke.makeGUID();
 
-            respoke.SignalingChannel = MockSignalingChannel;
+            originalSignalingChannel = respoke.SignalingChannel;
+            respoke.SignalingChannel = signalingMock.method;
             client = respoke.createClient({
                 instanceId: instanceId,
                 gloveColor: "white"
             });
-            client.connect({
+
+            return client.connect({
                 developmentMode: true,
                 appId: '68783999-78BD-4079-8979-EBA65FD8873F',
                 endpointId: 'test'
-            }).done(function () {
-                if (window.mockSignalingChannel.className !== "respoke.MockSignalingChannel") {
-                    done(new Error("Not using mock signaling channel"));
-                    return;
-                }
-                done();
-            }, done);
+            });
         });
 
         afterEach(function () {
             client = null;
+            respoke.SignalingChannel = originalSignalingChannel;
         });
 
         Object.keys(methodsWhichReturnPromises).forEach(function (method) {
             describe(method, function () {
                 var stub;
 
-                beforeEach(function (done) {
+                beforeEach(function () {
                     stub = sinon.stub(
-                        window.mockSignalingChannel,
+                        signalingMock.instance,
                         methodsWhichReturnPromises[method],
-                        window.mockSignalingChannel[methodsWhichReturnPromises[method]]
+                        signalingMock.instance[methodsWhichReturnPromises[method]]
                     );
-                    client[method](params).done(function () {
-                        done();
-                    }, done);
+
+                    return client[method](params);
                 });
 
                 it("calls SignalingChannel." + methodsWhichReturnPromises[method], function () {
@@ -366,13 +368,14 @@ describe("respoke.Client", function () {
                 var startCallStub;
 
                 beforeEach(function () {
+                    startCallStub = sinon.spy();
                     callStub = sinon.stub(respoke, "Call", function () {
+                        startCallStub();
                         return {
                             className: 'respoke.MockCall',
                             listen: function () {}
                         };
                     });
-                    startCallStub = sinon.spy();
                     getEndpointStub = sinon.stub(client, "getEndpoint", function () {
                         return {
                             startCall: callStub,

@@ -21,8 +21,6 @@ var respoke = require('./respoke');
  * @param {string} params.id - The id that should be used to create the conference call or the ID
  * of the call to join.
  * @param {string} params.instanceId - client id
- * @param {string} params.key - The key that indicates an endpoint can join.
- * @param {boolean} params.open - whether endpoints can join this conference without a key.
  * @param {boolean} params.caller - whether or not we initiated the call
  * @param {boolean} [params.receiveOnly] - whether or not we accept media
  * @param {boolean} [params.sendOnly] - whether or not we send media
@@ -87,8 +85,6 @@ module.exports = function (params) {
     var instanceId = params.instanceId;
     var signalingChannel = params.signalingChannel;
     var that = respoke.EventEmitter({
-        open: params.open,
-        key: params.key,
         id: params.id
     });
 
@@ -108,7 +104,6 @@ module.exports = function (params) {
     params.caller = true;
     params.conferenceId = params.id;
     delete params.id;
-    delete params.key;
     params.remoteEndpoint = that;
     that.call = respoke.Call(params);
 

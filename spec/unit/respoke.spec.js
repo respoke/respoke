@@ -1,8 +1,12 @@
-"use strict";
-var expect = chai.expect;
+'use strict';
 
-describe("The respoke namespace", function() {
-    it("contains all the library's classes.", function() {
+var testHelper = require('../test-helper');
+
+var expect = chai.expect;
+var respoke = testHelper.respoke;
+
+describe("The respoke namespace", function () {
+    it("contains all the library's classes.", function () {
         expect(typeof respoke).to.equal('object');
         expect(typeof respoke.Call).to.equal('function');
         expect(typeof respoke.Client).to.equal('function');
@@ -78,6 +82,72 @@ describe("The respoke namespace", function() {
     });
 
     describe("the sdp-parsing method", function () {
+        var sdpWithMultipleStreams = "v=0\n" +
+"o=- 7631000908199710796 2 IN IP4 127.0.0.1\n" +
+"s=-\n" +
+"t=0 0\n" +
+"a=group:BUNDLE audio video\n" +
+"a=msid-semantic: WMS 77uA8pfyIwDEMmeHFTAwkoRjFQIm46K7iamt XNY522iUCM6a9l4xTXfLb7HdhSK1gM6rtV70\n" +
+"m=audio 1 RTP/SAVPF 111 103 104 0 8 106 105 13 126\n" +
+"c=IN IP4 0.0.0.0\n" +
+"a=rtcp:1 IN IP4 0.0.0.0\n" +
+"a=ice-ufrag:mbziPDgiOFdMnLrS\n" +
+"a=ice-pwd:Oh+ETuMUd34r5HAcjA7qff7D\n" +
+"a=ice-options:google-ice\n" +
+"a=fingerprint:sha-256 AC:B0:5B:CD:9A:51:B2:D4:69:7B:55:C3:A5:B6:7A:55:0B:95:75:54:67:8C:FF:8F:6B:27:66:D4:9E:7F:01:C5\n" +
+"a=setup:actpass\n" +
+"a=mid:audio\n" +
+"a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\n" +
+"a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\n" +
+"a=sendrecv\n" +
+"a=rtcp-mux\n" +
+"a=rtpmap:111 opus/48000/2\n" +
+"a=fmtp:111 minptime=10\n" +
+"a=rtpmap:103 ISAC/16000\n" +
+"a=rtpmap:104 ISAC/32000\n" +
+"a=rtpmap:0 PCMU/8000\n" +
+"a=rtpmap:8 PCMA/8000\n" +
+"a=rtpmap:106 CN/32000\n" +
+"a=rtpmap:105 CN/16000\n" +
+"a=rtpmap:13 CN/8000\n" +
+"a=rtpmap:126 telephone-event/8000\n" +
+"a=maxptime:60\n" +
+"a=ssrc:867553844 cname:E50hV1q/TjketW60\n" +
+"a=ssrc:867553844 msid:XNY522iUCM6a9l4xTXfLb7HdhSK1gM6rtV70 c374e787-468b-495f-96d4-e5746d8e7287\n" +
+"a=ssrc:867553844 mslabel:XNY522iUCM6a9l4xTXfLb7HdhSK1gM6rtV70\n" +
+"a=ssrc:867553844 label:c374e787-468b-495f-96d4-e5746d8e7287\n" +
+"m=video 1 RTP/SAVPF 100 116 117 96\n" +
+"c=IN IP4 0.0.0.0\n" +
+"a=rtcp:1 IN IP4 0.0.0.0\n" +
+"a=ice-ufrag:mbziPDgiOFdMnLrS\n" +
+"a=ice-pwd:Oh+ETuMUd34r5HAcjA7qff7D\n" +
+"a=ice-options:google-ice\n" +
+"a=fingerprint:sha-256 AC:B0:5B:CD:9A:51:B2:D4:69:7B:55:C3:A5:B6:7A:55:0B:95:75:54:67:8C:FF:8F:6B:27:66:D4:9E:7F:01:C5\n" +
+"a=setup:actpass\n" +
+"a=mid:video\n" +
+"a=extmap:2 urn:ietf:params:rtp-hdrext:toffset\n" +
+"a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\n" +
+"a=sendrecv\n" +
+"a=rtcp-mux\n" +
+"a=rtpmap:100 VP8/90000\n" +
+"a=rtcp-fb:100 ccm fir\n" +
+"a=rtcp-fb:100 nack\n" +
+"a=rtcp-fb:100 nack pli\n" +
+"a=rtcp-fb:100 goog-remb\n" +
+"a=rtpmap:116 red/90000\n" +
+"a=rtpmap:117 ulpfec/90000\n" +
+"a=rtpmap:96 rtx/90000\n" +
+"a=fmtp:96 apt=100\n" +
+"a=ssrc-group:FID 940905006 3786766439\n" +
+"a=ssrc:940905006 cname:aArDz6qSefslowTY\n" +
+"a=ssrc:940905006 msid:77uA8pfyIwDEMmeHFTAwkoRjFQIm46K7iamt 0b6ddc58-0bf1-4356-ac6b-f18e22081198\n" +
+"a=ssrc:940905006 mslabel:77uA8pfyIwDEMmeHFTAwkoRjFQIm46K7iamt\n" +
+"a=ssrc:940905006 label:0b6ddc58-0bf1-4356-ac6b-f18e22081198\n" +
+"a=ssrc:3786766439 cname:aArDz6qSefslowTY\n" +
+"a=ssrc:3786766439 msid:77uA8pfyIwDEMmeHFTAwkoRjFQIm46K7iamt 0b6ddc58-0bf1-4356-ac6b-f18e22081198\n" +
+"a=ssrc:3786766439 mslabel:77uA8pfyIwDEMmeHFTAwkoRjFQIm46K7iamt\n" +
+"a=ssrc:3786766439 label:0b6ddc58-0bf1-4356-ac6b-f18e22081198\n";
+
         var sdpWithOnlyAudio = "v=0\n" +
 "o=- 5677669584985122483 2 IN IP4 127.0.0.1\n" +
 "s=-\n" +
@@ -270,6 +340,26 @@ describe("The respoke namespace", function() {
 
             it("correctly interprets an SDP with only data channel", function () {
                 expect(respoke.sdpHasDataChannel(sdpWithOnlyDataChannel)).to.equal(true);
+            });
+        });
+
+        describe("sdpStreamCount", function () {
+            describe("when the sdp has no streams", function () {
+                it("returns 0", function () {
+                    expect(respoke.sdpStreamCount(sdpWithOnlyDataChannel)).to.equal(0);
+                });
+            });
+
+            describe("when the sdp has one stream", function () {
+                it("returns 1", function () {
+                    expect(respoke.sdpStreamCount(sdpWithOnlyVideo)).to.equal(1);
+                });
+            });
+
+            describe("when the sdp has two stream", function () {
+                it("returns 2", function () {
+                    expect(respoke.sdpStreamCount(sdpWithMultipleStreams)).to.equal(2);
+                });
             });
         });
     });
