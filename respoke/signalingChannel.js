@@ -537,6 +537,37 @@ module.exports = function (params) {
     };
 
     /**
+     * If the logged-in endpoint has permission through its Respoke role, close down the conference, removing all
+     * participants.
+     * @memberof! respoke.SignalingChannel
+     * @method respoke.SignalingChannel.destroyConference
+     * @param {object} params
+     * @param {string} params.id
+     * @private
+     * @returns {Promise}
+     */
+    that.destroyConference = function (params) {
+        var deferred = Q.defer();
+
+        if (!that.isConnected()) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
+        wsCall({
+            httpMethod: 'DELETE',
+            path: '/v1/conferences/%s/',
+            objectId: params.conferenceId
+        }).then(function successHandler() {
+            deferred.resolve();
+        }, function errorHandler(err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    };
+
+    /**
      * Retrieve the list of participants in the specified conference.
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.getConferenceParticipants

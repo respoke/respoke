@@ -214,5 +214,18 @@ module.exports = function (params) {
         return signalingChannel.removeConferenceParticipant(params);
     };
 
+    /**
+     * If the logged-in endpoint has permission through its Respoke role, shut down the conference, removing all
+     * participants.
+     * @memberof! respoke.Conference
+     * @method respoke.Conference.destroy
+     * @returns {Promise}
+     */
+    that.destroy = function (params) {
+        return signalingChannel.destroyConference({
+            conferenceId: that.id
+        });
+    };
+
     return that;
 };
