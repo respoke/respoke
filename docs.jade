@@ -8,7 +8,7 @@ include node_modules/respoke-style/templates/mixins
 // LICENSE file in the root directory of this source tree.
 //
 // For all details and documentation:  https://www.respoke.io
-- var subTitle = comments[0].ctx.file.input;
+- var subTitle = comments[0] ? comments[0].ctx.file.input : '';
 - var title = className;
 - var publicComments = [];
 - var publicEvents = [];
@@ -68,7 +68,7 @@ each comment in comments
         - comment.ctx.name = commentPrefix.join('.') + '.' + comment.ctx.name;
       - publicComments.push(comment);
 
-- publicComments.unshift(classComment);
+- if (classComment) publicComments.unshift(classComment);
 
 
 //- Sidebar

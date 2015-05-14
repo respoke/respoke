@@ -98,7 +98,8 @@ module.exports = function (grunt) {
             options: {
                 jsonOutput: '.docs/jsdoxy-output.json',
                 outputPrivate: false,
-                template: './docs.jade'
+                template: './docs.jade',
+                flatten: true
             },
             files: {
                 src: [
@@ -115,7 +116,7 @@ module.exports = function (grunt) {
                     "respoke/respoke.js",
                     "plugins/respoke-stats/respoke-stats.js"
                 ],
-                dest: '.docs/site/'
+                dest: '.docs/'
             }
         },
         copy: {
@@ -123,7 +124,7 @@ module.exports = function (grunt) {
                 cwd: respokeStyle.paths.assets,
                 expand: true,
                 src: '**/*',
-                dest: '.docs/site/'
+                dest: '.docs/'
             }
         },
         clean: {
@@ -139,14 +140,14 @@ module.exports = function (grunt) {
                     includePaths: respokeStyle.includeStylePaths()
                 },
                 files: {
-                    '.docs/site/css/docs.css': 'docs.scss'
+                    '.docs/css/docs.css': 'docs.scss'
                 }
             }
         },
         'http-server': {
             docs: {
                 // the server root directory
-                root: '.docs/site/',
+                root: '.docs/',
                 port: 2007,
                 host: "0.0.0.0",
                 showDir: true,
