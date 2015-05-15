@@ -35,6 +35,13 @@ describe("Respoke audio conferencing", function () {
                         unsubscribe: true,
                         getsubscribers: true
                     }
+                },
+                conferences: {
+                    "*": {
+                        join: true,
+                        destroy: true,
+                        removeparticipants: true
+                    }
                 }
             });
         }).then(function (role) {
@@ -163,6 +170,21 @@ describe("Respoke audio conferencing", function () {
                         expect(participants.length).to.equal(1);
                         done();
                     }, done);
+                });
+            });
+
+            describe("the destroy method", function () {
+                it("hangs up all of the participants", function (done) {
+                    done = doneCountBuilder(2, done);
+                    conference1.listen('hangup', function () {
+                        done();
+                    });
+
+                    conference2.listen('hangup', function () {
+                        done();
+                    });
+
+                    conference1.destroy().done(null, done);
                 });
             });
         });
