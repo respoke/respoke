@@ -79,6 +79,19 @@ module.exports = function (params) {
     that.presence = 'unavailable';
 
     /**
+     * Deprecated: use endpoint.presence instead.
+     *
+     * Return the presence.
+     * @memberof! respoke.Connection
+     * @deprecated
+     * @name presence
+     * @type {string|number|object|Array}
+     */
+    that.getPresence = function () {
+        return that.presence;
+    };
+
+    /**
      * Send a message to this connection of an endpoint. If the endpoint has multiple connections,
      * it will only receive the message at this connection.
      *

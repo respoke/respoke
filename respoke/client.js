@@ -193,6 +193,19 @@ module.exports = function (params) {
     that.presence = params.presence || 'unavailable';
 
     /**
+     * Deprecated: use endpoint.presence instead.
+     *
+     * Return the presence.
+     * @memberof! respoke.Client
+     * @deprecated
+     * @name presence
+     * @type {string|number|object|Array}
+     */
+    that.getPresence = function () {
+        return that.presence;
+    };
+
+    /**
      * Save parameters of the constructor or client.connect() onto the clientSettings object
      * @memberof! respoke.Client
      * @method respoke.saveParameters

@@ -109,6 +109,19 @@ module.exports = function (params) {
     that.presence = 'unavailable';
 
     /**
+     * Deprecated: use endpoint.presence instead.
+     *
+     * Return the presence.
+     * @memberof! respoke.Endpoint
+     * @deprecated
+     * @name presence
+     * @type {string|number|object|Array}
+     */
+    that.getPresence = function () {
+        return that.presence;
+    };
+
+    /**
      * Internally set the presence on the object for this session upon receipt of a presence notification from
      * the backend. Respoke developers shouldn't use this.
      *
