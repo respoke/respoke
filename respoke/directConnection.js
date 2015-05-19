@@ -1,4 +1,4 @@
-/**!
+/*!
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,9 +6,9 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
+ * @ignore
  */
 
-/* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
 var log = respoke.log;

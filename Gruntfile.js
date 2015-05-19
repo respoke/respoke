@@ -98,7 +98,8 @@ module.exports = function (grunt) {
             options: {
                 jsonOutput: '.docs/jsdoxy-output.json',
                 outputPrivate: false,
-                template: './docs.jade'
+                template: './docs.jade',
+                flatten: true
             },
             files: {
                 src: [

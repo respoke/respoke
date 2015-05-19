@@ -9,7 +9,6 @@
  * @ignore
  */
 
-/* global respoke: true */
 var respoke = require('./respoke');
 var log = respoke.log;
 var Statechart = require('statechart');
@@ -48,7 +47,7 @@ module.exports = function (params) {
     var modifyTimeout = params.modifyTimeout || 60000;
     var oldRole;
 
-    /*
+    /*!
      * These can quite often result in a condition in which they do not cause a transition to occur.
      * There is at least one "universal" (air quotes) event which probably? shouldn't? but may
      * result in a non-transition error when it's OK, and that is the 'reject' event.

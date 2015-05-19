@@ -9,7 +9,6 @@
  * @ignore
  */
 
-/* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
 var log = respoke.log;
@@ -402,7 +401,7 @@ module.exports = function (params) {
                 that.setPresence({presence: that.presence});
             }
 
-            /*
+            /*!
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */

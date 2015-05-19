@@ -9,7 +9,6 @@
  * @ignore
  */
 
-/* global respoke: true */
 var Q = require('q');
 var respoke = require('./respoke');
 var log = respoke.log;
@@ -1493,7 +1492,7 @@ module.exports = function (params) {
         // TODO not good enough for media renegotiation
         updateIncomingMediaEstimate({sdp: evt.signal.sessionDescription});
 
-        /*
+        /*!
          * Always overwrite constraints for callee on every offer, since answer() and accept() will
          * always be called after parsing the SDP. However, if the caller isn't sending any media,
          * use audio & video as our estimate.
@@ -1779,7 +1778,7 @@ module.exports = function (params) {
             return;
         }
 
-        /*
+        /*!
          * By the time we get to here, we could be in a couple of states.
          *
          * If receiveOnly is set to true, we could possibly have constraints (if the developer used the API wrong)
@@ -1881,7 +1880,7 @@ module.exports = function (params) {
         }
     }, true);
 
-    /*
+    /*!
      *  If we are sending media and the other side is not, we have to fire Call#connect manually,
      *  because the RTCPeerConnection will never reach an ICE connection state of "connected."
      *  This will need to be moved when we start handling media renegotiation.
