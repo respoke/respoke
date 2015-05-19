@@ -52,10 +52,7 @@ var log = respoke.log;
  * media renegotiation.
  * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
  * element with the local audio and/or video attached.
- * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
- * element with the remote audio and/or video attached.
- * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
- * to the other party and we're reasonably sure the media will start flowing soon.
+ * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
  * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
  * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -417,10 +414,7 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
-     * element with the remote audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
-     * to the other party and we're reasonably sure the media will start flowing soon.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
      * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -456,8 +450,7 @@ module.exports = function (params) {
             return;
         }
 
-        that.listen('local-media', params.onLocalMedia);
-        that.listen('remote-media', params.onRemoteMedia);
+        that.listen('local-stream-received', params.onLocalMedia);
         that.listen('connect', params.onConnect);
         that.listen('hangup', params.onHangup);
         that.listen('allow', params.onAllow);
@@ -622,10 +615,7 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
-     * element with the remote audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
-     * to the other party and we're reasonably sure the media will start flowing soon.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
      * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
      * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -655,7 +645,7 @@ module.exports = function (params) {
 
         saveParameters(params);
 
-        pc.listen('remote-media', onRemoteStreamAdded, true);
+        pc.listen('remote-stream-received', onRemoteStreamAdded, true);
         pc.listen('remote-stream-removed', onRemoteStreamRemoved, true);
 
         pc.state.once('approving-device-access:entry', function (evt) {
@@ -692,10 +682,8 @@ module.exports = function (params) {
      * wants to perform an action between local media becoming available and calling approve().
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
-     * element with the remote audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
-     * to the other party and we're reasonably sure the media will start flowing soon.
+     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the developer to receive the
+     * remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for the developer to be notified about hangup.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
@@ -712,7 +700,7 @@ module.exports = function (params) {
      * this method must be called on both sides in order to begin the call. If call.approve() is called, the call
      * will progress as expected. If call.reject() is called, the call will be aborted.
      *
-     *     call.listen('local-media', function (evt) {
+     *     call.listen('local-stream-received', function (evt) {
      *         if (userLikesVideo()) {
      *             evt.call.approve();
      *         }
@@ -802,20 +790,6 @@ module.exports = function (params) {
         });
         that.incomingMediaStreams.push(remoteMedia);
 
-        /**
-         * Indicates that remote media stream has been added to the call.
-         * @event respoke.Call#remote-media
-         * @type {respoke.Event}
-         * @property {Element} element - The HTML5 Video element with the remote stream attached.
-         * @property {respoke.RemoteMedia} stream - The incomingMedia property on the call.
-         * @property {string} name - The event name.
-         * @property {respoke.Call} target
-         */
-        that.fire('remote-media', {
-            stream: remoteMedia,
-            element: remoteMedia.element
-        });
-
         if (that.incomingMediaStreams.length < pc.sdpExpectedStreamCount) {
             // there are more streams left to receive before we can dispatch the event to the state machine.
             return;
@@ -832,6 +806,10 @@ module.exports = function (params) {
          * @property {respoke.Call} target
          */
         pc.state.dispatch('receiveRemoteMedia');
+        that.fire('connect', {
+            stream: remoteMedia.stream,
+            element: remoteMedia.element
+        });
     }
 
     /**
@@ -938,14 +916,14 @@ module.exports = function (params) {
 
         /**
          * Indicate that the call has received local media from the browser.
-         * @event respoke.Call#local-media
+         * @event respoke.Call#local-stream-received
          * @type {respoke.Event}
          * @property {Element} element
          * @property {respoke.LocalMedia} stream
          * @property {string} name - the event name.
          * @property {respoke.Call} target
          */
-        that.fire('local-media', {
+        that.fire('local-stream-received', {
             element: localMedia.element,
             stream: localMedia
         });
@@ -975,16 +953,13 @@ module.exports = function (params) {
      * @private
      * @param {object} params
      * @param {Array<RTCConstraints>} [params.constraints] - getUserMedia constraints
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
-     * element with the remote audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
-     * to the other party and we're reasonably sure the media will start flowing soon.
+     * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @fires respoke.Call#requesting-media
      * @fires respoke.Call#allow
-     * @fires respoke.Call#local-media
+     * @fires respoke.Call#local-stream-received
      */
     function doAddVideo(params) {
         log.debug('Call.doAddVideo');
@@ -1003,12 +978,9 @@ module.exports = function (params) {
      * @param {Array<RTCConstraints>} [params.constraints] - getUserMedia constraints, indicating the media
      * being requested is
      * an audio and/or video stream.
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
-     * element with the remote audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
-     * to the other party and we're reasonably sure the media will start flowing soon.
+     * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {respoke.Call.mediaSuccessHandler} [params.onSuccess]
      * @param {respoke.Client.errorHandler} [params.onError]
@@ -1046,12 +1018,9 @@ module.exports = function (params) {
      * @param {boolean} [params.video=false]
      * @param {Array<RTCConstraints>} [params.constraints] - getUserMedia constraints, indicating the media
      * being requested is an audio and/or video stream.
-     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
+     * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] Callback for receiving an HTML5 Video
      * element with the local audio and/or video attached.
-     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
-     * element with the remote audio and/or video attached.
-     * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
-     * to the other party and we're reasonably sure the media will start flowing soon.
+     * @param {respoke.Call.onConnect} [params.onConnect]
      * @param {respoke.Call.onHangup} [params.onHangup]
      * @param {respoke.Call.mediaSuccessHandler} [params.onSuccess]
      * @param {respoke.Client.errorHandler} [params.onError]
@@ -1886,17 +1855,16 @@ module.exports = function (params) {
      *  This will need to be moved when we start handling media renegotiation.
      */
     pc.state.listen('connecting:entry', function connectNoMedia() {
-        /**
-         * Indicates that either remote media stream has been added to the call or if no
-         * media is expected, the other side is receiving our media.
-         * @event respoke.Call#connect
-         * @type {respoke.Event}
-         * @property {string} name - The event name.
-         * @property {respoke.Call} target
-         */
-        that.fire('connect');
-
         if (pc.state.sendOnly) {
+            /**
+             * Indicates that either remote media stream has been added to the call or if no
+             * media is expected, the other side is receiving our media.
+             * @event respoke.Call#connect
+             * @type {respoke.Event}
+             * @property {string} name - The event name.
+             * @property {respoke.Call} target
+             */
+            that.fire('connect');
             pc.state.dispatch('receiveRemoteMedia');
         }
     });
@@ -1945,32 +1913,22 @@ module.exports = function (params) {
 /**
  * When on a call, receive local media when it becomes available. This is what you will need to provide if you want
  * to show the user their own video during a call. This callback is called every time
- * respoke.Call#local-media is fired.
+ * respoke.Call#local-stream-received is fired.
  * @callback respoke.Call.onLocalMedia Callback for receiving an HTML5 Video
  * element with the local audio and/or video attached.
  * @param {respoke.Event} evt
  * @param {Element} evt.element
- * @param {respoke.LocalMedia} stream - The outgoingMedia property on the call.
+ * @param {respoke.LocalMedia} - The outgoingMedia property on the call.
  * @param {string} evt.name - The event name.
  * @param {respoke.Call} evt.target
  */
 /**
  * When on a call, receive remote media when it becomes available. This is what you will need to provide if you want
  * to show the user the other party's video during a call. This callback is called every time
- * respoke.Call#remote-media is fired.
- * @callback respoke.Call.onRemoteMedia
- * @param {respoke.Event} evt
- * @param {Element} evt.element - the HTML5 Video element with the new stream attached.
- * @param {respoke.RemoteMedia} stream - The incomingMedia property on the call.
- * @param {string} evt.name - the event name.
- * @param {respoke.Call} evt.target
- */
-/**
- * When on a call, receive notification that we've found a suitable network path and the call is connected. It's
- * probable that we would not have received remote media yet when this event is fired. This callback is called every
- * time respoke.Call#connect is fired.
+ * respoke.Call#connect is fired.
  * @callback respoke.Call.onConnect
  * @param {respoke.Event} evt
+ * @param {Element} evt.element - the HTML5 Video element with the new stream attached.
  * @param {string} evt.name - the event name.
  * @param {respoke.Call} evt.target
  */
@@ -2045,7 +2003,7 @@ module.exports = function (params) {
  * to allow the user to preview and approve or reject their own video before a call. If this callback is provided,
  * Respoke will wait for call.answer() to be called before proceeding. If this callback is not provided,
  * Respoke will proceed without waiting for user input. This callback is called every time
- * respoke.Call#local-media is fired.
+ * respoke.Call#local-stream-received is fired.
  * @callback respoke.Call.previewLocalMedia
  * @param {object} element - the HTML5 Video element with the new stream attached.
  * @param {respoke.Call} call

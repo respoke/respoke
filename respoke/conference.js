@@ -50,10 +50,7 @@ var respoke = require('./respoke');
  * media renegotiation.
  * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video
  * element with the local audio and/or video attached.
- * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback for receiving an HTML5 Video
- * element with the remote audio and/or video attached.
- * @param {respoke.Call.onConnect} [params.onConnect] - Callback for when we've found a suitable network path
- * to the other party and we're reasonably sure the media will start flowing soon.
+ * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
  * it was ended in a graceful manner.
  * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
@@ -109,8 +106,8 @@ module.exports = function (params) {
 
     // Redirect a bunch of events.
     [
-        'mute', 'hangup', 'connect', 'stats', 'error', 'local-media',
-         'remote-media', 'requesting-media', 'approve', 'allow'
+        'mute', 'hangup', 'connect', 'stats', 'error', 'local-stream-received',
+         'remote-stream-received', 'requesting-media', 'approve', 'allow'
     ].forEach(function (eventName) {
         that.call.listen(eventName, function (evt) {
             evt.call = that.call; // target will be updated to point to this conference object.
