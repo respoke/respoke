@@ -112,14 +112,14 @@ describe("Respoke audio conferencing", function () {
                     onLocalMedia: function (evt) {
                         localMedia = evt.stream;
                     },
-                    onRemoteMedia: function () {
+                    onConnect: function () {
                         done();
                     }
                 });
 
                 conference2 = client2.joinConference({
                     id: conferenceId,
-                    onRemoteMedia: function (evt) {
+                    onConnect: function () {
                         setTimeout(function () {
                             done();
                         }, 1000);
