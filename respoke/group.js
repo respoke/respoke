@@ -49,6 +49,9 @@ module.exports = function (params) {
         throw new Error("Can't create a group without an ID.");
     }
 
+
+    var returnCachedVersionOfGroup = false;
+
     /**
      * Internal reference to the api signaling channel.
      * @memberof! respoke.Group
@@ -223,6 +226,8 @@ module.exports = function (params) {
             throw new Error("Can't remove a member to the group without it's Connection id.");
         }
 
+        returnCachedVersionOfGroup = false;
+
         that.connections.every(function eachConnection(conn, index) {
             if (conn.id === params.connectionId) {
                 that.connections.splice(index, 1);
@@ -283,6 +288,8 @@ module.exports = function (params) {
         if (!params.connection) {
             throw new Error("Can't add a member to the group without it's Connection object.");
         }
+
+        returnCachedVersionOfGroup = false;
 
         absent = that.connections.every(function eachConnection(conn) {
             return (conn.id !== params.connection.id);
@@ -405,6 +412,11 @@ module.exports = function (params) {
             return retVal;
         }
 
+        if (that.connections.length > 0 && returnCachedVersionOfGroup) {
+            deferred.resolve(that.connections);
+            return retVal;
+        }
+
         signalingChannel.getGroupMembers({
             id: that.id
         }).done(function successHandler(list) {
@@ -432,6 +444,8 @@ module.exports = function (params) {
                     skipEvent: true
                 });
             });
+
+            returnCachedVersionOfGroup = true;
 
             deferred.resolve(that.connections);
         }, function errorHandler(err) {
