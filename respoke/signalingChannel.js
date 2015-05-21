@@ -718,7 +718,6 @@ module.exports = function (params) {
             params = params || {};
             params.groupList = params.groupList || [];
 
-
             log.trace('been asked to join groups', params.groupList);
 
             var needsToRun = (Object.keys(groups).length === 0);
@@ -747,7 +746,6 @@ module.exports = function (params) {
                 groups = {};
                 var saveDeferred = deferred;
                 deferred = Q.defer();
-
 
                 if (groupList.length === 0) {
                     log.trace('list of groups was empty so not sending queue');
