@@ -1645,6 +1645,8 @@ module.exports = function (params) {
             return retVal;
         }
 
+        log.trace('requested to join group', params.id);
+
         signalingChannel.joinGroup({
             groupList: [params.id]
         }).done(function successHandler() {
