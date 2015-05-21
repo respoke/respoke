@@ -712,13 +712,16 @@ module.exports = function (params) {
      */
     that.joinGroup = (function () {
         var groups = {};
-        var deferred = Q.defer();
+        var deferred = Q.defer();//i think this needs to go in actualJoinGroup
 
-        return function (params) {
+        return function actualJoinGroup(params) {
             params = params || {};
             params.groupList = params.groupList || [];
 
-            var toRun = (Object.keys(groups).length === 0);
+
+            log.trace('been asked to join groups', params.groupList);
+
+            var needsToRun = (Object.keys(groups).length === 0);
 
             if (!that.isConnected()) {
                 deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -727,22 +730,27 @@ module.exports = function (params) {
 
             params.groupList.forEach(function (id) {
                 if (typeof id === 'string') {
+                    log.trace('put group', id, 'in the join queue');
                     groups[id] = true;
                 }
             });
 
-            if (!toRun) {
+            if (!needsToRun) {
                 return deferred.promise;
             }
 
-            setTimeout(function () {
+            setTimeout(function requestJoinsForGroupQueue() {
                 // restart accumulation
                 var groupList = Object.keys(groups);
+                log.trace('list of groups to be requested', groupList);
+                //reset the groups object
                 groups = {};
                 var saveDeferred = deferred;
                 deferred = Q.defer();
 
+
                 if (groupList.length === 0) {
+                    log.trace('list of groups was empty so not sending queue');
                     saveDeferred.resolve();
                     return;
                 }
