@@ -49,8 +49,15 @@ module.exports = function (params) {
         throw new Error("Can't create a group without an ID.");
     }
 
-
-    var returnCachedVersionOfGroup = false;
+    /**
+     * Indicates whether there have been group membership changes since the last time we performed
+     * a network request to list group members.
+     * @memberof! respoke.Group
+     * @name cacheIsValid
+     * @private
+     * @type {boolean}
+     */
+    var cacheIsValid = false;
 
     /**
      * Internal reference to the api signaling channel.
@@ -226,7 +233,7 @@ module.exports = function (params) {
             throw new Error("Can't remove a member to the group without it's Connection id.");
         }
 
-        returnCachedVersionOfGroup = false;
+        cacheIsValid = false;
 
         that.connections.every(function eachConnection(conn, index) {
             if (conn.id === params.connectionId) {
@@ -289,7 +296,7 @@ module.exports = function (params) {
             throw new Error("Can't add a member to the group without it's Connection object.");
         }
 
-        returnCachedVersionOfGroup = false;
+        cacheIsValid = false;
 
         absent = that.connections.every(function eachConnection(conn) {
             return (conn.id !== params.connection.id);
@@ -412,7 +419,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (that.connections.length > 0 && returnCachedVersionOfGroup) {
+        if (that.connections.length > 0 && cacheIsValid) {
             deferred.resolve(that.connections);
             return retVal;
         }
@@ -445,7 +452,7 @@ module.exports = function (params) {
                 });
             });
 
-            returnCachedVersionOfGroup = true;
+            cacheIsValid = true;
 
             deferred.resolve(that.connections);
         }, function errorHandler(err) {
