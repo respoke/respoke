@@ -97,7 +97,7 @@ module.exports = function (params) {
     client.listen('disconnect', function disconnectHandler() {
         cacheIsValid = false;
         that.connections = [];
-    });
+    }, true);
 
     delete that.instanceId;
     delete that.onMessage;
