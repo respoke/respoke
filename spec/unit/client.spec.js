@@ -314,8 +314,7 @@ describe("respoke.Client", function () {
         beforeEach(function () {
             instanceId = respoke.makeGUID();
 
-            originalSignalingChannel = respoke.SignalingChannel;
-            respoke.SignalingChannel = signalingMock.method;
+            sinon.stub(respoke, 'SignalingChannel', signalingMock.method);
             client = respoke.createClient({
                 instanceId: instanceId,
                 gloveColor: "white"
@@ -330,7 +329,7 @@ describe("respoke.Client", function () {
 
         afterEach(function () {
             client = null;
-            respoke.SignalingChannel = originalSignalingChannel;
+            respoke.SignalingChannel.restore();
         });
 
         Object.keys(methodsWhichReturnPromises).forEach(function (method) {
