@@ -95,6 +95,7 @@ module.exports = function (params) {
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
     client.listen('disconnect', function disconnectHandler() {
+        cacheIsValid = false;
         that.connections = [];
     });
 
@@ -134,6 +135,7 @@ module.exports = function (params) {
         var promise;
         var deferred;
         var retVal;
+        cacheIsValid = false;
 
         try {
             validateConnection();
@@ -190,6 +192,7 @@ module.exports = function (params) {
         }).done(function successHandler() {
             that.connections = [];
             deferred.resolve();
+            cacheIsValid = false;
 
             /**
              * This event is fired when the client leaves a group.
