@@ -718,7 +718,6 @@ module.exports = function (params) {
             params = params || {};
             params.groupList = params.groupList || [];
 
-
             log.trace('been asked to join groups', params.groupList);
 
             var needsToRun = (Object.keys(groups).length === 0);
@@ -747,7 +746,6 @@ module.exports = function (params) {
                 groups = {};
                 var saveDeferred = deferred;
                 deferred = Q.defer();
-
 
                 if (groupList.length === 0) {
                     log.trace('list of groups was empty so not sending queue');
@@ -780,13 +778,15 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.id
      * @param {string} params.message
+     * @param {boolean} [params.push=false]
      */
     that.publish = function (params) {
         params = params || {};
         var deferred = Q.defer();
         var message = respoke.TextMessage({
             endpointId: params.id,
-            message: params.message
+            message: params.message,
+            push: !!params.push
         });
 
         if (!that.isConnected()) {
@@ -914,6 +914,7 @@ module.exports = function (params) {
      * @param {respoke.SignalingMessage} params.message - The string text message to send.
      * @param {respoke.Endpoint} params.recipient
      * @param {string} [params.connectionId]
+     * @param {boolean} [params.push=false]
      * @returns {Promise}
      */
     that.sendMessage = function (params) {
@@ -922,7 +923,8 @@ module.exports = function (params) {
         var message = respoke.TextMessage({
             endpointId: params.recipient.id,
             connectionId: params.connectionId,
-            message: params.message
+            message: params.message,
+            push: !!params.push
         });
 
         if (!that.isConnected()) {

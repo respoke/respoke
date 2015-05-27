@@ -104,6 +104,8 @@ module.exports = function (params) {
      * @method respoke.Connection.sendMessage
      * @param {object} params
      * @param {string} params.message
+     * @param {boolean} [params.push=false] Whether or not the message should be considered for push notifications to
+     * mobile devices.
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation
      * of this method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this

@@ -6,7 +6,7 @@ var testHelper = require('../test-helper');
 var expect = chai.expect;
 var _actualSinon = sinon;
 var respoke = testHelper.respoke;
-
+var Q = respoke.Q;
 var instanceId = respoke.makeGUID();
 var connectionId = respoke.makeGUID();
 
@@ -343,6 +343,38 @@ describe("A respoke.Endpoint", function () {
             expect(endpoint.startCall.calledOnce).to.equal(true);
             var startCallArgs = endpoint.startCall.firstCall.args[0];
             expect(startCallArgs).to.include.property('receiveOnly', true);
+        });
+    });
+
+    describe("sendMessage", function () {
+
+        describe("when called with a 'push' param", function () {
+
+            var messageEp;
+            var fakeSignalingChannel;
+
+            beforeEach(function () {
+                fakeSignalingChannel = {
+                    sendMessage: sinon.stub().returns(Q.resolve())
+                };
+
+                messageEp = respoke.Endpoint({
+                    signalingChannel: fakeSignalingChannel,
+                    instanceId: instanceId,
+                    addCall: sinon.stub()
+                });
+            });
+
+            it("passes it along to signalingChannel.sendMessage", function () {
+                messageEp.sendMessage({
+                    message: 'foo',
+                    push: true
+                });
+
+                expect(fakeSignalingChannel.sendMessage.calledOnce).to.equal(true);
+                var passedParams = fakeSignalingChannel.sendMessage.firstCall.args[0];
+                expect(passedParams).to.include.property('push', true);
+            });
         });
     });
 });

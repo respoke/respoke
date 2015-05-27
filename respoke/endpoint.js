@@ -187,6 +187,8 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.message
      * @param {string} [params.connectionId]
+     * @param {boolean} [params.push=false] Whether or not to consider the message for push notifications to mobile
+     * devices.
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of this
      * method only.
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this method
@@ -201,6 +203,7 @@ module.exports = function (params) {
         promise = signalingChannel.sendMessage({
             connectionId: params.connectionId,
             message: params.message,
+            push: !!params.push,
             recipient: that
         });
 
