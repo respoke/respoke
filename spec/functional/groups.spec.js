@@ -246,15 +246,22 @@ describe("Respoke groups", function () {
 
                 describe("sending a message", function () {
                     var messageEventSpy;
+                    var senderMessageEventSpy;
 
                     before(function (done) {
                         messageEventSpy = sinon.spy();
+                        senderMessageEventSpy = sinon.spy();
                         var doneListener = function () {
                             messageEventSpy();
-                            done();
+                            setTimeout(function () {
+                                done();
+                            }, 2000);
                         };
 
                         followeeGroup.once('message', doneListener);
+                        followerGroup.once('message', function () {
+                            senderMessageEventSpy();
+                        });
                         followerGroup.sendMessage({
                             message: 'test'
                         }).done(null, done);
@@ -266,6 +273,10 @@ describe("Respoke groups", function () {
 
                     it("fires the Group#message event", function () {
                         expect(messageEventSpy.called).to.equal(true);
+                    });
+
+                    it("sender gets its own message back", function () {
+                        expect(senderMessageEventSpy.called).to.equal(true);
                     });
                 });
 
