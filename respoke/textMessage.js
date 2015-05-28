@@ -50,6 +50,7 @@ module.exports = function (params) {
                 that.to = params.endpointId;
                 that.toConnection = params.connectionId;
                 that.requestConnectionReply = (params.requestConnectionReply === true);
+                that.push = (params.push === true);
             } catch (e) {
                 throw new Error(e);
             }

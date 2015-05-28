@@ -1,10 +1,11 @@
+/* global sinon: true */
 "use strict";
 
 var testHelper = require('../test-helper');
 
 var expect = chai.expect;
 var respoke = testHelper.respoke;
-
+var _actualSinon = sinon;
 var instanceId = respoke.makeGUID();
 var endpointId = respoke.makeGUID();
 
@@ -12,11 +13,14 @@ var client = respoke.createClient({
     instanceId: instanceId
 });
 
+
 describe("A respoke.Connection", function () {
     var connection;
     var connectionId;
 
     beforeEach(function () {
+        sinon = sinon.sandbox.create();
+
         connectionId = respoke.makeGUID();
         endpointId = respoke.makeGUID();
         connection = client.getConnection({
@@ -24,6 +28,11 @@ describe("A respoke.Connection", function () {
             endpointId: endpointId,
             gloveColor: "white"
         });
+    });
+
+    afterEach(function () {
+        sinon.restore();
+        sinon = _actualSinon;
     });
 
     describe("it's object structure", function () {
@@ -124,6 +133,32 @@ describe("A respoke.Connection", function () {
                 expect(endpoint.className).to.equal("respoke.Endpoint");
                 expect(endpoint.id).to.equal(endpointId);
                 expect(endpoint.connections[0].id).to.equal(connectionId);
+            });
+        });
+    });
+
+    describe("sendMessage", function () {
+
+        describe("when passed a 'push' param", function () {
+
+            var fakeEndpoint;
+
+            beforeEach(function () {
+                fakeEndpoint = {
+                    sendMessage: sinon.stub()
+                };
+
+                sinon.stub(connection, 'getEndpoint').returns(fakeEndpoint);
+            });
+
+            it("passes it along when calling endpoint.sendMessage", function () {
+                connection.sendMessage({
+                    message: 'foo',
+                    push: true
+                });
+                expect(fakeEndpoint.sendMessage.calledOnce).to.equal(true);
+                var passedParams = fakeEndpoint.sendMessage.firstCall.args[0];
+                expect(passedParams).to.include.property('push', true);
             });
         });
     });

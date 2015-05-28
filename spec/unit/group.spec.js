@@ -4,7 +4,7 @@ var testHelper = require('../test-helper');
 
 var expect = chai.expect;
 var respoke = testHelper.respoke;
-
+var Q = respoke.Q;
 var client;
 var instanceId;
 var group;
@@ -156,6 +156,41 @@ describe("A respoke.Group", function () {
         describe("isJoined()", function () {
             it("is false", function () {
                 expect(group.isJoined()).to.be.false;
+            });
+        });
+    });
+
+    describe("sendMessage", function () {
+
+        describe("when passed a 'push' param", function () {
+
+            var messageGrp;
+            var fakeSignalingChannel;
+
+            beforeEach(function () {
+                fakeSignalingChannel = {
+                    publish: sinon.stub().returns(Q.resolve()),
+                    isConnected: sinon.stub().returns(true)
+                };
+
+                messageGrp = respoke.Group({
+                    id: 'foogrp',
+                    signalingChannel: fakeSignalingChannel,
+                    instanceId: instanceId
+                });
+
+                sinon.stub(messageGrp, 'isJoined').returns(true);
+            });
+
+            it("passes it along to signalingChannel.publish", function () {
+                messageGrp.sendMessage({
+                    message: 'foo',
+                    push: true
+                });
+
+                expect(fakeSignalingChannel.publish.calledOnce).to.equal(true);
+                var passedParams = fakeSignalingChannel.publish.firstCall.args[0];
+                expect(passedParams).to.include.property('push', true);
             });
         });
     });
