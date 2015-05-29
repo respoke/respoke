@@ -1483,13 +1483,7 @@ module.exports = function (params) {
      */
     var onPubSub = function onPubSub(message) {
         var group;
-        var groupMessage;
-
-        if (message.header.from === client.endpointId) {
-            return;
-        }
-
-        groupMessage = respoke.TextMessage({
+        var groupMessage = respoke.TextMessage({
             rawMessage: message
         });
 
