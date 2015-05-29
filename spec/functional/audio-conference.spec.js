@@ -20,6 +20,7 @@ describe("Respoke audio conferencing", function () {
     var conferenceId = "my-super-cool-meetup";
 
     before(function () {
+        sinon.stub(console, 'log'); // ahhh, silence.
         return respokeAdmin.auth.admin({
             username: testHelper.config.username,
             password: testHelper.config.password
@@ -50,6 +51,7 @@ describe("Respoke audio conferencing", function () {
     });
 
     after(function () {
+        console.log.restore();
         if (roleId) {
             return respokeAdmin.roles.delete({
                 roleId: roleId
