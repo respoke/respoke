@@ -37,6 +37,7 @@ describe("Respoke calling", function () {
     var roleId;
 
     before(function () {
+        sinon.stub(console, 'log'); // ahhh, silence.
         return respokeAdmin.auth.admin({
             username: testHelper.config.username,
             password: testHelper.config.password
@@ -48,6 +49,7 @@ describe("Respoke calling", function () {
     });
 
     after(function () {
+        console.log.restore();
         if (roleId) {
             return respokeAdmin.roles.delete({
                 roleId: roleId
@@ -407,6 +409,98 @@ describe("Respoke calling", function () {
                     expect(followerICE.length).to.be.above(1);
                     expect(followeeICE.length).to.be.above(1);
                 }
+            });
+        });
+
+        describe("when the callee has two connections", function () {
+            var followeeClient2;
+            var followeeToken2;
+
+            beforeEach(function () {
+                return respoke.Q(respokeAdmin.auth.endpoint({
+                    endpointId: 'followee',
+                    appId: testHelper.config.appId,
+                    roleId: roleId
+                })).then(function (token) {
+                    followeeToken2 = token;
+                    followeeClient2 = respoke.createClient();
+
+                    return followeeClient2.connect({
+                        appId: testHelper.config.appId,
+                        baseURL: testHelper.config.baseURL,
+                        token: token.tokenId
+                    });
+                }).fin(function () {
+                    expect(followeeClient2.endpointId).not.to.be.undefined;
+                    expect(followeeClient2.endpointId).to.equal(followeeToken2.endpointId);
+                });
+            });
+
+            afterEach(function () {
+                if (followeeClient2.calls) {
+                    for (var i = followeeClient2.calls.length - 1; i >= 0; i -= 1) {
+                        followeeClient2.calls[i].hangup();
+                    }
+                }
+                followeeClient.ignore('call');
+                followeeClient2.ignore('call');
+                return followeeClient2.disconnect();
+            });
+
+            describe("when one connection rejects the call", function () {
+                beforeEach(function () {
+                    followeeClient.ignore('call');
+
+                    followeeClient2.listen('call', function (evt) {
+                        evt.call.reject();
+                    });
+                });
+
+                it("the other connection's call does NOT get canceled", function (done) {
+                    followeeClient.listen('call', function (evt) {
+                        evt.call.listen('hangup', function () {
+                            done(new Error("Was not supposed to hangup call."));
+                        });
+                        evt.call.answer();
+                    });
+
+                    followeeEndpoint.startCall({
+                        onConnect: function () {
+                            setTimeout(function () {
+                                done();
+                            }, 5000); // give it time for network traversal
+                        },
+                        onHangup: function () {
+                            done(new Error("Was not supposed to hangup call."));
+                        }
+                    });
+                });
+            });
+
+            describe("when one connection answers the call", function () {
+                beforeEach(function () {
+                    // have to do this bc we need the listener below for followeeClient2 to be executed
+                    // before the call is answered.
+                    followeeClient.ignore('call');
+                });
+
+                it("the other connection's call gets canceled", function (done) {
+                    followeeClient2.listen('call', function (evt) {
+                        evt.call.listen('hangup', function () {
+                            done();
+                        });
+                    });
+
+                    followeeClient.listen('call', function (evt) {
+                        evt.call.answer();
+                    });
+
+                    followeeEndpoint.startCall({
+                        onHangup: function () {
+                            done(new Error("Was not supposed to hangup call."));
+                        }
+                    });
+                });
             });
         });
 
