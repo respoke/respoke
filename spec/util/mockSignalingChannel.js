@@ -1,5 +1,6 @@
 'use strict';
 /* jshint unused: false */
+var uuid = require('uuid');
 
 module.exports = function (respoke) {
     var mocker = {};
@@ -24,6 +25,8 @@ module.exports = function (respoke) {
             var deferred = Q.defer();
             deferred.resolve();
             that.connected = true;
+            client.endpointId = params.endpointId || uuid.v4();
+            client.connectionId = uuid.v4();
             return deferred.promise;
         };
 

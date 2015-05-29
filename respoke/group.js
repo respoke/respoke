@@ -50,6 +50,16 @@ module.exports = function (params) {
     }
 
     /**
+     * Indicates whether there have been group membership changes since the last time we performed
+     * a network request to list group members.
+     * @memberof! respoke.Group
+     * @name cacheIsValid
+     * @private
+     * @type {boolean}
+     */
+    var cacheIsValid = false;
+
+    /**
      * Internal reference to the api signaling channel.
      * @memberof! respoke.Group
      * @name signalingChannel
@@ -85,8 +95,9 @@ module.exports = function (params) {
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
     client.listen('disconnect', function disconnectHandler() {
+        cacheIsValid = false;
         that.connections = [];
-    });
+    }, true);
 
     delete that.instanceId;
     delete that.onMessage;
@@ -124,6 +135,7 @@ module.exports = function (params) {
         var promise;
         var deferred;
         var retVal;
+        cacheIsValid = false;
 
         try {
             validateConnection();
@@ -180,6 +192,7 @@ module.exports = function (params) {
         }).done(function successHandler() {
             that.connections = [];
             deferred.resolve();
+            cacheIsValid = false;
 
             /**
              * This event is fired when the client leaves a group.
@@ -222,6 +235,8 @@ module.exports = function (params) {
         if (!params.connectionId) {
             throw new Error("Can't remove a member to the group without it's Connection id.");
         }
+
+        cacheIsValid = false;
 
         that.connections.every(function eachConnection(conn, index) {
             if (conn.id === params.connectionId) {
@@ -283,6 +298,8 @@ module.exports = function (params) {
         if (!params.connection) {
             throw new Error("Can't add a member to the group without it's Connection object.");
         }
+
+        cacheIsValid = false;
 
         absent = that.connections.every(function eachConnection(conn) {
             return (conn.id !== params.connection.id);
@@ -405,6 +422,11 @@ module.exports = function (params) {
             return retVal;
         }
 
+        if (that.connections.length > 0 && cacheIsValid) {
+            deferred.resolve(that.connections);
+            return retVal;
+        }
+
         signalingChannel.getGroupMembers({
             id: that.id
         }).done(function successHandler(list) {
@@ -432,6 +454,8 @@ module.exports = function (params) {
                     skipEvent: true
                 });
             });
+
+            cacheIsValid = true;
 
             deferred.resolve(that.connections);
         }, function errorHandler(err) {
