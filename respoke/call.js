@@ -443,8 +443,6 @@ module.exports = function (params) {
      * have been sent and the queue of tones is empty.
      * @param {respoke.Call.onToneSendingCancelled} [params.onToneSendingCancelled] - Callback for when a request to
      * cancel tone playback has been completed.
-     * @param {respoke.Call.onToneSendingError} [params.onToneSendingError] - Callback for when a request to
-     * play tones has errored.
      * @param {Array<RTCConstraints>} [params.constraints]
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
@@ -1735,12 +1733,14 @@ module.exports = function (params) {
      * @fires respoke.Call#tone-sending-complete
      * @fires respoke.Call#tone-sending-error
      * @fires respoke.Call#tone-sending-started
+     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback for when a request to
+     * play tones has succeeded.
+     * @param {respoke.Call.onError} [params.onError] - Callback for when a request to
+     * play tones has failed.
+     * @returns {Promise<respoke.PeerConnection>}
      */
-    that.sendTones = function (toneParams) {
-        var xparams = {tones: toneParams.tones, gap: toneParams.gap, duration: toneParams.duration};
-        xparams.onToneSendingComplete = params.onToneSendingComplete;
-        xparams.onToneSendingError = params.onToneSendingError;
-        return pc.sendTones(xparams);
+    that.sendTones = function (params) {
+        return pc.sendTones(params);
     };
 
     /**
@@ -1749,12 +1749,14 @@ module.exports = function (params) {
      * @method respoke.Call.cancelTones
      * @fires respoke.Call#tone-sending-cancelled
      * @fires respoke.Call#tone-sending-error
+     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback for when a request to
+     * play tones has succeeded.
+     * @param {respoke.Call.onError} [params.onError] - Callback for when a request to
+     * play tones has failed.
+     * @returns {Promise<respoke.PeerConnection>}
      */
-    that.cancelTones = function () {
-        return pc.cancelTones({
-            onToneCancelError: params.onToneCancelError,
-            onToneSendingCancelled: params.onToneSendingCancelled
-        });
+    that.cancelTones = function (params) {
+        return pc.cancelTones(params);
     };
 
     /**
@@ -2077,7 +2079,9 @@ module.exports = function (params) {
  * Called when a tone is sent on an audio track. This callback is called every time respoke.Call#tone-sent is fired.
  * @callback respoke.Call.onToneSent
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.target
+ * @param {respoke.Call} evt.tone
+ * @param {respoke.Call} evt.duration
+ * @param {respoke.Call} evt.gap
  */
 /**
  * Called when the playback queue of tones has started.
@@ -2098,21 +2102,21 @@ module.exports = function (params) {
  * This callback is called every time respoke.Call#tone-sending-error is fired.
  * @callback respoke.Call.onToneSendingError
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.target
+ * @param {respoke.Call} evt.message
  */
 /**
  * Called when a playback queue of tones is cleared and cancelled.
  * This callback is called every time respoke.Call#tone-sending-cancelled is fired.
  * @callback respoke.Call.onToneSendingCancelled
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.target
+ * @param {respoke.Call} evt.cancelledTones
  */
 /**
  * Called when a cancelling the tone queue errors.
  * This callback is called every time respoke.Call#tone-cancel-error is fired.
  * @callback respoke.Call.onToneCancelError
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.target
+ * @param {respoke.Call} evt.message
  */
 /**
  * Receive the DirectConnection.

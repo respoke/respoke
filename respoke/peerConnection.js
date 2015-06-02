@@ -177,21 +177,23 @@ module.exports = function (params) {
      * @desc A temporary function saved from params in order to construct the candidate signaling function.
      */
     var signalCandidateOrig = params.signalCandidate;
+
     /**
+     * The RTCDTMFSender as provided by the browser API.
      * @memberof! respoke.PeerConnection
      * @private
      * @name digitSender
      * @type RTCPeerConnection
-     * @desc The RTCDTMFSender as provided by the browser API.
      */
+
     var digitSender = null;
-    /**
+
+     /**
+     * A temporary variable to define if we're in the middle of cancelling any tones on a peer connection
      * @memberof! respoke.PeerConnection
-     * @name signalCandidate
      * @private
-     * @type {function}
-     * @desc A signaling function constructed from the one passed to us by the signaling channel with additions
-     * to facilitate candidate logging.
+     * @name cancellingTones
+     * @type RTCPeerConnection
      */
 
     var cancellingTones = false;
@@ -781,7 +783,7 @@ module.exports = function (params) {
      * Send what are known in telecom world as DTMF tones to the other party. This allows the user to interact with
      * IVRs when connected to a PSTN phone call for example.
      * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.sentTone
+     * @method respoke.PeerConnection.sendTones
      * @param {object} param
      * @param {string} [param.tones] - This string can be made up of the characters `0 through to 9`, `A through
      to D`, a `#` or a `*` and are case insensitive. These characters form tones of different frequencies.
@@ -790,13 +792,18 @@ module.exports = function (params) {
      tone for. This value needs to be between 40 and 6000 and defaults to 100.
      * @param {number} [param.gap] - Optional number in mlliseconds to indicate the gap between playing the tones.
      This value needs to be larger than 30 and defaults to 70.
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
      * @fires respoke.PeerConnection#tone-sent
+     * @fires respoke.PeerConnection#tone-sending-error
+     * @fires respoke.PeerConnection#tone-sending-complete
      */
 
     that.sendTones = function (params) {
         var deferred = Q.defer();
 
-        var retVal = respoke.handlePromise(deferred.promise, params.onToneSendingComplete, params.onToneSendingError);
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 
         params = typeof params === 'object' ? params  : {};
 
@@ -837,92 +844,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        if (!digitSender) {
-            var audioTracks = that.call.outgoingMedia.getAudioTracks();
-            if (!audioTracks || audioTracks.length < 1) {
-                err = new Error('Could not send tones "' + params.tones + '" because not audio sent yet');
-                log.warn(err);
-                deferred.reject(err);
-                that.call.fire('tone-sending-error', {
-                    message: err.message
-                });
-                return retVal;
-            }
-
-            digitSender = pc.createDTMFSender(audioTracks[0]);
-
-            digitSender.ontonechange = function onToneChange(evt) {
-                /**
-                 * Indicate the RTCPeerConnection has sent a tone.
-                 * @event respoke.PeerConnection#tone-sent
-                 * @type {respoke.Event}
-                 * @property {string} name - the event name.
-                 * @property {respoke.PeerConnection}
-                 */
-
-                var eventData = {
-                    tone: evt.tone,
-                    duration: digitSender.duration,
-                    gap: digitSender.interToneGap
-                    //do we want to also give back what track it was played on as we're presuming we want to play on the first audio track?
-                };
-
-                if (evt.tone !== '') {
-                    that.call.fire('tone-sent', eventData);
-                }
-
-                //empty string in evt.tone represents end of the queue so do tidy up here for sendTones & cancelTones
-                if (evt.tone === '') {
-
-                    digitSender = null;
-
-                    if (!cancellingTones) {
-
-                        /**
-                         * Indicate the RTCPeerConnection has finished sending tones, unless they were cancelled.
-                         * @event respoke.PeerConnection#tone-sending-complete
-                         * @type {respoke.Event}
-                         * @property {string} name - the event name.
-                         * @property {respoke.PeerConnection}
-                         */
-                        deferred.resolve();
-                        that.call.fire('tone-sending-complete');
-                    } else {
-                        cancellingTones = false;
-                        deferred.reject(new Error('Tone playback cancelled'));
-                    }
-
-                }
-
-            };
-
-            if (!digitSender.canInsertDTMF) {
-                err = new Error('Unable to insert tones into audio track');
-                log.warn(err);
-                deferred.reject(err);
-                that.call.fire('tone-sending-error', {
-                    message: err.message
-                });
-                return retVal;
-            }
-
-            try{
-                digitSender.insertDTMF(params.tones, params.duration, params.gap);
-            } catch (e) {
-                err = new Error('Unable to queue tones on audio track due to an error');
-                log.warn(err, params, e);
-                deferred.reject(err);
-                that.call.fire('tone-sending-error', {
-                    message: err.message
-                });
-                return retVal;
-            }
-            log.debug('successfully queued playback of tones', {
-                tones: digitSender.toneBuffer,
-                duration: digitSender.duration,
-                gap: digitSender.interToneGap
-            });
-        }else{
+        if (digitSender) {
             err = new Error('Unable to queue tones on audio track as a digitSender already exists');
             log.warn(err);
             deferred.reject(err);
@@ -932,14 +854,111 @@ module.exports = function (params) {
             return retVal;
         }
 
+        var audioTracks = that.call.outgoingMedia.getAudioTracks();
+        if (!audioTracks || audioTracks.length < 1) {
+            err = new Error('Could not send tones "' + params.tones + '" because not audio sent yet');
+            log.warn(err);
+            deferred.reject(err);
+            that.call.fire('tone-sending-error', {
+                message: err.message
+            });
+            return retVal;
+        }
+
+        digitSender = pc.createDTMFSender(audioTracks[0]);
+
+        digitSender.ontonechange = function onToneChange(evt) {
+            /**
+             * Indicate the RTCPeerConnection has sent a tone.
+             * @event respoke.PeerConnection#tone-sent
+             * @type {respoke.Event}
+             * @property {string} name - the event name.
+             * @property {respoke.PeerConnection}
+             */
+
+            var eventData = {
+                tone: evt.tone,
+                duration: digitSender.duration,
+                gap: digitSender.interToneGap
+            };
+
+            if (evt.tone !== '') {
+                that.call.fire('tone-sent', eventData);
+            }
+
+            //empty string in evt.tone represents end of the queue so do tidy up here for sendTones & cancelTones
+            if (evt.tone === '') {
+
+                digitSender = null;
+
+                if (!cancellingTones) {
+
+                    /**
+                     * Indicate the RTCPeerConnection has finished sending tones, unless they were cancelled.
+                     * @event respoke.PeerConnection#tone-sending-complete
+                     * @type {respoke.Event}
+                     * @property {string} name - the event name.
+                     * @property {respoke.PeerConnection}
+                     */
+                    deferred.resolve();
+                    that.call.fire('tone-sending-complete');
+                } else {
+                    cancellingTones = false;
+                    deferred.reject(new Error('Tone playback cancelled'));
+                }
+
+            }
+
+        };
+
+        if (!digitSender.canInsertDTMF) {
+            err = new Error('Unable to insert tones into audio track');
+            log.warn(err);
+            deferred.reject(err);
+            that.call.fire('tone-sending-error', {
+                message: err.message
+            });
+            return retVal;
+        }
+
+        try{
+            digitSender.insertDTMF(params.tones, params.duration, params.gap);
+        } catch (e) {
+            err = new Error('Unable to queue tones on audio track due to an error');
+            log.warn(err, params, e);
+            deferred.reject(err);
+            that.call.fire('tone-sending-error', {
+                message: err.message
+            });
+            return retVal;
+        }
+        log.debug('successfully queued playback of tones', {
+            tones: digitSender.toneBuffer,
+            duration: digitSender.duration,
+            gap: digitSender.interToneGap
+        });
+
         return retVal;
     };
+
+    /**
+     * Cancel any tones still being sent via sendTones.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.cancelTones
+     * @param {object} param
+     * @param {function} [params.onSuccess] - Success handler for this invocation of this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @fires respoke.PeerConnection
+     * @fires respoke.PeerConnection#tone-cancel-error
+     * @fires respoke.PeerConnection#tone-sending-cancelled
+     */
 
     that.cancelTones = function (params) {
 
         var deferred = Q.defer();
 
-        var retVal = respoke.handlePromise(deferred.promise, params.onToneSendingCancelled, params.onToneCancelError);
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
         var err;
 
         if (!pc) {
@@ -953,45 +972,7 @@ module.exports = function (params) {
 
         }
 
-        if (digitSender) {
-            if (!digitSender.canInsertDTMF) {
-                err = new Error('Unable to cancel playback of tones as cannot change tones on audio track');
-                log.warn(err);
-                deferred.reject(err);
-                that.call.fire('tone-cancel-error', {
-                    message: err.message
-                });
-                return retVal;
-            }
-
-            cancellingTones = true;
-            var tonesToCancel = digitSender.toneBuffer;
-
-            try {
-                digitSender.insertDTMF('');
-            } catch (e) {
-                err = new Error('Unable to cancel playback of tones');
-                log.warn(err, e);
-                deferred.reject(err);
-                that.call.fire('tone-cancel-error', {
-                    message: err.message
-                });
-                return retVal;
-            }
-
-            /**
-             * Indicate the RTCPeerConnection has finished sending tones.
-             * @event respoke.PeerConnection#tone-sending-complete
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.PeerConnection}
-             */
-            deferred.resolve();
-            that.call.fire('tone-sending-cancelled', {
-                cancelledTones: tonesToCancel
-            });
-
-        }else{
+        if (!digitSender) {
             err = new Error('Unable to queue tones on audio track as a digitSender does not exist');
             log.warn(err);
             deferred.reject(err);
@@ -1000,6 +981,44 @@ module.exports = function (params) {
             });
             return retVal;
         }
+
+        if (!digitSender.canInsertDTMF) {
+            err = new Error('Unable to cancel playback of tones as cannot change tones on audio track');
+            log.warn(err);
+            deferred.reject(err);
+            that.call.fire('tone-cancel-error', {
+                message: err.message
+            });
+            return retVal;
+        }
+
+        cancellingTones = true;
+        var tonesToCancel = digitSender.toneBuffer;
+
+        try {
+            digitSender.insertDTMF('');
+        } catch (e) {
+            err = new Error('Unable to cancel playback of tones');
+            log.warn(err, e);
+            deferred.reject(err);
+            that.call.fire('tone-cancel-error', {
+                message: err.message
+            });
+            return retVal;
+        }
+
+        /**
+         * Indicate the RTCPeerConnection has finished cancelling tones.
+         * @event respoke.PeerConnection#tone-sending-cancelled
+         * @type {respoke.Event}
+         * @property {string} name - the event name.
+         * @property {respoke.PeerConnection}
+         */
+        deferred.resolve();
+        that.call.fire('tone-sending-cancelled', {
+            cancelledTones: tonesToCancel
+        });
+
         return retVal;
     };
 
