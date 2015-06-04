@@ -15,9 +15,9 @@ describe("Respoke audio conferencing", function () {
     var conference2;
     var client1;
     var client2;
-    var endpointId1 = uuid.v4();
-    var endpointId2 = uuid.v4();
-    var conferenceId = "my-super-cool-meetup";
+    var endpointId1 = uuid.v4() + ' bar';
+    var endpointId2 = uuid.v4() + ' foo';
+    var conferenceId = "my super cool meetup";
 
     before(function () {
         sinon.stub(console, 'log'); // ahhh, silence.

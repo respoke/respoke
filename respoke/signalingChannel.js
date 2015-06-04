@@ -13,6 +13,7 @@
 var Q = require('q');
 var io = require('socket.io-client');
 var respoke = require('./respoke');
+var template = require('url-template');
 var log = respoke.log;
 
 /**
@@ -425,10 +426,14 @@ module.exports = function (params) {
     that.close = function () {
         var deferred = Q.defer();
 
+
+
         wsCall({
-            path: '/v1/connections/%s/',
+            path: '/v1/connections/{id}/',
             httpMethod: 'DELETE',
-            objectId: client.endpointId
+            urlParams: {
+                id: client.endpointId
+            }
         }).fin(function finallyHandler() {
             return call({
                 path: '/v1/session-tokens',
@@ -521,7 +526,11 @@ module.exports = function (params) {
 
         wsCall({
             httpMethod: 'DELETE',
-            path: '/v1/conferences/' + params.conferenceId + '/participants/' + endpointId,
+            path: '/v1/conferences/{id}/participants/{endpointId}',
+            urlParams: {
+                id: params.conferenceId,
+                endpointId: endpointId
+            },
             parameters: {
                 connectionId: params.connectionId // Optional; It's OK if it's undefined here.
             }
@@ -554,8 +563,8 @@ module.exports = function (params) {
 
         wsCall({
             httpMethod: 'DELETE',
-            path: '/v1/conferences/%s/',
-            objectId: params.conferenceId
+            path: '/v1/conferences/{id}/',
+            urlParams: { id: params.conferenceId }
         }).then(function successHandler() {
             deferred.resolve();
         }, function errorHandler(err) {
@@ -585,8 +594,8 @@ module.exports = function (params) {
 
         wsCall({
             httpMethod: 'GET',
-            path: '/v1/conferences/%s/participants/',
-            objectId: params.id
+            path: '/v1/conferences/{id}/participants/',
+            urlParams: { id: params.id }
         }).then(function successHandler(participants) {
             deferred.resolve(participants.map(function (par) {
                 return client.getConnection({
@@ -795,8 +804,8 @@ module.exports = function (params) {
         }
 
         wsCall({
-            path: '/v1/channels/%s/publish/',
-            objectId: params.id,
+            path: '/v1/channels/{id}/publish/',
+            urlParams: { id: params.id },
             httpMethod: 'POST',
             parameters: message
         }).done(function successHandler() {
@@ -899,8 +908,8 @@ module.exports = function (params) {
         }
 
         return wsCall({
-            path: '/v1/channels/%s/subscribers/',
-            objectId: params.id,
+            path: '/v1/channels/{id}/subscribers/',
+            urlParams: { id: params.id },
             httpMethod: 'GET'
         });
     };
@@ -2009,8 +2018,8 @@ module.exports = function (params) {
 
         params.httpMethod = (params.httpMethod || 'get').toLowerCase();
 
-        if (params.objectId) {
-            params.path = params.path.replace(/\%s/ig, params.objectId);
+        if (params.urlParams) {
+            params.path = template.parse(params.path).expand(params.urlParams);
         }
 
         if (logRequest) {
@@ -2156,8 +2165,8 @@ module.exports = function (params) {
             return;
         }
 
-        if (params.objectId) {
-            params.path = params.path.replace(/\%s/ig, params.objectId);
+        if (params.urlParams) {
+            uri = template.parse(uri).expand(params.urlParams);
         }
 
         if (['GET', 'DELETE'].indexOf(params.httpMethod) > -1) {

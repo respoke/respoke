@@ -18,7 +18,7 @@ describe("A respoke.Group", function () {
         group = respoke.Group({
             gloveColor: 'white',
             instanceId: instanceId,
-            id: respoke.makeGUID()
+            id: respoke.makeGUID() + ' foobar'
         });
         expect(typeof group).to.equal('object');
         expect(group.className).to.equal('respoke.Group');

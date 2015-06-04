@@ -22,7 +22,7 @@ describe("A respoke.Connection", function () {
         sinon = sinon.sandbox.create();
 
         connectionId = respoke.makeGUID();
-        endpointId = respoke.makeGUID();
+        endpointId = respoke.makeGUID() + ' foobar';
         connection = client.getConnection({
             connectionId: connectionId,
             endpointId: endpointId,

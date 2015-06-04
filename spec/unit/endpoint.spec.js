@@ -20,7 +20,7 @@ describe("A respoke.Endpoint", function () {
 
     beforeEach(function () {
         sinon = sinon.sandbox.create();
-        endpointId = respoke.makeGUID();
+        endpointId = respoke.makeGUID() + ' foobar';
         endpoint = client.getEndpoint({
             connectionId: connectionId,
             id: endpointId,
