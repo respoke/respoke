@@ -244,28 +244,96 @@ describe("Respoke groups", function () {
                     expect(onJoinSpy.called).to.be.ok;
                 });
 
-                describe("sending a message", function () {
-                    var messageEventSpy;
+                describe("when the sender has 2 connections", function () {
+                    var followerClient2;
+                    var followerToken2;
+                    var followerGroup2;
 
-                    before(function (done) {
-                        messageEventSpy = sinon.spy();
-                        var doneListener = function () {
-                            messageEventSpy();
-                            done();
-                        };
+                    before(function () {
+                        return respoke.Q(respokeAdmin.auth.endpoint({
+                            endpointId: followerClient.endpointId,
+                            appId: testHelper.config.appId,
+                            roleId: roleId
+                        })).then(function (token) {
+                            followerToken2 = token;
+                            followerClient2 = respoke.createClient();
 
-                        followeeGroup.once('message', doneListener);
-                        followerGroup.sendMessage({
-                            message: 'test'
-                        }).done(null, done);
+                            return followerClient2.connect({
+                                appId: testHelper.config.appId,
+                                baseURL: testHelper.config.baseURL,
+                                token: token.tokenId
+                            });
+                        }).then(function () {
+                            expect(followerClient2.endpointId).not.to.equal(undefined);
+                            expect(followerClient2.endpointId).to.equal(followerClient.endpointId);
+                            expect(followerClient2.connectionId).not.to.equal(followerClient.connectionId);
+                            return followerClient2.join({id: groupId});
+                        }).then(function (theFollowerGroup) {
+                            followerGroup2 = theFollowerGroup;
+                            expect(followerGroup2).not.to.equal(undefined);
+                        });
                     });
 
-                    it("calls the onMessage callback", function () {
-                        expect(onMessageSpy.called).to.equal(true);
+                    after(function () {
+                        return followerClient2.disconnect();
                     });
 
-                    it("fires the Group#message event", function () {
-                        expect(messageEventSpy.called).to.equal(true);
+                    describe("sending a message", function () {
+                        var rListener;
+                        var rSpy; // recipient
+                        var cSpy; // connection
+                        var sSpy; // sender
+
+                        beforeEach(function (done) {
+                            done = doneOnceBuilder(done);
+
+                            rSpy = sinon.spy();
+                            cSpy = sinon.spy();
+                            sSpy = sinon.spy();
+
+                            rListener = function () {
+                                rSpy();
+                                setTimeout(function () {
+                                    done();
+                                }, 500); // let connection get its message, too
+                            };
+
+                            followeeGroup.once('message', rListener);
+                            followerGroup.once('message', sSpy);
+                            followerGroup2.once('message', cSpy);
+
+                            followerGroup.sendMessage({
+                                message: 'test'
+                            }).done(function () {
+                                // This is so if recipient doesn't receive the message, the actual test will fail
+                                // instead of the beforeEach failing.
+                                setTimeout(function () {
+                                    done();
+                                }, 1000);
+                            }, done);
+                        });
+
+                        afterEach(function () {
+                            followeeGroup.ignore('message', rListener);
+                            followerGroup.ignore('message', sSpy);
+                            followerGroup2.ignore('message', cSpy);
+                        });
+
+                        it("calls the onMessage callback", function () {
+                            expect(onMessageSpy.called).to.equal(true);
+                        });
+
+                        it("fires the Group#message event", function () {
+                            expect(rSpy.called).to.equal(true);
+                        });
+
+                        it("sender doesn't get its own message back", function () {
+                            expect(sSpy.called).to.equal(false);
+                        });
+
+                        it("sender's other connection does get the message", function () {
+                            expect(cSpy.called).to.equal(true);
+                        });
                     });
                 });
 
