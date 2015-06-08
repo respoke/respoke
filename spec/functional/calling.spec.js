@@ -448,39 +448,88 @@ describe("Respoke calling", function () {
             });
 
             describe("when one connection rejects the call", function () {
-                beforeEach(function () {
-                    followeeClient.ignore('call');
+                describe("before the other answers it", function () {
+                    beforeEach(function () {
+                        followeeClient.ignore('call');
 
-                    followeeClient2.listen('call', function (evt) {
-                        evt.call.reject();
+                        followeeClient2.listen('call', function (evt) {
+                            evt.call.reject();
+                        });
+                    });
+
+                    it("the other connection's call gets orphaned instead of canceled", function (done) {
+                        done = doneOnceBuilder(done);
+                        followeeClient.listen('call', function (evt) {
+                            evt.call.listen('hangup', function () {
+                                done(new Error("Was not supposed to hangup call."));
+                            });
+                        });
+
+                        followeeEndpoint.startCall();
+
+                        setTimeout(function () {
+                            done();
+                        }, 5000); // give it time to fail
                     });
                 });
 
-                it("the other connection's call does NOT get canceled", function (done) {
-                    followeeClient.listen('call', function (evt) {
-                        evt.call.listen('hangup', function () {
-                            done(new Error("Was not supposed to hangup call."));
-                        });
-                        evt.call.answer();
+                describe("after the other answers it", function () {
+                    var client1Call;
+                    var client2Call;
+
+                    beforeEach(function () {
+                        followeeClient.ignore('call');
                     });
 
-                    followeeEndpoint.startCall({
-                        onConnect: function () {
-                            setTimeout(function () {
+                    it("the other connection's call stays up", function (done) {
+                        done = doneCountBuilder(2, done);
+
+                        followeeClient2.listen('call', function (evt) {
+                            client2Call = evt.call;
+
+                            // make sure reject gets called after the other answer.
+                            if (client1Call) {
+                                client2Call.reject();
+                            }
+                        });
+
+                        followeeClient.listen('call', function (evt) {
+                            client1Call = evt.call;
+
+                            evt.call.listen('hangup', function () {
+                                done(new Error("Was not supposed to hangup call."));
+                            });
+
+                            evt.call.answer();
+
+                            if (client2Call) {
+                                setTimeout(function () {
+                                    client2Call.reject();
+                                });
+                            }
+                        });
+
+                        followeeClient.listen('call', function (evt) {
+                            evt.call.listen('connect', function () {
                                 done();
-                            }, 5000); // give it time for network traversal
-                        },
-                        onHangup: function () {
-                            done(new Error("Was not supposed to hangup call."));
-                        }
+                            });
+
+                            evt.call.listen('hangup', function () {
+                                done(new Error("Was not supposed to hangup call."));
+                            });
+                        });
+
+                        followeeEndpoint.startCall();
+
+                        setTimeout(function () {
+                            done();
+                        }, 5000); // give it time to fail
                     });
                 });
             });
 
             describe("when one connection answers the call", function () {
                 beforeEach(function () {
-                    // have to do this bc we need the listener below for followeeClient2 to be executed
-                    // before the call is answered.
                     followeeClient.ignore('call');
                 });
 
