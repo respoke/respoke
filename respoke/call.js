@@ -2079,44 +2079,30 @@ module.exports = function (params) {
  * Called when a tone is sent on an audio track. This callback is called every time respoke.Call#tone-sent is fired.
  * @callback respoke.Call.onToneSent
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.tone
- * @param {respoke.Call} evt.duration
- * @param {respoke.Call} evt.gap
+ * @param {string} evt.tone
+ * @param {number} evt.duration
+ * @param {number} evt.gap
  */
 /**
  * Called when the playback queue of tones has started.
  * This callback is called every time respoke.Call#tone-sending-started is fired.
  * @callback respoke.Call.onToneSendingStarted
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.target
+ * @param {object} evt.target
  */
 /**
  * Called when the playback queue of tones has completed.
  * This callback is called every time respoke.Call#tone-sending-complete is fired.
  * @callback respoke.Call.onToneSendingComplete
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.target
- */
-/**
- * Called when the playback of tones errors.
- * This callback is called every time respoke.Call#tone-sending-error is fired.
- * @callback respoke.Call.onToneSendingError
- * @param {respoke.Event} evt
- * @param {respoke.Call} evt.message
+ * @param {object} evt.target
  */
 /**
  * Called when a playback queue of tones is cleared and cancelled.
  * This callback is called every time respoke.Call#tone-sending-cancelled is fired.
  * @callback respoke.Call.onToneSendingCancelled
  * @param {respoke.Event} evt
- * @param {respoke.Call} evt.cancelledTones
- */
-/**
- * Called when a cancelling the tone queue errors.
- * This callback is called every time respoke.Call#tone-cancel-error is fired.
- * @callback respoke.Call.onToneCancelError
- * @param {respoke.Event} evt
- * @param {respoke.Call} evt.message
+ * @param {object} evt.cancelledTones
  */
 /**
  * Receive the DirectConnection.

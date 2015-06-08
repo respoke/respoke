@@ -183,7 +183,7 @@ module.exports = function (params) {
      * @memberof! respoke.PeerConnection
      * @private
      * @name digitSender
-     * @type RTCPeerConnection
+     * @type RTCDigitSender
      */
 
     var digitSender = null;
@@ -193,7 +193,7 @@ module.exports = function (params) {
      * @memberof! respoke.PeerConnection
      * @private
      * @name cancellingTones
-     * @type RTCPeerConnection
+     * @type boolean
      */
 
     var cancellingTones = false;
@@ -796,7 +796,6 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @fires respoke.PeerConnection#tone-sent
-     * @fires respoke.PeerConnection#tone-sending-error
      * @fires respoke.PeerConnection#tone-sending-complete
      */
 
@@ -838,9 +837,6 @@ module.exports = function (params) {
         if (err) {
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-sending-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -848,9 +844,6 @@ module.exports = function (params) {
             err = new Error('Unable to queue tones on audio track as a digitSender already exists');
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-sending-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -859,9 +852,6 @@ module.exports = function (params) {
             err = new Error('Could not send tones "' + params.tones + '" because not audio sent yet');
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-sending-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -872,8 +862,9 @@ module.exports = function (params) {
              * Indicate the RTCPeerConnection has sent a tone.
              * @event respoke.PeerConnection#tone-sent
              * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.PeerConnection}
+             * @property {string} evt.tone
+             * @property {number} evt.duration
+             * @property {number} evt.gap
              */
 
             var eventData = {
@@ -898,7 +889,6 @@ module.exports = function (params) {
                      * @event respoke.PeerConnection#tone-sending-complete
                      * @type {respoke.Event}
                      * @property {string} name - the event name.
-                     * @property {respoke.PeerConnection}
                      */
                     deferred.resolve();
                     that.call.fire('tone-sending-complete');
@@ -915,9 +905,6 @@ module.exports = function (params) {
             err = new Error('Unable to insert tones into audio track');
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-sending-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -927,9 +914,6 @@ module.exports = function (params) {
             err = new Error('Unable to queue tones on audio track due to an error');
             log.warn(err, params, e);
             deferred.reject(err);
-            that.call.fire('tone-sending-error', {
-                message: err.message
-            });
             return retVal;
         }
         log.debug('successfully queued playback of tones', {
@@ -950,7 +934,6 @@ module.exports = function (params) {
      * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
      * method only.
      * @fires respoke.PeerConnection
-     * @fires respoke.PeerConnection#tone-cancel-error
      * @fires respoke.PeerConnection#tone-sending-cancelled
      */
 
@@ -965,9 +948,6 @@ module.exports = function (params) {
             err = new Error('No Peer Connection available');
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-cancel-error', {
-                message: err.message
-            });
             return retVal;
 
         }
@@ -976,9 +956,6 @@ module.exports = function (params) {
             err = new Error('Unable to queue tones on audio track as a digitSender does not exist');
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-cancel-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -986,9 +963,6 @@ module.exports = function (params) {
             err = new Error('Unable to cancel playback of tones as cannot change tones on audio track');
             log.warn(err);
             deferred.reject(err);
-            that.call.fire('tone-cancel-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -1001,9 +975,6 @@ module.exports = function (params) {
             err = new Error('Unable to cancel playback of tones');
             log.warn(err, e);
             deferred.reject(err);
-            that.call.fire('tone-cancel-error', {
-                message: err.message
-            });
             return retVal;
         }
 
@@ -1012,7 +983,6 @@ module.exports = function (params) {
          * @event respoke.PeerConnection#tone-sending-cancelled
          * @type {respoke.Event}
          * @property {string} name - the event name.
-         * @property {respoke.PeerConnection}
          */
         deferred.resolve();
         that.call.fire('tone-sending-cancelled', {
