@@ -72,7 +72,8 @@
     "loglevel": "^1.2.0",
     "q": "^1.3.0",
     "socket.io-client": "^0.9.16",
-    "statechart": "DavidDurman/statechart#1.1.0"
+    "statechart": "DavidDurman/statechart#1.1.0",
+    "url-template": "^2.0.6"
   },
   "devDependencies": {
     "async": "~0.9.0",
