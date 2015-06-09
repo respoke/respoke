@@ -14,7 +14,7 @@ var client = respoke.createClient({
     instanceId: instanceId
 });
 
-describe.only("A respoke.Endpoint", function () {
+describe("A respoke.Endpoint", function () {
     var endpoint;
     var endpointId;
 
