@@ -12,7 +12,7 @@
  * @ignore
  */
 
-var Airbrake = require('airbrake-js');
+// var Airbrake = require('airbrake-js');
 var log = require('loglevel');
 log.setLevel(log.levels.WARN);
 
@@ -21,17 +21,18 @@ log.methodFactory = function logMethodFactory(methodName, logLevel) {
     var logMethod = originalFactory(methodName, logLevel);
     var errorReporter;
 
-    if (!window.skipErrorReporting && methodName === 'error') {
-        var airbrake = new Airbrake({
-            projectId: '98133',
-            projectKey: 'cd3e085acc5e554658ebcdabd112a6f4'
-        });
-        errorReporter = function (message) {
-            airbrake.push({ error: { message: message } });
-        };
-    } else {
-        errorReporter = function () { };
-    }
+    // if (!window.skipErrorReporting && methodName === 'error') {
+    //     var airbrake = new Airbrake({
+    //         projectId: '98133',
+    //         projectKey: 'cd3e085acc5e554658ebcdabd112a6f4'
+    //     });
+    //     errorReporter = function (message) {
+    //         airbrake.push({ error: { message: message } });
+    //     };
+    // } else {
+    //     errorReporter = function () { };
+    // }
+    errorReporter = function () { };
 
     return function (message) {
         var args = Array.prototype.slice.call(arguments);
