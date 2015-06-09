@@ -1,6 +1,6 @@
 {
   "name": "respoke",
-  "version": "1.36.0",
+  "version": "1.36.1",
   "description": "Client-side JavaScript library for Respoke.",
   "main": "respoke/respoke.js",
   "scripts": {
@@ -68,7 +68,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "airbrake-js": "^0.4.0-alpha.2",
+    "airbrake-js": "^0.4.3",
     "loglevel": "^1.2.0",
     "q": "^1.3.0",
     "socket.io-client": "^0.9.16",
