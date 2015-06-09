@@ -905,8 +905,6 @@ describe("The respoke namespace", function () {
                 var constraints = respoke.getScreenShareConstraints();
 
                 expect(constraints).to.deep.equal([{
-                    mandatory: {},
-                    optional: [],
                     audio: false,
                     video: {
                         mandatory: {
@@ -928,8 +926,6 @@ describe("The respoke namespace", function () {
                 var constraints = respoke.getScreenShareConstraints();
 
                 expect(constraints).to.deep.equal([{
-                    mandatory: {},
-                    optional: [],
                     audio: false,
                     video: {
                         mandatory: {
@@ -950,11 +946,12 @@ describe("The respoke namespace", function () {
 
                 var constraints = respoke.getScreenShareConstraints();
 
+                console.log(constraints[1]);
                 expect(constraints).to.deep.equal([{
-                    mandatory: {},
-                    optional: [],
                     audio: false,
                     video: {
+                        optional: [],
+                        mandatory: {},
                         mediaSource: 'screen'
                     }
                 }]);
@@ -1358,6 +1355,8 @@ describe("The respoke namespace", function () {
                     var constraints = respoke.getScreenShareConstraints({ source: 'foobar' });
 
                     expect(constraints[0].video).to.deep.equal({
+                        optional: [],
+                        mandatory: {},
                         mediaSource: 'foobar'
                     });
                 });

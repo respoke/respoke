@@ -364,6 +364,8 @@ module.exports = function (params) {
      * for the user to give permission to start getting audio or video.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
      * information.
+     * @param {Array<RTCConstraints>} [params.constraints] - Additional media to add to the call.
+     * @param {RTCConstraints} [params.screenConstraints] - Overrides for the screen media.
      * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -383,10 +385,11 @@ module.exports = function (params) {
         }
 
         if (params.caller) {
-            params.constraints = respoke.getScreenShareConstraints(params);
-            params.sendOnly = true;
-        } else {
-            params.receiveOnly = true;
+            params.constraints = respoke.convertConstraints(params.constraints);
+            params.constraints.push(respoke.getScreenShareConstraints({
+                constraints: params.screenConstraints
+            }));
+            delete params.screenConstraints;
         }
 
         return that.startCall(params);

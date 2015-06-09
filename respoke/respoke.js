@@ -795,7 +795,9 @@ respoke.queueFactory = function () {
 };
 
 /**
- * Retrieve browser-specific WebRTC getUserMedia constraints needed to start a screen sharing call.
+ * Retrieve browser-specific WebRTC getUserMedia constraints needed to start a screen sharing call. This function
+ * assumes tha the first item in the constraints array is a set of defaults that it should modify to make
+ * screen sharing constraints out of them.
  *
  * @memberof respoke
  * @static
@@ -808,10 +810,11 @@ respoke.queueFactory = function () {
 respoke.getScreenShareConstraints = function (params) {
     params = params || {};
     var convertedConstraints = respoke.convertConstraints(params.constraints, [{
-        audio: true,
-        video: {},
-        mandatory: {},
-        optional: []
+        audio: false,
+        video: {
+            mandatory: {},
+            optional: []
+        }
     }]);
 
     var screenConstraint = convertedConstraints[0];

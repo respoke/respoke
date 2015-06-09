@@ -15,14 +15,16 @@ describe("respoke.getScreenShareMedia", function () {
         var result = respoke.EventEmitter();
 
         result.start = function () {
+            var deferred = respoke.Q.defer();
             setTimeout(function () {
                 if (params.reject) {
-                    result.fire('error', params.reject);
+                    deferred.reject(params.reject);
                     return;
                 }
 
-                result.fire('stream-received', params.resolve);
+                deferred.resolve();
             });
+            return deferred.promise;
         };
 
         return result;
@@ -67,7 +69,7 @@ describe("respoke.getScreenShareMedia", function () {
             expect(respoke.LocalMedia.calledOnce).to.equal(true);
             var localMediaArgs = respoke.LocalMedia.firstCall.args[0];
             expect(localMediaArgs).to.be.an('object');
-            expect(localMediaArgs.constraints).to.deep.equal(fakeConstraints[0]);
+            expect(localMediaArgs.constraints).to.deep.equal(fakeConstraints[1]);
         });
     });
 
