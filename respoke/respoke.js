@@ -883,32 +883,29 @@ respoke.getScreenShareMedia = function (params) {
     params = params || {};
 
     var deferred = respoke.Q.defer();
-
     var criteria = {
         source: params.source,
         constraints: respoke.clone(params.constraints)
     };
-
+    var constraintsArray = respoke.getScreenShareConstraints(criteria);
+    var constraints;
+    constraintsArray.forEach(function (con) {
+        if (con.video && (con.video.mediaSource || (con.video.mandatory && con.video.mandatory.chromeMediaSource))) {
+            constraints = con;
+        }
+    });
     var localMedia = respoke.LocalMedia({
         hasScreenShare: true,
-        constraints: respoke.getScreenShareConstraints(criteria)[0],
+        constraints: constraints,
         source: params.source,
         element: params.element
     });
 
-    function localMediaStreamReceivedHandler() {
-        localMedia.ignore('error', localMediaErrorHandler);
+    localMedia.start().done(function () {
         deferred.resolve(localMedia);
-    }
-
-    function localMediaErrorHandler(evt) {
-        localMedia.ignore('stream-received', localMediaStreamReceivedHandler);
-        deferred.reject(evt);
-    }
-
-    localMedia.once('stream-received', localMediaStreamReceivedHandler);
-    localMedia.once('error', localMediaErrorHandler);
-    localMedia.start();
+    }, function (err) {
+        deferred.reject(err);
+    });
 
     return respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 };

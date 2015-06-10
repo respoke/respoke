@@ -322,6 +322,7 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
+        log.debug('Local media error.', p);
         var errorMessage = p.code === 1 ? "Permission denied." : "Unknown.";
         deferred.reject(new Error("Error getting user media: " + errorMessage));
     }
