@@ -313,6 +313,17 @@ describe("A respoke.Endpoint", function () {
                     });
                 });
 
+                it("sets params.sendOnly = true when params.caller = true", function () {
+                    sinon.stub(respoke, 'getScreenShareConstraints').returns({ foo: 'bar' });
+                    sinon.stub(endpoint, 'startCall');
+
+                    endpoint.startScreenShare({ caller: true });
+
+                    expect(endpoint.startCall.calledOnce).to.equal(true);
+                    var startCallArgs = endpoint.startCall.firstCall.args[0];
+                    expect(startCallArgs).to.include.property('sendOnly', true);
+                });
+
                 it("sets constraints to result of getScreenShareConstraints when params.caller = true", function () {
                     sinon.stub(respoke, 'getScreenShareConstraints').returns({ foo: 'bar' });
                     sinon.stub(endpoint, 'startCall');
