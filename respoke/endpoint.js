@@ -378,14 +378,19 @@ module.exports = function (params) {
      */
     that.startScreenShare = function (params) {
         params = params || {};
-        var addAudio = (params.sendOnly === false) && !params.screenConstraints ||
-            (params.screenConstraints && params.screenConstraints.audio);
         var hasAudio;
+        var addAudio;
         params.target = 'screenshare';
 
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
+
+        // true and undefined -> true
+        // receiveOnly will be set in call.js by respoke.sdpHasSendOnly
+        params.sendOnly = (params.caller && (params.sendOnly || (params.sendOnly === undefined)));
+        addAudio = (!params.sendOnly && (!params.screenConstraints ||
+            (params.screenConstraints && params.screenConstraints.audio)));
 
         if (params.caller) {
             params.constraints = respoke.convertConstraints(params.constraints);
