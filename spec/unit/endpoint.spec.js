@@ -323,7 +323,9 @@ describe("A respoke.Endpoint", function () {
                     expect(endpoint.startCall.calledOnce).to.equal(true);
                     var startCallArgs = endpoint.startCall.firstCall.args[0];
                     expect(startCallArgs).to.include.property('constraints');
-                    expect(startCallArgs.constraints).to.deep.equal([{ foo: 'bar' }]);
+                    expect(startCallArgs.constraints).to.deep.equal([{
+                        foo: 'bar'
+                    }]);
                 });
             });
 

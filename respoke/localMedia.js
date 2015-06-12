@@ -251,7 +251,6 @@ module.exports = function (params) {
      */
     function requestMedia() {
         var theStream;
-        var requestingScreenShare;
 
         if (!that.constraints) {
             deferred.reject(new Error('No constraints.'));
@@ -285,11 +284,7 @@ module.exports = function (params) {
             that.fire('requesting-media');
         }, 500);
 
-        requestingScreenShare =
-            (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) ||
-            (that.constraints.video.chromeMediaSource) || (that.constraints.video.mediaSource);
-
-        if (requestingScreenShare) {
+        if (respoke.constraintsHasScreenShare(that.constraints)) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
                 respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {

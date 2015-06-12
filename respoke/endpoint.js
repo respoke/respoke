@@ -326,18 +326,17 @@ module.exports = function (params) {
     };
 
     /**
-     * Create a new screen sharing call. Screenshares are inherently unidirectional video only. This may change
-     * in the future when Chrome adds the ability to obtain screen video and microphone audio at the same time. For
-     * now, if you also need audio, place a second audio only call.
-     *
      * The endpoint who calls `endpoint.startScreenShare` will be the one whose screen is shared. If you'd like to
      * implement this as a screenshare request in which the endpoint who starts the call is the watcher and
-     * not the sharer, it is recommened that you use `endpoint.sendMessage` to send a control message to the user
+     * not the sharer, it is recommended that you use `endpoint.sendMessage` to send a control message to the user
      * whose screenshare is being requested so that user's app can call `endpoint.startScreenShare`.
      *
-     * NOTE: At this time, screen sharing only works with Chrome, and Chrome requires a Chrome extension to
+     * By default, the call will be one-way screen share only, with the recipient sending nothing. To turn it into
+     * a bidirectional call with the recipient sending video and both parties sending audio, set `params.sendOnly`
+     * to false.
+     *
+     * NOTE: At this time, screen sharing only works with Chrome and Firefox, and both require browser extensions to
      * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
-     * Support for additional browsers will be added in the future.
      *
      *     endpoint.startScreenShare({
      *         onConnect: function (evt) {}
@@ -366,6 +365,7 @@ module.exports = function (params) {
      * information.
      * @param {Array<RTCConstraints>} [params.constraints] - Additional media to add to the call.
      * @param {RTCConstraints} [params.screenConstraints] - Overrides for the screen media.
+     * @param {boolean} [params.sendOnly=true] - Whether the call should be unidirectional.
      * @param {boolean} [params.forceTurn] - If true, media is not allowed to flow peer-to-peer and must flow through
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
@@ -378,6 +378,9 @@ module.exports = function (params) {
      */
     that.startScreenShare = function (params) {
         params = params || {};
+        var addAudio = (params.sendOnly === false) && !params.screenConstraints ||
+            (params.screenConstraints && params.screenConstraints.audio);
+        var hasAudio;
         params.target = 'screenshare';
 
         if (typeof params.caller !== 'boolean') {
@@ -390,6 +393,23 @@ module.exports = function (params) {
                 constraints: params.screenConstraints
             }));
             delete params.screenConstraints;
+
+            params.constraints.forEach(function (con) {
+                if (con.audio) {
+                    hasAudio = true;
+                }
+            });
+
+            /* If they didn't override screensharing constraints and no constraints so far have included audio,
+             * add audio to the call. If they overrode the default screensharing constraints, we'll assume they
+             * know what they are doing and didn't want audio.
+             */
+            if (addAudio && !hasAudio) {
+                params.constraints.push({
+                    audio: true,
+                    video: false
+                });
+            }
         }
 
         return that.startCall(params);

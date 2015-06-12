@@ -61,7 +61,7 @@ describe("respoke.getScreenShareMedia", function () {
 
     it("passes screen share constraints to LocalMedia when instantiating", function () {
         var localMedia = fakeLocalMedia();
-        var fakeConstraints = [{ foo: 'bar' }];
+        var fakeConstraints = { foo: 'bar' };
         sinon.stub(respoke, 'LocalMedia').returns(localMedia);
         sinon.stub(respoke, 'getScreenShareConstraints').returns(fakeConstraints);
 
@@ -69,7 +69,7 @@ describe("respoke.getScreenShareMedia", function () {
             expect(respoke.LocalMedia.calledOnce).to.equal(true);
             var localMediaArgs = respoke.LocalMedia.firstCall.args[0];
             expect(localMediaArgs).to.be.an('object');
-            expect(localMediaArgs.constraints).to.deep.equal(fakeConstraints[1]);
+            expect(localMediaArgs.constraints).to.deep.equal(fakeConstraints);
         });
     });
 
