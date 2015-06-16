@@ -426,8 +426,6 @@ module.exports = function (params) {
     that.close = function () {
         var deferred = Q.defer();
 
-
-
         wsCall({
             path: '/v1/connections/{id}/',
             httpMethod: 'DELETE',

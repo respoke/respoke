@@ -164,6 +164,6 @@ describe("A respoke.Connection", function () {
                     });
                 });
             });
-        })
-    })
+        });
+    });
 });
