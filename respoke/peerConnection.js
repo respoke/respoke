@@ -198,6 +198,15 @@ module.exports = function (params) {
 
     var cancellingTones = false;
 
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name signalCandidate
+     * @private
+     * @type {function}
+     * @desc A signaling function constructed from the one passed to us by the signaling channel with additions
+     * to facilitate candidate logging.
+     */
+
     function signalCandidate(params) {
         if (!pc) {
             return;

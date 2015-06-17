@@ -70,14 +70,6 @@ var log = respoke.log;
  * @param {respoke.Call.onToneSent} [params.onToneSent] - Callback for when a DTMF tone gets sent from the client.
  * @param {respoke.Call.onToneSendingStarted} [params.onToneSendingStarted] - Callback for when DTMF tones
  * have started sending.
- * @param {respoke.Call.onToneSendingComplete} [params.onToneSendingComplete] - Callback for when all DTMF tones
- * have been sent and the queue of tones is empty.
- * @param {respoke.Call.onToneSendingCancelled} [params.onToneSendingCancelled] - Callback for when a request to
- * cancel tone playback has been completed.
- * @param {respoke.Call.onToneSendingError} [params.onToneSendingError] - Callback for when a request to
- * play tones has errored.
- * @param {respoke.Call.onToneCancelError} [params.onToneCancelError] - Callback for when a request to
- * cancel tone playback has errored.
  * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local
  * video attached to it.
  * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
@@ -439,10 +431,6 @@ module.exports = function (params) {
      * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
      * granted by the browser without asking the user to approve it.
      * @param {respoke.Call.onToneSent} [params.onToneSent] - Callback for when a DTMF tone gets sent from the client.
-     * @param {respoke.Call.onToneSendingComplete} [params.onToneSendingComplete] - Callback for when all DTMF tones
-     * have been sent and the queue of tones is empty.
-     * @param {respoke.Call.onToneSendingCancelled} [params.onToneSendingCancelled] - Callback for when a request to
-     * cancel tone playback has been completed.
      * @param {Array<RTCConstraints>} [params.constraints]
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
@@ -2089,20 +2077,6 @@ module.exports = function (params) {
  * @callback respoke.Call.onToneSendingStarted
  * @param {respoke.Event} evt
  * @param {object} evt.target
- */
-/**
- * Called when the playback queue of tones has completed.
- * This callback is called every time respoke.Call#tone-sending-complete is fired.
- * @callback respoke.Call.onToneSendingComplete
- * @param {respoke.Event} evt
- * @param {object} evt.target
- */
-/**
- * Called when a playback queue of tones is cleared and cancelled.
- * This callback is called every time respoke.Call#tone-sending-cancelled is fired.
- * @callback respoke.Call.onToneSendingCancelled
- * @param {respoke.Event} evt
- * @param {object} evt.cancelledTones
  */
 /**
  * Receive the DirectConnection.

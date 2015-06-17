@@ -1462,18 +1462,12 @@ describe("Respoke calling", function () {
                             onLocalMedia: function (evt) {
                                 call.listen('tone-sent', toneSentSpy2);
                                 call.listen('tone-sending-started', toneSendingStartedSpy2);
-                                call.listen('tone-cancel-error', toneCancelErrorSpy2);
-                                call.listen('tone-sending-cancelled', toneSendingCancelledSpy2);
                             },
                             onConnect: function (evt) {
                                 done();
                             },
                             onToneSent: toneSentSpy1,
                             onToneSendingStarted: toneSendingStartedSpy1,
-                            onToneSendingError: toneSendingErrorSpy1,
-                            onToneSendingComplete: toneSendingCompleteSpy1,
-                            onToneCancelError: toneCancelErrorSpy1,
-                            onToneSendingCancelled: toneSendingCancelledSpy1
                         });
                     });
 
@@ -1492,82 +1486,84 @@ describe("Respoke calling", function () {
                         toneSendingCancelledSpy2.reset();
                     });
 
-
-                    it("with incorrect param type causes tone-sending-error event", function (done) {
-
-                        call.listen('tone-sending-error', function (error) {
-                            expect(toneSendingErrorSpy1.called).to.be.ok;
-                            done();
-                        });
-
-                        call.sendTones('jjjj');
-                    });
-
                     it("with incorrect param gap causes tone-sending-error event", function (done) {
 
-                        call.listen('tone-sending-error', function (error) {
-                            expect(toneSendingErrorSpy1.called).to.be.ok;
-                            done();
+                        call.sendTones({
+                            tones: '123#',
+                            gap: '30',
+                            duration: '50',
+                            onError: function (error) {
+                                expect(toneSendingErrorSpy1.called).to.be.ok;
+                                done();
+                            }
                         });
-
-                        call.sendTones({tones: '123#', gap: '30', duration: '50'});
                     });
 
                     it("with incorrect param tones causes tone-sending-error event", function (done) {
 
-                        call.listen('tone-sending-error', function (error) {
-                            expect(toneSendingErrorSpy1.called).to.be.ok;
-                            done();
+                        call.sendTones({
+                            tones: 'jjjj',
+                            gap: '60',
+                            duration: '50',
+                            onError: function (error) {
+                                expect(toneSendingErrorSpy1.called).to.be.ok;
+                                done();
+                            }
                         });
-
-                        call.sendTones({tones: 'jjjj', gap: '60', duration: '50'});
                     });
 
                     it("with incorrect param duration causes tone-sending-error event", function (done) {
 
-                        call.listen('tone-sending-error', function (error) {
-                            expect(toneSendingErrorSpy1.called).to.be.ok;
-                            done();
+                        call.sendTones({
+                            tones: '123#',
+                            gap: '60',
+                            duration: '30',
+                            onError: function (error) {
+                                expect(toneSendingErrorSpy1.called).to.be.ok;
+                                done();
+                            }
                         });
-
-                        call.sendTones({tones: '123#', gap: '60', duration: '30'});
                     });
 
                     it("with another incorrect param duration causes tone-sending-error event", function (done) {
 
-                        call.listen('tone-sending-error', function (error) {
-                            expect(toneSendingErrorSpy1.called).to.be.ok;
-                            done();
+                        call.sendTones({
+                            tones: '123#',
+                            gap: '60',
+                            duration: '7000',
+                            onError: function (error) {
+                                expect(toneSendingErrorSpy1.called).to.be.ok;
+                                done();
+                            }
                         });
-
-                        call.sendTones({tones: '123#', gap: '60', duration: '7000'});
                     });
 
                     it("with no tones param causes tone-sending-error event", function (done) {
 
-                        call.listen('tone-sending-error', function (error) {
-                            expect(toneSendingErrorSpy1.called).to.be.ok;
-                            done();
+                        call.sendTones({
+                            gap: '60',
+                            duration: '7000',
+                            onError: function (error) {
+                                expect(toneSendingErrorSpy1.called).to.be.ok;
+                                done();
+                            }
                         });
-
-                        call.sendTones({gap: '60', duration: '7000'});
                     });
 
                     /* I have no idea why this test doesnt work and i gave up, manually tested and it works */
 
                     xit("causes the success events to fire", function (done) {
-
-
-                        call.listen('tone-sending-complete', function (evt) {
-                            expect(toneSentSpy1.called).to.be.ok;
-                            expect(toneSentSpy2.called).to.be.ok;
-                            expect(toneSendingStartedSpy1.called).to.be.ok;
-                            expect(toneSendingCompleteSpy1.called).to.be.ok;
-                            expect(toneSendingCompleteSpy2.called).to.be.ok;
-                            done();
+                        call.sendTones({
+                            tones: '123#',
+                            onSuccess: function (evt) {
+                                expect(toneSentSpy1.called).to.be.ok;
+                                expect(toneSentSpy2.called).to.be.ok;
+                                expect(toneSendingStartedSpy1.called).to.be.ok;
+                                expect(toneSendingCompleteSpy1.called).to.be.ok;
+                                expect(toneSendingCompleteSpy2.called).to.be.ok;
+                                done();
+                            }
                         });
-
-                        call.sendTones({tones: '123#'});
                     });
                 });
             });
