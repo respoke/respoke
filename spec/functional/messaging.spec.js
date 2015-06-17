@@ -8,7 +8,7 @@ var respoke = testHelper.respoke;
 var respokeAdmin = testHelper.respokeAdmin;
 var Q = testHelper.respoke.Q;
 
-describe.only("Messaging", function () {
+describe("Messaging", function () {
     this.timeout(30000);
 
     var followerClient = {};
