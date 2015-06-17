@@ -54,7 +54,7 @@ var log = respoke.log;
  * element with the local audio and/or video attached.
  * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
  * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
- * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
+ * it was ended in a graceful manner.
  * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
  * This callback will be called when media is muted or unmuted.
  * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
@@ -416,7 +416,7 @@ module.exports = function (params) {
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
-     * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
+     * it was ended in a graceful manner.
      * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
      * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
@@ -617,7 +617,7 @@ module.exports = function (params) {
      * element with the local audio and/or video attached.
      * @param {respoke.Call.onConnect} [params.onConnect] - Callback for the remote video element.
      * @param {respoke.Call.onHangup} [params.onHangup] - Callback for when the call is ended, whether or not
-     * it was ended in a graceful manner. TODO: add the hangup reason to the Event.
+     * it was ended in a graceful manner.
      * @param {respoke.Call.onMute} [params.onMute] - Callback for changing the mute state on any type of media.
      * This callback will be called when media is muted or unmuted.
      * @param {respoke.Call.onAnswer} [params.onAnswer] - Callback for when the callee answers the call.
