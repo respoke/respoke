@@ -104,6 +104,8 @@ module.exports = function (params) {
      * @method respoke.Connection.sendMessage
      * @param {object} params
      * @param {string} params.message
+     * @param {boolean} [params.ccSelf=false] Copy this client's own endpoint on this message so that they arrive
+     * at other devices it might be logged into elsewhere.
      * @param {boolean} [params.push=false] Whether or not the message should be considered for push notifications to
      * mobile devices.
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation
@@ -115,6 +117,7 @@ module.exports = function (params) {
     that.sendMessage = function (params) {
         params = params || {};
         params.connectionId = that.id;
+        params.ccSelf = (typeof params.ccSelf === "boolean" ? params.ccSelf : false);
         return that.getEndpoint().sendMessage(params);
     };
 

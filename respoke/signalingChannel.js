@@ -929,6 +929,7 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var message = respoke.TextMessage({
             endpointId: params.recipient.id,
+            ccSelf: params.ccSelf,
             connectionId: params.connectionId,
             message: params.message,
             push: !!params.push
@@ -1634,9 +1635,9 @@ module.exports = function (params) {
     var onMessage = function onMessage(message) {
         var endpoint;
         message = respoke.TextMessage({rawMessage: message});
-        if (message.endpointId) {
+        if (message.originalRecipient || message.endpointId) {
             endpoint = client.getEndpoint({
-                id: message.endpointId,
+                id: message.originalRecipient || message.endpointId,
                 skipCreate: true
             });
         }
