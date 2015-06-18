@@ -88,17 +88,16 @@ describe("Respoke audio conferencing", function () {
         });
 
         afterEach(function (done) {
-            return respoke.Q.all([conference1.leave(), conference2.leave()]).then(function () {
-
-            setTimeout(function () {
-            respoke.Q.all([client1, client2].map(function (client) {
-                if (client.isConnected) {
-                    return client.disconnect();
-                }
-            })).finally(function () {
-                done();
-            }).done();
-            }, 1000);
+            respoke.Q.all([conference1.leave(), conference2.leave()]).then(function () {
+                setTimeout(function () {
+                    respoke.Q.all([client1, client2].map(function (client) {
+                        if (client.isConnected) {
+                            return client.disconnect();
+                        }
+                    })).finally(function () {
+                        done();
+                    }).done();
+                }, 1000);
             });
         });
 
@@ -109,23 +108,31 @@ describe("Respoke audio conferencing", function () {
             beforeEach(function (done) {
                 done = doneCountBuilder(2, done);
 
-                conference1 = client1.joinConference({
-                    id: conferenceId,
-                    onLocalMedia: function (evt) {
-                        localMedia = evt.stream;
-                    },
-                    onConnect: function () {
-                        done();
-                    }
-                });
+                function hangupHandler() {
+                    done(new Error("Couldn't connect to audio conference!"));
+                }
 
-                conference2 = client2.joinConference({
-                    id: conferenceId,
-                    onConnect: function () {
-                        setTimeout(function () {
-                            done();
-                        }, 1000);
-                    }
+                 conference1 = client1.joinConference({
+                     id: conferenceId,
+                     onLocalMedia: function (evt) {
+                         localMedia = evt.stream;
+                     },
+                    onHangup: hangupHandler,
+                     onConnect: function () {
+                        conference1.ignore('hangup', hangupHandler);
+                         done();
+                     }
+                 });
+
+                 conference2 = client2.joinConference({
+                     id: conferenceId,
+                     onHangup: hangupHandler,
+                     onConnect: function () {
+                         conference2.ignore('hangup', hangupHandler);
+                         setTimeout(function () {
+                             done();
+                         }, 1000);
+                     }
                 });
             });
 
