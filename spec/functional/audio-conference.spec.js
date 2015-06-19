@@ -117,7 +117,7 @@ describe("Respoke audio conferencing", function () {
                      onLocalMedia: function (evt) {
                          localMedia = evt.stream;
                      },
-                    onHangup: hangupHandler,
+                     onHangup: hangupHandler,
                      onConnect: function () {
                         conference1.ignore('hangup', hangupHandler);
                          done();
