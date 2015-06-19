@@ -12,22 +12,21 @@ describe("respoke.getScreenShareMedia", function () {
 
     function fakeLocalMedia(params) {
         params = params || {};
-        var result = respoke.EventEmitter();
 
-        result.start = function () {
-            var deferred = respoke.Q.defer();
-            setTimeout(function () {
-                if (params.reject) {
-                    deferred.reject(params.reject);
-                    return;
-                }
+        return {
+            start: function () {
+                var deferred = respoke.Q.defer();
+                setTimeout(function () {
+                    if (params.reject) {
+                        deferred.reject(params.reject);
+                        return;
+                    }
 
-                deferred.resolve();
-            });
-            return deferred.promise;
+                    deferred.resolve();
+                });
+                return deferred.promise;
+            }
         };
-
-        return result;
     }
 
     beforeEach(function () {
