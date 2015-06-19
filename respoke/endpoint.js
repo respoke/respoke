@@ -336,7 +336,8 @@ module.exports = function (params) {
      * to false.
      *
      * NOTE: At this time, screen sharing only works with Chrome and Firefox, and both require browser extensions to
-     * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension.
+     * access screen sharing features. Please see instructions at https://github.com/respoke/respoke-chrome-extension
+     * and https://github.com/respoke/respoke-firefox-screen-sharing-extension.
      *
      *     endpoint.startScreenShare({
      *         onConnect: function (evt) {}
