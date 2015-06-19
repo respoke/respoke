@@ -66,6 +66,9 @@ var log = respoke.log;
  * @param {respoke.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
  * user's media.  This event gets called even if the allow process is automatic, i. e., permission and media is
  * granted by the browser without asking the user to approve it.
+ * @param {respoke.Call.onToneSent} [params.onToneSent] - Callback for when a DTMF tone gets sent from the client.
+ * @param {respoke.Call.onToneSendingStarted} [params.onToneSendingStarted] - Callback for when DTMF tones
+ * have started sending.
  * @param {HTMLVideoElement} params.videoLocalElement - Pass in an optional html video element to have local
  * video attached to it.
  * @param {HTMLVideoElement} params.videoRemoteElement - Pass in an optional html video element to have remote
@@ -426,6 +429,7 @@ module.exports = function (params) {
      * @param {respoke.Call.onAllow} [params.onAllow] - Callback for when the browser gives us access to the
      * user's media.  This event gets fired even if the allow process is automatic, i. e., permission and media is
      * granted by the browser without asking the user to approve it.
+     * @param {respoke.Call.onToneSent} [params.onToneSent] - Callback for when a DTMF tone gets sent from the client.
      * @param {Array<RTCConstraints>} [params.constraints]
      * @param {boolean} [params.forceTurn]
      * @param {boolean} [params.receiveOnly]
@@ -458,6 +462,9 @@ module.exports = function (params) {
         that.listen('approve', params.onApprove);
         that.listen('mute', params.onMute);
         that.listen('requesting-media', params.onRequestingMedia);
+        that.listen('tone-sent', params.onToneSent);
+        that.listen('tone-sending-started', params.onToneSendingStarted);
+        that.listen('tone-sending-cancelled', params.onToneSendingCancelled);
 
         previewLocalMedia = typeof params.previewLocalMedia === 'function' ?
             params.previewLocalMedia : previewLocalMedia;
@@ -1693,6 +1700,40 @@ module.exports = function (params) {
     };
 
     /**
+     * Send tones to the first audio track in a stream
+     * @memberof! respoke.Call
+     * @method respoke.Call.sendTones
+     * @fires respoke.Call#tone-sent
+     * @fires respoke.Call#tone-sending-complete
+     * @fires respoke.Call#tone-sending-error
+     * @fires respoke.Call#tone-sending-started
+     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback for when a request to
+     * play tones has succeeded.
+     * @param {respoke.Call.onError} [params.onError] - Callback for when a request to
+     * play tones has failed.
+     * @returns {Promise<respoke.PeerConnection>}
+     */
+    that.sendTones = function (params) {
+        return pc.sendTones(params);
+    };
+
+    /**
+     * Cancels playback of all queued tones on the first audio track in a stream
+     * @memberof! respoke.Call
+     * @method respoke.Call.cancelTones
+     * @fires respoke.Call#tone-sending-cancelled
+     * @fires respoke.Call#tone-sending-error
+     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback for when a request to
+     * play tones has succeeded.
+     * @param {respoke.Call.onError} [params.onError] - Callback for when a request to
+     * play tones has failed.
+     * @returns {Promise<respoke.PeerConnection>}
+     */
+    that.cancelTones = function (params) {
+        return pc.cancelTones(params);
+    };
+
+    /**
      * Save the hangup reason and hang up.
      * @memberof! respoke.Call
      * @method respoke.Call.listenHangup
@@ -2007,6 +2048,21 @@ module.exports = function (params) {
  * @callback respoke.Call.previewLocalMedia
  * @param {object} element - the HTML5 Video element with the new stream attached.
  * @param {respoke.Call} call
+ */
+/**
+ * Called when a tone is sent on an audio track. This callback is called every time respoke.Call#tone-sent is fired.
+ * @callback respoke.Call.onToneSent
+ * @param {respoke.Event} evt
+ * @param {string} evt.tone
+ * @param {number} evt.duration
+ * @param {number} evt.gap
+ */
+/**
+ * Called when the playback queue of tones has started.
+ * This callback is called every time respoke.Call#tone-sending-started is fired.
+ * @callback respoke.Call.onToneSendingStarted
+ * @param {respoke.Event} evt
+ * @param {object} evt.target
  */
 /**
  * Receive the DirectConnection.
