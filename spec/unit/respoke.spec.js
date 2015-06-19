@@ -904,9 +904,7 @@ describe("The respoke namespace", function () {
 
                 var constraints = respoke.getScreenShareConstraints();
 
-                expect(constraints).to.deep.equal([{
-                    mandatory: {},
-                    optional: [],
+                expect(constraints).to.deep.equal({
                     audio: false,
                     video: {
                         mandatory: {
@@ -918,7 +916,7 @@ describe("The respoke namespace", function () {
                             { googTemporalLayeredScreencast: true }
                         ]
                     }
-                }]);
+                });
             });
 
             it("in node-webkit, returns constraints appropriate for node-webkit", function () {
@@ -927,9 +925,7 @@ describe("The respoke namespace", function () {
 
                 var constraints = respoke.getScreenShareConstraints();
 
-                expect(constraints).to.deep.equal([{
-                    mandatory: {},
-                    optional: [],
+                expect(constraints).to.deep.equal({
                     audio: false,
                     video: {
                         mandatory: {
@@ -941,7 +937,7 @@ describe("The respoke namespace", function () {
                             { googTemporalLayeredScreencast: true }
                         ]
                     }
-                }]);
+                });
             });
 
             it("in other browsers, returns constraints appropriate for firefox", function () {
@@ -950,29 +946,22 @@ describe("The respoke namespace", function () {
 
                 var constraints = respoke.getScreenShareConstraints();
 
-                expect(constraints).to.deep.equal([{
-                    mandatory: {},
-                    optional: [],
+                expect(constraints).to.deep.equal({
                     audio: false,
                     video: {
+                        optional: [],
+                        mandatory: {},
                         mediaSource: 'screen'
                     }
-                }]);
+                });
             });
         });
 
         describe("when called with params", function () {
-
-            it("converts constraints to an array if they aren't already one", function () {
-                var constraints = respoke.getScreenShareConstraints({ constraints: { foo: 'bar' } });
-
-                expect(constraints).to.be.an('Array');
-            });
-
             it("always sets audio constraint to false", function () {
                 var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
 
-                expect(constraints[0].audio).to.equal(false);
+                expect(constraints.audio).to.equal(false);
             });
 
             it("keeps params.constraints.video if available", function () {
@@ -982,13 +971,13 @@ describe("The respoke namespace", function () {
                     }
                 });
 
-                expect(constraints[0]).to.include.deep.property('video.foo', 'bar');
+                expect(constraints).to.include.deep.property('video.foo', 'bar');
             });
 
             it("creates constraints.video if not provided in params.constraints", function () {
                 var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
 
-                expect(constraints[0].video).to.be.an('object');
+                expect(constraints.video).to.be.an('object');
             });
 
             describe("in chrome", function () {
@@ -1005,7 +994,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.foo', 'bar');
+                    expect(constraints).to.include.deep.property('video.mandatory.foo', 'bar');
                 });
 
                 it("creates constraints.video.mandatory if not provided in params.constraints", function () {
@@ -1018,8 +1007,8 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory');
-                    expect(constraints[0].video.mandatory).to.be.an('object');
+                    expect(constraints).to.include.deep.property('video.mandatory');
+                    expect(constraints.video.mandatory).to.be.an('object');
                 });
 
                 it("keeps params.constraints.video.optional if available", function () {
@@ -1034,9 +1023,9 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.optional');
-                    expect(constraints[0].video.optional.length).to.equal(1);
-                    expect(constraints[0].video.optional[0]).to.include.property('foo', 'bar');
+                    expect(constraints).to.include.deep.property('video.optional');
+                    expect(constraints.video.optional.length).to.equal(1);
+                    expect(constraints.video.optional[0]).to.include.property('foo', 'bar');
                 });
 
                 it("creates constraints.video.optional if not provided in params.constraints", function () {
@@ -1049,8 +1038,8 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.optional');
-                    expect(constraints[0].video.optional).to.be.an('Array');
+                    expect(constraints).to.include.deep.property('video.optional');
+                    expect(constraints.video.optional).to.be.an('Array');
                 });
 
                 it("keeps params.constraints.video.mandatory.maxHeight if available", function () {
@@ -1067,7 +1056,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 320);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxHeight', 320);
                 });
 
                 it("defaults constraints.video.mandatory.maxHeight if not provided in params.constraints", function () {
@@ -1082,7 +1071,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 2000);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxHeight', 2000);
                 });
 
                 it("keeps params.constraints.video.mandatory.maxWidth if available", function () {
@@ -1099,7 +1088,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 240);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxWidth', 240);
                 });
 
                 it("defaults constraints.video.mandatory.maxWidth if not provided in params.constraints", function () {
@@ -1114,7 +1103,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 2000);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxWidth', 2000);
                 });
 
                 it("forces constraints.video.mandatory.chromeMediaSource to 'desktop'", function () {
@@ -1129,7 +1118,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.chromeMediaSource', 'desktop');
+                    expect(constraints).to.include.deep.property('video.mandatory.chromeMediaSource', 'desktop');
                 });
 
                 it("sets 'googTemporalLayeredScreencast' true on any existing optional vid constraints", function () {
@@ -1148,7 +1137,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0].video.optional).to.deep.equal([{
+                    expect(constraints.video.optional).to.deep.equal([{
                         googTemporalLayeredScreencast: true,
                         foo: 'bar'
                     }, {
@@ -1164,9 +1153,9 @@ describe("The respoke namespace", function () {
 
                     var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
 
-                    expect(constraints[0]).to.include.deep.property('video.optional');
-                    expect(constraints[0].video.optional.length).to.equal(1);
-                    expect(constraints[0].video.optional[0]).to.include.property('googTemporalLayeredScreencast', true);
+                    expect(constraints).to.include.deep.property('video.optional');
+                    expect(constraints.video.optional.length).to.equal(1);
+                    expect(constraints.video.optional[0]).to.include.property('googTemporalLayeredScreencast', true);
                 });
             });
 
@@ -1184,7 +1173,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.foo', 'bar');
+                    expect(constraints).to.include.deep.property('video.mandatory.foo', 'bar');
                 });
 
                 it("creates constraints.video.mandatory if not provided in params.constraints", function () {
@@ -1197,8 +1186,8 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory');
-                    expect(constraints[0].video.mandatory).to.be.an('object');
+                    expect(constraints).to.include.deep.property('video.mandatory');
+                    expect(constraints.video.mandatory).to.be.an('object');
                 });
 
                 it("keeps params.constraints.video.optional if available", function () {
@@ -1213,9 +1202,9 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.optional');
-                    expect(constraints[0].video.optional.length).to.equal(1);
-                    expect(constraints[0].video.optional[0]).to.include.property('foo', 'bar');
+                    expect(constraints).to.include.deep.property('video.optional');
+                    expect(constraints.video.optional.length).to.equal(1);
+                    expect(constraints.video.optional[0]).to.include.property('foo', 'bar');
                 });
 
                 it("creates constraints.video.optional if not provided in params.constraints", function () {
@@ -1228,8 +1217,8 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.optional');
-                    expect(constraints[0].video.optional).to.be.an('Array');
+                    expect(constraints).to.include.deep.property('video.optional');
+                    expect(constraints.video.optional).to.be.an('Array');
                 });
 
                 it("keeps params.constraints.video.mandatory.maxHeight if available", function () {
@@ -1246,7 +1235,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 320);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxHeight', 320);
                 });
 
                 it("defaults constraints.video.mandatory.maxHeight if not provided in params.constraints", function () {
@@ -1261,7 +1250,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxHeight', 2000);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxHeight', 2000);
                 });
 
                 it("keeps params.constraints.video.mandatory.maxWidth if available", function () {
@@ -1278,7 +1267,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 240);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxWidth', 240);
                 });
 
                 it("defaults constraints.video.mandatory.maxWidth if not provided in params.constraints", function () {
@@ -1293,7 +1282,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.maxWidth', 2000);
+                    expect(constraints).to.include.deep.property('video.mandatory.maxWidth', 2000);
                 });
 
                 it("forces constraints.video.mandatory.chromeMediaSource to 'desktop'", function () {
@@ -1308,7 +1297,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0]).to.include.deep.property('video.mandatory.chromeMediaSource', 'desktop');
+                    expect(constraints).to.include.deep.property('video.mandatory.chromeMediaSource', 'desktop');
                 });
 
                 it("sets 'googTemporalLayeredScreencast' true on any existing optional vid constraints", function () {
@@ -1327,7 +1316,7 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0].video.optional).to.deep.equal([{
+                    expect(constraints.video.optional).to.deep.equal([{
                         googTemporalLayeredScreencast: true,
                         foo: 'bar'
                     }, {
@@ -1343,9 +1332,9 @@ describe("The respoke namespace", function () {
 
                     var constraints = respoke.getScreenShareConstraints({ constraints: { audio: true } });
 
-                    expect(constraints[0]).to.include.deep.property('video.optional');
-                    expect(constraints[0].video.optional.length).to.equal(1);
-                    expect(constraints[0].video.optional[0]).to.include.property('googTemporalLayeredScreencast', true);
+                    expect(constraints).to.include.deep.property('video.optional');
+                    expect(constraints.video.optional.length).to.equal(1);
+                    expect(constraints.video.optional[0]).to.include.property('googTemporalLayeredScreencast', true);
                 });
             });
 
@@ -1357,7 +1346,9 @@ describe("The respoke namespace", function () {
 
                     var constraints = respoke.getScreenShareConstraints({ source: 'foobar' });
 
-                    expect(constraints[0].video).to.deep.equal({
+                    expect(constraints.video).to.deep.equal({
+                        optional: [],
+                        mandatory: {},
                         mediaSource: 'foobar'
                     });
                 });
@@ -1374,7 +1365,9 @@ describe("The respoke namespace", function () {
                         }
                     });
 
-                    expect(constraints[0].video).to.deep.equal({
+                    expect(constraints.video).to.deep.equal({
+                        optional: [],
+                        mandatory: {},
                         mediaSource: 'screen'
                     });
                 });

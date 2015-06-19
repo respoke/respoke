@@ -795,35 +795,36 @@ respoke.queueFactory = function () {
 };
 
 /**
- * Retrieve browser-specific WebRTC getUserMedia constraints needed to start a screen sharing call.
+ * Retrieve browser-specific WebRTC getUserMedia constraints needed to start a screen sharing call. Takes a set of
+ * optional override constraints and amends them for screen sharing.
  *
  * @memberof respoke
  * @static
  * @param {object} [params]
  * @param {string} [params.source] The media source name to pass to firefox
- * @param {RTCConstraints|Array<RTCConstraints>} [params.constraints] constraints to use as a base
- * @returns {Array<RTCConstraints>}
+ * @param {RTCConstraints} [params.constraints] constraints to use as a base
+ * @returns {RTCConstraints}
  * @private
  */
 respoke.getScreenShareConstraints = function (params) {
     params = params || {};
-    var convertedConstraints = respoke.convertConstraints(params.constraints, [{
-        audio: true,
-        video: {},
-        mandatory: {},
-        optional: []
-    }]);
 
-    var screenConstraint = convertedConstraints[0];
+    var screenConstraint = params.constraints || {
+        audio: false,
+        video: {
+            mandatory: {},
+            optional: []
+        }
+    };
     screenConstraint.audio = false;
     screenConstraint.video = typeof screenConstraint.video === 'object' ? screenConstraint.video : {};
+    screenConstraint.video.optional = Array.isArray(screenConstraint.video.optional) ?
+        screenConstraint.video.optional : [];
+    screenConstraint.video.mandatory = typeof screenConstraint.video.mandatory === 'object' ?
+        screenConstraint.video.mandatory : {};
 
     if (respoke.needsChromeExtension || respoke.isNwjs) {
         screenConstraint.audio = false;
-        screenConstraint.video.optional = Array.isArray(screenConstraint.video.optional) ?
-            screenConstraint.video.optional : [];
-        screenConstraint.video.mandatory = typeof screenConstraint.video.mandatory === 'object' ?
-            screenConstraint.video.mandatory : {};
         screenConstraint.video.mandatory.chromeMediaSource = 'desktop';
         screenConstraint.video.mandatory.maxWidth = typeof screenConstraint.video.mandatory.maxWidth === 'number' ?
             screenConstraint.video.mandatory.maxWidth : 2000;
@@ -844,7 +845,7 @@ respoke.getScreenShareConstraints = function (params) {
         screenConstraint.video.mediaSource = params.source || 'screen';
     }
 
-    return convertedConstraints;
+    return screenConstraint;
 };
 
 /**
@@ -880,32 +881,22 @@ respoke.getScreenShareMedia = function (params) {
     params = params || {};
 
     var deferred = respoke.Q.defer();
-
     var criteria = {
         source: params.source,
         constraints: respoke.clone(params.constraints)
     };
-
     var localMedia = respoke.LocalMedia({
         hasScreenShare: true,
-        constraints: respoke.getScreenShareConstraints(criteria)[0],
+        constraints: respoke.getScreenShareConstraints(criteria),
         source: params.source,
         element: params.element
     });
 
-    function localMediaStreamReceivedHandler() {
-        localMedia.ignore('error', localMediaErrorHandler);
+    localMedia.start().done(function () {
         deferred.resolve(localMedia);
-    }
-
-    function localMediaErrorHandler(evt) {
-        localMedia.ignore('stream-received', localMediaStreamReceivedHandler);
-        deferred.reject(evt);
-    }
-
-    localMedia.once('stream-received', localMediaStreamReceivedHandler);
-    localMedia.once('error', localMediaErrorHandler);
-    localMedia.start();
+    }, function (err) {
+        deferred.reject(err);
+    });
 
     return respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
 };

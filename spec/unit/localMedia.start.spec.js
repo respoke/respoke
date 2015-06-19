@@ -348,6 +348,8 @@ describe("LocalMedia.start", function () {
                         constraints: {
                             audio: false,
                             video: {
+                                optional: [],
+                                mandatory: {},
                                 mediaSource: 'screen'
                             }
                         }
@@ -366,6 +368,8 @@ describe("LocalMedia.start", function () {
                         constraints: {
                             audio: false,
                             video: {
+                                optional: [],
+                                mandatory: {},
                                 mediaSource: 'screen'
                             }
                         }
@@ -398,6 +402,8 @@ describe("LocalMedia.start", function () {
                         constraints: {
                             audio: false,
                             video: {
+                                optional: [],
+                                mandatory: {},
                                 mediaSource: 'screen'
                             }
                         }
@@ -441,6 +447,8 @@ describe("LocalMedia.start", function () {
                     constraints: {
                         audio: false,
                         video: {
+                            optional: [],
+                            mandatory: {},
                             mediaSource: 'screen'
                         }
                     }
@@ -459,6 +467,8 @@ describe("LocalMedia.start", function () {
                     constraints: {
                         audio: false,
                         video: {
+                            optional: [],
+                            mandatory: {},
                             mediaSource: 'screen'
                         }
                     }

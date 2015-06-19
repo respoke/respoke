@@ -251,7 +251,6 @@ module.exports = function (params) {
      */
     function requestMedia() {
         var theStream;
-        var requestingScreenShare;
 
         if (!that.constraints) {
             deferred.reject(new Error('No constraints.'));
@@ -285,11 +284,7 @@ module.exports = function (params) {
             that.fire('requesting-media');
         }, 500);
 
-        requestingScreenShare =
-            (that.constraints.video.mandatory && that.constraints.video.mandatory.chromeMediaSource) ||
-            (that.constraints.video.chromeMediaSource) || (that.constraints.video.mediaSource);
-
-        if (requestingScreenShare) {
+        if (respoke.constraintsHasScreenShare(that.constraints)) {
             if (respoke.isNwjs || (respoke.needsChromeExtension && respoke.hasChromeExtension)) {
                 respoke.chooseDesktopMedia({source: screenShareSource}, function (params) {
                     if (!params.sourceId) {
@@ -322,6 +317,7 @@ module.exports = function (params) {
      * @param {object}
      */
     function onUserMediaError(p) {
+        log.debug('Local media error.', p);
         var errorMessage = p.code === 1 ? "Permission denied." : "Unknown.";
         deferred.reject(new Error("Error getting user media: " + errorMessage));
     }
