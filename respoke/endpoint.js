@@ -187,6 +187,8 @@ module.exports = function (params) {
      * @param {object} params
      * @param {string} params.message
      * @param {string} [params.connectionId]
+     * @param {boolean} [params.ccSelf=true] Copy this client's own endpoint on this message so that they arrive
+     * at other devices it might be logged into elsewhere.
      * @param {boolean} [params.push=false] Whether or not to consider the message for push notifications to mobile
      * devices.
      * @param {respoke.Client.successHandler} [params.onSuccess] - Success handler for this invocation of this
@@ -199,8 +201,10 @@ module.exports = function (params) {
         var promise;
         var retVal;
         params = params || {};
+        params.ccSelf = (typeof params.ccSelf === "boolean" ? params.ccSelf : true);
 
         promise = signalingChannel.sendMessage({
+            ccSelf: params.ccSelf,
             connectionId: params.connectionId,
             message: params.message,
             push: !!params.push,

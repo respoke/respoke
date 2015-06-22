@@ -286,6 +286,135 @@ describe("Messaging", function () {
                 });
             });
         });
+
+        describe("when one endpoint has two connections", function () {
+            var followeeClient2;
+            var followeeToken2;
+
+            beforeEach(function () {
+                return respoke.Q(respokeAdmin.auth.endpoint({
+                    endpointId: 'followee',
+                    appId: testHelper.config.appId,
+                    roleId: roleId
+                })).then(function (token) {
+                    followeeToken2 = token;
+                    followeeClient2 = respoke.createClient();
+
+                    return followeeClient2.connect({
+                        appId: testHelper.config.appId,
+                        baseURL: testHelper.config.baseURL,
+                        token: token.tokenId
+                    });
+                }).fin(function () {
+                    expect(followeeClient2.endpointId).not.to.be.undefined;
+                    expect(followeeClient2.endpointId).to.equal(followeeToken2.endpointId);
+                });
+            });
+
+            afterEach(function () {
+                return followeeClient2.disconnect();
+            });
+
+            describe("messages sent to only one connection", function () {
+                var spy1;
+                var spy2;
+
+                beforeEach(function (done) {
+                    spy1 = sinon.spy();
+                    spy2 = sinon.spy();
+
+                    followeeClient.once('message', function () {
+                        spy1();
+                    });
+
+                    followeeClient2.once('message', function () {
+                        spy2();
+                        setTimeout(function () {
+                            done();
+                        }, 3900);
+                    });
+
+                    followerClient.sendMessage({
+                        endpointId: followeeClient2.endpointId,
+                        connectionId: followeeClient2.connectionId,
+                        message: "test"
+                    });
+                });
+
+                it("arrive at that connection", function () {
+                    expect(spy2.called).to.equal(true);
+                });
+
+                it("do not arrive at the other connection", function () {
+                    expect(spy1.called).to.equal(false);
+                });
+            });
+
+            describe("messages sent to the endpointId", function () {
+                var spy1;
+                var spy2;
+
+                beforeEach(function (done) {
+                    spy1 = sinon.spy();
+                    spy2 = sinon.spy();
+
+                    followeeClient.once('message', function () {
+                        spy1();
+                    });
+
+                    followeeClient2.once('message', function () {
+                        spy2();
+                        setTimeout(function () {
+                            done();
+                        }, 3900);
+                    });
+
+                    followerClient.sendMessage({
+                        endpointId: followeeClient2.endpointId,
+                        message: "test"
+                    });
+                });
+
+                it("arrive at both connections", function () {
+                    expect(spy2.called).to.equal(true);
+                    expect(spy1.called).to.equal(true);
+                });
+            });
+
+            describe("messages sent from one connection", function () {
+                var spy1;
+                var spy2;
+
+                beforeEach(function (done) {
+                    spy1 = sinon.spy();
+                    spy2 = sinon.spy();
+
+                    followeeClient2.once('message', function () {
+                        spy1();
+                    });
+
+                    followerClient.once('message', function () {
+                        spy2();
+                        setTimeout(function () {
+                            done();
+                        }, 3900);
+                    });
+
+                    // This will send from the followeeClient connection.
+                    followerEndpoint.sendMessage({
+                        message: "test"
+                    });
+                });
+
+                it("arrive at the other endpoint", function () {
+                    expect(spy2.called).to.equal(true);
+                });
+
+                it("arrive at the other connection of the endpointId who sent it", function () {
+                    expect(spy1.called).to.equal(true);
+                });
+            });
+        });
     });
 
     describe("an endpoint", function () {

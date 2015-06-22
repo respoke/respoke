@@ -15,6 +15,8 @@
  * @constructor
  * @param {object} params
  * @param {string} [params.endpointId] - If sending, endpoint ID of the thing we're sending a message to.
+ * @param {string} [params.cSelf] - Copy this client's own endpoint on this message so that they arrive
+ * at other devices it might be logged into elsewhere.
  * @param {string} [params.connectionId] - If sending, connection ID of the thing we're sending a message to.
  * @param {string} [params.message] - If sending, a message to send
  * @param {object} [params.rawMessage] - If receiving, the parsed JSON we got from the server
@@ -36,6 +38,7 @@ module.exports = function (params) {
         if (params.rawMessage) {
             try {
                 that.endpointId = params.rawMessage.header.from;
+                that.originalRecipient = params.rawMessage.header.toOriginal;
                 that.connectionId = params.rawMessage.header.fromConnection;
                 that.timestamp = params.rawMessage.header.timestamp;
             } catch (e) {
@@ -48,6 +51,7 @@ module.exports = function (params) {
         } else {
             try {
                 that.to = params.endpointId;
+                that.ccSelf = params.ccSelf;
                 that.toConnection = params.connectionId;
                 that.requestConnectionReply = (params.requestConnectionReply === true);
                 that.push = (params.push === true);
