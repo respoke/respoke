@@ -187,7 +187,7 @@ module.exports = function (params) {
 
     var digitSender = null;
 
-     /**
+    /**
      * A temporary variable to define if we're in the middle of cancelling any tones on a peer connection
      * @memberof! respoke.PeerConnection
      * @private
@@ -916,7 +916,7 @@ module.exports = function (params) {
             return retVal;
         }
 
-        try{
+        try {
             digitSender.insertDTMF(params.tones, params.duration, params.gap);
         } catch (e) {
             err = new Error('Unable to queue tones on audio track due to an error');
