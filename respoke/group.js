@@ -399,7 +399,7 @@ module.exports = function (params) {
      *     group.getMembers({
      *         onSuccess: function (connections) {
      *             connections.forEach(function (connection) {
-     *                 console.log(connection.endpoint.id);
+     *                 console.log(connection.endpointId);
      *             });
      *         }
      *     });
