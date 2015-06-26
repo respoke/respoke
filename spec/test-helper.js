@@ -1,6 +1,12 @@
 'use strict';
 
-var config = require('./test-config.json');
+var config = {};
+
+try {
+    require('./test-config.json');
+} catch (err) {
+    // Config is optional for running the unit tests.
+}
 
 // TODO: Replace this with something that is _not_ global.
 // this is used in the respoke setup so it must come before requiring it
