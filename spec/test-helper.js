@@ -6,6 +6,8 @@ var config = require('./test-config.json');
 // this is used in the respoke setup so it must come before requiring it
 window.skipErrorReporting = true;
 
+config.baseURL = config.baseURL || 'https://api.respoke.io';
+
 var respoke = require('respoke');
 require('respoke-stats');
 
