@@ -243,6 +243,13 @@ module.exports = function (grunt) {
         'karma:functionalFirefox'
     ]);
 
+    grunt.registerTask('ci-lite', 'Run all tests, except the pesky functional tests', [
+        'jshint:ci',
+        'jscs:ci',
+        'karma:unitChrome',
+        'karma:unitFirefox'
+    ]);
+
     grunt.registerTask('docs', 'Build the documentation HTML pages', [
         'clean:pre-docs',
         'jsdoxy',

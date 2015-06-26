@@ -11,6 +11,7 @@
     "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "lint": "grunt lint",
     "test": "grunt lint unit functional",
+    "ci-lite": "grunt ci-lite",
     "ci": "grunt ci"
   },
   "keywords": [
