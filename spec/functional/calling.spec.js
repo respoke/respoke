@@ -1608,7 +1608,6 @@ describe("Respoke calling", function () {
                 describe("sending Tones with callbacks", function () {
 
                     beforeEach(function (done) {
-                        respoke.log.setLevel('trace');
                         followeeClient.listen('call', callListener);
                         call = followeeEndpoint.startCall({
                             onLocalMedia: function (evt) {
