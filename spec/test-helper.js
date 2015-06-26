@@ -3,7 +3,7 @@
 var config = {};
 
 try {
-    require('./test-config.json');
+    config = require('./test-config.json');
 } catch (err) {
     // Config is optional for running the unit tests.
 }
