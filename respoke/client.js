@@ -1425,7 +1425,13 @@ module.exports = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.startSIPCall
      * @param {object} params
-     * @param {string} params.uri - The SIP URI to call.
+     * @param {string} [params.uri] - The fully qualified SIP URI to call.
+     * @param {string} [params.trunk] - The SIP trunk to call. This is not necessary if `uri` is set. If `uri` is not
+     * set, both `trunk` and `user` are required, and `trunk` must be the ID of a Respoke SIP trunk. `user` is a
+     * SIP username or extension.
+     * @param {string} [params.user] - The SIP user to call. This is not necessary if `uri` is set. If `uri` is not
+     * set, both `trunk` and `user` are required, and `trunk` must be the ID of a Respoke SIP trunk. `user` is a
+     * SIP username or extension.
      * @param {respoke.Call.onLocalMedia} [params.onLocalMedia] - Callback for receiving an HTML5 Video element
      * with the local audio and/or video attached.
      * @param {respoke.Call.onError} [params.onError] - Callback for errors that happen during call setup or
@@ -1468,14 +1474,15 @@ module.exports = function (params) {
 
         that.verifyConnected();
 
-        if (!params.uri) {
-            throw new Error("Can't start a phone call without a SIP URI.");
+        if (!params.uri && !(params.trunk && params.user)) {
+            throw new Error("Can't start a phone call without a SIP URI or a SIP trunk and user.");
         }
 
         if (typeof params.caller !== 'boolean') {
             params.caller = true;
         }
 
+        params.uri = params.uri || (params.trunk + "/" + params.user);
         recipient.id = params.uri;
 
         params.instanceId = instanceId;
