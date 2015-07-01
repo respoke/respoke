@@ -10,7 +10,7 @@ var Q = testHelper.respoke.Q;
 // An intentional timeout so that disconnect's "unavailable" presence updates are not considered.
 var disconnectTimeout = 1000; // I saw it fail at 500ms
 
-describe("Respoke presence", function () {
+describe.only("Respoke presence", function () {
     this.timeout(30000);
 
     var followerClient;
@@ -165,6 +165,67 @@ describe("Respoke presence", function () {
             }, done);
         });
 
+        describe("using initial presence param", function () {
+            describe("via respoke.connect", function(){ 
+                it("has the presence value provided in params", function(done){
+                    Q(respokeAdmin.auth.endpoint({
+                         endpointId: 'respoke.connect',
+                         appId: testHelper.config.appId,
+                         roleId: roleId
+                    })).then(function(token){ 
+                         var client = respoke.connect({
+                             appId: testHelper.config.appId,
+                             baseURL: testHelper.config.baseURL,
+                             token: token.tokenId,
+                             presence: 'custom_value'
+                         }); 
+
+                         client.listen('connect', function(){
+                             expect(client.presence).to.equal('custom_value');
+                             client.disconnect();
+                             done();
+                         });
+                    });
+                });
+            });
+            
+            describe("via respoke.createClient", function(){ 
+                it("has the presence value provided in params", function(){
+                     var client = respoke.createClient({
+                         appId: testHelper.config.appId,
+                         baseURL: testHelper.config.baseURL,
+                         token: followerToken.tokenId,
+                         presence: 'custom_value'
+                     }); 
+                      
+                     expect(client.presence).to.equal('custom_value');
+                });
+            });
+            
+            describe("via client.connect", function(){ 
+                it("has the presence value provided in params", function(done){
+                    Q(respokeAdmin.auth.endpoint({
+                         endpointId: 'client.connect',
+                         appId: testHelper.config.appId,
+                         roleId: roleId
+                    })).then(function(token){ 
+                         var client = respoke.createClient({
+                             appId: testHelper.config.appId,
+                             baseURL: testHelper.config.baseURL,
+                             token: token.tokenId,
+                             onConnect: function(){
+                                 expect(client.presence).to.equal('custom_value');
+                                 client.disconnect();
+                                 done();
+                             }
+                         });
+
+                         client.connect({presence: 'custom_value'});
+                    });
+                });
+            });
+        });
+        
         describe("when an endpoint logs in", function () {
             it("presence is 'unavailable' by default", function () {
                 expect(followerClient.presence).to.equal('unavailable');
