@@ -57,9 +57,35 @@ npm install
 
 ## Tests
 
-Tests currently cannot run outside of our internal development infrastructure.
+There are two different types of tests within transporter.
 
-### Compilation
+ 1. Unit tests. These run locally and have no dependencies on external systems.
+ 2. Functional tests. These require an account with Respoke in order to run
+
+### Unit tests
+
+These can be run simply using grunt.
+
+```bash
+grunt unit
+```
+
+### Functional tests
+
+In order to run the functional tests, go to https://respoke.io and sign up for an account, and
+create an application. You then configure `spec/test-config.json` with your account and application
+credentials.
+
+```json
+{
+    "appId": "",
+    "appSecret": "",
+    "username": "",
+    "password": ""
+}
+```
+
+## Compilation
 Respoke.js uses CommonJS to manage its dependencies, and the [Webpack](http://webpack.github.io/)
 module bundler to bundle the library. To create the bundled and minified library suitable for
 distribution, you can run

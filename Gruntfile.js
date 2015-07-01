@@ -2,9 +2,9 @@
 var respokeStyle = require('respoke-style');
 
 module.exports = function (grunt) {
-    var jsHintFiles = ['**/*.js'];
+    var lintFiles = ['**/*.js'];
     if (grunt.option('file')) {
-        jsHintFiles = [grunt.option('file').split(' ')];
+        lintFiles = [grunt.option('file').split(' ')];
     }
 
     grunt.initConfig({
@@ -78,7 +78,7 @@ module.exports = function (grunt) {
             },
             pretty: {
                 src: [
-                    jsHintFiles
+                    lintFiles
                 ]
             },
             ci: {
@@ -88,7 +88,24 @@ module.exports = function (grunt) {
                     jshintrc: '.jshintrc'
                 },
                 src: [
-                    jsHintFiles
+                    lintFiles
+                ]
+            }
+        },
+
+        jscs: {
+            pretty: {
+                src: [
+                    lintFiles
+                ]
+            },
+            ci: {
+                options: {
+                    reporter: 'junit',
+                    reporterOutput: 'build/jscs-output.xml'
+                },
+                src: [
+                    lintFiles
                 ]
             }
         },
@@ -176,6 +193,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-sass');
     grunt.loadNpmTasks('jsdoxy');
     grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks("grunt-jscs");
 
     grunt.registerTask('dist', [
         'webpack',
@@ -215,13 +233,21 @@ module.exports = function (grunt) {
         'karma:functionalFirefox'
     ]);
 
-    grunt.registerTask('lint', 'run jshint', ['jshint:pretty']);
+    grunt.registerTask('lint', 'run jshint', ['jshint:pretty', 'jscs:pretty']);
     grunt.registerTask('ci', 'Run all tests', [
         'jshint:ci',
+        'jscs:ci',
         'karma:unitChrome',
         'karma:unitFirefox',
         'karma:functionalChrome',
         'karma:functionalFirefox'
+    ]);
+
+    grunt.registerTask('ci-lite', 'Run all tests, except the pesky functional tests', [
+        'jshint:ci',
+        'jscs:ci',
+        'karma:unitChrome',
+        'karma:unitFirefox'
     ]);
 
     grunt.registerTask('docs', 'Build the documentation HTML pages', [
