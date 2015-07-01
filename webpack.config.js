@@ -17,5 +17,7 @@ module.exports = {
         setImmediate: false
     },
     devtool: "source-map",
-    plugins: []
+    plugins: [],
+    // required b/c of https://github.com/webpack/grunt-webpack/issues/43
+    module: {}
 };
