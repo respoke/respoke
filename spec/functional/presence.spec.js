@@ -166,13 +166,13 @@ describe("Respoke presence", function () {
         });
 
         describe("using initial presence param", function () {
-            describe("via respoke.connect", function(){ 
-                it("has the presence value provided in params", function(done){
+            describe("via respoke.connect", function () { 
+                it("has the presence value provided in params", function (done) {
                     Q(respokeAdmin.auth.endpoint({
                          endpointId: 'respoke.connect',
                          appId: testHelper.config.appId,
                          roleId: roleId
-                    })).then(function(token){ 
+                    })).then(function (token) { 
                          var client = respoke.connect({
                              appId: testHelper.config.appId,
                              baseURL: testHelper.config.baseURL,
@@ -180,7 +180,7 @@ describe("Respoke presence", function () {
                              presence: 'custom_value'
                          }); 
 
-                         client.listen('connect', function(){
+                         client.listen('connect', function () {
                              expect(client.presence).to.equal('custom_value');
                              client.disconnect();
                              done();
@@ -189,8 +189,8 @@ describe("Respoke presence", function () {
                 });
             });
             
-            describe("via respoke.createClient", function(){ 
-                it("has the presence value provided in params", function(){
+            describe("via respoke.createClient", function () { 
+                it("has the presence value provided in params", function () {
                      var client = respoke.createClient({
                          appId: testHelper.config.appId,
                          baseURL: testHelper.config.baseURL,
@@ -202,13 +202,13 @@ describe("Respoke presence", function () {
                 });
             });
             
-            describe("via client.connect", function(){ 
-                it("has the presence value provided in params", function(done){
+            describe("via client.connect", function () { 
+                it("has the presence value provided in params", function (done) {
                     Q(respokeAdmin.auth.endpoint({
                          endpointId: 'client.connect',
                          appId: testHelper.config.appId,
                          roleId: roleId
-                    })).then(function(token){ 
+                    })).then(function (token) { 
                          var client = respoke.createClient({
                              appId: testHelper.config.appId,
                              baseURL: testHelper.config.baseURL,
