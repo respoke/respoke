@@ -347,7 +347,7 @@ module.exports = function (params) {
         that.connectTries += 1;
 
         saveParameters(params);
-
+        that.presence = params.presence || that.presence;
         that.endpointId = clientSettings.endpointId;
         promise = actuallyConnect(params);
         retVal = respoke.handlePromise(promise, params.onSuccess, params.onError);
