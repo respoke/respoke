@@ -238,7 +238,7 @@ module.exports = function (params) {
                                 if (!that.isModifying()) {
                                     answerTimer = createTimer(function () {
                                         that.dispatch('reject', {reason: "answer own call timer " + that.caller});
-                                    }, 'answer own call', answerTimeout);
+                                    }, 'answer own call', (that.caller ? answerTimeout : receiveAnswerTimeout));
                                 }
                                 that.fire('preparing:entry');
                             }
