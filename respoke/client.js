@@ -1277,7 +1277,7 @@ module.exports = function (params) {
      * @method respoke.Client.startPhoneCall
      * @param {object} params
      * @param {string} params.number - The phone number that should be called.
-     * @arg {string} params.callerId - The phone number to use as the caller ID for this phone call. This must
+     * @param {string} params.callerId - The phone number to use as the caller ID for this phone call. This must
      * be a phone number listed in your Respoke account, associated with your app, and allowed by the role
      * that this client is authenticated with. If the role contains a list of numbers and the token does not contain
      * callerId, this field must be used to set caller ID selected from the list of numbers or no caller ID will be set.
