@@ -141,6 +141,7 @@ require('./deps/adapter');
 
 var EventEmitter = require('./event');
 var respoke = module.exports = EventEmitter({
+    ridiculous: false, // print every websocket tx/rx
     buildNumber: 'NO BUILD NUMBER',
     streams: [],
     Q: require('q')

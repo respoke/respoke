@@ -1243,7 +1243,7 @@ module.exports = function (params) {
         var target = null;
         var method = 'do';
 
-        if (signal.signalType !== 'iceCandidates') { // Too many of these!
+        if (signal.signalType !== 'iceCandidates' || respoke.ridiculous) { // Too many of these!
             log.debug(signal.signalType, signal);
         }
 
@@ -1982,7 +1982,8 @@ module.exports = function (params) {
         var deferred = Q.defer();
         var start = now();
         // Too many of these!
-        var logRequest = params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1;
+        var logRequest = (params.path.indexOf('messages') === -1 && params.path.indexOf('signaling') === -1) ||
+            respoke.ridiculous;
         var request;
         var bodyLength = 0;
         if (params.parameters) {
