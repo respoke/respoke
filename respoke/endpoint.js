@@ -1,4 +1,4 @@
-/*!
+/*
  * Copyright 2014, Digium, Inc.
  * All rights reserved.
  *
@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
- * @ignore
  */
 
 var Q = require('q');
@@ -735,7 +734,7 @@ module.exports = function (params) {
             var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
             var idList;
 
-            /*!
+            /*
              * Sort the connections array by the priority of the value of the presence of that
              * connectionId. This will cause the first element in the list to be the id of the
              * session with the highest priority presence so we can access it by the 0 index.

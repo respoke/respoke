@@ -1,8 +1,13 @@
-/* global define: false, respoke: false */
-/*!
- * Copyright (c) 2014, D.C.S. LLC. All Rights Reserved. Licensed Software.
- * @ignore
+/*
+ * Copyright 2015, Digium, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under The MIT License found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * For all details and documentation:  https://www.respoke.io
  */
+/* global define: false, respoke: false */
 
 // UMD wrapper to provide support for CommonJS, AMD, and browser globals
 (function (factory) {
