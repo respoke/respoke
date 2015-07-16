@@ -1,12 +1,11 @@
-/*!
- * Copyright 2014, Digium, Inc.
+/*
+ * Copyright 2015, Digium, Inc.
  * All rights reserved.
  *
  * This source code is licensed under The MIT License found in the
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
- * @ignore
  */
 
 var respoke = require('./respoke');
@@ -47,7 +46,7 @@ module.exports = function (params) {
     var modifyTimeout = params.modifyTimeout || 60000;
     var oldRole;
 
-    /*!
+    /*
      * These can quite often result in a condition in which they do not cause a transition to occur.
      * There is at least one "universal" (air quotes) event which probably? shouldn't? but may
      * result in a non-transition error when it's OK, and that is the 'reject' event.

@@ -1,12 +1,11 @@
-/*!
- * Copyright 2014, Digium, Inc.
+/*
+ * Copyright 2015, Digium, Inc.
  * All rights reserved.
  *
  * This source code is licensed under The MIT License found in the
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
- * @ignore
  */
 
 var Q = require('q');
@@ -414,7 +413,7 @@ module.exports = function (params) {
                 that.setPresence({presence: that.presence});
             }
 
-            /*!
+            /*
              * These rely on the EventEmitter checking for duplicate event listeners in order for these
              * not to be duplicated on reconnect.
              */

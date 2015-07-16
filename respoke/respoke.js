@@ -1,16 +1,14 @@
-"use strict";
-/*jshint bitwise: false*/
-
-/*!
- * Copyright 2014, Digium, Inc.
+/*
+ * Copyright 2015, Digium, Inc.
  * All rights reserved.
  *
  * This source code is licensed under The MIT License found in the
  * LICENSE file in the root directory of this source tree.
  *
  * For all details and documentation:  https://www.respoke.io
- * @ignore
  */
+"use strict";
+/*jshint bitwise: false*/
 
 // var Airbrake = require('airbrake-js');
 var log = require('loglevel');
@@ -218,7 +216,7 @@ respoke.isNwjs = (function () {
                 data = null;
             }
 
-            /*!
+            /*
              * mediaSources can be one of 'window', 'screen', or 'tab', or an array with multiples
              * https://developer.chrome.com/extensions/desktopCapture
              */
@@ -276,8 +274,9 @@ respoke.LocalMedia = require('./localMedia');
 respoke.RemoteMedia = require('./remoteMedia');
 respoke.Conference = require('./conference');
 
-/*!
+/**
  * Get information from the Respoke Screen Sharing Chrome extension if it is installed.
+ * @private
  */
 function chromeScreenSharingExtensionReady(evt) {
     var data = evt.detail;

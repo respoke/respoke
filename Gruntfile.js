@@ -13,6 +13,7 @@ module.exports = function (grunt) {
             'respoke-stats': {
                 options: {
                     compress: true,
+                    mangle: false,
                     sourceMap: true,
                     sourceMapIncludeSources: true,
                     banner: '/*! Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For all details and documentation: https://www.respoke.io */'
@@ -115,6 +116,7 @@ module.exports = function (grunt) {
             options: {
                 jsonOutput: '.docs/jsdoxy-output.json',
                 outputPrivate: false,
+                skipSingleStar: true,
                 template: './docs.jade',
                 flatten: true
             },

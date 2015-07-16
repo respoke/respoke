@@ -6,6 +6,8 @@ config.plugins.push(new webpack.BannerPlugin(
     'For details and documentation visit https://www.respoke.io'
 ));
 // run the bundle through UglifyJS2
-config.plugins.push(new webpack.optimize.UglifyJsPlugin());
+config.plugins.push(new webpack.optimize.UglifyJsPlugin({
+    mangle: false
+}));
 
 module.exports = config;
