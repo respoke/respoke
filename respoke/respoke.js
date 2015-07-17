@@ -209,6 +209,8 @@ respoke.isNwjs = (function () {
     if (isNwjs) {
         // expose native node-webkit chooseDesktopMedia (requires nw.js 0.12+)
         gui = window.nwDispatcher.requireNwGui();
+        gui.Screen.Init();
+		
         respoke.chooseDesktopMedia = function (data, callback) {
             // make data param optional
             if (!callback && (typeof data === 'function')) {
@@ -222,7 +224,6 @@ respoke.isNwjs = (function () {
              */
             var mediaSources = data && data.source ? [data.source] : ['window', 'screen'];
 
-            gui.Screen.Init();
             gui.Screen.chooseDesktopMedia(mediaSources, function (sourceId) {
                 callback({
                     type: 'respoke-source-id',
