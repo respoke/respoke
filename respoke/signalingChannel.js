@@ -1032,17 +1032,11 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
-        params = {
-            signal: JSON.stringify(signal),
-            to: to,
-            toConnection: toConnection,
-            toType: toType
-        };
-
         wsCall({
             path: '/v1/signaling',
             httpMethod: 'POST',
             parameters: {
+                ccSelf: params.ccSelf,
                 signal: JSON.stringify(signal),
                 to: to,
                 toConnection: toConnection,
@@ -1158,6 +1152,7 @@ module.exports = function (params) {
     that.sendHangup = function (params) {
         params = params || {};
         params.signalType = 'bye';
+        params.ccSelf = true;
 
         if (!that.isConnected()) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
@@ -1258,10 +1253,13 @@ module.exports = function (params) {
              * with a direct connection or not, and it will create a call if no
              * call is found and this signal is an offer. Direct connections get
              * created in the next step.
+             *
+             * signal.toOriginal will be undefined except in the case that another connection
+             * with our same endpointId has just hung up on the call.
              */
             target = client.getCall({
                 id: signal.sessionId,
-                endpointId: signal.fromEndpoint,
+                endpointId: signal.toOriginal || signal.fromEndpoint,
                 target: signal.target,
                 conferenceId: signal.conferenceId,
                 type: signal.fromType,
@@ -1296,7 +1294,7 @@ module.exports = function (params) {
             }
             if (!target || target.id !== signal.sessionId) {
                 // orphaned signal
-                log.warn("Couldn't associate signal with a call.", signal);
+                log.warn("Couldn't associate signal with a call. This is usually OK.", signal);
                 return;
             }
 
@@ -1430,11 +1428,14 @@ module.exports = function (params) {
      */
     routingMethods.doBye = function (params) {
         /**
-         *  We may receive hangup from one or more parties after connectionId is set if the call is rejected
+         *  The caller may receive hangup from one or more parties after connectionId is set if the call is rejected
          *  by a connection that didn't win the call. In this case, we have to ignore the signal since
-         *  we are already on a call. TODO: this should really be inside PeerConnection.
+         *  we are already on a call.
+         *
+         *  The callee's connectionId is always set.
          */
-        if (params.call.connectionId && params.call.connectionId !== params.signal.fromConnection) {
+        if (params.call.caller && params.call.connectionId &&
+                params.call.connectionId !== params.signal.fromConnection) {
             return;
         }
         /**
@@ -1618,7 +1619,9 @@ module.exports = function (params) {
             });
 
             group = client.getGroup({id: message.header.channel});
-            group.removeMember({connectionId: message.connectionId});
+            if (group) {
+                group.removeMember({connectionId: message.connectionId});
+            }
         }
     };
 

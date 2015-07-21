@@ -93,6 +93,11 @@ module.exports = function (params) {
             params = params || {};
             // we have no media flowing or data channel open
             that.hangupReason = params.reason || "no media";
+            [answerTimer, receiveAnswerTimer, connectionTimer, modifyTimer].forEach(function (timer) {
+                if (timer) {
+                    timer.clear();
+                }
+            });
             return !that.hasMedia();
         }
     }];
