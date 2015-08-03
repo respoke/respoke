@@ -15,6 +15,14 @@ var respoke = require('./respoke');
 var template = require('url-template');
 var log = respoke.log;
 
+var billingSuspensionErrorMessage = "Can't perform this action: Not Authorized. Your account is suspended due to a " +
+    "billing issue. Please visit the Respoke Developer Portal (https://www.respoke.io) or contact customer support " +
+    "(support@respoke.io) to address this issue.";
+
+var suspensionErrorMessage = "Canot perform this action: Not Authorized. Your account is suspended. Please visit " +
+    "the Respoke Developer Portal (https://www.respoke.io) or contact customer support (support@respoke.io) to " +
+    "address this issue.";
+
 /**
  * Returns a timestamp, measured in milliseconds.
  *
@@ -362,14 +370,24 @@ module.exports = function (params) {
         };
 
         call(callParams).done(function (response) {
-            if (response.code === 200 && response.result && response.result.tokenId) {
-                token = response.result.tokenId;
-                deferred.resolve(response.result.tokenId);
+            if (response.statusCode === 200 && response.body && response.body.tokenId) {
+                token = response.body.tokenId;
+                deferred.resolve(response.body.tokenId);
                 return;
             }
-            deferred.reject(buildResponseError(response, "Couldn't get a developer mode token: " + response.error));
+
+            var errorMessage = "Couldn't get a developer mode token. ";
+            if (isBillingSuspensionUnauthorizedResponse(response)) {
+                errorMessage += billingSuspensionErrorMessage;
+            } else if (isSuspensionUnauthorizedResponse(response)) {
+                errorMessage += suspensionErrorMessage;
+            } else {
+                errorMessage += response.error;
+            }
+
+            deferred.reject(buildResponseError(response, errorMessage));
         }, function (err) {
-            deferred.reject(new Error("Couldn't get a developer mode token: " + err.message));
+            deferred.reject(new Error("Couldn't get a developer mode token. " + err.message));
         });
         return deferred.promise;
     };
@@ -400,16 +418,26 @@ module.exports = function (params) {
                 tokenId: params.token
             }
         }).done(function (response) {
-            if (response.code === 200) {
-                appToken = response.result.token;
+            if (response.statusCode === 200) {
+                appToken = response.body.token;
                 deferred.resolve();
                 log.debug("Signaling connection open to", clientSettings.baseURL);
-            } else {
-                deferred.reject(buildResponseError(response, "Couldn't authenticate app: " + response.error));
+                return;
             }
+
+            var errorMessage = "Couldn't authenticate app. ";
+            if (isBillingSuspensionUnauthorizedResponse(response)) {
+                errorMessage += billingSuspensionErrorMessage;
+            } else if (isSuspensionUnauthorizedResponse(response)) {
+                errorMessage += suspensionErrorMessage;
+            } else {
+                errorMessage += response.error;
+            }
+
+            deferred.reject(buildResponseError(response, errorMessage));
         }, function (err) {
             log.error("Network call failed:", err.message);
-            deferred.reject(new Error("Couldn't authenticate app: " + err.message));
+            deferred.reject(new Error("Couldn't authenticate app. " + err.message));
         });
 
         return deferred.promise;
@@ -2070,13 +2098,6 @@ module.exports = function (params) {
             request.durationMillis = now() - start;
             pendingRequests.remove(request.id);
 
-            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(thisHandler.status) === -1) {
-                failWebsocketRequest(request, response,
-                        response.body.error || errors[thisHandler.status] || "Unknown error", deferred);
-            } else {
-                deferred.resolve(response.body);
-            }
-
             if (logRequest) {
                 log.debug('socket response', {
                     method: request.method,
@@ -2085,6 +2106,24 @@ module.exports = function (params) {
                     response: response
                 });
             }
+
+            if (isBillingSuspensionUnauthorizedResponse(response)) {
+                failWebsocketRequest(request, response, billingSuspensionErrorMessage, deferred);
+                return;
+            }
+
+            if (isSuspensionUnauthorizedResponse(response)) {
+                failWebsocketRequest(request, response, suspensionErrorMessage, deferred);
+                return;
+            }
+
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(thisHandler.status) === -1) {
+                failWebsocketRequest(request, response,
+                        response.body.error || errors[thisHandler.status] || "Unknown error", deferred);
+                return;
+            }
+
+            deferred.resolve(response.body);
         }
 
         start = now();
@@ -2094,9 +2133,6 @@ module.exports = function (params) {
 
     function failWebsocketRequest(request, response, error, deferred) {
         if (response && response.body && response.body.error) {
-            if (response.body.details) {
-                error += ' ' + response.body.details;
-            }
             deferred.reject(buildResponseError(response, error + ' (' + request.method + ' ' + request.path + ')'));
         } else {
             deferred.resolve(response.body);
@@ -2136,8 +2172,8 @@ module.exports = function (params) {
         var paramString = null;
         var uri = null;
         var response = {
-            'result': null,
-            'code': null
+            body: null,
+            statusCode: null
         };
         var start = now();
 
@@ -2208,25 +2244,28 @@ module.exports = function (params) {
                 return;
             }
 
-            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
-                response.code = this.status;
-                response.headers = getAllResponseHeaders(this);
-                response.uri = uri;
-                response.params = params.parameters;
-                response.error = errors[this.status];
-                if (this.response) {
-                    try {
-                        response.result = JSON.parse(this.response);
-                    } catch (e) {
-                        response.result = this.response;
-                        response.error = "Invalid JSON.";
-                    }
+            response.statusCode = this.status;
+            response.headers = getAllResponseHeaders(this);
+            response.uri = uri;
+            response.params = params.parameters;
+            response.error = errors[this.status];
+
+            if (this.response) {
+                try {
+                    response.body = JSON.parse(this.response);
+                } catch (e) {
+                    response.body = this.response;
+                    response.error = "Invalid JSON.";
                 }
-                log.debug('response', {
-                    method: params.httpMethod,
-                    durationMillis: durationMillis,
-                    response: response
-                });
+            }
+
+            log.debug('response', {
+                method: params.httpMethod,
+                durationMillis: durationMillis,
+                response: response
+            });
+
+            if ([200, 204, 205, 302, 401, 403, 404, 418].indexOf(this.status) > -1) {
                 deferred.resolve(response);
             } else if (this.status === 429) {
                 unit = getResponseHeader(this, 'RateLimit-Time-Units');
@@ -2234,11 +2273,23 @@ module.exports = function (params) {
                 deferred.reject(buildResponseError(response, "Rate limit of " + limit + "/" + unit +
                     " exceeded. Try again in 1 " + unit + "."));
             } else {
-                deferred.reject(buildResponseError(response, 'unexpected response ' + this.status));
+                deferred.reject(buildResponseError(response, 'unexpected response code ' + this.status));
             }
         };
 
         return deferred.promise;
+    }
+
+    function isSuspensionUnauthorizedResponse(response) {
+        return (response.statusCode === 401) && response.body && response.body.details &&
+            (typeof response.body.details.message === 'string') &&
+            (response.body.details.message.indexOf('suspended') > -1);
+    }
+
+    function isBillingSuspensionUnauthorizedResponse(response) {
+        return isSuspensionUnauthorizedResponse(response) &&
+            (typeof response.body.details.reason === 'string') &&
+            (response.body.details.reason.indexOf('billing suspension') > -1);
     }
 
     /**
