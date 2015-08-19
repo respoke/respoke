@@ -469,6 +469,7 @@ module.exports = function (params) {
                 socket.removeAllListeners();
                 socket.disconnect();
             }
+            socket = null;
             deferred.resolve();
         }).done();
 
@@ -1786,8 +1787,21 @@ module.exports = function (params) {
      * @private
      */
     function reconnect() {
-        appToken = undefined;
-        token = undefined;
+        if (clientSettings.reconnect !== true) {
+            return;
+        }
+        // Reconnects within reconnects is ungood
+        clientSettings.reconnect = false;
+
+        appToken = null;
+        token = null;
+
+        if (socket) {
+            socket.removeAllListeners();
+            socket.disconnect();
+            socket = null;
+        }
+
         reconnectTimeout = (reconnectTimeout === null) ? 2500 : 2 * reconnectTimeout;
 
         if (reconnectTimeout > (maxReconnectTimeout)) {
@@ -1795,6 +1809,8 @@ module.exports = function (params) {
         }
 
         setTimeout(function doReconnect() {
+            log.debug('Reconnecting...');
+
             actuallyConnect().then(function successHandler() {
                 reconnectTimeout = null;
                 log.debug('socket reconnected');
@@ -1804,9 +1820,13 @@ module.exports = function (params) {
                         onMessage: clientSettings.onMessage,
                         onJoin: clientSettings.onJoin,
                         onLeave: clientSettings.onLeave
+                    }).catch(function (err) {
+                        log.error("Couldn't rejoin previous group.", { id: group.id, message: err.message, stack: err.stack });
+                        throw err;
                     });
                 }));
-            }).done(function successHandler(user) {
+            }).then(function successHandler() {
+                log.debug('groups rejoined after reconnect');
                 /**
                  * Indicate that a reconnect has succeeded.
                  * @event respoke.Client#reconnect
@@ -1814,8 +1834,11 @@ module.exports = function (params) {
                  * @property {respoke.Client}
                  */
                 client.fire('reconnect');
-            }, function (err) {
-                log.error("Couldn't rejoin previous groups.", err.message, err.stack);
+            }).fin(function finHandler() {
+                // re-enable reconnects
+                clientSettings.reconnect = true;
+            }).done(null, function errHandler(err) {
+                log.error("Couldn't reconnect. Retrying...", { message: err.message, stack: err.stack });
                 reconnect();
             });
         }, reconnectTimeout);
@@ -1884,9 +1907,9 @@ module.exports = function (params) {
             reconnect();
         });
 
-        // handshake error, 403
+        // handshake error, 403, socket disconnects on FireFox
         socket.on('error', function errorHandler(res) {
-            log.debug('Socket.io request failed.', res || "");
+            log.error('Socket.io error.', res || "");
             reconnect();
         });
 
@@ -1912,6 +1935,7 @@ module.exports = function (params) {
         });
 
         socket.on('disconnect', function onDisconnect() {
+            log.debug('Socket.io disconnect.');
             pendingRequests.reset(function (pendingRequest) {
                 log.debug('Failing pending requests');
                 pendingRequest.reject(new Error("WebSocket disconnected"));
@@ -1925,10 +1949,6 @@ module.exports = function (params) {
              */
             client.fire('disconnect');
 
-            if (clientSettings.reconnect !== true) {
-                socket = null;
-                return;
-            }
             reconnect();
         });
 
