@@ -240,6 +240,7 @@ module.exports = function (params) {
         that.connections.every(function eachConnection(conn, index) {
             if (conn.id === params.connectionId) {
                 that.connections.splice(index, 1);
+                conn.getEndpoint().leftGroup();
 
                 /**
                  * This event is fired when a member leaves a group the client is a member of.
@@ -306,6 +307,7 @@ module.exports = function (params) {
 
         if (absent) {
             that.connections.push(params.connection);
+            params.connection.getEndpoint().joinedGroup();
             if (params.skipEvent) {
                 return;
             }

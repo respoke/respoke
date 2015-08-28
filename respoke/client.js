@@ -1717,10 +1717,17 @@ module.exports = function (params) {
         }
 
         newGroup.listen('leave', function leaveHandler(evt) {
-            newGroup.removeMember({connectionId: evt.connection.id});
-            var endpt = evt.connection.getEndpoint();
-            if (!endpt.hasListeners('presence')) {
-                checkEndpointForRemoval(endpt);
+            var endpointThatLeft = evt.connection.getEndpoint();
+
+            if (!endpointThatLeft.hasListeners('presence') && endpointThatLeft.groupConnectionCount === 0) {
+                // No one is listening, and it's not in any more groups.
+                endpoints.every(function eachEndpoint(ept, index) {
+                    if (ept.id === endpointThatLeft.id) {
+                        endpoints.splice(index, 1);
+                        return false;
+                    }
+                    return true;
+                });
             }
         }, true);
 
@@ -1776,46 +1783,6 @@ module.exports = function (params) {
 
         return group;
     };
-
-    /**
-     * Remove an Endpoint. Since an endpoint can be a member of multiple groups, we can't just remove it from
-     * our list on respoke.Endpoint#leave. We must see if it's a member of any more groups. If it's not
-     * a member of any other groups, we can stop keeping track of it.
-     * @todo TODO Need to account for Endpoints not created as part of a group. These do not need to be
-     * deleted based on group membership.
-     * @memberof! respoke.Client
-     * @method respoke.Client.checkEndpointForRemoval
-     * @param {object} params
-     * @param {string} params.id - The ID of the Endpoint to check for removal.
-     * @private
-     */
-    function checkEndpointForRemoval(params) {
-        params = params || {};
-        if (!params.id) {
-            throw new Error("Can't remove endpoint from internal tracking without group id.");
-        }
-
-        Q.all(groups.map(function eachGroup(group) {
-            return group.getMembers();
-        })).done(function successHandler(connectionsByGroup) {
-            // connectionsByGroup is a two-dimensional array where the first dimension is a group
-            // and the second dimension is a connection.
-            var absent = connectionsByGroup.every(function eachConnectionList(connectionList) {
-                return connectionList.every(function eachConnection(conn) {
-                    return (conn.endpointId !== params.id);
-                });
-            });
-            if (absent) {
-                endpoints.every(function eachEndpoint(ept, index) {
-                    if (ept.id === params.id) {
-                        endpoints.splice(index, 1);
-                        return false;
-                    }
-                    return true;
-                });
-            }
-        });
-    }
 
     /**
      * Find an endpoint by id and return the `respoke.Endpoint` object.
