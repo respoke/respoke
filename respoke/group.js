@@ -93,9 +93,22 @@ module.exports = function (params) {
      */
     that.listen('message', params.onMessage);
     that.listen('leave', params.onLeave);
+
+    /**
+     * Clear out the connections within this group. Called when we're no longer
+     * connected to the group.
+     * @private
+     */
+    function clearConnections() {
+        that.connections.forEach(function (connection) {
+            connection.getEndpoint().leftGroup();
+        });
+        that.connections = [];
+    }
+
     client.listen('disconnect', function disconnectHandler() {
         cacheIsValid = false;
-        that.connections = [];
+        clearConnections();
     }, true);
 
     delete that.instanceId;
@@ -189,7 +202,7 @@ module.exports = function (params) {
         signalingChannel.leaveGroup({
             groupList: [that.id]
         }).done(function successHandler() {
-            that.connections = [];
+            clearConnections();
             deferred.resolve();
             cacheIsValid = false;
 
@@ -240,6 +253,7 @@ module.exports = function (params) {
         that.connections.every(function eachConnection(conn, index) {
             if (conn.id === params.connectionId) {
                 that.connections.splice(index, 1);
+                conn.getEndpoint().leftGroup();
 
                 /**
                  * This event is fired when a member leaves a group the client is a member of.
@@ -306,6 +320,7 @@ module.exports = function (params) {
 
         if (absent) {
             that.connections.push(params.connection);
+            params.connection.getEndpoint().joinedGroup();
             if (params.skipEvent) {
                 return;
             }

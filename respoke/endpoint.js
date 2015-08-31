@@ -58,6 +58,16 @@ module.exports = function (params) {
      * @private
      */
     var signalingChannel = params.signalingChannel;
+    /**
+     * The number this endpoint's connections that are joined to groups. So if
+     * an endpoint has 3 connections in the same group, the
+     * `groupConnectionCount` for that endpoint would be 3.
+     *
+     * @memberof! respoke.DirectConnection
+     * @name groupConnectionCount
+     * @type {number}
+     */
+    that.groupConnectionCount = 0;
 
     var addCall = params.addCall;
 
@@ -793,6 +803,28 @@ module.exports = function (params) {
         });
 
         return connection;
+    };
+
+    /**
+     * Called to indicate that a connection for this endpoint has joined a
+     * group.
+     *
+     * @private
+     * @returns {number} Number of groups this endpoint is a member of.
+     */
+    that.joinedGroup = function () {
+        ++that.groupConnectionCount;
+    };
+
+    /**
+     * Called to indicate that a connection for this endpoint has left a
+     * group.
+     *
+     * @private
+     * @returns {number} Number of groups this endpoint is a member of.
+     */
+    that.leftGroup = function () {
+        --that.groupConnectionCount;
     };
 
     return that;

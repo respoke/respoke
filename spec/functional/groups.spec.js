@@ -390,6 +390,10 @@ describe("Respoke groups", function () {
                         expect(followeeGroup.isJoined()).to.be.false;
                     });
 
+                    it("the first client no longer has the endpoint cached", function () {
+                        var found = followerClient.getEndpoint({id: followeeClient.endpointId, skipCreate: true});
+                        expect(found).to.not.be.ok();
+                    });
                 });
 
                 describe("when the first endpoint leaves the group", function () {
