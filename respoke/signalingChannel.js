@@ -1870,9 +1870,8 @@ module.exports = function (params) {
         host = pieces[0];
         port = pieces[1];
 
-        // Try to connect for 2 seconds before failing.
         var connectParams = {
-            'connect timeout': 2000,
+            'connect timeout': clientSettings.connectTimeoutMillis,
             'force new connection': true, // Don't try to reuse old connection.
             'sync disconnect on unload': true, // have Socket.io call disconnect() on the browser unload event.
             reconnect: false,

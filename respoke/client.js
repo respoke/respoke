@@ -55,6 +55,7 @@ var log = respoke.log;
  * @param {string|number|object|Array} [params.presence=unavailable] The initial presence to set once connected.
  * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
  * when a disconnect occurs.
+ * @proprety {number} [connectTimeoutMillis=10000] - Number of milliseconds before considering the connect operation timed out.
  * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
  * @param {respoke.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
  * @param {respoke.Client.onClientMessage} [params.onMessage] - Callback for when any message is received
@@ -120,6 +121,8 @@ module.exports = function (params) {
      * operation and will limit the services you will be able to use.
      * @property {boolean} [reconnect=false] - Whether or not to automatically reconnect to the Respoke service
      * when a disconnect occurs.
+     * @proprety {number} [connectTimeoutMillis=10000] - Number of milliseconds before considering the connect
+     * timed out.
      * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {respoke.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves a group.
      * @property {respoke.Client.onClientMessage} [onMessage] - Callback for when any message is received
@@ -227,6 +230,8 @@ module.exports = function (params) {
      * operation and will limit the services you will be able to use.
      * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
      * when a disconnect occurs.
+     * @proprety {number} [paramsconnectTimeoutMillis=10000] - Number of milliseconds before considering the connect
+     * timed out.
      * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {respoke.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves
      * a group.
@@ -250,6 +255,10 @@ module.exports = function (params) {
         clientSettings.developmentMode = !!clientSettings.developmentMode;
         clientSettings.enableCallDebugReport = typeof clientSettings.enableCallDebugReport === 'boolean' ?
             clientSettings.enableCallDebugReport : true;
+
+        if (typeof clientSettings.connectTimeoutMillis !== 'number') {
+            clientSettings.connectTimeoutMillis = 10000;
+        }
 
         if (typeof params.reconnect !== 'boolean') {
             clientSettings.reconnect = typeof clientSettings.developmentMode === 'boolean' ?
@@ -324,6 +333,8 @@ module.exports = function (params) {
      * operation and will limit the services you will be able to use.
      * @param {boolean} [params.reconnect=true] - Whether or not to automatically reconnect to the Respoke service
      * when a disconnect occurs.
+     * @proprety {number} [connectTimeoutMillis=10000] - Number of milliseconds before considering the connect
+     * timed out.
      * @param {respoke.Client.onJoin} [params.onJoin] - Callback for when this client's endpoint joins a group.
      * @param {respoke.Client.onLeave} [params.onLeave] - Callback for when this client's endpoint leaves
      * a group.
