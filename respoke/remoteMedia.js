@@ -242,7 +242,9 @@ module.exports = function (params) {
 
         that.stream.numPc -= 1;
         if (that.stream.numPc === 0) {
-            that.stream.stop();
+            that.stream.getTracks().forEach(function (track) {
+                track.stop();
+            });
         }
         that.stream = null;
         /**
