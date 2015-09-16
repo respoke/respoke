@@ -1952,6 +1952,23 @@ module.exports = function (params) {
         return endpoints;
     };
 
+    /**
+     * Get conference participants by conference id.
+     *
+     * ```
+     * client.getConferenceParticipants({ id: 'mygroup' }).done(function (participants) {
+     *     var ids = participants.map(function (p) { return p.endpointId; });
+     *     console.log(ids); // ['person1', 'person2']
+     * });
+     * ```
+     * @memberof respoke.Client
+     * @method respoke.Client.getConferenceParticipants
+     * @param object {params}
+     * @param string {params.id}
+     * @returns {Promise}
+     */
+    that.getConferenceParticipants = signalingChannel.getConferenceParticipants;
+
     return that;
 }; // End respoke.Client
 
