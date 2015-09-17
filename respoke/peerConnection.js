@@ -11,6 +11,7 @@
 var Q = require('q');
 var respoke = require('./respoke');
 var log = respoke.log;
+var Statechart = require('statechart');
 
 /**
  * WebRTC PeerConnection. This class handles all the state and connectivity for Call and DirectConnection.
@@ -96,14 +97,6 @@ module.exports = function (params) {
      * approve() is called.
      */
     var previewLocalMedia = typeof params.previewLocalMedia === 'function' ? params.previewLocalMedia : undefined;
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name candidateSendingQueue
-     * @private
-     * @type {array}
-     * @desc An array to save candidates between offer and answer so that both parties can process them simultaneously.
-     */
-    var candidateSendingQueue = respoke.queueFactory();
     /**
      * @memberof! respoke.PeerConnection
      * @name candidateReceivingQueue
@@ -198,21 +191,22 @@ module.exports = function (params) {
 
     /**
      * @memberof! respoke.PeerConnection
-     * @name signalCandidate
+     * @name signalCandidates
      * @private
      * @type {function}
      * @desc A signaling function constructed from the one passed to us by the signaling channel with additions
      * to facilitate candidate logging.
      */
 
-    function signalCandidate(params) {
+    function signalCandidates(params) {
         if (!pc) {
-            return;
+            return Q.resolve();
         }
 
-        params.iceCandidates = [params.candidate];
-        signalCandidateOrig(params);
-        that.report.candidatesSent.push({candidate: params.candidate});
+        params.call = that.call;
+        that.report.candidatesSent = that.report.candidatesSent.concat(params.iceCandidates);
+
+        return signalCandidateOrig(params);
     }
     /**
      * @memberof! respoke.PeerConnection
@@ -321,6 +315,120 @@ module.exports = function (params) {
             options.offerToReceiveAudio = false;
         }
     }
+
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name localCandidates
+     * @private
+     * @type {array}
+     * @desc An array to save local candidates, to retransmit for peers that
+     *       don't support trickle ice.
+     */
+    var localCandidates = [];
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name localCandidatesComplete
+     * @private
+     * @type {boolean}
+     * @desc Whether all the local candidates have been received.
+     */
+    var localCandidatesComplete = false;
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name localCandidatesSent
+     * @private
+     * @type {number}
+     * @desc The number of local candidates that have been sent to the remote.
+     */
+    var localCandidatesSent = 0;
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name localCandidatesSent
+     * @private
+     * @type {Statechart}
+     * @desc FSM for managing local ICE candidates.
+     */
+    var localCandidatesFSM;
+
+    /**
+     * The number of local candidates that have not yet been sent.
+     * @returns {number}
+     * @private
+     */
+    function localCandidatesRemaining() {
+        return localCandidates.length - localCandidatesSent;
+    }
+
+    /**
+     * Throw another local ICE candidate on the pile
+     * @param params
+     * @param params.candidate ICE candidate
+     * @private
+     */
+    function collectLocalIceCandidate(params) {
+        if (params && params.candidate) {
+            localCandidates.push(params.candidate);
+        }
+    }
+
+    /**
+     * Send the remaining local candidates that have not yet been sent.
+     * @private
+     */
+    function sendRemainingCandidates() {
+        var remainingCandidates = localCandidates.slice(localCandidatesSent);
+        var params = {iceCandidates: remainingCandidates};
+
+        localCandidatesSent += remainingCandidates.length;
+
+        if (localCandidatesComplete) {
+            params.finalCandidates = localCandidates;
+        }
+
+        signalCandidates(params)
+            .finally(function () {
+                localCandidatesFSM.dispatch('iceSent');
+            }).done();
+    }
+
+    localCandidatesFSM = respoke.Class({
+        that: Object.create(Statechart),
+        initialState: 'buffering',
+        states: {
+            buffering: {
+                localIceCandidate: {action: collectLocalIceCandidate},
+                ready: {
+                    target: 'sending',
+                    action: sendRemainingCandidates
+                }
+            },
+            sending: {
+                localIceCandidate: {action: collectLocalIceCandidate},
+                iceSent: [{
+                    guard: function () {
+                        return localCandidatesRemaining() === 0;
+                    },
+                    target: 'waiting'
+                }, {
+                    guard: function () {
+                        return localCandidatesRemaining() !== 0;
+                    },
+                    action: sendRemainingCandidates
+                }]
+            },
+            waiting: {
+                localIceCandidate: {
+                    action: function (params) {
+                        collectLocalIceCandidate(params);
+                        sendRemainingCandidates();
+                    },
+                    target: 'sending'
+                }
+            }
+        }
+    });
+
+    localCandidatesFSM.run();
 
     /**
      * Process a remote offer if we are not the caller. This is necessary because we don't process the offer until
@@ -604,7 +712,20 @@ module.exports = function (params) {
      */
     function onIceCandidate(oCan) {
         var candidate = oCan.candidate; // {candidate: ..., sdpMLineIndex: ... }
-        if (!pc || !candidate || !candidate.candidate) {
+        if (!pc) {
+            return;
+        }
+
+        // From http://www.w3.org/TR/webrtc/#operation
+        // If the intent of the ICE Agent is to notify the script that:
+        //  [snip]
+        //  * The gathering process is done.
+        //    Set connection's ice gathering state to completed and let newCandidate be null.
+        if (!candidate || !candidate.candidate) {
+            if (pc.iceGatheringState === 'complete') {
+                localCandidatesComplete = true;
+                localCandidatesFSM.dispatch('localIceCandidate');
+            }
             return;
         }
 
@@ -616,7 +737,7 @@ module.exports = function (params) {
             return;
         }
 
-        candidateSendingQueue.push(candidate);
+        localCandidatesFSM.dispatch('localIceCandidate', {candidate: candidate});
     }
 
     /**
@@ -651,26 +772,6 @@ module.exports = function (params) {
      */
     function onNegotiationNeeded() {
         log.warn("Negotiation needed.");
-    }
-
-    /**
-     * Process any ICE candidates that we received from our browser before we were able to send
-     * our SDP to the other side.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.processSendingQueue
-     * @private
-     */
-    function processSendingQueue() {
-        candidateSendingQueue.trigger(function sendIce(can) {
-            if (!pc) {
-                return;
-            }
-
-            signalCandidate({
-                candidate: can,
-                call: that.call
-            });
-        });
     }
 
     /**
@@ -718,7 +819,7 @@ module.exports = function (params) {
                 sessionDescription: oSession,
                 onSuccess: function () {
                     that.state.sentSDP = true;
-                    processSendingQueue();
+                    localCandidatesFSM.dispatch('ready');
                 },
                 onError: function (err) {
                     log.error('offer could not be sent', err);
@@ -767,7 +868,9 @@ module.exports = function (params) {
             signalAnswer({
                 sessionDescription: oSession,
                 call: that.call,
-                onSuccess: processSendingQueue
+                onSuccess: function () {
+                    localCandidatesFSM.dispatch('ready');
+                }
             });
             that.state.sentSDP = true;
         }, function errorHandler(p) {

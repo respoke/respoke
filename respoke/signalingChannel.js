@@ -1101,6 +1101,12 @@ module.exports = function (params) {
             return Q.reject(new Error("Can't complete request when not connected. Please reconnect!"));
         }
 
+        if (typeof params.finalCandidates !== 'undefined') {
+            log.debug('Sending final', params.iceCandidates.length, 'of', params.finalCandidates.length, 'ice candidates');
+        } else {
+            log.debug('Sending', params.iceCandidates.length, 'ice candidates');
+        }
+
         return that.sendSignal(params);
     };
 
@@ -1731,7 +1737,12 @@ module.exports = function (params) {
 
             wsCall({
                 path: '/v1/connections',
-                httpMethod: 'POST'
+                httpMethod: 'POST',
+                parameters: {
+                    capabilities: {
+                        iceFinalCandidates: true
+                    }
+                }
             }).done(function successHandler(res) {
                 log.debug('connections result', res);
                 client.endpointId = res.endpointId;
