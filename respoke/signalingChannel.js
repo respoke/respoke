@@ -15,6 +15,8 @@ var respoke = require('./respoke');
 var template = require('url-template');
 var log = respoke.log;
 
+var sdkHeaderValue = 'Respoke.js/' + respoke.version;
+
 var billingSuspensionErrorMessage = "Can't perform this action: Not Authorized. Your account is suspended due to a " +
     "billing issue. Please visit the Respoke Developer Portal (https://www.respoke.io) or contact customer support " +
     "(support@respoke.io) to address this issue.";
@@ -1879,7 +1881,7 @@ module.exports = function (params) {
             port: port || '443',
             protocol: protocol,
             secure: (protocol === 'https'),
-            query: '__sails_io_sdk_version=0.10.0&app-token=' + appToken
+            query: '__sails_io_sdk_version=0.10.0&app-token=' + appToken + '&Respoke-SDK=' + sdkHeaderValue
         };
 
         if (that.isConnected() || isConnecting()) {
@@ -2163,7 +2165,9 @@ module.exports = function (params) {
         socket.emit(request.method, JSON.stringify({
             url: request.path,
             data: request.parameters,
-            headers: {'App-Token': appToken}
+            headers: {
+                'App-Token': appToken,
+                'Respoke-SDK': sdkHeaderValue }
         }), handleResponse);
     }
 
@@ -2222,6 +2226,7 @@ module.exports = function (params) {
         }
 
         xhr.open(params.httpMethod, uri);
+        xhr.setRequestHeader('Respoke-SDK', sdkHeaderValue);
         if (appToken) {
             xhr.setRequestHeader("App-Token", appToken);
         }
