@@ -370,18 +370,6 @@ module.exports = function (params) {
              * @property {respoke.Client} target
              */
             that.fire('connect');
-
-            /**
-             * This event fires only when the initial `connect` fails.
-             *
-             * @ignore **This comment is for documentation purposes**, since #error bubbles
-             * up from other classes, but it should show on `respoke.Client` docs.
-             *
-             * @event respoke.Client#error
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.Client} target
-             */
         });
         return retVal;
     };

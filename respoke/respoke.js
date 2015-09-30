@@ -66,28 +66,15 @@ require('./deps/adapter');
  *          endpointId: "daveops"
  *      });
  *
- *      client.listen('connect', function () {
- *          console.log('connected to respoke!');
+ *      client.connect({
+ *          onSuccess: function () { ... },
+ *          onError: function (err) { ... }
  *      });
- *
- *      client.listen('error', function (err) {
- *          console.error('Connection to Respoke failed.', err);
- *      });
- *
- *      client.connect();
  *
  *
  * **Production mode with brokered auth**
  *
  *      var client = respoke.createClient();
- *
- *      client.listen('connect', function () {
- *          console.log('connected to respoke!');
- *      });
- *
- *      client.listen('error', function (err) {
- *          console.error('Connection to Respoke failed.', err);
- *      });
  *
  *      // Respoke auth token obtained by your server.
  *      // This is how you control who can connect to Respoke app.
@@ -97,6 +84,8 @@ require('./deps/adapter');
  *      // connect to respoke with the token
  *      client.connect({
  *          token: tokenId
+ *          onSuccess: function () { ... },
+ *          onError: function (err) { ... }
  *      });
  *
  *      // fetch a new token from your server if it expires
