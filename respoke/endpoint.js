@@ -561,7 +561,7 @@ module.exports = function (params) {
             signalParams.target = params.target;
             signalParams.recipient = that;
             signalParams.sessionId = signalParams.call.sessionId;
-            signalingChannel.sendCandidate(signalParams).done();
+            return signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = params.target;
@@ -681,7 +681,7 @@ module.exports = function (params) {
         params.signalCandidate = function (signalParams) {
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
-            signalingChannel.sendCandidate(signalParams).done();
+            return signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'directConnection';

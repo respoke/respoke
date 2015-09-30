@@ -1002,7 +1002,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.toType = "conference";
-            signalingChannel.sendCandidate(signalParams).done();
+            return signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = params.target;
@@ -1396,7 +1396,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendCandidate(signalParams).done();
+            return signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
@@ -1551,7 +1551,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendCandidate(signalParams).done();
+            return signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
