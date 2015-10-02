@@ -134,7 +134,7 @@ module.exports = function (grunt) {
                     "respoke/respoke.js",
                     "plugins/respoke-stats/respoke-stats.js"
                 ],
-                dest: '.docs/site/'
+                dest: '.docs/site/js-library/'
             }
         },
         copy: {
@@ -142,7 +142,7 @@ module.exports = function (grunt) {
                 cwd: respokeStyle.paths.assets,
                 expand: true,
                 src: '**/*',
-                dest: '.docs/site/'
+                dest: '.docs/site/js-library/'
             }
         },
         clean: {
@@ -158,14 +158,14 @@ module.exports = function (grunt) {
                     includePaths: respokeStyle.includeStylePaths()
                 },
                 files: {
-                    '.docs/site/css/docs.css': 'docs.scss'
+                    '.docs/site/js-library/css/docs.css': 'docs.scss'
                 }
             }
         },
         'http-server': {
             docs: {
                 // the server root directory
-                root: '.docs/site/',
+                root: '.docs/site/js-library/',
                 port: 2007,
                 host: "0.0.0.0",
                 showDir: true,
