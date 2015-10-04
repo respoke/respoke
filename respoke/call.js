@@ -543,10 +543,8 @@ module.exports = function (params) {
             that.outgoingMediaStreams.push(localMedia);
         }
 
-        // Use the element for only one set of constraints, and make sure it's one that has video.
-        if (respoke.constraintsHasVideo(localMedia.constraints) &&
-                that.videoLocalElement && !that.videoLocalElement.used) {
-            that.videoLocalElement.used = true;
+        // use passed video element if localMedia constraints contain video
+        if (respoke.constraintsHasVideo(localMedia.constraints)) {
             localMedia.element = that.videoLocalElement;
         }
 
@@ -752,7 +750,6 @@ module.exports = function (params) {
         var hasVideo = false;
         var hasScreenShare = false;
         var remoteMedia;
-        var useEl;
 
         if (!pc) {
             return;
@@ -772,13 +769,8 @@ module.exports = function (params) {
         // TODO this is not good enough long term.
         hasScreenShare = hasVideo && that.target === 'screenshare';
 
-        if (that.videoRemoteElement && !that.videoRemoteElement.used) {
-            that.videoRemoteElement.used = true;
-            useEl = that.videoRemoteElement;
-        }
-
         remoteMedia = respoke.RemoteMedia({
-            element: useEl,
+            element: that.videoRemoteElement,
             stream: evt.stream,
             hasScreenShare: hasScreenShare,
             constraints: {
