@@ -19,27 +19,26 @@ module.exports = function (grunt) {
                     banner: '/*! Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For all details and documentation: https://www.respoke.io */'
                 },
                 files: {
-                    'respoke-stats.min.js': 'plugins/respoke-stats/respoke-stats.js'
+                    'build/respoke-stats.min.js': 'plugins/respoke-stats/respoke-stats.js'
                 }
             }
         },
         webpack: {
-            all: require('./webpack.dist')
+            dev: require('./webpack.config.js'),
+            dist: require('./webpack.dist.js')
         },
         karma: {
             unitChrome: {
-                singleRun: true,
                 configFile: './spec/karma-unit-chrome.conf.js'
             },
             unitFirefox: {
-                singleRun: true,
                 configFile: './spec/karma-unit-firefox.conf.js'
             }
         },
         watch: {
             scripts: {
                 files: ['respoke/**/*.js', 'plugins/**/*.js'],
-                tasks: ['dist']
+                tasks: ['build:dist']
             },
             docs: {
                 files: ['respoke/**/*.js', 'plugins/**/*.js', 'docs.scss', 'docs.jade'],
@@ -112,6 +111,11 @@ module.exports = function (grunt) {
             }
         },
         copy: {
+            'respoke-stats': {
+                cwd: __dirname,
+                src: 'plugins/respoke-stats/respoke-stats.js',
+                dest: 'build/respoke-stats.js'
+            },
             'docs-shared-assets': {
                 cwd: respokeStyle.paths.assets,
                 expand: true,
@@ -169,8 +173,12 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks("grunt-jscs");
 
-    grunt.registerTask('dist', [
-        'webpack',
+    grunt.registerTask('build:dev', [
+        'webpack:dev',
+        'copy:respoke-stats'
+    ]);
+    grunt.registerTask('build:dist', [
+        'webpack:dist',
         'uglify:respoke-stats'
     ]);
 
@@ -181,12 +189,15 @@ module.exports = function (grunt) {
         'karma:unitFirefox'
     ]);
 
-    grunt.registerTask('lint', 'run jshint', ['jshint:pretty', 'jscs:pretty']);
+    grunt.registerTask('lint', 'run jshint', [
+        'jshint:pretty',
+        'jscs:pretty'
+    ]);
 
     grunt.registerTask('ci', 'Run unit tests', [
         'jshint:ci',
         'jscs:ci',
-        'dist',
+        'build:dist',
         'karma:unitChrome',
         'karma:unitFirefox'
     ]);

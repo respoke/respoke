@@ -8,8 +8,9 @@ module.exports = function (config) {
 
     config.set({
         files: [
-            '../respoke.min.js',
-            '../respoke-stats.min.js',
+            { pattern: '../build/*.map', included: false },
+            '../build/respoke.min.js',
+            '../build/respoke-stats.min.js',
             'util/mockSignalingChannel.js',
             'unit/*.spec.js'
         ],

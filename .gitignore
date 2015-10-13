@@ -4,10 +4,6 @@ build/
 *.log
 .docs/
 .grunt/
-respoke.min.js
-respoke.min.map
-respoke-stats.min.js
-respoke-stats.min.map
 .sass-cache/
 
 # OS

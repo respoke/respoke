@@ -1,9 +1,9 @@
-var webpack = require('webpack');
+'use strict';
 
 module.exports = {
     entry: "./index.js",
     output: {
-        filename: "respoke.min.js",
+        filename: "build/respoke.js",
         // name of the library to export
         library: "respoke",
         // include Universal Module Definition wrapper so library can be used as
