@@ -2,7 +2,7 @@
 var _ = require('lodash');
 var webpack = require('webpack');
 var baseConfig = require('./webpack.config');
-var config = _.assign({}, baseConfig);
+var config = _.cloneDeep(baseConfig);
 
 config.output.filename = 'build/respoke.min.js';
 config.output.sourceMapFilename = 'build/respoke.min.map';
