@@ -62,7 +62,6 @@
       ".docs",
       ".tmp/**",
       ".idea",
-      "*.min.js",
       "spec/**"
   ]
 }

@@ -4,9 +4,9 @@
   "description": "Client-side JavaScript library for Respoke.",
   "main": "respoke/respoke.js",
   "scripts": {
-    "build": "webpack",
+    "build": "grunt build:dev",
     "watch": "webpack --watch",
-    "dist": "grunt dist",
+    "dist": "grunt build:dist",
     "docs": "grunt docs",
     "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "lint": "grunt lint",
@@ -75,7 +75,7 @@
     "loglevel": "^1.2.0",
     "q": "^1.3.0",
     "socket.io-client": "^0.9.16",
-    "statechart": "DavidDurman/statechart#1.1.0",
+    "statechart": "DavidDurman/statechart#d9b165b6c21e9f60407138447b6e2997dac51080",
     "url-template": "^2.0.6"
   },
   "devDependencies": {
@@ -93,7 +93,6 @@
     "grunt-http-server": "^1.2.0",
     "grunt-jscs": "^1.8.0",
     "grunt-karma": "^0.11.1",
-    "grunt-mocha-test": "~0.10.2",
     "grunt-sass": "^0.17.0",
     "grunt-webpack": "^1.0.7",
     "jscs": "^1.7.3",
@@ -101,7 +100,6 @@
     "jsdoxy": "^0.13.0",
     "jshint": "^2.5.1",
     "jshint-junit-reporter": "^0.1.0",
-    "json-loader": "^0.5.1",
     "karma": "^0.12.31",
     "karma-chai": "^0.1.0",
     "karma-chai-sinon": "^0.1.4",
@@ -112,15 +110,11 @@
     "karma-mocha": "^0.1.3",
     "karma-sourcemap-loader": "^0.3.4",
     "karma-spec-reporter": "0.0.12",
-    "karma-webpack": "1.6.0",
     "mocha": "^2.2.1",
-    "mocha-bamboo-reporter": "^1.0.5",
-    "respoke-admin": "^1.0.2",
     "respoke-style": "git://github.com/respoke/style#v2.1.0",
     "sinon": "^1.14.1",
     "sinon-chai": "^2.7.0",
     "uglify-js": "~2.4.0",
-    "uuid": "^2.0.1",
     "webpack": "^1.7.3",
     "webpack-dev-server": "^1.8.0"
   }
