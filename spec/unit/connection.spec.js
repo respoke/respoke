@@ -1,20 +1,14 @@
-/* global sinon: true */
-"use strict";
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var respoke = testHelper.respoke;
-var _actualSinon = sinon;
-var instanceId = respoke.makeGUID();
-var endpointId = respoke.makeGUID();
-
-var client = respoke.createClient({
-    instanceId: instanceId
-});
-
-
+/* global respoke: false, sinon: true */
 describe("A respoke.Connection", function () {
+    'use strict';
+    var expect = chai.expect;
+    var _actualSinon = sinon;
+    var instanceId = respoke.makeGUID();
+    var endpointId = respoke.makeGUID();
+    var client = respoke.createClient({
+        instanceId: instanceId
+    });
+
     var connection;
     var connectionId;
 

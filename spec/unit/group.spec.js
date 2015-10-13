@@ -1,15 +1,11 @@
-"use strict";
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var respoke = testHelper.respoke;
-var Q = respoke.Q;
-var client;
-var instanceId;
-var group;
-
+/* global respoke: false */
 describe("A respoke.Group", function () {
+    'use strict';
+    var expect = chai.expect;
+    var Q = respoke.Q;
+    var client;
+    var instanceId;
+    var group;
 
     ['', ' foobar', '/foobar'].forEach(function (append) {
         describe('with groupId appended with "' + append + '"', function () {

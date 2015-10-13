@@ -26,16 +26,6 @@ module.exports = function (grunt) {
         webpack: {
             all: require('./webpack.dist')
         },
-        mochaTest: {
-            unit: {
-                options: {
-                    reporter: 'mocha-bamboo-reporter'
-                },
-                src: [
-                    './spec/functional/*.spec.js'
-                ]
-            }
-        },
         karma: {
             unitChrome: {
                 singleRun: true,
@@ -44,22 +34,6 @@ module.exports = function (grunt) {
             unitFirefox: {
                 singleRun: true,
                 configFile: './spec/karma-unit-firefox.conf.js'
-            },
-            functionalChrome: {
-                singleRun: true,
-                configFile: './spec/karma-functional-chrome.conf.js'
-            },
-            functionalFirefox: {
-                singleRun: true,
-                configFile: './spec/karma-functional-firefox.conf.js'
-            },
-            discoveryChrome: {
-                singleRun: true,
-                configFile: './spec/karma-discovery-chrome.conf.js'
-            },
-            discoveryFirefox: {
-                singleRun: true,
-                configFile: './spec/karma-discovery-firefox.conf.js'
             }
         },
         watch: {
@@ -184,9 +158,7 @@ module.exports = function (grunt) {
 
     grunt.loadNpmTasks('grunt-webpack');
     grunt.loadNpmTasks('grunt-karma');
-    grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-uglify');
-    grunt.loadNpmTasks('grunt-env');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -209,45 +181,12 @@ module.exports = function (grunt) {
         'karma:unitFirefox'
     ]);
 
-    grunt.registerTask('discovery', 'Run discovery specs', [
-        'karma:discoveryChrome',
-        'karma:discoveryFirefox'
-    ]);
-
-    grunt.registerTask('discovery:chrome', 'Run discovery specs for Chrome', [
-        'karma:discoveryChrome'
-    ]);
-
-    grunt.registerTask('discovery:firefox', 'Run discovery specs for Firefox', [
-        'karma:discoveryFirefox'
-    ]);
-
-    grunt.registerTask('functional', 'Run client-side functional tests', [
-        'karma:functionalChrome',
-        'karma:functionalFirefox'
-    ]);
-
-    grunt.registerTask('functional:chrome', 'Run client-side functional tests in Chrome', [
-        'karma:functionalChrome'
-    ]);
-
-    grunt.registerTask('functional:firefox', 'Run client-side functional tests in Firefox', [
-        'karma:functionalFirefox'
-    ]);
-
     grunt.registerTask('lint', 'run jshint', ['jshint:pretty', 'jscs:pretty']);
-    grunt.registerTask('ci', 'Run all tests', [
-        'jshint:ci',
-        'jscs:ci',
-        'karma:unitChrome',
-        'karma:unitFirefox',
-        'karma:functionalChrome',
-        'karma:functionalFirefox'
-    ]);
 
-    grunt.registerTask('ci-lite', 'Run all tests, except the pesky functional tests', [
+    grunt.registerTask('ci', 'Run unit tests', [
         'jshint:ci',
         'jscs:ci',
+        'dist',
         'karma:unitChrome',
         'karma:unitFirefox'
     ]);

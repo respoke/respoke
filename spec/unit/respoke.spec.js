@@ -1,11 +1,8 @@
-'use strict';
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var respoke = testHelper.respoke;
-
+/* global respoke: false */
 describe("The respoke namespace", function () {
+    'use strict';
+    var expect = chai.expect;
+
     it("contains all the library's classes.", function () {
         expect(typeof respoke).to.equal('object');
         expect(typeof respoke.Call).to.equal('function');

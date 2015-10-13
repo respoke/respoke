@@ -1,55 +1,14 @@
 'use strict';
 
-var path = require('path');
-
 // Karma shared configuration
 module.exports = function (config) {
-    var respokePath = path.dirname(__dirname);
-
     config.set({
         // base path, that will be used to resolve files and exclude
         basePath: '',
 
         frameworks: ['mocha', 'dirty-chai', 'chai-sinon'],
 
-        webpack: {
-            devtool: 'inline-source-map',
-            resolve: {
-                modulesDirectories: [
-                    'node_modules'
-                ],
-                alias: {
-                    respoke: respokePath,
-                    'respoke-stats': path.join(respokePath, 'plugins', 'respoke-stats', 'respoke-stats')
-                }
-            },
-            module: {
-                loaders: [
-                    {
-                        test: /\.json$/,
-                        loader: 'json'
-                    }
-                ]
-            },
-            // this allows us to pack the request module in respoke-admin
-            externals: {
-                fs: '{}',
-                tls: '{}',
-                net: '{}',
-                console: '{}'
-            }
-        },
-
-        webpackMiddleware: {
-            // disable verbose output from webpack-dev-middleware
-            noInfo: true,
-            // disable displaying stats about the compiled package
-            stats: false
-        },
-
         plugins: [
-            require('karma-webpack'),
-            require('karma-sourcemap-loader'),
             require('karma-mocha'),
             require('karma-chai'),
             require('karma-dirty-chai'),

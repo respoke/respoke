@@ -1,13 +1,8 @@
-/* global sinon: true */
-'use strict';
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var assert = chai.assert;
-var respoke = testHelper.respoke;
-
+/* global respoke: false, sinon: true */
 describe("LocalMedia.stop", function () {
+    'use strict';
+    var expect = chai.expect;
+    var assert = chai.assert;
     var _actualSinon = sinon;
 
     beforeEach(function () {

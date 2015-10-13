@@ -1,11 +1,7 @@
-"use strict";
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var respoke = testHelper.respoke;
-
+/* global respoke: false */
 describe("A respoke.EventEmitter", function () {
+    'use strict';
+    var expect = chai.expect;
     var results = [];
     var eventEmitter = respoke.EventEmitter({
         "gloveColor": "white"

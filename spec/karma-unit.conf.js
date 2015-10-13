@@ -8,12 +8,11 @@ module.exports = function (config) {
 
     config.set({
         files: [
-            'unit/index.js'
+            '../respoke.min.js',
+            '../respoke-stats.min.js',
+            'util/mockSignalingChannel.js',
+            'unit/*.spec.js'
         ],
-
-        preprocessors: {
-            'unit/index.js': ['webpack', 'sourcemap']
-        },
 
         junitReporter: {
             outputFile: '../build/unit-test-results.xml'

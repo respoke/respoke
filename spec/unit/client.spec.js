@@ -1,13 +1,7 @@
-'use strict';
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var respoke = testHelper.respoke;
-
-var signalingMock = require('../util/mockSignalingChannel')(respoke);
-
+/* global respoke: false */
 describe("respoke.Client", function () {
+    'use strict';
+    var expect = chai.expect;
     var instanceId;
     var client;
 
@@ -314,7 +308,7 @@ describe("respoke.Client", function () {
         beforeEach(function () {
             instanceId = respoke.makeGUID();
 
-            sinon.stub(respoke, 'SignalingChannel', signalingMock.method);
+            sinon.stub(respoke, 'SignalingChannel', window.MockSignalingChannel);
             client = respoke.createClient({
                 instanceId: instanceId,
                 gloveColor: "white"
@@ -338,9 +332,9 @@ describe("respoke.Client", function () {
 
                 beforeEach(function () {
                     stub = sinon.stub(
-                        signalingMock.instance,
+                        window.mockedSignalingChannel,
                         methodsWhichReturnPromises[method],
-                        signalingMock.instance[methodsWhichReturnPromises[method]]
+                        window.mockedSignalingChannel[methodsWhichReturnPromises[method]]
                     );
 
                     return client[method](params);

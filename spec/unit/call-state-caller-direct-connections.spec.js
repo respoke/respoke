@@ -1,11 +1,7 @@
-"use strict";
-
-var testHelper = require('../test-helper');
-
-var expect = chai.expect;
-var respoke = testHelper.respoke;
-
+/* global respoke: false */
 xdescribe("respoke.CallState for direct connections as the caller", function () {
+    'use strict';
+    var expect = chai.expect;
     var caller = true;
     var state;
     var fake = {hasMedia: false};
