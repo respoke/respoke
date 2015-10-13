@@ -24,8 +24,8 @@ module.exports = function (grunt) {
             }
         },
         webpack: {
-            dev: require('./webpack.config.js'),
-            dist: require('./webpack.dist.js')
+            dev: require('./webpack.config'),
+            dist: require('./webpack.dist')
         },
         karma: {
             unitChrome: {
@@ -197,6 +197,7 @@ module.exports = function (grunt) {
     grunt.registerTask('ci', 'Run unit tests', [
         'jshint:ci',
         'jscs:ci',
+        'build:dev',
         'build:dist',
         'karma:unitChrome',
         'karma:unitFirefox'

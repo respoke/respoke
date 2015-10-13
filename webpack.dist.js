@@ -1,7 +1,8 @@
 'use strict';
-
+var _ = require('lodash');
 var webpack = require('webpack');
-var config = require('./webpack.config');
+var baseConfig = require('./webpack.config');
+var config = _.assign({}, baseConfig);
 
 config.output.filename = 'build/respoke.min.js';
 config.output.sourceMapFilename = 'build/respoke.min.map';
