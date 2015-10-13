@@ -4,7 +4,6 @@ module.exports = {
     entry: "./index.js",
     output: {
         filename: "respoke.min.js",
-        sourceMapFilename: "respoke.min.map",
         // name of the library to export
         library: "respoke",
         // include Universal Module Definition wrapper so library can be used as
@@ -16,7 +15,6 @@ module.exports = {
         process: false,
         setImmediate: false
     },
-    devtool: "source-map",
     plugins: [],
     // required b/c of https://github.com/webpack/grunt-webpack/issues/43
     module: {}
