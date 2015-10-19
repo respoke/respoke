@@ -134,10 +134,6 @@ module.exports = function (params) {
      * Internally set the presence on the object for this session upon receipt of a presence notification from
      * the backend. Respoke developers shouldn't use this.
      *
-     * ```
-     * client.setPresence({ presence: 'busy' });
-     * ```
-     *
      * While technically available on an Endpoint or Connection, this will not trigger
      * any API changes. The changes will only be reflected locally.
      *

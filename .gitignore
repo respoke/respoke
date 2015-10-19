@@ -5,6 +5,7 @@ build/
 .docs/
 .grunt/
 .sass-cache/
+.chrome_dev_user/
 
 # OS
 .DS_Store

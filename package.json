@@ -10,7 +10,8 @@
     "docs": "grunt docs",
     "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "lint": "grunt lint",
-    "test": "grunt lint unit functional",
+    "test": "grunt lint build:dist unit",
+    "test-dev": "grunt build:dev karma:unitDevChrome",
     "ci-lite": "grunt ci-lite",
     "ci": "grunt ci"
   },
@@ -113,7 +114,7 @@
     "lodash": "^3.10.1",
     "mocha": "^2.2.1",
     "respoke-style": "git://github.com/respoke/style#v2.1.0",
-    "sinon": "^1.14.1",
+    "sinon": "^1.17.1",
     "sinon-chai": "^2.7.0",
     "uglify-js": "~2.4.0",
     "webpack": "^1.7.3",

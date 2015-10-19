@@ -136,7 +136,7 @@ module.exports = function (params) {
      * @property {boolean} enableCallDebugReport=true - Upon finishing a call, should the client send debugging
      * information to the API? Defaults to `true`.
      */
-    var clientSettings = {};
+    var clientSettings = that.clientSettings = {};
 
     delete that.appId;
     delete that.baseURL;
@@ -177,7 +177,7 @@ module.exports = function (params) {
      * @type {respoke.SignalingChannel}
      * @private
      */
-    var signalingChannel = respoke.SignalingChannel({
+    that.signalingChannel = respoke.SignalingChannel({
         instanceId: instanceId,
         clientSettings: clientSettings
     });
@@ -400,12 +400,12 @@ module.exports = function (params) {
             return deferred.promise;
         }
 
-        signalingChannel.open({
+        that.signalingChannel.open({
             actuallyConnect: actuallyConnect,
             endpointId: that.endpointId,
             token: clientSettings.token
         }).then(function successHandler() {
-            return signalingChannel.authenticate();
+            return that.signalingChannel.authenticate();
         }).done(function successHandler() {
             // set initial presence for the connection
             if (that.presence) {
@@ -537,7 +537,7 @@ module.exports = function (params) {
         });
 
         Q.all(leaveGroups).fin(function successHandler() {
-            return signalingChannel.close();
+            return that.signalingChannel.close();
         }).fin(function finallyHandler() {
             that.presence = 'unavailable';
             endpoints = [];
@@ -601,7 +601,7 @@ module.exports = function (params) {
 
         log.info('sending my presence update ' + params.presence);
 
-        promise = signalingChannel.sendPresence({
+        promise = that.signalingChannel.sendPresence({
             presence: params.presence
         }).then(function successHandler(p) {
             that.presence = params.presence;
@@ -963,7 +963,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = "conference";
 
-            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
+            that.signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             var onSuccess = signalParams.onSuccess;
@@ -976,7 +976,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.toType = "conference";
-            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
+            that.signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 signalParams.call.hangup({signal: false});
             });
         };
@@ -986,7 +986,7 @@ module.exports = function (params) {
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.recipient = recipient;
             signalParams.toType = "conference";
-            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 signalParams.call.hangup();
             });
         };
@@ -995,28 +995,28 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.toType = "conference";
-            signalingChannel.sendModify(signalParams).done();
+            that.signalingChannel.sendModify(signalParams).done();
         };
         params.signalCandidate = function (signalParams) {
             signalParams.target = params.target;
             signalParams.recipient = recipient;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.toType = "conference";
-            return signalingChannel.sendCandidate(signalParams);
+            return that.signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = params.target;
             signalParams.recipient = recipient;
             signalParams.sessionId = signalParams.call.sessionId;
             signalParams.toType = "conference";
-            signalingChannel.sendHangup(signalParams).done();
+            that.signalingChannel.sendHangup(signalParams).done();
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams).done();
+            that.signalingChannel.sendReport(signalParams).done();
         };
 
-        params.signalingChannel = signalingChannel;
+        params.signalingChannel = that.signalingChannel;
         conference = respoke.Conference(params);
         addCall({call: conference.call});
         return conference;
@@ -1353,7 +1353,7 @@ module.exports = function (params) {
             if (params.hasOwnProperty('callerId')) {
                 signalParams.callerId = {number: params.callerId};
             }
-            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
+            that.signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             var onSuccess = signalParams.onSuccess;
@@ -1366,7 +1366,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
+            that.signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
             });
@@ -1377,7 +1377,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
             });
@@ -1387,7 +1387,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send modify.", err.message, err.stack);
             });
         };
@@ -1396,23 +1396,23 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            return signalingChannel.sendCandidate(signalParams);
+            return that.signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            that.signalingChannel.sendReport(signalParams);
         };
 
-        params.signalingChannel = signalingChannel;
+        params.signalingChannel = that.signalingChannel;
         call = respoke.Call(params);
         addCall({call: call});
         return call;
@@ -1508,7 +1508,7 @@ module.exports = function (params) {
             if (params.hasOwnProperty('callerId')) {
                 signalParams.callerId = params.callerId;
             }
-            signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
+            that.signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
         params.signalAnswer = function (signalParams) {
             var onSuccess = signalParams.onSuccess;
@@ -1521,7 +1521,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
+            that.signalingChannel.sendSDP(signalParams).then(onSuccess, onError).done(null, function errorHandler(err) {
                 log.error("Couldn't answer the call.", err.message, err.stack);
                 signalParams.call.hangup({signal: false});
             });
@@ -1532,7 +1532,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendConnected(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send connected.", err.message, err.stack);
                 signalParams.call.hangup();
             });
@@ -1542,7 +1542,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendModify(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send modify.", err.message, err.stack);
             });
         };
@@ -1551,23 +1551,23 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            return signalingChannel.sendCandidate(signalParams);
+            return that.signalingChannel.sendCandidate(signalParams);
         };
         params.signalHangup = function (signalParams) {
             signalParams.target = 'call';
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
-            signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
+            that.signalingChannel.sendHangup(signalParams).done(null, function errorHandler(err) {
                 log.error("Couldn't send hangup.", err.message, err.stack);
             });
         };
         params.signalReport = function (signalParams) {
             log.debug("Sending debug report", signalParams.report);
-            signalingChannel.sendReport(signalParams);
+            that.signalingChannel.sendReport(signalParams);
         };
 
-        params.signalingChannel = signalingChannel;
+        params.signalingChannel = that.signalingChannel;
         call = respoke.Call(params);
         addCall({call: call});
         return call;
@@ -1581,7 +1581,7 @@ module.exports = function (params) {
      * @private
      */
     that.verifyConnected = function () {
-        if (!signalingChannel.isConnected()) {
+        if (!that.signalingChannel.isConnected()) {
             throw new Error("Can't complete request when not connected. Please reconnect!");
         }
     };
@@ -1593,7 +1593,7 @@ module.exports = function (params) {
      * @returns boolean
      */
     that.isConnected = function () {
-        return signalingChannel.isConnected();
+        return that.signalingChannel.isConnected();
     };
 
     /**
@@ -1660,11 +1660,11 @@ module.exports = function (params) {
 
         log.trace('requested to join group', params.id);
 
-        signalingChannel.joinGroup({
+        that.signalingChannel.joinGroup({
             groupList: [params.id]
         }).done(function successHandler() {
             var group;
-            params.signalingChannel = signalingChannel;
+            params.signalingChannel = that.signalingChannel;
             params.instanceId = instanceId;
 
             group = that.getGroup({id: params.id});
@@ -1825,7 +1825,7 @@ module.exports = function (params) {
 
         if (!endpoint && params && !params.skipCreate) {
             params.instanceId = instanceId;
-            params.signalingChannel = signalingChannel;
+            params.signalingChannel = that.signalingChannel;
             params.resolveEndpointPresence = clientSettings.resolveEndpointPresence;
             params.addCall = addCall;
 
@@ -1838,7 +1838,7 @@ module.exports = function (params) {
         }
 
         if (params.skipPresence !== true) {
-            signalingChannel.registerPresence({
+            that.signalingChannel.registerPresence({
                 endpointList: [endpoint.id]
             }).done(null, function (err) {
                 log.error("Couldn't register for presence on", endpoint.id, err.message);
@@ -1955,7 +1955,7 @@ module.exports = function (params) {
      * @param string {params.id}
      * @returns {Promise}
      */
-    that.getConferenceParticipants = signalingChannel.getConferenceParticipants;
+    that.getConferenceParticipants = that.signalingChannel.getConferenceParticipants;
 
     return that;
 }; // End respoke.Client

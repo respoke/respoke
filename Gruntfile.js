@@ -31,6 +31,9 @@ module.exports = function (grunt) {
             unitChrome: {
                 configFile: './spec/karma-unit-chrome.conf.js'
             },
+            unitDevChrome: {
+                configFile: './spec/karma-unit-dev-chrome.conf.js'
+            },
             unitFirefox: {
                 configFile: './spec/karma-unit-firefox.conf.js'
             }

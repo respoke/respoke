@@ -131,6 +131,7 @@ var respoke = module.exports = EventEmitter({
     ridiculous: false, // print every websocket tx/rx
     buildNumber: 'NO BUILD NUMBER',
     streams: [],
+    io: require('socket.io-client'),
     Q: require('q')
 });
 
@@ -199,7 +200,7 @@ respoke.isNwjs = (function () {
         // expose native node-webkit chooseDesktopMedia (requires nw.js 0.12+)
         gui = window.nwDispatcher.requireNwGui();
         gui.Screen.Init();
-		
+
         respoke.chooseDesktopMedia = function (data, callback) {
             // make data param optional
             if (!callback && (typeof data === 'function')) {
