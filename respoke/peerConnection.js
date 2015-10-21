@@ -439,9 +439,86 @@ module.exports = function (params) {
      * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
+
+        function onSetRemoteDescriptionSuccess() {
+            if (!pc) {
+                return;
+            }
+
+            log.debug('set remote desc of offer succeeded');
+
+            processReceivingQueue();
+
+            pc.createAnswer(function successHandler(oSession) {
+                that.state.processedRemoteSDP = true;
+                saveAnswerAndSend(oSession);
+            }, function errorHandler(err) {
+                log.error('create answer failed', err);
+
+                err = new Error("Error creating SDP answer. " + err);
+                that.report.callStoppedReason = err.message;
+
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event respoke.Call#error
+                 * @type {respoke.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {respoke.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.call.fire('error', {
+                    message: err.message
+                });
+                that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                that.close();
+            });
+        }
+
+        function onSetRemoteDescriptionInitialError(err) {
+            log.debug('Error calling setRemoteDescription on offer I received.', err);
+
+            if (!pc) {
+                return;
+            }
+
+            /*
+             * Attempt to remove the dtls transport protocol from the offer sdp. This has been observed
+             * to cause setRemoteDescription failures when Chrome 46+ is placing calls to Chrome <= 41.
+             * This is a particularly acute issue when using nw.js 0.12.x or lower.
+             */
+            var alteredSdp = oOffer.sdp.replace(/UDP\/TLS\/RTP\/SAVPF/g, 'RTP/SAVPF');
+            if (oOffer.sdp !== alteredSdp) {
+                oOffer.sdp = alteredSdp;
+                log.debug('Retrying setRemoteDescription with legacy transport in offer sdp', oOffer);
+                pc.setRemoteDescription(new RTCSessionDescription(oOffer),
+                    onSetRemoteDescriptionSuccess, onSetRemoteDescriptionFinalError);
+                return;
+            }
+
+            onSetRemoteDescriptionFinalError(err);
+        }
+
+        function onSetRemoteDescriptionFinalError(err) {
+            err = new Error('Error calling setRemoteDescription on offer I received. ' + err);
+            that.report.callStoppedReason = err.message;
+
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event respoke.Call#error
+             * @type {respoke.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {respoke.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: err.message
+            });
+        }
+
         if (!pc) {
             return;
         }
+
         log.debug('processOffer', oOffer);
 
         that.report.sdpsReceived.push(oOffer);
@@ -453,53 +530,11 @@ module.exports = function (params) {
 
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
-                function successHandler() {
-                    if (!pc) {
-                        return;
-                    }
-
-                    processReceivingQueue();
-                    log.debug('set remote desc of offer succeeded');
-                    pc.createAnswer(function successHandler(oSession) {
-                        that.state.processedRemoteSDP = true;
-                        saveAnswerAndSend(oSession);
-                    }, function errorHandler(err) {
-                        err = new Error("Error creating SDP answer." + err.message);
-                        that.report.callStoppedReason = err.message;
-                        /**
-                         * This event is fired on errors that occur during call setup or media negotiation.
-                         * @event respoke.Call#error
-                         * @type {respoke.Event}
-                         * @property {string} reason - A human readable description about the error.
-                         * @property {respoke.Call} target
-                         * @property {string} name - the event name.
-                         */
-                        that.call.fire('error', {
-                            message: err.message
-                        });
-                        log.error('create answer failed');
-                        that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
-                        that.close();
-                    });
-                }, function errorHandler(err) {
-                    err = new Error('Error calling setRemoteDescription on offer I received.' + err.message);
-                    that.report.callStoppedReason = err.message;
-                    /**
-                     * This event is fired on errors that occur during call setup or media negotiation.
-                     * @event respoke.Call#error
-                     * @type {respoke.Event}
-                     * @property {string} reason - A human readable description about the error.
-                     * @property {respoke.Call} target
-                     * @property {string} name - the event name.
-                     */
-                    that.call.fire('error', {
-                        message: err.message
-                    });
-                }
-            );
+                onSetRemoteDescriptionSuccess, onSetRemoteDescriptionInitialError);
         } catch (err) {
             var newErr = new Error("Exception calling setRemoteDescription on offer I received." + err.message);
             that.report.callStoppedReason = newErr.message;
+
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event respoke.Call#error
