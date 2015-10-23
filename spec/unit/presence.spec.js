@@ -1,6 +1,6 @@
 /* global respoke: false, sinon: true */
 // Note: presence resolution on an endpoint is tested also in endpoint.spec.js
-describe.only("Presence", function () {
+describe("Presence", function () {
     'use strict';
     var expect = chai.expect;
     var _actualSinon = sinon;
