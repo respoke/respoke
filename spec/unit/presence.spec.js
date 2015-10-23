@@ -1,11 +1,9 @@
 /* global respoke: false, sinon: true */
 // Note: presence resolution on an endpoint is tested also in endpoint.spec.js
-// Those tests mock out a lot of en
-describe("Presence", function () {
+describe.only("Presence", function () {
     'use strict';
     var expect = chai.expect;
     var _actualSinon = sinon;
-    var _actualRespoke = respoke;
     var instanceId;
 
     var client;
@@ -27,42 +25,70 @@ describe("Presence", function () {
         sinon = _actualSinon;
     });
     describe('when setPresence() is called on an endpoint', function () {
-        var endpointResolvePresenceSpy;
-        var clientResolvePresenceSpy;
-        beforeEach(function () {
-            client.clientSettings.resolveEndpointPresence = function (presenceList) {
-                return presenceList[0];
-            };
-            clientResolvePresenceSpy = sinon.spy(client.clientSettings, 'resolveEndpointPresence');
-            endpoint = client.getEndpoint({ id: 'not_cmcelligott_digium_com' });
-            endpoint.connections = [
-                client.getConnection({
-                    connectionId: 'conn1',
-                    endpointId: 'not_cmcelligott_digium_com'
-                }),
-                client.getConnection({
-                    connectionId: 'conn2',
-                    endpointId: 'not_cmcelligott_digium_com'
-                })
-            ];
-            endpointResolvePresenceSpy = sinon.spy(endpoint, 'resolvePresence');
-            expect(endpoint.presence).to.equal('unavailable');
-        });
         describe('using default presence resolution', function () {
-            it('triggers default resolvePresence() on that endpoint', function () {
-                endpoint.setPresence({ presence: 'too busy', connectionId: 'conn1' });
-                expect(endpoint.connections.length).to.equal(2);
-                expect(endpoint.connections[0].presence).to.equal('too busy');
-                expect(endpointResolvePresenceSpy.callCount).to.equal(1);
-                expect(endpoint.presence).to.equal('too busy');
+            beforeEach(function () {
+                endpoint = client.getEndpoint({ id: 'not_cmcelligott_digium_com' });
+                endpoint.connections = [
+                    client.getConnection({
+                        connectionId: 'conn1',
+                        endpointId: 'not_cmcelligott_digium_com'
+                    }),
+                    client.getConnection({
+                        connectionId: 'conn2',
+                        endpointId: 'not_cmcelligott_digium_com'
+                    })
+                ];
+                sinon.spy(endpoint, 'resolvePresence');
+                expect(endpoint.presence).to.equal('unavailable');
+            });
+            describe('when setting a supported presence string', function () {
+                beforeEach(function () {
+                    endpoint.setPresence({ presence: 'dnd', connectionId: 'conn1' });
+                    expect(endpoint.connections.length).to.equal(2);
+                    expect(endpoint.resolvePresence.callCount).to.equal(1);
+                });
+                it('sets and resolves to the supplied presence value', function () {
+                    expect(endpoint.getConnection({ connectionId: 'conn1' }).presence).to.equal('dnd');
+                    expect(endpoint.presence).to.equal('dnd');
+                });
+            });
+            describe('when setting an unsupported presence string', function () {
+                beforeEach(function () {
+                    endpoint.setPresence({ presence: 'lunch', connectionId: 'conn1' });
+                    expect(endpoint.connections.length).to.equal(2);
+                    expect(endpoint.resolvePresence.callCount).to.equal(1);
+                });
+                it('sets the presence to the supplied value but does not resolve to it', function () {
+                    expect(endpoint.getConnection({ connectionId: 'conn1' }).presence).to.equal('lunch');
+                    expect(endpoint.presence).to.equal('unavailable');
+                });
             });
         });
         describe('using a custom presence resolution function', function () {
-            describe('is passed an array of presence strings', function () {
-                it('is called with a list of presences', function () {
-                    endpoint.setPresence({ presence: 'away', connectionId: 'conn1' });
-                    expect(clientResolvePresenceSpy.callCount).to.equal(1);
-                    expect(clientResolvePresenceSpy.calledWith(['away', 'unavailable'])).to.equal(true);
+            beforeEach(function () {
+                client.clientSettings.resolveEndpointPresence = sinon.spy(function (presenceList) {
+                    return presenceList[0];
+                });
+                endpoint = client.getEndpoint({ id: 'cartman' });
+                endpoint.connections = [
+                    client.getConnection({
+                        connectionId: 'c1',
+                        endpointId: 'cartman'
+                    }),
+                    client.getConnection({
+                        connectionId: 'c2',
+                        endpointId: 'cartman'
+                    })
+                ];
+                sinon.spy(endpoint, 'resolvePresence');
+                expect(endpoint.presence).to.equal('unavailable');
+            });
+            describe('when passed an array of presence strings', function () {
+                it('is called with the list of presences', function () {
+                    endpoint.setPresence({ presence: 'lunching', connectionId: 'c1' });
+                    expect(client.clientSettings.resolveEndpointPresence.callCount).to.equal(1);
+                    expect(client.clientSettings.resolveEndpointPresence.calledWith(['lunching', 'unavailable'])).to.equal(true);
+                    expect(endpoint.presence).to.equal('lunching');
                 });
             });
             describe('when passed as a param during respoke.createClient', function () {

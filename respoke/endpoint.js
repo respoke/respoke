@@ -737,7 +737,7 @@ module.exports = function (params) {
         if (resolveEndpointPresence !== undefined) {
             that.presence = resolveEndpointPresence(presenceList);
         } else {
-            var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
+            var options = respoke.constants.presence();
             var idList;
 
             /*
