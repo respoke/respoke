@@ -576,6 +576,18 @@ module.exports = function (params) {
      *
      * **Using callbacks** by passing `params.onSuccess` or `params.onError` will disable promises.
      *
+     * ### Resolving presence
+     *
+     * When not using a custom endpoint presence resolver
+     * (see `respoke.createClient({ resolveEndpointPresence: <Function> })`)
+     * these are the supported presence values. Values not below will be put at the end of the
+     * list when resolving an endpoint's presence across the presence of its connections.
+     *
+     * ```
+     * ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable']
+     * ```
+     *
+     *
      * @memberof! respoke.Client
      * @method respoke.Client.setPresence
      * @param {object} params
