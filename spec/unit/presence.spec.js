@@ -158,22 +158,27 @@ describe("Presence", function () {
         it('updates the presence text', function () {
             expect(endpoint.presence).to.equal('busy');
         });
-        it('does not call setPresence when the endpoint is the same as the client', function () {
-            client.endpointId = 'not_cmcelligott_digium_com';
-            // trigger it again
-            client.signalingChannel.socketOnPresence({
-                name: "presence",
-                header: {
-                    channel: "presence:not_cmcelligott_digium_com",
-                    from: "not_cmcelligott_digium_com",
-                    fromConnection: "conn1",
-                    requestId: "94935894-4354-4434-5555-949394589439",
-                    type: "presence"
-                },
-                type: "away"
+        describe('when the remote endpointId is the same as the client endpointId', function () {
+            beforeEach(function () {
+                client.endpointId = 'not_cmcelligott_digium_com';
+                expect(client.endpointId).to.equal(endpoint.id); // just to be sure
             });
-            expect(endpoint.resolvePresence.callCount).to.equal(1);
-            expect(endpoint.presence).to.equal('busy');
+            it('does not call setPresence', function () {
+                // trigger it again
+                client.signalingChannel.socketOnPresence({
+                    name: "presence",
+                    header: {
+                        channel: "presence:not_cmcelligott_digium_com",
+                        from: "not_cmcelligott_digium_com",
+                        fromConnection: "conn1",
+                        requestId: "94935894-4354-4434-5555-949394589439",
+                        type: "presence"
+                    },
+                    type: "away"
+                });
+                expect(endpoint.resolvePresence.callCount).to.equal(1);
+                expect(endpoint.presence).to.equal('busy');
+            });
         });
     });
 });

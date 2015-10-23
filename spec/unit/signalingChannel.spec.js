@@ -47,13 +47,12 @@ describe("respoke.SignalingChannel", function () {
     });
     describe('isConnected()', function () {
         describe('when called via client.isConnected', function () {
-            var spy;
             beforeEach(function () {
-                spy = sinon.spy(client.signalingChannel, 'isConnected');
+                sinon.spy(client.signalingChannel, 'isConnected');
             });
             it('uses signalingChannel.isConnected', function () {
                 client.isConnected();
-                expect(spy.callCount).to.equal(1);
+                expect(client.signalingChannel.isConnected.callCount).to.equal(1);
             });
         });
         describe('when called directly', function () {
