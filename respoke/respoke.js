@@ -135,25 +135,6 @@ var respoke = module.exports = EventEmitter({
     Q: require('q')
 });
 
-respoke.constants = { };
-var DEFAULT_PRESENCE_CONSTANTS = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
-/**
- * When not using a custom endpoint presence resolver
- * (see `respoke.createClient({ resolveEndpointPresence: <Function> })`)
- * these are the supported presence values. Values not here will be put at the end of the
- * list when resolving an endpoint's presence across the presence of its connections.
- *
- * ```
- * respoke.constants.presence(); // ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable']
- * ```
- *
- * @memberof respoke
- * @returns Array<string>
- */
-respoke.constants.presence = function getPresenceConstants() {
-    return DEFAULT_PRESENCE_CONSTANTS;
-};
-
 respoke.Q.longStackSupport = true;
 respoke.Q.stackJumpLimit = 5;
 respoke.Q.longStackJumpLimit = 20;
