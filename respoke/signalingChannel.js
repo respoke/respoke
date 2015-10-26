@@ -10,7 +10,6 @@
 'use strict';
 
 var Q = require('q');
-var io = require('socket.io-client');
 var respoke = require('./respoke');
 var template = require('url-template');
 var log = respoke.log;
@@ -148,7 +147,7 @@ module.exports = function (params) {
      * @private
      * @type {Socket.io.Socket}
      */
-    var socket = null;
+    that.socket = null;
     /**
      * @memberof! respoke.SignalingChannel
      * @name clientSettings
@@ -282,7 +281,7 @@ module.exports = function (params) {
      * @return {boolean}
      */
     that.isConnected = function () {
-        return !!(socket && socket.socket.connected);
+        return !!(that.socket && that.socket.socket.connected);
     };
 
     /**
@@ -293,7 +292,7 @@ module.exports = function (params) {
      * @return {boolean}
      */
     function isConnecting() {
-        return !!(socket && socket.socket.connecting);
+        return !!(that.socket && that.socket.socket.connecting);
     }
 
     /**
@@ -467,11 +466,11 @@ module.exports = function (params) {
                 httpMethod: 'DELETE'
             });
         }).fin(function finallyHandler() {
-            if (socket) {
-                socket.removeAllListeners();
-                socket.disconnect();
+            if (that.socket) {
+                that.socket.removeAllListeners();
+                that.socket.disconnect();
             }
-            socket = null;
+            that.socket = null;
             deferred.resolve();
         }).done();
 
@@ -1510,8 +1509,8 @@ module.exports = function (params) {
      * @todo TODO See if this is necessary anymore
      */
     that.addHandler = function (params) {
-        if (socket.socket && socket.socket.open) {
-            socket.on(params.type, params.handler);
+        if (that.socket.socket && that.socket.socket.open) {
+            that.socket.on(params.type, params.handler);
         } else {
             handlerQueue[params.type].push(params.handler);
         }
@@ -1520,13 +1519,13 @@ module.exports = function (params) {
     /**
      * Socket handler for pub-sub messages.
      * @memberof! respoke.SignalingChannel
-     * @method respoke.SignalingChannel.onPubSub
+     * @method respoke.SignalingChannel.socketOnPubSub
      * @param {object} message The Socket.io message.
      * @private
      * @fires respoke.Group#message
      * @fires respoke.Client#message
      */
-    var onPubSub = function onPubSub(message) {
+    function socketOnPubSub(message) {
         var group;
         var groupMessage = respoke.TextMessage({
             rawMessage: message
@@ -1562,16 +1561,17 @@ module.exports = function (params) {
             message: groupMessage,
             group: group || null
         });
-    };
+    }
+    that.socketOnPubSub = socketOnPubSub;
 
     /**
      * Socket handler for join messages.
      * @memberof! respoke.SignalingChannel
-     * @method respoke.SignalingChannel.onJoin
+     * @method respoke.SignalingChannel.socketOnJoin
      * @param {object} message The Socket.io message.
      * @private
      */
-    var onJoin = function onJoin(message) {
+    function socketOnJoin(message) {
         var group;
         var presenceMessage;
         var endpoint;
@@ -1622,16 +1622,17 @@ module.exports = function (params) {
                 log.error("Can't add endpoint to group:", message, group, endpoint, connection);
             }
         }
-    };
+    }
+    that.socketOnJoin = socketOnJoin;
 
     /**
      * Socket handler for leave messages.
      * @memberof! respoke.SignalingChannel
-     * @method respoke.SignalingChannel.onLeave
+     * @method respoke.SignalingChannel.socketOnLeave
      * @param {object} message The Socket.io message.
      * @private
      */
-    var onLeave = function onLeave(message) {
+    function socketOnLeave(message) {
         var group;
         var presenceMessage;
         var endpoint;
@@ -1660,7 +1661,8 @@ module.exports = function (params) {
                 group.removeMember({connectionId: message.connectionId});
             }
         }
-    };
+    }
+    that.socketOnLeave = socketOnLeave;
 
     /**
      * Socket handler for presence messages.
@@ -1671,7 +1673,7 @@ module.exports = function (params) {
      * @fires respoke.Endpoint#message
      * @fires respoke.Client#message
      */
-    var onMessage = function onMessage(message) {
+    function socketOnMessage(message) {
         var endpoint;
         message = respoke.TextMessage({rawMessage: message});
         if (message.originalRecipient || message.endpointId) {
@@ -1708,7 +1710,8 @@ module.exports = function (params) {
             endpoint: endpoint || null,
             message: message
         });
-    };
+    }
+    that.socketOnMessage = socketOnMessage;
 
     /**
      * Create a socket handler for the onConnect event with all the right things in scope.
@@ -1730,7 +1733,7 @@ module.exports = function (params) {
                 }
 
                 handlerQueue[category].forEach(function addEachHandler(handler) {
-                    socket.on(category, handler);
+                    that.socket.on(category, handler);
                 });
                 handlerQueue[category] = [];
             });
@@ -1755,11 +1758,11 @@ module.exports = function (params) {
     /**
      * Socket handler for presence messages.
      * @memberof! respoke.SignalingChannel
-     * @method respoke.SignalingChannel.onPresence
+     * @method respoke.SignalingChannel.socketOnPresence
      * @param {object} message The Socket.io message.
      * @private
      */
-    function onPresence(message) {
+    function socketOnPresence(message) {
         var endpoint;
         var groups;
 
@@ -1774,6 +1777,7 @@ module.exports = function (params) {
             skipPresence: true,
             id: message.header.from,
             instanceId: instanceId,
+            // TODO: find out what this is for? should it be message.header.type?
             name: message.header.from,
             connection: message.header.fromConnection
         });
@@ -1792,6 +1796,7 @@ module.exports = function (params) {
             }
         }
     }
+    that.socketOnPresence = socketOnPresence;
 
     /**
      * On reconnect, start with a reconnect interval of 2000ms. Every time reconnect fails, the interval
@@ -1810,10 +1815,10 @@ module.exports = function (params) {
         appToken = null;
         token = null;
 
-        if (socket) {
-            socket.removeAllListeners();
-            socket.disconnect();
-            socket = null;
+        if (that.socket) {
+            that.socket.removeAllListeners();
+            that.socket.disconnect();
+            that.socket = null;
         }
 
         reconnectTimeout = (reconnectTimeout === null) ? 2500 : 2 * reconnectTimeout;
@@ -1866,7 +1871,7 @@ module.exports = function (params) {
      * @param {object} params
      * @return {Promise}
      */
-    that.authenticate = function (params) {
+    that.authenticate = function authenticate(params) {
         params = params || {};
         var deferred = Q.defer();
         var pieces = [];
@@ -1899,29 +1904,30 @@ module.exports = function (params) {
         if (that.isConnected() || isConnecting()) {
             return;
         }
-        socket = io.connect(clientSettings.baseURL, connectParams);
 
-        socket.on('connect', generateConnectHandler(function onSuccess() {
+        that.socket = respoke.io.connect(clientSettings.baseURL, connectParams);
+
+        that.socket.on('connect', generateConnectHandler(function onSuccess() {
             deferred.resolve();
         }, function onError(err) {
             deferred.reject(err);
         }));
 
-        socket.on('join', onJoin);
-        socket.on('leave', onLeave);
-        socket.on('pubsub', onPubSub);
-        socket.on('message', onMessage);
-        socket.on('presence', onPresence);
+        that.socket.on('join', socketOnJoin);
+        that.socket.on('leave', socketOnLeave);
+        that.socket.on('pubsub', socketOnPubSub);
+        that.socket.on('message', socketOnMessage);
+        that.socket.on('presence', socketOnPresence);
 
         // connection timeout
-        socket.on('connect_failed', function connectFailedHandler(res) {
+        that.socket.on('connect_failed', function connectFailedHandler(res) {
             deferred.reject(new Error("WebSocket connection failed."));
             log.error('Socket.io connect timeout.', res || "");
             reconnect();
         });
 
         // handshake error, 403, socket disconnects on FireFox
-        socket.on('error', function errorHandler(res) {
+        that.socket.on('error', function errorHandler(res) {
             log.error('Socket.io error.', res || "");
             reconnect();
         });
@@ -1947,7 +1953,7 @@ module.exports = function (params) {
             }
         });
 
-        socket.on('disconnect', function onDisconnect() {
+        that.socket.on('disconnect', function onDisconnect() {
             log.debug('Socket.io disconnect.');
             pendingRequests.reset(function (pendingRequest) {
                 log.debug('Failing pending requests');
@@ -1977,7 +1983,7 @@ module.exports = function (params) {
      * @method respoke.SignalingChannel.getTurnCredentials
      * @return {Promise<Array>}
      */
-    that.getTurnCredentials = function () {
+    that.getTurnCredentials = function getTurnCredentials() {
         var deferred = Q.defer();
 
         if (!that.isConnected()) {
@@ -2163,6 +2169,7 @@ module.exports = function (params) {
         sendWebsocketRequest(request, handleResponse);
         return deferred.promise;
     }
+    that.wsCall = wsCall;
 
     function failWebsocketRequest(request, response, error, deferred) {
         if (response && response.body && response.body.error) {
@@ -2174,7 +2181,7 @@ module.exports = function (params) {
 
     function sendWebsocketRequest(request, handleResponse) {
         request.tries += 1;
-        socket.emit(request.method, JSON.stringify({
+        that.socket.emit(request.method, JSON.stringify({
             url: request.path,
             data: request.parameters,
             headers: {

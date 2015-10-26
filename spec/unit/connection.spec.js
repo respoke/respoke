@@ -55,9 +55,9 @@ describe("A respoke.Connection", function () {
                     expect(connection.gloveColor).to.equal('white');
                 });
 
-                it("doesn't expose the signaling channel", function () {
-                    expect(connection.signalingChannel).to.not.exist;
-                    expect(connection.getSignalingChannel).to.not.exist;
+                it("exposes the signaling channel", function () {
+                    expect(connection.signalingChannel).to.exist;
+                    expect(connection.getSignalingChannel).to.exist;
                 });
             });
 

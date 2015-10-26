@@ -134,10 +134,6 @@ module.exports = function (params) {
      * Internally set the presence on the object for this session upon receipt of a presence notification from
      * the backend. Respoke developers shouldn't use this.
      *
-     * ```
-     * client.setPresence({ presence: 'busy' });
-     * ```
-     *
      * While technically available on an Endpoint or Connection, this will not trigger
      * any API changes. The changes will only be reflected locally.
      *
@@ -726,6 +722,12 @@ module.exports = function (params) {
     };
 
     /**
+     * Default presence list.
+     * @private
+     */
+    var PRESENCE_CONSTANTS = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
+
+    /**
      * Find the presence out of all known connections with the highest priority (most availability)
      * and set it as the endpoint's resolved presence.
      * @memberof! respoke.Endpoint
@@ -741,7 +743,6 @@ module.exports = function (params) {
         if (resolveEndpointPresence !== undefined) {
             that.presence = resolveEndpointPresence(presenceList);
         } else {
-            var options = ['chat', 'available', 'away', 'dnd', 'xa', 'unavailable'];
             var idList;
 
             /*
@@ -752,8 +753,8 @@ module.exports = function (params) {
              * we could use Array.prototype.every to improve this algorithm.
              */
             idList = that.connections.sort(function sorter(a, b) {
-                var indexA = options.indexOf(a.presence);
-                var indexB = options.indexOf(b.presence);
+                var indexA = PRESENCE_CONSTANTS.indexOf(a.presence);
+                var indexB = PRESENCE_CONSTANTS.indexOf(b.presence);
                 // Move it to the end of the list if it isn't one of our accepted presence values
                 indexA = indexA === -1 ? 1000 : indexA;
                 indexB = indexB === -1 ? 1000 : indexB;

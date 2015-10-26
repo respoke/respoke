@@ -50,12 +50,9 @@ describe("respoke.Client", function () {
                 expect(client.gloveColor).to.equal('white');
             });
 
-            it("doesn't expose the signaling channel", function () {
-                expect(client.signalingChannel).to.not.exist;
-                expect(client.getSignalingChannel).to.not.exist;
-                Object.keys(client).forEach(function (key) {
-                    expect(key).to.not.contain('signal');
-                });
+            it("exposes the signaling channel", function () {
+                expect(client.signalingChannel).to.exist;
+                expect(client.getSignalingChannel).to.exist;
             });
         });
 

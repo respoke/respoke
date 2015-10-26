@@ -75,9 +75,9 @@ describe("A respoke.Endpoint", function () {
                     expect(endpoint.gloveColor).to.equal('white');
                 });
 
-                it("doesn't expose the signaling channel", function () {
-                    expect(endpoint.signalingChannel).to.not.exist;
-                    expect(endpoint.getSignalingChannel).to.not.exist;
+                it("exposes the signaling channel", function () {
+                    expect(endpoint.signalingChannel).to.exist;
+                    expect(endpoint.getSignalingChannel).to.exist;
                 });
             });
 

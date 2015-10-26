@@ -48,12 +48,9 @@ describe("A respoke.Group", function () {
                     expect(group.gloveColor).to.equal('white');
                 });
 
-                it("doesn't expose the signaling channel", function () {
-                    expect(group.signalingChannel).to.not.exist;
-                    expect(group.getSignalingChannel).to.not.exist;
-                    Object.keys(client).forEach(function (key) {
-                        expect(key).to.not.contain('signal');
-                    });
+                it("exposes the signaling channel", function () {
+                    expect(group.signalingChannel).to.exist;
+                    expect(group.getSignalingChannel).to.exist;
                 });
 
                 it("contains an array for connections", function () {

@@ -26,9 +26,9 @@ describe("A respoke.EventEmitter", function () {
         expect(eventEmitter.gloveColor).to.equal('white');
     });
 
-    it("doesn't expose the signaling channel", function () {
-        expect(eventEmitter.signalingChannel).to.not.exist;
-        expect(eventEmitter.getSignalingChannel).to.not.exist;
+    it("exposes the signaling channel", function () {
+        expect(eventEmitter.signalingChannel).to.exist;
+        expect(eventEmitter.getSignalingChannel).to.exist;
     });
 
     describe("when passed different types of arguments", function () {
