@@ -325,6 +325,7 @@ module.exports = function (params) {
      *       don't support trickle ice.
      */
     var localCandidates = [];
+
     /**
      * @memberof! respoke.PeerConnection
      * @name localCandidatesComplete
@@ -333,6 +334,7 @@ module.exports = function (params) {
      * @desc Whether all the local candidates have been received.
      */
     var localCandidatesComplete = false;
+
     /**
      * @memberof! respoke.PeerConnection
      * @name localCandidatesSent
@@ -341,6 +343,7 @@ module.exports = function (params) {
      * @desc The number of local candidates that have been sent to the remote.
      */
     var localCandidatesSent = 0;
+
     /**
      * @memberof! respoke.PeerConnection
      * @name localCandidatesSent
@@ -349,6 +352,16 @@ module.exports = function (params) {
      * @desc FSM for managing local ICE candidates.
      */
     var localCandidatesFSM;
+
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name localCandidatesTimeout
+     * @private
+     * @type {number}
+     * @desc timeoutId for the ice gathering timeout. Fires when no ice candidate
+     *  received in a specified period of time, to speed up finalCandidates signal.
+     */
+    var localCandidatesTimeout;
 
     /**
      * The number of local candidates that have not yet been sent.
@@ -375,17 +388,23 @@ module.exports = function (params) {
      * Send the remaining local candidates that have not yet been sent.
      * @private
      */
-    function sendRemainingCandidates() {
+    function sendRemainingCandidates(params) {
         var remainingCandidates = localCandidates.slice(localCandidatesSent);
-        var params = {iceCandidates: remainingCandidates};
+        var signalParams = {iceCandidates: remainingCandidates};
 
         localCandidatesSent += remainingCandidates.length;
 
-        if (localCandidatesComplete) {
-            params.finalCandidates = localCandidates;
+        if (localCandidatesComplete && !(params && params.suppressFinalCandidates)) {
+            signalParams.finalCandidates = localCandidates;
         }
 
-        signalCandidates(params)
+        if (!signalParams.iceCandidates.length && !signalParams.finalCandidates) {
+            // Nothing to send. Happens if we receive the null "end of ice" ice candidate
+            // after we've already sent the finalCandidates signal.
+            return;
+        }
+
+        signalCandidates(signalParams)
             .finally(function () {
                 localCandidatesFSM.dispatch('iceSent');
             }).done();
@@ -406,7 +425,12 @@ module.exports = function (params) {
                 localIceCandidate: {action: collectLocalIceCandidate},
                 iceSent: [{
                     guard: function () {
-                        return localCandidatesRemaining() === 0;
+                        return localCandidatesRemaining() === 0 && localCandidatesComplete;
+                    },
+                    target: 'finished'
+                }, {
+                    guard: function () {
+                        return localCandidatesRemaining() === 0 && !localCandidatesComplete;
                     },
                     target: 'waiting'
                 }, {
@@ -417,12 +441,35 @@ module.exports = function (params) {
                 }]
             },
             waiting: {
+                entry: {
+                    action: function () {
+                        localCandidatesTimeout = setTimeout(function () {
+                            log.debug('ice gathering has timed out. sending final candidate signal.');
+                            localCandidatesComplete = true;
+                            localCandidatesFSM.dispatch('localIceCandidate');
+                        }, 2000);
+                    }
+                },
+                exit: {
+                    action: function () {
+                        clearTimeout(localCandidatesTimeout);
+                    }
+                },
                 localIceCandidate: {
                     action: function (params) {
                         collectLocalIceCandidate(params);
                         sendRemainingCandidates();
                     },
                     target: 'sending'
+                }
+            },
+            finished: {
+                localIceCandidate: {
+                    // helps trickleIce-compatible clients
+                    action: function (params) {
+                        collectLocalIceCandidate(params);
+                        sendRemainingCandidates({ suppressFinalCandidates: true });
+                    }
                 }
             }
         }
