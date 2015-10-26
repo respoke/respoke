@@ -122,7 +122,7 @@ module.exports = function (params) {
      */
     that.stream = params.stream;
 
-    if (!that.temporary) {
+    if (!that.temporary && that.stream) {
         attachMediaStream(that.element, that.stream);
         that.element.autoplay = true;
         setTimeout(that.element.play.bind(that.element)); // stupid Firefox requires this.

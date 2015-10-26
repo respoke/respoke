@@ -325,6 +325,7 @@ module.exports = function (params) {
      *       don't support trickle ice.
      */
     var localCandidates = [];
+
     /**
      * @memberof! respoke.PeerConnection
      * @name localCandidatesComplete
@@ -333,6 +334,7 @@ module.exports = function (params) {
      * @desc Whether all the local candidates have been received.
      */
     var localCandidatesComplete = false;
+
     /**
      * @memberof! respoke.PeerConnection
      * @name localCandidatesSent
@@ -341,6 +343,7 @@ module.exports = function (params) {
      * @desc The number of local candidates that have been sent to the remote.
      */
     var localCandidatesSent = 0;
+
     /**
      * @memberof! respoke.PeerConnection
      * @name localCandidatesSent
@@ -349,6 +352,16 @@ module.exports = function (params) {
      * @desc FSM for managing local ICE candidates.
      */
     var localCandidatesFSM;
+
+    /**
+     * @memberof! respoke.PeerConnection
+     * @name localCandidatesTimeout
+     * @private
+     * @type {number}
+     * @desc timeoutId for the ice gathering timeout. Fires when no ice candidate
+     *  received in a specified period of time, to speed up finalCandidates signal.
+     */
+    var localCandidatesTimeout;
 
     /**
      * The number of local candidates that have not yet been sent.
@@ -375,17 +388,23 @@ module.exports = function (params) {
      * Send the remaining local candidates that have not yet been sent.
      * @private
      */
-    function sendRemainingCandidates() {
+    function sendRemainingCandidates(params) {
         var remainingCandidates = localCandidates.slice(localCandidatesSent);
-        var params = {iceCandidates: remainingCandidates};
+        var signalParams = {iceCandidates: remainingCandidates};
 
         localCandidatesSent += remainingCandidates.length;
 
-        if (localCandidatesComplete) {
-            params.finalCandidates = localCandidates;
+        if (localCandidatesComplete && !(params && params.suppressFinalCandidates)) {
+            signalParams.finalCandidates = localCandidates;
         }
 
-        signalCandidates(params)
+        if (!signalParams.iceCandidates.length && !signalParams.finalCandidates) {
+            // Nothing to send. Happens if we receive the null "end of ice" ice candidate
+            // after we've already sent the finalCandidates signal.
+            return;
+        }
+
+        signalCandidates(signalParams)
             .finally(function () {
                 localCandidatesFSM.dispatch('iceSent');
             }).done();
@@ -406,7 +425,12 @@ module.exports = function (params) {
                 localIceCandidate: {action: collectLocalIceCandidate},
                 iceSent: [{
                     guard: function () {
-                        return localCandidatesRemaining() === 0;
+                        return localCandidatesRemaining() === 0 && localCandidatesComplete;
+                    },
+                    target: 'finished'
+                }, {
+                    guard: function () {
+                        return localCandidatesRemaining() === 0 && !localCandidatesComplete;
                     },
                     target: 'waiting'
                 }, {
@@ -417,12 +441,35 @@ module.exports = function (params) {
                 }]
             },
             waiting: {
+                entry: {
+                    action: function () {
+                        localCandidatesTimeout = setTimeout(function () {
+                            log.debug('ice gathering has timed out. sending final candidate signal.');
+                            localCandidatesComplete = true;
+                            localCandidatesFSM.dispatch('localIceCandidate');
+                        }, 2000);
+                    }
+                },
+                exit: {
+                    action: function () {
+                        clearTimeout(localCandidatesTimeout);
+                    }
+                },
                 localIceCandidate: {
                     action: function (params) {
                         collectLocalIceCandidate(params);
                         sendRemainingCandidates();
                     },
                     target: 'sending'
+                }
+            },
+            finished: {
+                localIceCandidate: {
+                    // helps trickleIce-compatible clients
+                    action: function (params) {
+                        collectLocalIceCandidate(params);
+                        sendRemainingCandidates({ suppressFinalCandidates: true });
+                    }
                 }
             }
         }
@@ -439,9 +486,86 @@ module.exports = function (params) {
      * @returns {Promise}
      */
     that.processOffer = function (oOffer) {
+
+        function onSetRemoteDescriptionSuccess() {
+            if (!pc) {
+                return;
+            }
+
+            log.debug('set remote desc of offer succeeded');
+
+            processReceivingQueue();
+
+            pc.createAnswer(function successHandler(oSession) {
+                that.state.processedRemoteSDP = true;
+                saveAnswerAndSend(oSession);
+            }, function errorHandler(err) {
+                log.error('create answer failed', err);
+
+                err = new Error("Error creating SDP answer. " + err);
+                that.report.callStoppedReason = err.message;
+
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event respoke.Call#error
+                 * @type {respoke.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {respoke.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.call.fire('error', {
+                    message: err.message
+                });
+                that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
+                that.close();
+            });
+        }
+
+        function onSetRemoteDescriptionInitialError(err) {
+            log.debug('Error calling setRemoteDescription on offer I received.', err);
+
+            if (!pc) {
+                return;
+            }
+
+            /*
+             * Attempt to remove the dtls transport protocol from the offer sdp. This has been observed
+             * to cause setRemoteDescription failures when Chrome 46+ is placing calls to Chrome <= 41.
+             * This is a particularly acute issue when using nw.js 0.12.x or lower.
+             */
+            var alteredSdp = oOffer.sdp.replace(/UDP\/TLS\/RTP\/SAVPF/g, 'RTP/SAVPF');
+            if (oOffer.sdp !== alteredSdp) {
+                oOffer.sdp = alteredSdp;
+                log.debug('Retrying setRemoteDescription with legacy transport in offer sdp', oOffer);
+                pc.setRemoteDescription(new RTCSessionDescription(oOffer),
+                    onSetRemoteDescriptionSuccess, onSetRemoteDescriptionFinalError);
+                return;
+            }
+
+            onSetRemoteDescriptionFinalError(err);
+        }
+
+        function onSetRemoteDescriptionFinalError(err) {
+            err = new Error('Error calling setRemoteDescription on offer I received. ' + err);
+            that.report.callStoppedReason = err.message;
+
+            /**
+             * This event is fired on errors that occur during call setup or media negotiation.
+             * @event respoke.Call#error
+             * @type {respoke.Event}
+             * @property {string} reason - A human readable description about the error.
+             * @property {respoke.Call} target
+             * @property {string} name - the event name.
+             */
+            that.call.fire('error', {
+                message: err.message
+            });
+        }
+
         if (!pc) {
             return;
         }
+
         log.debug('processOffer', oOffer);
 
         that.report.sdpsReceived.push(oOffer);
@@ -453,53 +577,11 @@ module.exports = function (params) {
 
         try {
             pc.setRemoteDescription(new RTCSessionDescription(oOffer),
-                function successHandler() {
-                    if (!pc) {
-                        return;
-                    }
-
-                    processReceivingQueue();
-                    log.debug('set remote desc of offer succeeded');
-                    pc.createAnswer(function successHandler(oSession) {
-                        that.state.processedRemoteSDP = true;
-                        saveAnswerAndSend(oSession);
-                    }, function errorHandler(err) {
-                        err = new Error("Error creating SDP answer." + err.message);
-                        that.report.callStoppedReason = err.message;
-                        /**
-                         * This event is fired on errors that occur during call setup or media negotiation.
-                         * @event respoke.Call#error
-                         * @type {respoke.Event}
-                         * @property {string} reason - A human readable description about the error.
-                         * @property {respoke.Call} target
-                         * @property {string} name - the event name.
-                         */
-                        that.call.fire('error', {
-                            message: err.message
-                        });
-                        log.error('create answer failed');
-                        that.report.callStoppedReason = 'setRemoteDescription failed at answer.';
-                        that.close();
-                    });
-                }, function errorHandler(err) {
-                    err = new Error('Error calling setRemoteDescription on offer I received.' + err.message);
-                    that.report.callStoppedReason = err.message;
-                    /**
-                     * This event is fired on errors that occur during call setup or media negotiation.
-                     * @event respoke.Call#error
-                     * @type {respoke.Event}
-                     * @property {string} reason - A human readable description about the error.
-                     * @property {respoke.Call} target
-                     * @property {string} name - the event name.
-                     */
-                    that.call.fire('error', {
-                        message: err.message
-                    });
-                }
-            );
+                onSetRemoteDescriptionSuccess, onSetRemoteDescriptionInitialError);
         } catch (err) {
             var newErr = new Error("Exception calling setRemoteDescription on offer I received." + err.message);
             that.report.callStoppedReason = newErr.message;
+
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event respoke.Call#error

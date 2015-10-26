@@ -1767,6 +1767,7 @@ module.exports = function (params) {
         var groups;
 
         if (message.header.from === client.endpointId) {
+            log.debug('socket.on presence for self ignored', message);
             // Skip ourselves
             return;
         }

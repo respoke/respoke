@@ -10,9 +10,13 @@
     "docs": "grunt docs",
     "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
     "lint": "grunt lint",
+<<<<<<< HEAD
     "test": "grunt lint build:dist unit",
     "test-dev": "grunt build:dev karma:unitDevChrome",
     "ci-lite": "grunt ci-lite",
+=======
+    "test": "grunt unit lint",
+>>>>>>> 2749a564d7d5bf8c3849f5503f53667f57257496
     "ci": "grunt ci"
   },
   "keywords": [
