@@ -1683,18 +1683,23 @@ module.exports = function (params) {
     };
 
     /**
-     * Send tones to the first audio track in a stream
+     * Send DTMF tones to the first audio track on the call. This allows interaction with a phone system expecting keys
+     * to be pressed on a normal phone, such as when calling a company for customer support and having to "Press 1 for English".
      * @memberof! respoke.Call
      * @method respoke.Call.sendTones
+     * @param {object} params
+     * @param {string} params.tones - The tones to send. Can be any combination of the characters '0123456789ABCD#*', or
+     *  a ',' (comma) to insert a 2 second pause before sending the next tone.
+     * @param {number} [params.duration] - Optional number in milliseconds to indicate how long to play each tone. This
+     *  value needs to be between 40 and 6000. Defaults to 100.
+     * @param {number} [params.gap] - Optional number in mlliseconds to indicate the gap between playing the tones.
+     *  This value needs to be larger than 30. Defaults to 70.
+     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback called when all requested DTMF tones have been played.
+     * @param {respoke.Call.onError} [params.onError] - Callback called when an error occurs while playing back the DTMF
+     *  tones, or when the request has been cancelled.
      * @fires respoke.Call#tone-sent
      * @fires respoke.Call#tone-sending-complete
-     * @fires respoke.Call#tone-sending-error
-     * @fires respoke.Call#tone-sending-started
-     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback for when a request to
-     * play tones has succeeded.
-     * @param {respoke.Call.onError} [params.onError] - Callback for when a request to
-     * play tones has failed.
-     * @returns {Promise<respoke.PeerConnection>}
+     * @returns {Promise}
      */
     that.sendTones = function (params) {
         return pc.sendTones(params);
@@ -1704,13 +1709,12 @@ module.exports = function (params) {
      * Cancels playback of all queued tones on the first audio track in a stream
      * @memberof! respoke.Call
      * @method respoke.Call.cancelTones
+     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback called when all the outstanding DTMF tones that
+     *  have not yet been played have been cancelled.
+     * @param {respoke.Call.onError} [params.onError] - Callback called when an error occurs while attempting to cancel
+     *  outstanding DTMF tones.
      * @fires respoke.Call#tone-sending-cancelled
-     * @fires respoke.Call#tone-sending-error
-     * @param {respoke.Call.onSuccess} [params.onSuccess] - Callback for when a request to
-     * play tones has succeeded.
-     * @param {respoke.Call.onError} [params.onError] - Callback for when a request to
-     * play tones has failed.
-     * @returns {Promise<respoke.PeerConnection>}
+     * @returns {Promise}
      */
     that.cancelTones = function (params) {
         return pc.cancelTones(params);
