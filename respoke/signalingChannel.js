@@ -1257,7 +1257,7 @@ module.exports = function (params) {
      * @memberof! respoke.SignalingChannel
      * @method respoke.SignalingChannel.routeSignal
      * @private
-     * @param {respoke.SignalingMessage} message - A message to route
+     * @param {respoke.SignalingMessage} signal - A message to route
      * @fires respoke.Call#offer
      * @fires respoke.Call#connected
      * @fires respoke.Call#answer
@@ -1277,13 +1277,14 @@ module.exports = function (params) {
             log.debug(signal.signalType, signal);
         }
 
-        if (signal.target === undefined) {
-            throw new Error("target undefined");
-        }
-
         // Only create if this signal is an offer.
-        Q.fcall(function makePromise() {
+        return Q().then(function () {
             var endpoint;
+
+            if (signal.target === undefined) {
+                throw new Error("target undefined");
+            }
+
             /*
              * This will return calls regardless of whether they are associated
              * with a direct connection or not, and it will create a call if no
@@ -1300,7 +1301,8 @@ module.exports = function (params) {
                 conferenceId: signal.conferenceId,
                 type: signal.fromType,
                 create: (signal.target !== 'directConnection' && signal.signalType === 'offer'),
-                callerId: signal.callerId
+                callerId: signal.callerId,
+                metadata: signal.metadata
             });
             if (target) {
                 return target;
@@ -1320,10 +1322,11 @@ module.exports = function (params) {
                 return endpoint.startDirectConnection({
                     id: signal.sessionId,
                     create: (signal.signalType === 'offer'),
-                    caller: (signal.signalType !== 'offer')
+                    caller: (signal.signalType !== 'offer'),
+                    metadata: signal.metadata
                 });
             }
-        }).done(function successHandler(target) {
+        }).then(function successHandler(target) {
             // target might be null, a Call, or a DirectConnection.
             if (target) {
                 target = target.call || target;
@@ -1339,7 +1342,7 @@ module.exports = function (params) {
                 call: target,
                 signal: signal
             });
-        }, null);
+        });
     };
 
     /**
@@ -1515,6 +1518,25 @@ module.exports = function (params) {
             handlerQueue[params.type].push(params.handler);
         }
     };
+
+    function socketOnSignal(message) {
+        var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'bye'];
+        var signal = respoke.SignalingMessage({
+            rawMessage: message
+        });
+
+        if (signal.signalType === 'ack') {
+            return;
+        }
+
+        if (!signal.target || !signal.signalType || knownSignals.indexOf(signal.signalType) === -1) {
+            log.error("Got malformed signal.", signal);
+            throw new Error("Can't route signal without target or type.");
+        }
+
+        that.routeSignal(signal).done();
+    }
+    that.socketOnSignal = socketOnSignal;
 
     /**
      * Socket handler for pub-sub messages.
@@ -1918,6 +1940,7 @@ module.exports = function (params) {
         that.socket.on('pubsub', socketOnPubSub);
         that.socket.on('message', socketOnMessage);
         that.socket.on('presence', socketOnPresence);
+        that.socket.on('signal', socketOnSignal);
 
         // connection timeout
         that.socket.on('connect_failed', function connectFailedHandler(res) {
@@ -1930,27 +1953,6 @@ module.exports = function (params) {
         that.socket.on('error', function errorHandler(res) {
             log.error('Socket.io error.', res || "");
             reconnect();
-        });
-
-        that.addHandler({
-            type: 'signal',
-            handler: function signalHandler(message) {
-                var knownSignals = ['offer', 'answer', 'connected', 'modify', 'iceCandidates', 'bye'];
-                var signal = respoke.SignalingMessage({
-                    rawMessage: message
-                });
-
-                if (signal.signalType === 'ack') {
-                    return;
-                }
-
-                if (!signal.target || !signal.signalType || knownSignals.indexOf(signal.signalType) === -1) {
-                    log.error("Got malformed signal.", signal);
-                    throw new Error("Can't route signal without target or type.");
-                }
-
-                that.routeSignal(signal);
-            }
         });
 
         that.socket.on('disconnect', function onDisconnect() {

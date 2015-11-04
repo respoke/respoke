@@ -1,35 +1,42 @@
 /* global respoke: false, sinon: true */
-describe("A respoke.Endpoint", function () {
+describe("respoke.Endpoint", function () {
     'use strict';
     var expect = chai.expect;
     var _actualSinon = sinon;
     var Q = respoke.Q;
-    var instanceId = respoke.makeGUID();
-    var connectionId = respoke.makeGUID();
 
-    var client = respoke.createClient({
-        instanceId: instanceId
+    beforeEach(function () {
+        sinon = sinon.sandbox.create();
     });
-    var endpoint;
-    var endpointId;
+
+    afterEach(function () {
+        sinon.restore();
+        sinon = _actualSinon;
+    });
 
     ['', ' foobar', '/foobar'].forEach(function (append) {
         describe('with endpoint appended with "' + append + '"', function () {
 
+            var endpoint;
+            var endpointId;
+            var client;
+            var instanceId;
+            var connectionId;
+
             beforeEach(function () {
-                sinon = sinon.sandbox.create();
+                instanceId = respoke.makeGUID();
+                connectionId = respoke.makeGUID();
+
+                client = respoke.createClient({
+                    instanceId: instanceId
+                });
+
                 endpointId = respoke.makeGUID() + append;
                 endpoint = client.getEndpoint({
                     connectionId: connectionId,
                     id: endpointId,
                     gloveColor: "white"
                 });
-            });
-
-            afterEach(function () {
-                sinon.restore();
-                sinon = _actualSinon;
-
             });
 
             describe("it's object structure", function () {
@@ -364,6 +371,228 @@ describe("A respoke.Endpoint", function () {
                         var passedParams = fakeSignalingChannel.sendMessage.firstCall.args[0];
                         expect(passedParams).to.include.property('push', true);
                     });
+                });
+            });
+        });
+    });
+
+    describe("startAudioCall", function () {
+
+        var endpoint;
+        var fakeCall = { id: 'fakeAudioCall' };
+
+        beforeEach(function () {
+            var client = respoke.createClient();
+            endpoint = client.getEndpoint({ id: 'homer' });
+
+            sinon.stub(respoke, 'convertConstraints').returns({ foo: 'bar' });
+            sinon.stub(endpoint, 'startCall').returns(fakeCall);
+        });
+
+        it("converts the constraints", function () {
+            endpoint.startAudioCall({
+                metadata: { orderNumber: 'foo' },
+                constraints: { audio: true, video: false }
+            });
+
+            expect(respoke.convertConstraints.calledOnce).to.equal(true);
+            expect(respoke.convertConstraints.firstCall.args[0]).to.deep.equal({
+                audio: true, video: false
+            });
+        });
+
+        it("calls startCall with the passed params and converted constraints", function () {
+            endpoint.startAudioCall({
+                metadata: { orderNumber: 'foo' }
+            });
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            expect(endpoint.startCall.firstCall.args[0]).to.deep.equal({
+                constraints: { foo: 'bar' },
+                metadata: { orderNumber: 'foo' }
+            });
+        });
+    });
+
+    describe("startVideoCall", function () {
+
+        var endpoint;
+        var fakeCall = { id: 'fakeVideoCall' };
+
+        beforeEach(function () {
+            var client = respoke.createClient();
+            endpoint = client.getEndpoint({ id: 'homer' });
+
+            sinon.stub(respoke, 'convertConstraints').returns({ foo: 'bar' });
+            sinon.stub(endpoint, 'startCall').returns(fakeCall);
+        });
+
+        it("converts the constraints", function () {
+            endpoint.startVideoCall({
+                metadata: { orderNumber: 'foo' },
+                constraints: { audio: true, video: true }
+            });
+
+            expect(respoke.convertConstraints.calledOnce).to.equal(true);
+            expect(respoke.convertConstraints.firstCall.args[0]).to.deep.equal({
+                audio: true, video: true
+            });
+        });
+
+        it("calls startCall with the passed params and converted constraints", function () {
+            endpoint.startVideoCall({
+                metadata: { orderNumber: 'foo' }
+            });
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            expect(endpoint.startCall.firstCall.args[0]).to.deep.equal({
+                constraints: { foo: 'bar' },
+                metadata: { orderNumber: 'foo' }
+            });
+        });
+    });
+
+    describe("startScreenShare", function () {
+
+        var endpoint;
+        var fakeCall = { id: 'fakeScreenShare' };
+
+        beforeEach(function () {
+            var client = respoke.createClient();
+            endpoint = client.getEndpoint({ id: 'homer' });
+
+            sinon.stub(endpoint, 'startCall').returns(fakeCall);
+        });
+
+        it("passes along metadata to startCall", function () {
+            endpoint.startScreenShare({
+                metadata: { orderNumber: 'foo' }
+            });
+
+            expect(endpoint.startCall.calledOnce).to.equal(true);
+            var startCallParams = endpoint.startCall.firstCall.args[0];
+            expect(startCallParams).to.include.property('metadata');
+            expect(startCallParams.metadata).to.deep.equal({ orderNumber: 'foo' });
+        });
+    });
+
+    describe("startCall", function () {
+
+        describe("when called on an endpoint with an id", function () {
+
+            describe("in all scenarios", function () {
+                var endpoint;
+                var fakeCall;
+
+                beforeEach(function () {
+                    var client = respoke.createClient();
+                    fakeCall = { id: 'fakeCall', listen: sinon.stub() };
+                    endpoint = client.getEndpoint({ id: 'homer' });
+                    sinon.stub(client, 'verifyConnected');
+                    sinon.stub(respoke, 'Call').returns(fakeCall);
+                });
+
+                it("passes along metadata to Call", function () {
+                    endpoint.startCall({
+                        metadata: { orderNumber: 'foo' }
+                    });
+
+                    expect(respoke.Call.calledOnce).to.equal(true);
+                    var callParams = respoke.Call.firstCall.args[0];
+                    expect(callParams).to.include.property('metadata');
+                    expect(callParams.metadata).to.deep.equal({ orderNumber: 'foo' });
+                });
+            });
+
+            describe("the passed signalOffer", function () {
+                var endpoint;
+                var fakeCall;
+                var client;
+                var signalOffer;
+
+                beforeEach(function () {
+                    client = respoke.createClient();
+                    fakeCall = { id: 'fakeCall', listen: sinon.stub() };
+                    endpoint = client.getEndpoint({ id: 'homer' });
+                    sinon.stub(client, 'verifyConnected');
+                    sinon.stub(respoke, 'Call').returns(fakeCall);
+                    sinon.stub(client.signalingChannel, 'sendSDP').returns(Q());
+
+                    endpoint.startCall({
+                        metadata: { orderNumber: 'foo' }
+                    });
+
+                    signalOffer = respoke.Call.firstCall.args[0].signalOffer;
+                });
+
+                it("passes along any metadata into the signal", function () {
+                    signalOffer({});
+
+                    expect(client.signalingChannel.sendSDP.calledOnce).to.equal(true);
+                    var sendSDPParams = client.signalingChannel.sendSDP.firstCall.args[0];
+                    expect(sendSDPParams).to.include.property('metadata');
+                    expect(sendSDPParams.metadata).to.deep.equal({ orderNumber: 'foo' });
+                });
+            });
+        });
+    });
+
+    describe("startDirectConnection", function () {
+
+        describe("when called on an endpoint with an id", function () {
+
+            describe("in all scenarios", function () {
+                var endpoint;
+                var fakeCall;
+
+                beforeEach(function () {
+                    var client = respoke.createClient();
+                    fakeCall = { id: 'fakeCall', listen: sinon.stub() };
+                    endpoint = client.getEndpoint({ id: 'homer' });
+                    sinon.stub(client, 'verifyConnected');
+                    sinon.stub(respoke, 'Call').returns(fakeCall);
+                });
+
+                it("passes along metadata to Call", function () {
+                    endpoint.startDirectConnection({
+                        metadata: { orderNumber: 'foo' }
+                    });
+
+                    expect(respoke.Call.calledOnce).to.equal(true);
+                    var callParams = respoke.Call.firstCall.args[0];
+                    expect(callParams).to.include.property('metadata');
+                    expect(callParams.metadata).to.deep.equal({ orderNumber: 'foo' });
+                });
+            });
+
+            describe("the passed signalOffer", function () {
+                var endpoint;
+                var fakeCall;
+                var client;
+                var signalOffer;
+
+                beforeEach(function () {
+                    client = respoke.createClient();
+                    fakeCall = { id: 'fakeCall', listen: sinon.stub() };
+                    endpoint = client.getEndpoint({ id: 'homer' });
+                    sinon.stub(client, 'verifyConnected');
+                    sinon.stub(respoke, 'Call').returns(fakeCall);
+                    sinon.stub(client.signalingChannel, 'sendSDP').returns(Q());
+
+                    endpoint.startDirectConnection({
+                        metadata: { orderNumber: 'foo' }
+                    });
+
+                    signalOffer = respoke.Call.firstCall.args[0].signalOffer;
+                });
+
+                it("passes along any metadata into the signal", function () {
+                    signalOffer({});
+
+                    expect(client.signalingChannel.sendSDP.calledOnce).to.equal(true);
+                    var sendSDPParams = client.signalingChannel.sendSDP.firstCall.args[0];
+                    expect(sendSDPParams).to.include.property('metadata');
+                    expect(sendSDPParams.metadata).to.deep.equal({ orderNumber: 'foo' });
                 });
             });
         });

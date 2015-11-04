@@ -1,10 +1,11 @@
-/* global respoke: false, sinon: true */
+/* global respoke: false, sinon: true, expect: false, assert: false */
 describe("respoke.SignalingChannel", function () {
     'use strict';
-    var expect = chai.expect;
     var _actualSinon = sinon;
+    var expect = chai.expect;
     var client;
     var instanceId;
+
     beforeEach(function () {
         sinon = sinon.sandbox.create();
         instanceId = respoke.makeGUID();
@@ -12,10 +13,12 @@ describe("respoke.SignalingChannel", function () {
             instanceId: instanceId
         });
     });
+
     afterEach(function () {
         sinon.restore();
         sinon = _actualSinon;
     });
+
     describe('instance structure', function () {
         it('is exposed on the client', function () {
             expect(client.signalingChannel).to.be.an('object');
@@ -45,6 +48,7 @@ describe("respoke.SignalingChannel", function () {
             expect(client.signalingChannel.wsCall).to.be.a('function');
         });
     });
+
     describe('isConnected()', function () {
         describe('when called via client.isConnected', function () {
             beforeEach(function () {
@@ -85,6 +89,213 @@ describe("respoke.SignalingChannel", function () {
                 });
                 it('returns false', function () {
                     expect(client.signalingChannel.isConnected()).to.equal(false);
+                });
+            });
+        });
+    });
+
+    describe("routeSignal", function () {
+
+        var routeSignal;
+
+        beforeEach(function () {
+            routeSignal = client.signalingChannel.routeSignal;
+        });
+
+        describe("when passed a signal with no target", function () {
+
+            it("rejects the returned promise", function () {
+                return routeSignal({ }).then(function () {
+                    assert.fail('should not resolve');
+                }, function (err) {
+                    expect(err).to.exist();
+                });
+            });
+        });
+
+        describe("when passed a signal with a target of 'directConnection'", function () {
+
+            describe("in all scenarios", function () {
+
+                beforeEach(function () {
+                    sinon.stub(client, 'getCall').returns({});
+                });
+
+                it("calls client.getCall with the appropriate params", function () {
+                    var passedSignal = {
+                        sessionId: 'someSessionId',
+                        fromEndpoint: 'someEndpointId',
+                        target: 'directConnection',
+                        conferenceId: 'someConferenceId',
+                        fromType: 'someFromType',
+                        signalType: 'offer',
+                        callerId: { number: '+12566666666' },
+                        metadata: { orderNumber: 'lksdjfalskdjf' }
+                    };
+
+                    return routeSignal(passedSignal).then(function () {
+                        expect(client.getCall.calledOnce).to.equal(true);
+                        expect(client.getCall.firstCall.args[0]).to.deep.equal({
+                            id: 'someSessionId',
+                            endpointId: 'someEndpointId',
+                            target: 'directConnection',
+                            conferenceId: 'someConferenceId',
+                            type: 'someFromType',
+                            create: false, // because signal target is 'directConnection'
+                            callerId: { number: '+12566666666' },
+                            metadata: { orderNumber: 'lksdjfalskdjf' }
+                        });
+                    });
+                });
+            });
+
+            describe("when the call associated with the signal is not found", function () {
+
+                describe("in all scenarios", function () {
+
+                    var fakeEndpoint;
+
+                    beforeEach(function () {
+                        fakeEndpoint = {
+                            directConnection: {
+                                call: { id: 'someSessionId', fire: sinon.stub() }
+                            }
+                        };
+
+                        sinon.stub(client, 'getCall');
+                        sinon.stub(client, 'getEndpoint').returns(fakeEndpoint);
+                    });
+
+                    it("looks up the endpoint associated with the signal", function () {
+                        var passedSignal = {
+                            sessionId: 'someSessionId',
+                            fromEndpoint: 'someEndpointId',
+                            target: 'directConnection',
+                            conferenceId: 'someConferenceId',
+                            fromType: 'someFromType',
+                            signalType: 'offer',
+                            callerId: { number: '+12566666666' },
+                            metadata: { orderNumber: 'lksdjfalskdjf' }
+                        };
+
+                        return routeSignal(passedSignal).then(function () {
+                            expect(client.getEndpoint.calledOnce).to.equal(true);
+                            expect(client.getEndpoint.firstCall.args[0]).to.deep.equal({
+                                id: 'someEndpointId',
+                                skipPresence: true
+                            });
+                        });
+                    });
+                });
+
+                describe("but the direct connection already exists", function () {
+
+                    var fakeEndpoint;
+
+                    beforeEach(function () {
+                        fakeEndpoint = {
+                            directConnection: {
+                                call: { id: 'someSessionId', fire: sinon.stub() }
+                            },
+                            startDirectConnection: sinon.stub()
+                        };
+
+                        sinon.stub(client, 'getCall');
+                        sinon.stub(client, 'getEndpoint').returns(fakeEndpoint);
+                    });
+
+                    it("does not call startDirectConnection", function () {
+                        var passedSignal = {
+                            sessionId: 'someSessionId',
+                            fromEndpoint: 'someEndpointId',
+                            target: 'directConnection',
+                            conferenceId: 'someConferenceId',
+                            fromType: 'someFromType',
+                            signalType: 'offer',
+                            callerId: { number: '+12566666666' },
+                            metadata: { orderNumber: 'lksdjfalskdjf' }
+                        };
+
+                        return routeSignal(passedSignal).then(function () {
+                            expect(fakeEndpoint.startDirectConnection.called).to.equal(false);
+                        });
+                    });
+                });
+
+                describe("and the direct connection does not exist", function () {
+
+                    var fakeEndpoint;
+
+                    beforeEach(function () {
+                        fakeEndpoint = {
+                            startDirectConnection: sinon.stub().returns({
+                                call: { id: 'someSessionId', fire: sinon.stub() }
+                            })
+                        };
+
+                        sinon.stub(client, 'getCall');
+                        sinon.stub(client, 'getEndpoint').returns(fakeEndpoint);
+                    });
+
+                    it("calls startDirectConnection with relevant params", function () {
+                        var passedSignal = {
+                            sessionId: 'someSessionId',
+                            fromEndpoint: 'someEndpointId',
+                            target: 'directConnection',
+                            conferenceId: 'someConferenceId',
+                            fromType: 'someFromType',
+                            signalType: 'offer',
+                            callerId: { number: '+12566666666' },
+                            metadata: { orderNumber: 'lksdjfalskdjf' }
+                        };
+
+                        return routeSignal(passedSignal).then(function () {
+                            expect(fakeEndpoint.startDirectConnection.calledOnce).to.equal(true);
+                            expect(fakeEndpoint.startDirectConnection.firstCall.args[0]).to.deep.equal({
+                                id: 'someSessionId',
+                                create: true,
+                                caller: false,
+                                metadata: { orderNumber: 'lksdjfalskdjf' }
+                            });
+                        });
+                    });
+                });
+            });
+        });
+
+        describe("when passed a signal with a target that is not 'directConnection'", function () {
+
+            describe("in all scenarios", function () {
+
+                beforeEach(function () {
+                    sinon.stub(client, 'getCall').returns({});
+                });
+
+                it("calls client.getCall with the appropriate params", function () {
+                    var passedSignal = {
+                        sessionId: 'someSessionId',
+                        fromEndpoint: 'someEndpointId',
+                        target: 'web',
+                        conferenceId: 'someConferenceId',
+                        fromType: 'someFromType',
+                        signalType: 'offer',
+                        callerId: { number: '+12566666666' },
+                        metadata: { orderNumber: 'lksdjfalskdjf' }
+                    };
+
+                    return routeSignal(passedSignal).then(function () {
+                        expect(client.getCall.calledOnce).to.equal(true);
+                        expect(client.getCall.firstCall.args[0]).to.deep.equal({
+                            id: 'someSessionId',
+                            endpointId: 'someEndpointId',
+                            target: 'web',
+                            conferenceId: 'someConferenceId',
+                            type: 'someFromType',
+                            create: true, // because signalType is 'offer'
+                            callerId: { number: '+12566666666' },
+                            metadata: { orderNumber: 'lksdjfalskdjf' }
+                        });
+                    });
                 });
             });
         });

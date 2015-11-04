@@ -18,6 +18,6 @@ module.exports = function (config) {
             outputFile: '../build/unit-test-results.xml'
         },
 
-        // singleRun: false
+        //singleRun: false
     });
 };

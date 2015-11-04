@@ -369,7 +369,7 @@ respoke.connect = function (params) {
  *
  * @static
  * @memberof respoke
- * @param {number} id The Client ID.
+ * @param {string} id The Client ID.
  * @returns {respoke.Client}
  */
 respoke.getClient = function (id) {
@@ -393,7 +393,7 @@ respoke.getClient = function (id) {
  *
  * @static
  * @memberof respoke
- * @param {object} params Parameters to respoke.Client - same as respoke.connect()
+ * @param {object} [params] Parameters to respoke.Client - same as respoke.connect()
  * @returns {respoke.Client}
  */
 respoke.createClient = function (params) {
