@@ -262,6 +262,7 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
+     * @param {*} [params.metadata] - Metadata to be attached to the audio call, accessible by the callee.
      * @returns {respoke.Call}
      */
     that.startAudioCall = function (params) {
@@ -319,6 +320,7 @@ module.exports = function (params) {
      * required to flow peer-to-peer. If it cannot, the call will fail.
      * @param {string} [params.connectionId] - The connection ID of the remoteEndpoint, if it is not desired to call
      * all connections belonging to this endpoint.
+     * @param {*} [params.metadata] - Metadata to be attached to the video call, accessible by the callee.
      * @returns {respoke.Call}
      */
     that.startVideoCall = function (params) {
@@ -384,6 +386,7 @@ module.exports = function (params) {
      * all connections belonging to this endpoint.
      * @param {string} [params.source] - Pass in what type of mediaSource you want. If omitted, you'll have access
      * to both the screen and windows. In firefox, you'll have access to the screen only.
+     * @param {*} [params.metadata] - Metadata to be attached to the screenShare, accessible by the callee.
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
@@ -477,10 +480,11 @@ module.exports = function (params) {
      * video attached to it.
      * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
      * video attached to it.
+     * @param {*} [params.metadata] - Metadata to be attached to the call, accessible by the callee.
      * @returns {respoke.Call}
      */
     that.startCall = function (params) {
-        var call = null;
+        var call;
         params = params || {};
 
         params.constraints = respoke.convertConstraints(params.constraints, [{
@@ -521,6 +525,7 @@ module.exports = function (params) {
             signalParams.signalType = 'offer';
             signalParams.target = params.target;
             signalParams.recipient = that;
+            signalParams.metadata = params.metadata;
 
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
@@ -651,6 +656,7 @@ module.exports = function (params) {
             signalParams.signalType = 'offer';
             signalParams.target = 'directConnection';
             signalParams.recipient = that;
+            signalParams.metadata = params.metadata;
 
             signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };

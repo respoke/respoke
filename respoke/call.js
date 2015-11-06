@@ -377,13 +377,6 @@ module.exports = function (params) {
      * @type {respoke.DirectConnection}
      */
     var directConnection = null;
-    /**
-     * @memberof! respoke.Call
-     * @name toSendHangup
-     * @private
-     * @type {boolean}
-     */
-    var toSendHangup = null;
 
     /**
      * Set up promises. If we're not the caller, we need to listen for approval AND the remote SDP to come in
@@ -442,14 +435,12 @@ module.exports = function (params) {
      * @fires respoke.Call#stats
      */
     function saveParameters(params) {
-        var isNewConstraint;
-
-        /* This happens when the call is hung up automatically, for instance due to the lack of an onCall
-         * handler. In this case, pc has been set to null in hangup. The call has already failed, and the
-         * invocation of this function is an artifact of async code not being finished yet, so we can just
-         * skip all of this setup.
-         */
         if (!pc) {
+            /* This happens when the call is hung up automatically, for instance due to the lack of an onCall
+             * handler. In this case, pc has been set to null in hangup. The call has already failed, and the
+             * invocation of this function is an artifact of async code not being finished yet, so we can just
+             * skip all of this setup.
+             */
             return;
         }
 

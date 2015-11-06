@@ -40,27 +40,25 @@ module.exports = function (params) {
     "use strict";
     params = params || {};
     var that = {};
+
     /**
      * Attributes without which we cannot build a signaling message.
      * @memberof! respoke.SignalingMessage
      * @name required
      * @private
-     * @type {string}
      */
-    var required = ['recipient', 'signalType', 'sessionId', 'target', 'signalId'];
+    var required = ['signalType', 'sessionId', 'target', 'signalId'];
+
     /**
      * Attributes which we will copy onto the signal if defined.
      * @memberof! respoke.SignalingMessage
      * @name required
      * @private
-     * @type {string}
      */
-    var allowed = [
-        'signalType', 'sessionId', 'sessionDescription', 'iceCandidates', 'offering', 'target', 'signalId', 'callerId',
-        'requesting', 'reason', 'error', 'status', 'connectionId', 'version', 'finalCandidates'
+    var optional = [
+        'sessionDescription', 'iceCandidates', 'offering', 'callerId', 'requesting',
+        'reason', 'error', 'status', 'connectionId', 'finalCandidates', 'metadata'
     ];
-
-    params.version = '1.0';
 
     /**
      * Parse rawMessage and set attributes required for message delivery.
@@ -85,13 +83,14 @@ module.exports = function (params) {
             }
         } else {
             required.forEach(function eachAttr(attr) {
-                if (params[attr] === 0 || !params[attr]) {
+                if (!params.hasOwnProperty(attr)) {
                     throw new Error("Can't build a signaling without " + attr);
                 }
+                that[attr] = params[attr];
             });
 
-            allowed.forEach(function eachAttr(attr) {
-                if (params[attr] === 0 || params[attr]) {
+            optional.forEach(function eachAttr(attr) {
+                if (params.hasOwnProperty(attr)) {
                     that[attr] = params[attr];
                 }
             });
@@ -99,5 +98,8 @@ module.exports = function (params) {
     }
 
     parse();
+
+    that.version = '1.0';
+
     return that;
 }; // End respoke.SignalingMessage

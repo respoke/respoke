@@ -656,6 +656,7 @@ module.exports = function (params) {
      * @arg {boolean} [params.create] - whether or not to create a new call if the specified endpointId isn't found
      * @arg {string} [params.fromType] - fromType from the signal, tells us if this is a SIP or DID call.
      * @arg {string} [params.target] - target from the signal, tells us if this is a screenshare or conference call.
+     * @arg {*} [params.metadata] - Metadata to be attached to the call if created, accessible by the callee.
      * @returns {respoke.Call}
      */
     that.getCall = function (params) {
@@ -693,6 +694,7 @@ module.exports = function (params) {
         callParams.fromType = "web";
         callParams.callerId = params.callerId;
         callParams.target = params.target;
+        callParams.metadata = params.metadata;
 
         if (params.target === "conference") {
             callParams.id = params.conferenceId;
@@ -731,7 +733,6 @@ module.exports = function (params) {
      * @method respoke.Client.addCall
      * @param {object} evt
      * @param {respoke.Call} evt.call
-     * @param {respoke.Endpoint} evt.endpoint
      * @private
      */
     function addCall(evt) {
@@ -744,7 +745,7 @@ module.exports = function (params) {
         }
 
         evt.call.listen('hangup', function () {
-            removeCall({call: evt.call});
+            removeCall({ call: evt.call });
         });
     }
 
@@ -753,7 +754,7 @@ module.exports = function (params) {
      * @memberof! respoke.Client
      * @method respoke.Client.removeCall
      * @param {object} evt
-     * @param {respoke.Call} evt.target
+     * @param {respoke.Call} evt.call
      * @private
      */
     function removeCall(evt) {
@@ -929,16 +930,17 @@ module.exports = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {*} [params.metadata] - Metadata to be attached to the conference call, accessible by the callee.
      * @returns {respoke.Conference}
      */
     that.joinConference = function (params) {
-        var conference = null;
+        var conference;
         var recipient;
+
+        that.verifyConnected();
 
         params = params || {};
         params.open = !!params.open;
-
-        that.verifyConnected();
 
         if (!params.id) {
             params.id = respoke.makeGUID();
@@ -974,6 +976,7 @@ module.exports = function (params) {
             signalParams.open = params.open;
             signalParams.recipient = recipient;
             signalParams.toType = "conference";
+            signalParams.metadata = params.metadata;
 
             that.signalingChannel.sendSDP(signalParams).done(onSuccess, onError);
         };
@@ -1030,7 +1033,7 @@ module.exports = function (params) {
 
         params.signalingChannel = that.signalingChannel;
         conference = respoke.Conference(params);
-        addCall({call: conference.call});
+        addCall({ call: conference.call });
         return conference;
     };
 
@@ -1083,6 +1086,7 @@ module.exports = function (params) {
      * all connections belonging to this endpoint.
      * @param {string} [params.source] - Pass in what type of mediaSource you want. If omitted, you'll have access
      * to both the screen and windows. In firefox, you'll have access to the screen only.
+     * @param {*} [params.metadata] - Metadata to be attached to the screenShare, accessible by the callee.
      * @returns {respoke.Call}
      */
     that.startScreenShare = function (params) {
@@ -1145,6 +1149,7 @@ module.exports = function (params) {
      * local video attached to it.
      * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have
      * remote video attached to it.
+     * @param {*} [params.metadata] - Metadata to be attached to the call, accessible by the callee.
      * @return {respoke.Call}
      */
     that.startCall = function (params) {
@@ -1207,6 +1212,7 @@ module.exports = function (params) {
      * video attached to it.
      * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
      * video attached to it.
+     * @param {*} [params.metadata] - Metadata to be attached to the audio call, accessible by the callee.
      * @return {respoke.Call}
      */
     that.startAudioCall = function (params) {
@@ -1269,6 +1275,7 @@ module.exports = function (params) {
      * video attached to it.
      * @param {HTMLVideoElement} [params.videoRemoteElement] - Pass in an optional html video element to have remote
      * video attached to it.
+     * @param {*} [params.metadata] - Metadata to be attached to the video call, accessible by the callee.
      * @return {respoke.Call}
      */
     that.startVideoCall = function (params) {
@@ -1317,11 +1324,11 @@ module.exports = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {*} [params.metadata] - Metadata to be attached to the phone call, accessible by the callee.
      * @return {respoke.Call}
      */
     that.startPhoneCall = function (params) {
-        var promise;
-        var call = null;
+        var call;
         var recipient = {};
         params = params || {};
         params.constraints = [{
@@ -1360,6 +1367,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
+            signalParams.metadata = params.metadata;
 
             // using hasOwnProperty here because callerId could be explicitly set to null or empty string
             if (params.hasOwnProperty('callerId')) {
@@ -1385,7 +1393,6 @@ module.exports = function (params) {
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'call';
-            signalParams.connectionId = signalParams.connectionId;
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
@@ -1426,7 +1433,7 @@ module.exports = function (params) {
 
         params.signalingChannel = that.signalingChannel;
         call = respoke.Call(params);
-        addCall({call: call});
+        addCall({ call: call });
         return call;
     };
 
@@ -1471,11 +1478,11 @@ module.exports = function (params) {
      * relay servers. If it cannot flow through relay servers, the call will fail.
      * @param {boolean} [params.disableTurn] - If true, media is not allowed to flow through relay servers; it is
      * required to flow peer-to-peer. If it cannot, the call will fail.
+     * @param {*} [params.metadata] - Metadata to be attached to the SIP call, accessible by the callee.
      * @return {respoke.Call}
      */
     that.startSIPCall = function (params) {
-        var promise;
-        var call = null;
+        var call;
         var recipient = {};
         params = params || {};
         params.constraints = [{
@@ -1515,6 +1522,7 @@ module.exports = function (params) {
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
+            signalParams.metadata = params.metadata;
 
             // using hasOwnProperty here because callerId could be explicitly set to null or empty string
             if (params.hasOwnProperty('callerId')) {
@@ -1540,7 +1548,6 @@ module.exports = function (params) {
         };
         params.signalConnected = function (signalParams) {
             signalParams.target = 'call';
-            signalParams.connectionId = signalParams.connectionId;
             signalParams.recipient = recipient;
             signalParams.toType = params.toType;
             signalParams.fromType = params.fromType;
@@ -1581,7 +1588,7 @@ module.exports = function (params) {
 
         params.signalingChannel = that.signalingChannel;
         call = respoke.Call(params);
-        addCall({call: call});
+        addCall({ call: call });
         return call;
     };
 

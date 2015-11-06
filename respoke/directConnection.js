@@ -86,13 +86,6 @@ module.exports = function (params) {
      * @private
      */
     var dataChannel = null;
-    /**
-     * @memberof! respoke.DirectConnection
-     * @name client
-     * @type {respoke.Client}
-     * @private
-     */
-    var client = respoke.getClient(instanceId);
 
     /**
      * @memberof! respoke.DirectConnection
