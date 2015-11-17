@@ -416,10 +416,26 @@ module.exports = function (params) {
         states: {
             buffering: {
                 localIceCandidate: {action: collectLocalIceCandidate},
-                ready: {
+                ready: [{
+                    guard: function () {
+                        return localCandidatesRemaining() === 0 && localCandidatesComplete;
+                    },
+                    target: 'finished',
+                    action: function () {
+                        log.error('ice completed without any candidates');
+                    }
+                }, {
+                    guard: function () {
+                        return localCandidatesRemaining() === 0 && !localCandidatesComplete;
+                    },
+                    target: 'waiting'
+                }, {
+                    guard: function () {
+                        return localCandidatesRemaining() !== 0;
+                    },
                     target: 'sending',
                     action: sendRemainingCandidates
-                }
+                }]
             },
             sending: {
                 localIceCandidate: {action: collectLocalIceCandidate},
