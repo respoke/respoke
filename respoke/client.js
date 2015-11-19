@@ -887,7 +887,7 @@ module.exports = function (params) {
      *         onConnect: function (evt) {}
      *     });
      *
-     * @memberof! respoke.Client
+     * @memberof respoke.Client
      * @method respoke.Client.joinConference
      * @private
      * @param {object} params
@@ -1970,6 +1970,7 @@ module.exports = function (params) {
      * ```
      * @memberof respoke.Client
      * @method respoke.Client.getConferenceParticipants
+     * @private
      * @param object {params}
      * @param string {params.id}
      * @returns {Promise}
