@@ -124,23 +124,6 @@ Point your editor to `.jscsrc` to follow the project's
 npm run jscs
 ```
 
-### Known Issues
-
-```bash
-npm install
-```
-
-```text
-npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) Permission denied (publickey).
-npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) fatal: Could not read from remote repository.
-npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git)
-npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) Please make sure you have the correct access rights
-npm ERR! git fetch -a origin (ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git) and the repository exists.
-npm WARN optional dep failed, continuing grunt-stratos@git+ssh://git@stash.digium.com:7999/stratos/grunt-stratos.git
-```
-
-This can be ignored and will be fixed by the Respoke dev team soon.
-
 # License
 
 Respoke.js is licensed under the [MIT license](LICENSE).
