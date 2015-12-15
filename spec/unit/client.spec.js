@@ -1162,7 +1162,7 @@ describe("respoke.Client", function () {
 
                 expect(respoke.Conference.calledOnce).to.equal(true);
                 var conferenceParams = respoke.Conference.firstCall.args[0];
-                expect(conferenceParams).to.not.include.property('key');
+                expect(conferenceParams.key).to.equal(undefined);
             });
         });
 
