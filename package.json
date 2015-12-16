@@ -8,11 +8,10 @@
     "watch": "webpack --watch",
     "dist": "grunt build:dist",
     "docs": "grunt docs",
-    "build-stats": "uglifyjs plugins/respoke-stats/respoke-stats.js -c -o respoke-stats.min.js --source-map respoke-stats.min.map --source-map-include-sources --prefix relative",
+    "build-stats": "grunt uglify:respoke-stats",
     "lint": "grunt lint",
     "test": "grunt lint build:dist unit",
     "test-dev": "grunt build:dev karma:unitDevChrome",
-    "ci-lite": "grunt ci-lite",
     "ci": "grunt ci"
   },
   "keywords": [
@@ -114,7 +113,7 @@
     "karma-spec-reporter": "0.0.23",
     "lodash": "^3.10.1",
     "mocha": "^2.2.1",
-    "respoke-style": "git://github.com/respoke/style#v2.1.0",
+    "respoke-style": "git://github.com/respoke/style#v2.3.1",
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
     "uglify-js": "~2.4.0",
