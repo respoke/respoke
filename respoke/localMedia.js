@@ -128,37 +128,6 @@ module.exports = function (params) {
      */
     var deferred = Q.defer();
 
-    function getStream(theConstraints) {
-        for (var i = 0; i < respoke.streams.length; i++) {
-            var s = respoke.streams[i];
-
-            var sConstraints = respoke.clone(s.constraints);
-            if (sConstraints.video && sConstraints.video.mandatory &&
-                sConstraints.video.mandatory.chromeMediaSourceId) {
-                delete sConstraints.video.mandatory.chromeMediaSourceId;
-            }
-
-            if (respoke.isEqual(sConstraints, theConstraints)) {
-                return s.stream;
-            }
-        }
-        return null;
-    }
-
-    function removeStream(theConstraints) {
-        var toRemoveIndex;
-        for (var i = 0; i < respoke.streams.length; i++) {
-            var s = respoke.streams[i];
-            if (respoke.isEqual(s.constraints, theConstraints)) {
-                toRemoveIndex = i;
-                break;
-            }
-        }
-        if (toRemoveIndex !== undefined) {
-            respoke.streams.splice(toRemoveIndex, 1);
-        }
-    }
-
     /**
      * Save the local stream. Kick off SDP creation.
      * @memberof! respoke.LocalMedia
@@ -185,37 +154,16 @@ module.exports = function (params) {
 
         that.element = that.element || document.createElement('video');
 
-        // This still needs some work. Using cached streams causes an unused video element to be passed
-        // back to the App. This is because we assume at the moment that only one local media video element
-        // will be needed. The first one passed back will contain media and the others will fake it. Media
-        // will still be sent with every peer connection. Also need to study the use of getLocalElement
-        // and the implications of passing back a video element with no media attached.
-        var aStream = getStream(that.constraints);
-        if (aStream) {
-            aStream.numPc += 1;
+        that.stream.numPc = 1;
 
-            attachMediaStream(that.element, that.stream);
-            // We won't want our local video outputting audio.
-            that.element.muted = true;
-            that.element.autoplay = true;
+        attachMediaStream(that.element, that.stream);
+        // We won't want our local video outputting audio.
+        that.element.muted = true;
+        that.element.autoplay = true;
 
-            // perform cleanup on the LocalMedia instance if the underlying stream has ended
-            aStream.addEventListener('ended', that.stop, false);
-
-            deferred.resolve();
-        } else {
-            that.stream.numPc = 1;
-            respoke.streams.push({stream: that.stream, constraints: that.constraints});
-
-            attachMediaStream(that.element, that.stream);
-            // We won't want our local video outputting audio.
-            that.element.muted = true;
-            that.element.autoplay = true;
-
-            // perform cleanup on the LocalMedia instance if the underlying stream has ended
-            that.stream.addEventListener('ended', that.stop, false);
-            deferred.resolve();
-        }
+        // perform cleanup on the LocalMedia instance if the underlying stream has ended
+        that.stream.addEventListener('ended', that.stop, false);
+        deferred.resolve();
     }
 
     /**
@@ -249,7 +197,6 @@ module.exports = function (params) {
      * @private
      */
     function requestMedia() {
-        var theStream;
         log.debug('LocalMedia.requestMedia', that.constraints);
 
         if (!that.constraints) {
@@ -261,16 +208,6 @@ module.exports = function (params) {
             that.constraints.fake = true;
         }
 
-        theStream = getStream(that.constraints);
-        if (theStream) {
-            log.debug('using old stream');
-            onReceiveUserMedia(theStream);
-            return;
-        }
-
-        // TODO set getStream(that.constraints) = true as a flag that we are already
-        // attempting to obtain this media so the race condition where gUM is called twice with
-        // the same constraints when calls are placed too quickly together doesn't occur.
         allowTimer = setTimeout(function delayPermissionsRequest() {
             /**
              * The browser is asking for permission to access the User's media. This would be an ideal time
@@ -481,7 +418,6 @@ module.exports = function (params) {
             that.stream.getTracks().forEach(function (track) {
                 track.stop();
             });
-            removeStream(that.constraints);
         }
         that.stream = null;
         /**

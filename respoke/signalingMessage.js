@@ -57,7 +57,8 @@ module.exports = function (params) {
      */
     var optional = [
         'sessionDescription', 'iceCandidates', 'offering', 'callerId', 'requesting',
-        'reason', 'error', 'status', 'connectionId', 'finalCandidates', 'metadata'
+        'reason', 'error', 'status', 'connectionId', 'finalCandidates', 'metadata',
+        'action'
     ];
 
     /**

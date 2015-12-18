@@ -247,6 +247,8 @@ module.exports = function (params) {
      * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback called every time a remote
+     * stream is added to the call. Corresponds to 'remote-stream-received' event.
      * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
@@ -305,6 +307,8 @@ module.exports = function (params) {
      * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback called every time a remote
+     * stream is added to the call. Corresponds to 'remote-stream-received' event.
      * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
@@ -371,6 +375,8 @@ module.exports = function (params) {
      * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback called every time a remote
+     * stream is added to the call. Corresponds to 'remote-stream-received' event.
      * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical
@@ -460,6 +466,8 @@ module.exports = function (params) {
      * @param {respoke.Call.onApprove} [params.onApprove] - Callback for when the user approves local media. This
      * callback will be called whether or not the approval was based on user feedback. I. e., it will be called even if
      * the approval was automatic.
+     * @param {respoke.Call.onRemoteMedia} [params.onRemoteMedia] - Callback called every time a remote
+     * stream is added to the call. Corresponds to 'remote-stream-received' event.
      * @param {respoke.Call.onRequestingMedia} [params.onRequestingMedia] - Callback for when the app is waiting
      * for the user to give permission to start getting audio or video.
      * @param {respoke.MediaStatsParser.statsHandler} [params.onStats] - Callback for receiving statistical

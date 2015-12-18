@@ -130,7 +130,6 @@ var EventEmitter = require('./event');
 var respoke = module.exports = EventEmitter({
     ridiculous: false, // print every websocket tx/rx
     buildNumber: 'NO BUILD NUMBER',
-    streams: [],
     io: require('socket.io-client'),
     Q: require('q')
 });
@@ -574,34 +573,6 @@ respoke.isEqual = function (a, b) {
     }
 
     return a === b;
-};
-
-/**
- * Count the number of MediaStreams indicated by the SDP
- * @static
- * @memberof respoke
- * @params {string}
- * @returns {number}
- * @private
- */
-respoke.sdpStreamCount = function (sdp) {
-    var matches;
-    var resolvedMatches = {};
-
-    if (!sdp) {
-        throw new Error("respoke.sdpHasAudio called with no parameters.");
-    }
-
-    matches = sdp.match(/mslabel:(.*)/gi);
-
-    if (!matches) {
-        return 0;
-    }
-
-    matches.forEach(function (line) {
-        resolvedMatches[line] = true;
-    });
-    return Object.keys(resolvedMatches).length;
 };
 
 /**

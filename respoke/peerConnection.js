@@ -208,13 +208,6 @@ module.exports = function (params) {
 
         return signalCandidateOrig(params);
     }
-    /**
-     * @memberof! respoke.PeerConnection
-     * @name sdpExpectedStreamCount
-     * @private
-     * @type {number}
-     */
-    that.sdpExpectedStreamCount = 0;
 
     /**
      * @memberof! respoke.PeerConnection
@@ -280,8 +273,46 @@ module.exports = function (params) {
 
         log.info('creating offer', offerOptions);
 
-        pc.createOffer(saveOfferAndSend, function errorHandler(p) {
-            log.error('createOffer failed');
+        pc.createOffer(function saveOfferAndSend(oSession) {
+            oSession.type = 'offer';
+            if (!pc) {
+                return;
+            }
+            log.debug('setting and sending offer', oSession);
+            that.report.sdpsSent.push(oSession);
+
+            pc.setLocalDescription(oSession, function successHandler(p) {
+                oSession.type = 'offer';
+                signalOffer({
+                    call: that.call,
+                    sessionDescription: oSession,
+                    onSuccess: function () {
+                        that.state.sentSDP = true;
+                        localCandidatesFSM.dispatch('ready');
+                    },
+                    onError: function (err) {
+                        log.error('offer could not be sent', err);
+                        that.call.hangup({signal: false});
+                    }
+                });
+            }, function errorHandler(p) {
+                var errorMessage = 'Error calling setLocalDescription on offer I created.';
+                var err = new Error(errorMessage);
+                log.error(errorMessage, p);
+                /**
+                 * This event is fired on errors that occur during call setup or media negotiation.
+                 * @event respoke.Call#error
+                 * @type {respoke.Event}
+                 * @property {string} reason - A human readable description about the error.
+                 * @property {respoke.Call} target
+                 * @property {string} name - the event name.
+                 */
+                that.call.fire('error', {
+                    message: err.message
+                });
+            });
+        }, function errorHandler(e) {
+            log.error('createOffer failed', e);
         }, offerOptions);
     }
 
@@ -513,9 +544,47 @@ module.exports = function (params) {
 
             processReceivingQueue();
 
-            pc.createAnswer(function successHandler(oSession) {
+            pc.createAnswer(function saveAnswerAndSend(oSession) {
+                if (!pc) {
+                    return;
+                }
+
                 that.state.processedRemoteSDP = true;
-                saveAnswerAndSend(oSession);
+
+                if (!that.state.caller) {
+                    that.report.callerconnection = that.call.connectionId;
+                }
+
+                oSession.type = 'answer';
+                log.debug('setting and sending answer', oSession);
+                that.report.sdpsSent.push(oSession);
+
+                pc.setLocalDescription(oSession, function successHandler(p) {
+                    oSession.type = 'answer';
+                    signalAnswer({
+                        sessionDescription: oSession,
+                        call: that.call,
+                        onSuccess: function () {
+                            localCandidatesFSM.dispatch('ready');
+                        }
+                    });
+                    that.state.sentSDP = true;
+                }, function errorHandler(p) {
+                    var errorMessage = 'Error calling setLocalDescription on answer I created.';
+                    var err = new Error(errorMessage);
+                    log.error(errorMessage, p);
+                    /**
+                     * This event is fired on errors that occur during call setup or media negotiation.
+                     * @event respoke.Call#error
+                     * @type {respoke.Event}
+                     * @property {string} reason - A human readable description about the error.
+                     * @property {respoke.Call} target
+                     * @property {string} name - the event name.
+                     */
+                    that.call.fire('error', {
+                        message: err.message
+                    });
+                });
             }, function errorHandler(err) {
                 log.error('create answer failed', err);
 
@@ -591,7 +660,6 @@ module.exports = function (params) {
         that.report.lastSDPString = oOffer.sdp;
 
         //set flags for audio / video being offered
-        that.sdpExpectedStreamCount = respoke.sdpStreamCount(oOffer.sdp);
         that.call.hasDataChannel = respoke.sdpHasDataChannel(oOffer.sdp);
 
         try {
@@ -696,18 +764,74 @@ module.exports = function (params) {
         that.report.callStarted = new Date().getTime();
 
         pc = new RTCPeerConnection(that.servers, pcOptions);
-        pc.onicecandidate = onIceCandidate;
-        pc.onnegotiationneeded = onNegotiationNeeded;
-        pc.oniceconnectionstatechange = onIceConnectionStateChange;
+
+        /**
+         * Process a local ICE Candidate
+         *
+         * @param {RTCIceCandidate} oCan
+         */
+        pc.onicecandidate = function onIceCandidate(oCan) {
+                var candidate = oCan.candidate; // {candidate: ..., sdpMLineIndex: ... }
+                if (!pc) {
+                    return;
+                }
+
+                // From http://www.w3.org/TR/webrtc/#operation
+                // If the intent of the ICE Agent is to notify the script that:
+                //  [snip]
+                //  * The gathering process is done.
+                //    Set connection's ice gathering state to completed and let newCandidate be null.
+                if (!candidate || !candidate.candidate) {
+                    if (pc.iceGatheringState === 'complete') {
+                        localCandidatesComplete = true;
+                        localCandidatesFSM.dispatch('localIceCandidate');
+                    }
+                    return;
+                }
+
+                if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
+                    log.debug("Dropping candidate because forceTurn is on.");
+                    return;
+                } else if (that.disableTurn === true && candidate.candidate.indexOf("typ relay") !== -1) {
+                    log.debug("Dropping candidate because disableTurn is on.");
+                    return;
+                }
+
+                localCandidatesFSM.dispatch('localIceCandidate', {candidate: candidate});
+            }
+        ;
+
+        /**
+         * Handle ICE state change
+         */
+        pc.oniceconnectionstatechange = function onIceConnectionStateChange(/* evt */) {
+                if (!pc) {
+                    return;
+                }
+
+                if (pc.iceConnectionState === 'connected') {
+                    /**
+                     * Indicate that we've successfully connected to the remote side. This is only helpful for the
+                     * outgoing connection.
+                     * @event respoke.PeerConnection#connect
+                     * @type {respoke.Event}
+                     * @property {string} name - the event name.
+                     * @property {respoke.PeerConnection}
+                     */
+                    that.fire('connect');
+                }
+            }
+        ;
+
         pc.onaddstream = function onaddstream(evt) {
             /**
              * Indicate the RTCPeerConnection has received remote media.
-             * @event respoke.PeerConnection#remote-stream-received
+             * @event respoke.PeerConnection#stream-added
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.PeerConnection}
              */
-            that.fire('remote-stream-received', {
+            that.fire('stream-added', {
                 stream: evt.stream
             });
         };
@@ -715,12 +839,12 @@ module.exports = function (params) {
         pc.onremovestream = function onremovestream(evt) {
             /**
              * Indicate the remote side has stopped sending media.
-             * @event respoke.PeerConnection#remote-stream-removed
+             * @event respoke.PeerConnection#stream-removed
              * @type {respoke.Event}
              * @property {string} name - the event name.
              * @property {respoke.PeerConnection}
              */
-            that.fire('remote-stream-removed', {
+            that.fire('stream-removed', {
                 stream: evt.stream
             });
         };
@@ -783,12 +907,12 @@ module.exports = function (params) {
     };
 
     /**
+     * Add any tracks from the provided stream to the peer connection.
+     *
      * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.addStream
-     * Expose addStream.
-     * @param {RTCMediaStream}
+     * @method respoke.PeerConnection.addLocalTracksFromStream
      */
-    that.addStream = function (stream) {
+    that.addLocalTracksFromStream = function (stream) {
         if (!pc) {
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
@@ -803,79 +927,42 @@ module.exports = function (params) {
             });
             return;
         }
-        pc.addStream(stream);
+
+        if (webrtcDetectedBrowser === 'firefox') {
+            stream.getTracks().forEach(function (track) {
+                pc.addTrack(track, stream);
+            });
+        } else {
+            pc.addStream(stream);
+        }
     };
 
     /**
-     * Process a local ICE Candidate
+     * Remove and stop any local streams that are already added to the peer connection.
+     * This releases the resources used by those streams when renegotiating media.
+     *
      * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.onIceCandidate
-     * @private
-     * @param {RTCIceCandidate}
+     * @method respoke.PeerConnection.removeLocalTracks
      */
-    function onIceCandidate(oCan) {
-        var candidate = oCan.candidate; // {candidate: ..., sdpMLineIndex: ... }
-        if (!pc) {
-            return;
+    that.removeLocalTracks = function () {
+        if (webrtcDetectedBrowser === 'firefox') {
+            pc.getLocalStreams().forEach(function (stream) {
+                stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
+            });
+            pc.getSenders().forEach(function (sender) {
+                pc.removeTrack(sender);
+            });
+        } else {
+            pc.getLocalStreams().forEach(function (stream) {
+                stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
+                pc.removeStream(stream);
+            });
         }
-
-        // From http://www.w3.org/TR/webrtc/#operation
-        // If the intent of the ICE Agent is to notify the script that:
-        //  [snip]
-        //  * The gathering process is done.
-        //    Set connection's ice gathering state to completed and let newCandidate be null.
-        if (!candidate || !candidate.candidate) {
-            if (pc.iceGatheringState === 'complete') {
-                localCandidatesComplete = true;
-                localCandidatesFSM.dispatch('localIceCandidate');
-            }
-            return;
-        }
-
-        if (that.forceTurn === true && candidate.candidate.indexOf("typ relay") === -1) {
-            log.debug("Dropping candidate because forceTurn is on.");
-            return;
-        } else if (that.disableTurn === true && candidate.candidate.indexOf("typ relay") !== -1) {
-            log.debug("Dropping candidate because disableTurn is on.");
-            return;
-        }
-
-        localCandidatesFSM.dispatch('localIceCandidate', {candidate: candidate});
-    }
-
-    /**
-     * Handle ICE state change
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.onIceConnectionStateChange
-     * @private
-     */
-    function onIceConnectionStateChange(evt) {
-        if (!pc) {
-            return;
-        }
-
-        if (pc.iceConnectionState === 'connected') {
-            /**
-             * Indicate that we've successfully connected to the remote side. This is only helpful for the
-             * outgoing connection.
-             * @event respoke.PeerConnection#connect
-             * @type {respoke.Event}
-             * @property {string} name - the event name.
-             * @property {respoke.PeerConnection}
-             */
-            that.fire('connect');
-        }
-    }
-
-    /**
-     * Handle renegotiation
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.onNegotiationNeeded
-     * @private
-     */
-    function onNegotiationNeeded() {
-        log.warn("Negotiation needed.");
-    }
+    };
 
     /**
      * Process any ICE candidates that we received from the other side while we were waiting on the other
@@ -894,104 +981,7 @@ module.exports = function (params) {
                 log.debug((that.state.caller ? 'caller' : 'callee'), 'got a remote candidate.', can.candidate);
                 that.report.candidatesReceived.push(can.candidate);
             }, function onError(e) {
-                log.error("Couldn't add ICE candidate: " + e.message, can.candidate);
-            });
-        });
-    }
-
-    /**
-     * Save an SDP we've gotten from the browser which will be an offer and send it to the other
-     * side.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.saveOfferAndSend
-     * @param {RTCSessionDescription}
-     * @private
-     */
-    function saveOfferAndSend(oSession) {
-        oSession.type = 'offer';
-        if (!pc) {
-            return;
-        }
-        log.debug('setting and sending offer', oSession);
-        that.report.sdpsSent.push(oSession);
-
-        pc.setLocalDescription(oSession, function successHandler(p) {
-            oSession.type = 'offer';
-            signalOffer({
-                call: that.call,
-                sessionDescription: oSession,
-                onSuccess: function () {
-                    that.state.sentSDP = true;
-                    localCandidatesFSM.dispatch('ready');
-                },
-                onError: function (err) {
-                    log.error('offer could not be sent', err);
-                    that.call.hangup({signal: false});
-                }
-            });
-        }, function errorHandler(p) {
-            var errorMessage = 'Error calling setLocalDescription on offer I created.';
-            var err = new Error(errorMessage);
-            log.error(errorMessage, p);
-            /**
-             * This event is fired on errors that occur during call setup or media negotiation.
-             * @event respoke.Call#error
-             * @type {respoke.Event}
-             * @property {string} reason - A human readable description about the error.
-             * @property {respoke.Call} target
-             * @property {string} name - the event name.
-             */
-            that.call.fire('error', {
-                message: err.message
-            });
-        });
-    }
-
-    /**
-     * Save our SDP we've gotten from the browser which will be an answer and send it to the
-     * other side.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.saveAnswerAndSend
-     * @param {RTCSessionDescription}
-     * @private
-     */
-    function saveAnswerAndSend(oSession) {
-        if (!pc) {
-            return;
-        }
-
-        if (!that.state.caller) {
-            that.report.callerconnection = that.call.connectionId;
-        }
-
-        oSession.type = 'answer';
-        log.debug('setting and sending answer', oSession);
-        that.report.sdpsSent.push(oSession);
-
-        pc.setLocalDescription(oSession, function successHandler(p) {
-            oSession.type = 'answer';
-            signalAnswer({
-                sessionDescription: oSession,
-                call: that.call,
-                onSuccess: function () {
-                    localCandidatesFSM.dispatch('ready');
-                }
-            });
-            that.state.sentSDP = true;
-        }, function errorHandler(p) {
-            var errorMessage = 'Error calling setLocalDescription on answer I created.';
-            var err = new Error(errorMessage);
-            log.error(errorMessage, p);
-            /**
-             * This event is fired on errors that occur during call setup or media negotiation.
-             * @event respoke.Call#error
-             * @type {respoke.Event}
-             * @property {string} reason - A human readable description about the error.
-             * @property {respoke.Call} target
-             * @property {string} name - the event name.
-             */
-            that.call.fire('error', {
-                message: err.message
+                log.error("Couldn't add ICE candidate", e, can.candidate);
             });
         });
     }
@@ -1270,23 +1260,60 @@ module.exports = function (params) {
     };
 
     /**
-     * Save the answer and tell the browser about it.
+     * Send the initiate signal to start the modify process. This method is only called by the caller of the
+     * renegotiation.
      * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.listenAnswer
-     * @param {object} evt
-     * @param {object} evt.signal - The signal, including the remote SDP and the connectionId of the endpoint who
-     * answered the call.
-     * @private
+     * @method respoke.PeerConnection.startModify
+     * @param {object} params
+     * @param {object} [params.constraints] - Indicate this is a request for media and what type of media.
+     * @param {boolean} [params.directConnection] - Indicate this is a request for a direct connection.
      */
-    function listenAnswer(evt) {
+    that.startModify = function (params) {
+        defModify = Q.defer();
+        signalModify({
+            action: 'initiate',
+            call: that.call,
+            constraints: params.constraints,
+            directConnection: params.directConnection
+        });
+        that.state.dispatch('modify');
+    };
+
+    /**
+     * Save the candidate. If we initiated the call, place the candidate into the queue so
+     * we can process them after we receive the answer.
+     * @memberof! respoke.PeerConnection
+     * @method respoke.PeerConnection.addRemoteCandidate
+     * @param {object} params
+     * @param {RTCIceCandidate} params.candidate
+     */
+    that.addRemoteCandidate = function (params) {
+        if (!pc && (that.state.sentSDP || that.state.receivedSDP)) { // we hung up.
+            return;
+        }
+
+        if (!params || !params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
+            log.warn("addRemoteCandidate got wrong format!", params);
+            return;
+        }
+
+        candidateReceivingQueue.push(params);
+    };
+
+    /**
+     * Save the answer and tell the browser about it.
+     */
+    that.call.listen('signal-answer', function handleAnswerSignal(evt) {
+        log.debug('PC handleAnswerSignal', evt);
+
         if (!pc) {
             return;
         }
+
         log.debug('got answer', evt.signal);
 
         that.report.sdpsReceived.push(evt.signal.sessionDescription);
         that.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
-        that.sdpExpectedStreamCount = respoke.sdpStreamCount(evt.signal.sessionDescription.sdp);
         that.report.lastSDPString = evt.signal.sessionDescription.sdp;
 
         if (that.state.caller) {
@@ -1325,52 +1352,27 @@ module.exports = function (params) {
                 that.close();
             }
         );
-    }
+    }, true);
 
     /**
-     * Figure out who won the call. This necessary to prevent two connections of the same endpoint from thinking
-     * they are both on the same call.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.listenConnected
-     * @private
+     * Figure out who won the call. This necessary to prevent two connections of
+     * the same endpoint from thinking they are both on the same call.
      */
-    function listenConnected(evt) {
+    that.call.listen('signal-connected', function handleConnectedSignal(evt) {
+        log.debug('PC handleConnectedSignal', evt);
+
         if (evt.signal.connectionId !== client.connectionId) {
             log.debug("Hanging up because I didn't win the call.", evt.signal, client);
             that.call.hangup({signal: false});
         }
-    }
-
-    /**
-     * Send the initiate signal to start the modify process. This method is only called by the caller of the
-     * renegotiation.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.startModify
-     * @param {object} params
-     * @param {object} [params.constraints] - Indicate this is a request for media and what type of media.
-     * @param {boolean} [params.directConnection] - Indicate this is a request for a direct connection.
-     */
-    that.startModify = function (params) {
-        defModify = Q.defer();
-        signalModify({
-            action: 'initiate',
-            call: that.call,
-            constraints: params.constraints,
-            directConnection: params.directConnection
-        });
-    };
+    }, true);
 
     /**
      * Indicate a desire from the other side to renegotiate media.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.listenModify
-     * @param {object} evt
-     * @param {object} evt.signal
-     * @private
      */
-    function listenModify(evt) {
+    that.call.listen('signal-modify', function handleModifySignal(evt) {
         var err;
-        log.debug('PC.listenModify', evt.signal);
+        log.debug('PC handleModifySignal', evt);
 
         if (evt.signal.action === 'accept') {
             if (defModify.promise.isPending()) {
@@ -1382,6 +1384,11 @@ module.exports = function (params) {
                  * @property {string} name - the event name.
                  * @property {respoke.PeerConnection}
                  */
+
+                // reset the ice candidate queue for the renegotiation
+                candidateReceivingQueue = respoke.queueFactory();
+
+                // let the world know we're ready to re-negotiate
                 that.fire('modify-accept', {signal: evt.signal});
             }
             return;
@@ -1447,46 +1454,21 @@ module.exports = function (params) {
             return;
         }
 
-        /**
-         * Indicate that the remote party has accepted our invitation to begin renegotiating media.
-         * @event respoke.PeerConnection#modify-accept
-         * @type {respoke.Event}
-         * @property {object} signal
-         * @property {string} name - the event name.
-         * @property {respoke.PeerConnection}
+        /*
+         * Received an 'initiate' and we are in the correct state to receive it,
+         * so send the accept and prepare to receive an offer from the remote endpoint.
          */
-        that.fire('modify-accept', {signal: evt.signal});
+
+        // reset ice candidate queueing
+        candidateReceivingQueue = respoke.queueFactory();
+
+        // accept the modify to allow re-negotiating media
         signalModify({
             action: 'accept',
             call: that.call
         });
         defModify.resolve();
-    }
-
-    /**
-     * Save the candidate. If we initiated the call, place the candidate into the queue so
-     * we can process them after we receive the answer.
-     * @memberof! respoke.PeerConnection
-     * @method respoke.PeerConnection.addRemoteCandidate
-     * @param {object} params
-     * @param {RTCIceCandidate} params.candidate
-     */
-    that.addRemoteCandidate = function (params) {
-        if (!pc && (that.state.sentSDP || that.state.receivedSDP)) { // we hung up.
-            return;
-        }
-
-        if (!params || !params.candidate || !params.candidate.hasOwnProperty('sdpMLineIndex')) {
-            log.warn("addRemoteCandidate got wrong format!", params);
-            return;
-        }
-
-        candidateReceivingQueue.push(params);
-    };
-
-    that.call.listen('signal-answer', listenAnswer, true);
-    that.call.listen('signal-connected', listenConnected, true);
-    that.call.listen('signal-modify', listenModify, true);
+    }, true);
 
     return that;
 }; // End respoke.PeerConnection

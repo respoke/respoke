@@ -10,9 +10,6 @@ describe("LocalMedia.start", function () {
     });
 
     afterEach(function () {
-        // blow away the stream cache
-        respoke.streams = [];
-
         sinon.restore();
         sinon = _actualSinon;
     });

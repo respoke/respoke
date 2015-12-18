@@ -10,9 +10,6 @@ describe("RemoteMedia.stop", function () {
     });
 
     afterEach(function () {
-        // blow away the stream cache
-        respoke.streams = [];
-
         sinon.restore();
         sinon = _actualSinon;
     });
