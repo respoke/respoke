@@ -118,7 +118,8 @@
         "getUserMedia",
         "RTCIceCandidate",
         "RTCSessionDescription",
-        "RTCPeerConnection"
+        "RTCPeerConnection",
+        "webrtcDetectedBrowser"
     ],
     "indent"        : 4         // Specify indentation spacing
 }

@@ -11,17 +11,16 @@
 var respoke = require('./respoke');
 var log = respoke.log;
 var Statechart = require('statechart');
-var Q = require('q');
 
 /**
  * State machine for WebRTC calling, data channels, and screen sharing.
- * NOTE: All state transitions are synchronous! However, listeners to the events this class fires will be called
- * asynchronously.
+ * NOTE: All state transitions are synchronous! However,
+ * listeners to the events this class fires will be called asynchronously.
+ *
  * @class respoke.CallState
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {respoke.Call} call
  * @link https://cdn.respoke.io/respoke.min.js
  * @returns {respoke.CallState}
  */
@@ -149,16 +148,13 @@ module.exports = function (params) {
         if ((!that.needDirectConnection && that.receiveOnly) || that.hasLocalMedia) {
             return true;
         }
+
         return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
     }
 
     function hasListener() {
-        if ((client.hasListeners('call') && !that.needDirectConnection) ||
-                (client.hasListeners('direct-connection') && that.needDirectConnection)) {
-            return true;
-        } else {
-            return false;
-        }
+        return ((client.hasListeners('call') && !that.needDirectConnection) ||
+                (client.hasListeners('direct-connection') && that.needDirectConnection));
     }
 
     function createTimer(func, name, time) {
@@ -591,7 +587,7 @@ module.exports = function (params) {
         debugOff: function () {
             // So we can print the caller. Debug most often used when testing & tests run in the same tab.
             var args = Array.prototype.slice.call(arguments);
-            args.splice(0, 0, that.caller);
+            args.unshift("state change:");
             log.debug.apply(log, args);
         }
     });
@@ -623,17 +619,22 @@ module.exports = function (params) {
         }
 
         oldState = that.getState();
+        log.debug("dispatching '" + evt + "', from '" + oldState + "'. caller?", that.caller, "args:", args);
+
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
-            log.debug('error dispatching', evt, 'from', oldState, "with", args, err);
+            log.debug("error dispatching '" + evt + "' from '" + oldState + "'.", { args: args, error: err });
             throw err;
         }
+
         newState = that.getState();
+
         if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
-            log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
+            log.debug("Possible bad event '" + evt + "', no transition occurred. caller?", that.caller);
+        } else {
+            log.debug("dispatch complete. new state: '" + newState + "'.");
         }
-        log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, args);
     };
 
     /**

@@ -279,6 +279,7 @@ module.exports = function (params) {
         }
 
         log.info('creating offer', offerOptions);
+
         pc.createOffer(saveOfferAndSend, function errorHandler(p) {
             log.error('createOffer failed');
         }, offerOptions);
@@ -561,8 +562,10 @@ module.exports = function (params) {
             onSetRemoteDescriptionFinalError(err);
         }
 
-        function onSetRemoteDescriptionFinalError(err) {
-            err = new Error('Error calling setRemoteDescription on offer I received. ' + err);
+        function onSetRemoteDescriptionFinalError(p) {
+            var errorMessage = 'Error calling setRemoteDescription on offer I received.';
+            var err = new Error(errorMessage);
+            log.error(errorMessage, p);
             that.report.callStoppedReason = err.message;
 
             /**
@@ -708,6 +711,7 @@ module.exports = function (params) {
                 stream: evt.stream
             });
         };
+
         pc.onremovestream = function onremovestream(evt) {
             /**
              * Indicate the remote side has stopped sending media.
@@ -720,6 +724,7 @@ module.exports = function (params) {
                 stream: evt.stream
             });
         };
+
         pc.ondatachannel = function ondatachannel(evt) {
             /**
              * CAUTION: This event is only called for the callee because RTCPeerConnection#ondatachannel
@@ -925,7 +930,9 @@ module.exports = function (params) {
                 }
             });
         }, function errorHandler(p) {
-            var err = new Error('Error calling setLocalDescription on offer I created.');
+            var errorMessage = 'Error calling setLocalDescription on offer I created.';
+            var err = new Error(errorMessage);
+            log.error(errorMessage, p);
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event respoke.Call#error
@@ -972,7 +979,9 @@ module.exports = function (params) {
             });
             that.state.sentSDP = true;
         }, function errorHandler(p) {
-            var err = new Error('Error calling setLocalDescription on answer I created.');
+            var errorMessage = 'Error calling setLocalDescription on answer I created.';
+            var err = new Error(errorMessage);
+            log.error(errorMessage, p);
             /**
              * This event is fired on errors that occur during call setup or media negotiation.
              * @event respoke.Call#error
@@ -1296,7 +1305,9 @@ module.exports = function (params) {
                 processReceivingQueue();
                 that.state.dispatch('receiveAnswer');
             }, function errorHandler(p) {
-                var newErr = new Error("Exception calling setRemoteDescription on answer I received.");
+                var errorMessage = 'Exception calling setRemoteDescription on answer I received.';
+                var newErr = new Error(errorMessage);
+                log.error(errorMessage, p);
                 that.report.callStoppedReason = newErr.message;
                 /**
                  * This event is fired on errors that occur during call setup or media negotiation.

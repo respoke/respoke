@@ -250,6 +250,7 @@ module.exports = function (params) {
      */
     function requestMedia() {
         var theStream;
+        log.debug('LocalMedia.requestMedia', that.constraints);
 
         if (!that.constraints) {
             deferred.reject(new Error('No constraints.'));
