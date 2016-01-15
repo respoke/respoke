@@ -338,26 +338,6 @@ describe("The respoke namespace", function () {
                 expect(respoke.sdpHasDataChannel(sdpWithOnlyDataChannel)).to.equal(true);
             });
         });
-
-        describe("sdpStreamCount", function () {
-            describe("when the sdp has no streams", function () {
-                it("returns 0", function () {
-                    expect(respoke.sdpStreamCount(sdpWithOnlyDataChannel)).to.equal(0);
-                });
-            });
-
-            describe("when the sdp has one stream", function () {
-                it("returns 1", function () {
-                    expect(respoke.sdpStreamCount(sdpWithOnlyVideo)).to.equal(1);
-                });
-            });
-
-            describe("when the sdp has two stream", function () {
-                it("returns 2", function () {
-                    expect(respoke.sdpStreamCount(sdpWithMultipleStreams)).to.equal(2);
-                });
-            });
-        });
     });
 
     describe("the constraints-parsing method", function () {

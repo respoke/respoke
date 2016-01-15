@@ -10,9 +10,6 @@ describe("LocalMedia.stop", function () {
     });
 
     afterEach(function () {
-        // blow away the stream cache
-        respoke.streams = [];
-
         sinon.restore();
         sinon = _actualSinon;
     });
@@ -103,29 +100,6 @@ describe("LocalMedia.stop", function () {
                 fakeTracks.forEach(function (track) {
                     expect(track.stop.calledOnce).to.equal(true);
                 });
-            });
-
-            it("removes the stream from the global stream cache", function () {
-                var constructorParams = { constraints: { audio: true, video: true } };
-                var localMedia = respoke.LocalMedia(constructorParams);
-                var fakeTracks = [
-                    { stop: sinon.stub() }, { stop: sinon.stub() }, { stop: sinon.stub() }
-                ];
-                var fakeStream = {
-                    numPc: 1,
-                    getTracks: function () { return fakeTracks; },
-                    constraints: constructorParams.constraints
-                };
-                localMedia.stream = fakeStream;
-                respoke.streams.push(fakeStream);
-
-                expect(respoke.streams.length).to.equal(1);
-                expect(respoke.streams.indexOf(fakeStream)).to.not.equal(-1);
-
-                localMedia.stop();
-
-                expect(respoke.streams.indexOf(fakeStream)).to.equal(-1);
-                expect(respoke.streams.length).to.equal(0);
             });
         });
     });

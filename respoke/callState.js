@@ -11,17 +11,16 @@
 var respoke = require('./respoke');
 var log = respoke.log;
 var Statechart = require('statechart');
-var Q = require('q');
 
 /**
  * State machine for WebRTC calling, data channels, and screen sharing.
- * NOTE: All state transitions are synchronous! However, listeners to the events this class fires will be called
- * asynchronously.
+ * NOTE: All state transitions are synchronous! However,
+ * listeners to the events this class fires will be called asynchronously.
+ *
  * @class respoke.CallState
  * @constructor
  * @augments respoke.EventEmitter
  * @param {object} params
- * @param {respoke.Call} call
  * @link https://cdn.respoke.io/respoke.min.js
  * @returns {respoke.CallState}
  */
@@ -46,14 +45,6 @@ module.exports = function (params) {
     var modifyTimeout = params.modifyTimeout || 60000;
     var oldRole;
 
-    /*
-     * These can quite often result in a condition in which they do not cause a transition to occur.
-     * There is at least one "universal" (air quotes) event which probably? shouldn't? but may
-     * result in a non-transition error when it's OK, and that is the 'reject' event.
-     */
-    var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'approve', 'answer', 'sentOffer',
-        'receiveAnswer'];
-
     function assert(condition) {
         if (!condition) {
             throw new Error("Assertion failed.");
@@ -70,21 +61,28 @@ module.exports = function (params) {
     that.needDirectConnection = !!that.needDirectConnection;
     that.sendOnly = !!that.sendOnly;
     that.receiveOnly = !!that.receiveOnly;
+    that.isModifying = false;
 
     // Event
     var rejectEvent = [{
-        target: 'connected',
-        guard: function (params) {
+        action: function () {
+            [answerTimer, receiveAnswerTimer, connectionTimer, modifyTimer].forEach(function (timer) {
+                if (timer) {
+                    timer.clear();
+                }
+            });
+
             // we have any media flowing or data channel open
             if (typeof oldRole === 'boolean') {
                 // Reset the role if we have aborted a modify.
                 that.caller = oldRole;
             }
 
-            if (modifyTimer) {
-                modifyTimer.clear();
-            }
-
+            that.isModifying = false;
+        }
+    }, {
+        target: 'connected',
+        guard: function () {
             return that.hasMedia();
         }
     }, {
@@ -93,11 +91,6 @@ module.exports = function (params) {
             params = params || {};
             // we have no media flowing or data channel open
             that.hangupReason = params.reason || "no media";
-            [answerTimer, receiveAnswerTimer, connectionTimer, modifyTimer].forEach(function (timer) {
-                if (timer) {
-                    timer.clear();
-                }
-            });
             return !that.hasMedia();
         }
     }];
@@ -107,6 +100,7 @@ module.exports = function (params) {
         // reject modification
         if (modifyTimer) {
             modifyTimer.clear();
+            that.isModifying = false;
         }
     }
 
@@ -149,16 +143,13 @@ module.exports = function (params) {
         if ((!that.needDirectConnection && that.receiveOnly) || that.hasLocalMedia) {
             return true;
         }
+
         return (that.needDirectConnection === true && typeof params.previewLocalMedia !== 'function');
     }
 
     function hasListener() {
-        if ((client.hasListeners('call') && !that.needDirectConnection) ||
-                (client.hasListeners('direct-connection') && that.needDirectConnection)) {
-            return true;
-        } else {
-            return false;
-        }
+        return ((client.hasListeners('call') && !that.needDirectConnection) ||
+                (client.hasListeners('direct-connection') && that.needDirectConnection));
     }
 
     function createTimer(func, name, time) {
@@ -239,7 +230,7 @@ module.exports = function (params) {
                                 that.receivedSDP = false;
                                 that.processedRemoteSDP = false;
                                 that.isAnswered = false;
-                                if (!that.isModifying()) {
+                                if (!that.isModifying) {
                                     answerTimer = createTimer(function () {
                                         that.dispatch('reject', {reason: "answer own call timer " + that.caller});
                                     }, 'answer own call', (that.caller ? answerTimeout : receiveAnswerTimeout));
@@ -249,7 +240,6 @@ module.exports = function (params) {
                         },
                         // Event
                         exit: function () {
-                            that.fire('preparing:exit');
                             if (answerTimer) {
                                 answerTimer.clear();
                             }
@@ -257,7 +247,7 @@ module.exports = function (params) {
                         // Event
                         reject: rejectEvent,
                         // Event
-                        receiveOffer: {
+                        receiveOffer: [{
                             action: function (params) {
                                 that.receivedSDP = true;
                                 if (that.isAnswered) {
@@ -268,7 +258,12 @@ module.exports = function (params) {
                                     });
                                 }
                             }
-                        },
+                        }, {
+                            target: 'connecting',
+                            guard: function () {
+                                return that.isModifying;
+                            }
+                        }],
                         // Event
                         answer: [{
                             action: function (params) {
@@ -338,10 +333,6 @@ module.exports = function (params) {
                             // State
                             approvingDeviceAccess: {
                                 // Event
-                                entry: function () {
-                                    that.fire('approving-device-access:entry');
-                                },
-                                // Event
                                 approve: [{
                                     target: 'approvingContent',
                                     guard: function (params) {
@@ -364,14 +355,6 @@ module.exports = function (params) {
                             },
                             // State
                             approvingContent: {
-                                // Event
-                                entry: function () {
-                                    that.fire('approving-content:entry');
-                                },
-                                // Event
-                                exit: function () {
-                                    that.fire('approving-content:exit');
-                                },
                                 // Event
                                 approve: [function (params) {
                                     that.hasLocalMediaApproval = true;
@@ -406,10 +389,6 @@ module.exports = function (params) {
                                     that.fire('offering:entry');
                                 },
                                 // Event
-                                exit: function () {
-                                    that.fire('offering:exit');
-                                },
-                                // Event
                                 receiveLocalMedia: [function () {
                                     that.hasLocalMedia = true;
                                 }, {
@@ -425,7 +404,15 @@ module.exports = function (params) {
                                 },
                                 // Event
                                 receiveAnswer: [clearReceiveAnswerTimer, {
-                                    target: 'connecting'
+                                    target: 'connecting',
+                                    guard: function () {
+                                        return !that.isModifying;
+                                    }
+                                }, {
+                                    target: 'connected',
+                                    guard: function () {
+                                        return that.isModifying;
+                                    }
                                 }]
                             }
                         }
@@ -451,10 +438,6 @@ module.exports = function (params) {
                                     if (connectionTimer) {
                                         connectionTimer.clear();
                                     }
-                                    if (modifyTimer) {
-                                        modifyTimer.clear();
-                                    }
-                                    that.fire('connecting:exit');
                                 },
                                 // Event
                                 receiveLocalMedia: [{
@@ -470,6 +453,9 @@ module.exports = function (params) {
                                 }],
                                 // Event
                                 receiveRemoteMedia: {
+                                    target: 'connected'
+                                },
+                                removeRemoteMedia: {
                                     target: 'connected'
                                 }
                             }
@@ -495,18 +481,13 @@ module.exports = function (params) {
                             modifyTimer = createTimer(function () {
                                 that.dispatch('reject', {reason: "modify timer"});
                             }, 'modify for caller', modifyTimeout);
-                            that.fire('modifying:entry');
                         },
                         // Event
                         accept: [function () {
                             that.caller = true;
                         }, {
                             target: 'preparing'
-                        }],
-                        // Event
-                        exit: function () {
-                            that.fire('modifying:exit');
-                        }
+                        }]
                     }
                 }
             },
@@ -528,14 +509,20 @@ module.exports = function (params) {
                         entry: function () {
                             oldRole = that.caller;
                             that.needDirectConnection = false;
-                            that.fire('connected:entry');
-                        },
-                        // Event
-                        exit: function () {
-                            that.fire('connected:exit');
+                            that.isModifying = false;
+                            that.sendOnly = false;
+                            that.receiveOnly = false;
+
+                            if (modifyTimer) {
+                                modifyTimer.clear();
+                            }
                         },
                         // Event
                         modify: [{
+                            action: function () {
+                                that.isModifying = true;
+                            }
+                        }, {
                             // be notified that the other side would like modification
                             target: 'preparing',
                             guard: function (params) {
@@ -591,7 +578,7 @@ module.exports = function (params) {
         debugOff: function () {
             // So we can print the caller. Debug most often used when testing & tests run in the same tab.
             var args = Array.prototype.slice.call(arguments);
-            args.splice(0, 0, that.caller);
+            args.unshift("state change:");
             log.debug.apply(log, args);
         }
     });
@@ -618,33 +605,36 @@ module.exports = function (params) {
         var oldState;
         var newState;
 
+        /*
+         * These can quite often result in a condition in which they do not
+         * cause a transition to occur. There is at least one "universal" (air quotes)
+         * event which probably? shouldn't? but may result in a non-transition error
+         * when it's OK, and that is the 'reject' event.
+         */
+        var nontransitionEvents = ['receiveLocalMedia', 'receiveRemoteMedia', 'removeRemoteMedia',
+            'approve', 'answer', 'sentOffer', 'receiveAnswer'];
+
         if (!fsm) {
             return;
         }
 
         oldState = that.getState();
+        log.debug("dispatching '" + evt + "', from '" + oldState + "'. caller?", that.caller, "args:", args);
+
         try {
             fsm.dispatch(evt, args);
         } catch (err) {
-            log.debug('error dispatching', evt, 'from', oldState, "with", args, err);
+            log.debug("error dispatching '" + evt + "' from '" + oldState + "'.", { args: args, error: err });
             throw err;
         }
-        newState = that.getState();
-        if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
-            log.debug(that.caller, "Possible bad event " + evt + ", no transition occured.");
-        }
-        log.debug(that.caller, 'dispatching', evt, 'moving from ', oldState, 'to', newState, args);
-    };
 
-    /**
-     * Determine whether or not we are in the middle of a call modification.
-     * @memberof! respoke.CallState
-     * @method respoke.Call.isModifying
-     * @returns {boolean}
-     */
-    that.isModifying = function () {
-        var modifyingStates = ['preparing', 'modifying', 'approvingDeviceAccess', 'approvingMedia', 'offering'];
-        return (modifyingStates.indexOf(that.getState()) > -1 && that.hasMedia());
+        newState = that.getState();
+
+        if (oldState === newState && nontransitionEvents.indexOf(evt) === -1) {
+            log.debug("Possible bad event '" + evt + "', no transition occurred. caller?", that.caller);
+        } else {
+            log.debug("dispatch complete. new state: '" + newState + "'.");
+        }
     };
 
     /**
