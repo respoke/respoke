@@ -15,6 +15,7 @@ module.exports = function (grunt) {
                     compress: true,
                     mangle: false,
                     sourceMap: true,
+                    sourceMapName: 'build/respoke-stats.min.map',
                     sourceMapIncludeSources: true,
                     banner: '/*! Copyright (c) 2014, Digium, Inc. All Rights Reserved. MIT Licensed. For all details and documentation: https://www.respoke.io */'
                 },
