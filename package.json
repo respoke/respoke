@@ -4,6 +4,7 @@
   "description": "Client-side JavaScript library for Respoke.",
   "main": "respoke/respoke.js",
   "scripts": {
+    "version": "scripts/release-changelog.sh",
     "build": "grunt build:dev",
     "watch": "webpack --watch",
     "dist": "grunt build:dist",

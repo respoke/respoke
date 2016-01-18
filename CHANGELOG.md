@@ -1,7 +1,13 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## minor - 2016-01-18
+## v.next
+
+## Fixed
+
+- Fixed automatic changelog versioning using the wrong version
+
+## 2.1.0 - 2016-01-18
 
 ### Fixed
 
