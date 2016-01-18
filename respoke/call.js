@@ -907,7 +907,7 @@ module.exports = function (params) {
             // if (!that.outgoingMediaStreams.length && !that.incomingMediaStreams.length) {
             //     that.hangup({ reason: 'last stream ended' });
             // }
-        });
+        }, true);
 
         /**
          * Indicate that the call has received local media from the browser.
@@ -937,7 +937,7 @@ module.exports = function (params) {
                 type: evt.type,
                 muted: evt.muted
             });
-        });
+        }, true);
     }
 
     /**

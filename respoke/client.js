@@ -746,7 +746,7 @@ module.exports = function (params) {
 
         evt.call.listen('hangup', function () {
             removeCall({ call: evt.call });
-        });
+        }, true);
     }
 
     /**
