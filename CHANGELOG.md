@@ -1,7 +1,7 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## v.next
+## 2.1.1 - 2016-01-18
 
 ## Fixed
 
