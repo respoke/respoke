@@ -1,5 +1,6 @@
-#!/bin/sh
-branch_name=$(git rev-parse --abbrev-ref HEAD)
+#!/bin/bash
+set -e
+branch_name=$(git rev-parse --abbrev-ref HEAD | sed "s#/#-#g")
 
 if [[ ! "$branch_name" =~ ^v[0-9]+ ]]; then
     echo "Not building a deprecated version. Skipping docs versioning..."

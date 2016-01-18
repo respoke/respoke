@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 branch_name=$(git rev-parse --abbrev-ref HEAD)
 full_version=$(git describe)
 major_version=$(echo $full_version | sed "s/v\([0-9]*\)\..*/v\1/")
