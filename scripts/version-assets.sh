@@ -1,3 +1,5 @@
+#!/bin/bash
+set -e
 platform=$(uname -s)
 version=$(git describe)
 
