@@ -99,7 +99,7 @@ module.exports = function (params) {
     that.connections = [];
     client.listen('disconnect', function disconnectHandler() {
         that.connections = [];
-    });
+    }, true);
 
     var resolveEndpointPresence = params.resolveEndpointPresence;
     delete that.resolveEndpointPresence;
