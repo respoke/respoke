@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## v.next
+
+### Fixed
+
+- Fixed issue where some internal event handlers were not marked as internal,
+which caused them to be lost when a user requested that all handlers be
+removed from the event.
+
 ## 2.0.0 - 2016-01-18
 
 This version adds preliminary support for browser <-> browser renegotiation.
