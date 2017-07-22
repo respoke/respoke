@@ -815,6 +815,7 @@ module.exports = function (params) {
      * @param {string} params.id
      * @param {string} params.message
      * @param {boolean} [params.push=false]
+     * @param {boolean} [params.persist=false]
      */
     that.publish = function (params) {
         params = params || {};
@@ -822,7 +823,8 @@ module.exports = function (params) {
         var message = respoke.TextMessage({
             endpointId: params.id,
             message: params.message,
-            push: !!params.push
+            push: !!params.push,
+            persist: !!params.persist
         });
 
         if (!that.isConnected()) {

@@ -383,6 +383,7 @@ module.exports = function (params) {
      * @param {string} params.message - The message.
      * @param {boolean} [params.push=false] - Whether or not the message should be considered for push notifications to
      * mobile devices.
+     * @param {boolean} [params.persist=false] - Whether or not the message should be persisted in history.
      * @param {function} params.onSuccess - Success handler indicating that the message was delivered.
      * @param {function} params.onError - Error handler indicating that the message was not delivered.
      * @returns {Promise|undefined}
