@@ -806,6 +806,42 @@ module.exports = function (params) {
     })();
 
     /**
+     * Retrieve persisted message history for a specific group
+     * @memberof! respoke.SignalingChannel
+     * @private
+     * @method respoke.SignalingChannel.getGroupHistory
+     * @returns {Promise}
+     * @param {object} params
+     * @param {string} params.group The group whose history we should retrieve
+     * @param {number} [params.limit] The number of messages to retrieve. Default is 50.
+     * @param {number} [params.before] Epoch timestamp determining where to start retrieving history.
+     */
+    that.getGroupHistory = function (params) {
+        var deferred = Q.defer();
+
+        if (!that.isConnected()) {
+            deferred.reject(new Error("Can't complete request when not connected. Please reconnect!"));
+            return deferred.promise;
+        }
+
+        wsCall({
+            httpMethod: 'GET',
+            path: '/v1/groups/{group}/history',
+            urlParams: { group: params.group },
+            parameters: {
+                limit: params.limit || 50,
+                before: params.before
+            }
+        }).done(function successHandler(history) {
+            deferred.resolve(history);
+        }, function errorHandler(err) {
+            deferred.reject(err);
+        });
+
+        return deferred.promise;
+    };
+
+    /**
      * Publish a message to a group.
      * @memberof! respoke.SignalingChannel
      * @private

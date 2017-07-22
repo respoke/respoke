@@ -54,6 +54,13 @@ window.MockSignalingChannel = function MockSignalingChannel(signalChannelParams)
         return deferred.promise;
     };
 
+    that.getGroupHistory = function (params) {
+        params = params || {};
+        var deferred = Q.defer();
+        deferred.resolve([]);
+        return deferred.promise();
+    };
+
     that.leaveGroup = function (params) {
         var deferred = Q.defer();
         deferred.resolve();

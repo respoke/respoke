@@ -42,6 +42,7 @@ describe("A respoke.Group", function () {
                     expect(typeof group.sendMessage).to.equal('function');
                     expect(typeof group.getMembers).to.equal('function');
                     expect(typeof group.isJoined).to.equal('function');
+                    expect(typeof group.getHistory).to.equal('function');
                 });
 
                 it("saves unexpected developer-specified parameters.", function () {
@@ -81,6 +82,35 @@ describe("A respoke.Group", function () {
                                 message: "There's no place like home",
                                 onSuccess: function () {
                                     done(new Error("sendMessage() succeeded when not connected."));
+                                },
+                                onError: function (err) {
+                                    expect(err).to.exist;
+                                    expect(err.message).to.contain("not connected");
+                                    done();
+                                }
+                            });
+                        });
+                    });
+                });
+
+                describe("getHistory()", function () {
+                    describe("promise-style", function () {
+                        it("errors because of lack of connection", function (done) {
+                            group.getHistory().done(function () {
+                                done(new Error("getHistory() succeeded when not connected."));
+                            }, function (err) {
+                                expect(err).to.exist;
+                                expect(err.message).to.contain("not connected");
+                                done();
+                            });
+                        });
+                    });
+
+                    describe("callback-style", function () {
+                        it("errors because of lack of connection", function (done) {
+                            group.getHistory({
+                                onSuccess: function () {
+                                    done(new Error("getHistory() succeeded when not connected."));
                                 },
                                 onError: function (err) {
                                     expect(err).to.exist;
