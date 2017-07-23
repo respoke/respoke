@@ -164,6 +164,54 @@ module.exports = function (params) {
     };
 
     /**
+     * Retrieve the persisted message history for this group.
+     *
+     *     group.getHistory({
+     *         onSuccess: function (history) {
+     *             // A list of persisted messages
+     *         },
+     *         onError: function (err) {
+     *             // Something bad happened
+     *         }
+     *     });
+     *
+     * @memberof! respoke.Group
+     * @method respoke.Group.getHistory
+     * @param {object} params
+     * @param {respoke.Client.joinHandler} [params.onSuccess] - Success handler for this invocation of
+     * this method only.
+     * @param {respoke.Client.errorHandler} [params.onError] - Error handler for this invocation of this
+     * method only.
+     * @param {number} [params.limit] The number of messages to retrieve. Default is 50.
+     * @param {number} [params.before] Epoch timestamp determining where to start retrieving history.
+     * @return {Promise|undefined}
+     * @fires respoke.Client#leave
+     */
+    that.getHistory = function (params) {
+        params = params || {};
+        params.group = that.id;
+
+        var deferred = Q.defer();
+        var retVal = respoke.handlePromise(deferred.promise, params.onSuccess, params.onError);
+
+        try {
+            validateConnection();
+            validateMembership();
+        } catch (err) {
+            deferred.reject(err);
+            return retVal;
+        }
+
+        signalingChannel.getGroupHistory(params)
+        .done(function successHandler(history) {
+            deferred.resolve(history);
+        }, function errorHandler(err) {
+            deferred.reject(err);
+        });
+        return retVal;
+    };
+
+    /**
      * Leave this group. If this method is called multiple times synchronously, it will batch requests and
      * only make one API call to Respoke.
      *
@@ -383,6 +431,7 @@ module.exports = function (params) {
      * @param {string} params.message - The message.
      * @param {boolean} [params.push=false] - Whether or not the message should be considered for push notifications to
      * mobile devices.
+     * @param {boolean} [params.persist=false] - Whether or not the message should be persisted in history.
      * @param {function} params.onSuccess - Success handler indicating that the message was delivered.
      * @param {function} params.onError - Error handler indicating that the message was not delivered.
      * @returns {Promise|undefined}
