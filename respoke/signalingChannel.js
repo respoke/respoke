@@ -832,11 +832,7 @@ module.exports = function (params) {
                 limit: params.limit || 50,
                 before: params.before
             }
-        }).done(function successHandler(history) {
-            deferred.resolve(history);
-        }, function errorHandler(err) {
-            deferred.reject(err);
-        });
+        }).done(deferred.resolve, deferred.reject);
 
         return deferred.promise;
     };
