@@ -54,6 +54,7 @@ module.exports = function (params) {
                 that.toConnection = params.connectionId;
                 that.requestConnectionReply = (params.requestConnectionReply === true);
                 that.push = (params.push === true);
+                that.persist = (params.persist === true);
             } catch (e) {
                 throw new Error(e);
             }
