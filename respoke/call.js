@@ -573,6 +573,20 @@ module.exports = function (params) {
             streamReceivedHandler(localMedia);
         });
     }
+    /**
+     *
+     * optionally inspect or manipulate the remoteSDP before 
+     * it is applied
+     * @memberof! respoke.Call
+     * @method respoke.Call.remoteSDP
+     * @param {SessionDescription} remoteSession
+     * @public
+     * @returns SessionDescription
+     */
+    that.remoteSDP = function(remoteSession){
+	return remoteSession;
+    };
+
 
     /**
      * Answer the call and start the process of obtaining media. This method is called automatically on the caller's
@@ -1493,6 +1507,7 @@ module.exports = function (params) {
         log.debug('listenOffer', evt.signal);
 
         that.sessionId = evt.signal.sessionId;
+        evt.signal.sessionDescription = that.remoteSDP(evt.signal.sessionDescription);
         pc.state.receiveOnly = respoke.sdpHasSendOnly(evt.signal.sessionDescription.sdp);
         pc.state.sendOnly = respoke.sdpHasReceiveOnly(evt.signal.sessionDescription.sdp);
         pc.state.once('connecting:entry', function () {
@@ -1511,6 +1526,7 @@ module.exports = function (params) {
          * use audio & video as our estimate.
          * TODO not good enough for media renegotiation
          */
+
         // If sendOnly, we can't rely on the offer for media estimate. It doesn't have any media in it!
         if (pc.state.sendOnly) {
             updateOutgoingMediaEstimate({constraints: {
